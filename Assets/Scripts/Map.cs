@@ -22,6 +22,8 @@ public class MapTile {
 	//these should range from 0 to 0.5. They can be used for walls or thin bridges.
 	public float[] sideInsets = {0,0,0,0,0,0};
 	
+	public bool invisible=false;
+	
 	/*
 	More about insets:
 	 Side insets and corner insets are combined at mesh generation time.
@@ -33,6 +35,7 @@ public class MapTile {
 	public bool serializeHackUsable=false;
 	public MapTile(int z) {
 		this.z = z;
+		this.invisible = false;
 		this.tileSpecs = new int[]{-1, -1, -1, -1, -1, -1};
 		this.heights = new int[]{1,1,1,1};
 		this.baselines = new int[]{0,0,0,0};
@@ -377,12 +380,13 @@ public class Map : MonoBehaviour {
 		}
 		if(mainAtlas == null) { mainAtlas=new Texture2D(1024, 1024); }
 		tileRects = mainAtlas.PackTextures(textures, 0);
-/*		if(Application.isEditor) {
-			EditorUtility.CompressTexture(mainAtlas, TextureFormat.DXT5);
+		if(!Application.isPlaying) {
+			mainAtlas.Compress(true);
+//			EditorUtility.CompressTexture(mainAtlas, TextureFormat.DXT5);
 		} else {
 			mainAtlas.Compress(true);
 		}
-*/		RemakeMesh();
+		RemakeMesh();
 	}
 	
 	[SerializeField]
@@ -555,9 +559,16 @@ public class Map : MonoBehaviour {
 	}
 	
 	void Awake() {
+		MeshRenderer mr = GetComponent<MeshRenderer>();
+		if(mr != null && mr.materials.Length >= 2) {
+			if(Application.isPlaying) {
+				mr.materials[1].color = Color.clear;
+			}
+		}
 	}
 	
 	void UVMap(MapTile t, Neighbors side, Vector2[] uvs, int idx) {
+		if(uvs == null) { return; }
 		int specIdx;
 		if(t.tileSpecs == null || t.tileSpecs.Length == 0) { specIdx = -1; }
 		else {
@@ -612,28 +623,28 @@ public class Map : MonoBehaviour {
 		}
 	}
 	
-	bool NoInsetNeighbors(int x, int y, MapTile t) {
+	bool NoInsetOrInvisibleNeighbors(int x, int y, MapTile t) {
 		int zMin=t.z-1, zMax=t.z+t.maxHeight;
 		MapTile neighbor=null;
 		for(int tz = zMin+1; tz < zMax; tz++) {
-			if(x > 0 && x <= _size.x && ((neighbor = TileAt(x-1, y, tz)) != null) && !neighbor.noInsets) {
+			if(x > 0 && x <= _size.x && ((neighbor = TileAt(x-1, y, tz)) != null) && (!neighbor.noInsets || neighbor.invisible)) {
 				return false;
 			}
-			if(y > 0 && y <= _size.y && ((neighbor = TileAt(x, y-1, tz)) != null) && !neighbor.noInsets) {
+			if(y > 0 && y <= _size.y && ((neighbor = TileAt(x, y-1, tz)) != null) && (!neighbor.noInsets || neighbor.invisible)) {
 				return false;
 			}
-			if(x >= -1 && x < _size.x-1 &&  ((neighbor = TileAt(x+1, y, tz)) != null) && !neighbor.noInsets) {
+			if(x >= -1 && x < _size.x-1 &&  ((neighbor = TileAt(x+1, y, tz)) != null) && (!neighbor.noInsets || neighbor.invisible)) {
 				return false;
 			}
-			if(y >= -1 && y < _size.y-1 &&  ((neighbor = TileAt(x, y+1, tz)) != null) && !neighbor.noInsets) {
+			if(y >= -1 && y < _size.y-1 &&  ((neighbor = TileAt(x, y+1, tz)) != null) && (!neighbor.noInsets || neighbor.invisible)) {
 				return false;
 			}
 		}
 		if(x >= 0 && x < _size.x && y >= 0 && y < _size.y) {
-			if(zMax >= 0 && ((neighbor = TileAt(x, y, zMax)) != null) && !neighbor.noInsets) {
+			if(zMax >= 0 && ((neighbor = TileAt(x, y, zMax)) != null) && (!neighbor.noInsets || neighbor.invisible)) {
 				return false;
 			}
-			if(zMin >= 0 && ((neighbor = TileAt(x, y, zMin)) != null) && !neighbor.noInsets) {
+			if(zMin >= 0 && ((neighbor = TileAt(x, y, zMin)) != null) && (!neighbor.noInsets || neighbor.invisible)) {
 				return false;
 			}
 		}
@@ -651,11 +662,18 @@ public class Map : MonoBehaviour {
 		if(mr == null) {
 			mr = gameObject.AddComponent<MeshRenderer>();
 		}
-		if(mr.sharedMaterials.Length == 0 || mr.sharedMaterials[0] == null) {
-			mr.sharedMaterials = new Material[]{new Material(Shader.Find("Transparent/Cutout/Diffuse"))};
+		if(mr.sharedMaterials.Length < 2 || mr.sharedMaterials[0] == null || mr.sharedMaterials[1] == null) {
+			mr.sharedMaterials = new Material[]{
+				new Material(Shader.Find("Transparent/Cutout/Diffuse")),
+				new Material(Shader.Find("Transparent/Diffuse"))
+			};
+			mr.sharedMaterials[1].color = Application.isPlaying ? Color.clear : new Color(0.7f, 0.7f, 1.0f, 0.5f);
 		}
 		if(mr.sharedMaterials[0].mainTexture != mainAtlas) {
 			mr.sharedMaterials[0].mainTexture = mainAtlas;	
+		}
+		if(mr.sharedMaterials[1].mainTexture != mainAtlas) {
+			mr.sharedMaterials[1].mainTexture = mainAtlas;	
 		}
 		Mesh mesh = mf.sharedMesh != null ? mf.sharedMesh : new Mesh();
 		mesh.Clear();
@@ -665,12 +683,17 @@ public class Map : MonoBehaviour {
 		//FIXME: height assumption may be higher than necessary
 		//24 vertices per so each gets a uv, we will say 20 units high
 		Vector3[] vertices = new Vector3[(int)(_size.x*_size.y*20*24)]; 
-		//10 tris, 3 indexes per, we will say 20 units high
-		int[] triangles = new int[(int)(_size.x*_size.y*20*10*3)];
+		//10 tris, 3 indices per, we will say 20 units high
+		int[] opaqueTriangles = new int[(int)(_size.x*_size.y*20*10*3)];
 		Vector2[] uvs = new Vector2[vertices.Length];
 		
 		int vertIdx = 0;
-		int triIdx = 0;
+		int opaqueTriIdx = 0;
+
+		//10 tris, 3 indices per, we will say 20 units high
+		int[] transparentTriangles = new int[(int)(_size.x*_size.y*20*10*3)];
+		
+		int transparentTriIdx = 0;
 				
 		for(int i = 0; i < stacks.Length; i++) {
 			MapTile t = stacks[i];
@@ -679,9 +702,10 @@ public class Map : MonoBehaviour {
 			int x = i-(y*(int)_size.x);
 			while(!MapTileIsNull(t)) {
 				int z = t.z;
-				bool avoidNeighbors = t.maxHeight == 1 && t.noInsets && NoInsetNeighbors(x, y, t);
-				//TODO: include corner insets and their extra geometry
-				//TODO: stairs
+				int[] triangles = t.invisible ? transparentTriangles : opaqueTriangles;
+				int triIdx = t.invisible ? transparentTriIdx : opaqueTriIdx;
+				
+				bool avoidNeighbors = t.maxHeight == 1 && t.noInsets && !t.invisible && NoInsetOrInvisibleNeighbors(x, y, t);
 				float lx = (x+0+t.sideInsets[(int)Neighbors.FrontLeftIdx ])*_sideLength-_sideLength/2;
 				float fx = (x+0+t.sideInsets[(int)Neighbors.FrontLeftIdx ])*_sideLength-_sideLength/2;
 				float rx = (x+1-t.sideInsets[(int)Neighbors.BackRightIdx])*_sideLength-_sideLength/2;
@@ -691,16 +715,27 @@ public class Map : MonoBehaviour {
 				float ly = (y+1-t.sideInsets[(int)Neighbors.BackLeftIdx ])*_sideLength-_sideLength/2;
 				float by = (y+1-t.sideInsets[(int)Neighbors.BackLeftIdx ])*_sideLength-_sideLength/2;
 				
-				float zMin = (z+0+t.sideInsets[(int)Neighbors.BottomIdx]+t.baselines[(int)Corners.Left]-1)*height;
-				float zMax = (z-t.sideInsets[(int)Neighbors.TopIdx]+t.heights[(int)Corners.Left]-1)*height;
-				Vector3 bl = new Vector3(lx, zMin, ly);
-				Vector3 bf = new Vector3(fx, zMin, fy);
-				Vector3 bb = new Vector3(bx, zMin, by);
-				Vector3 br = new Vector3(rx, zMin, ry);
-				Vector3 tl = new Vector3(lx, zMax, ly);
-				Vector3 tf = new Vector3(fx, zMax, fy);
-				Vector3 tb = new Vector3(bx, zMax, by);
-				Vector3 tr = new Vector3(rx, zMax, ry);
+				//TODO: include corner insets and their extra geometry
+				
+
+				//TODO: stairs and their extra geometry
+
+				float zMinL = (z+0+t.sideInsets[(int)Neighbors.BottomIdx]+t.baselines[(int)Corners.Left]-1)*height;
+				float zMaxL = (z-t.sideInsets[(int)Neighbors.TopIdx]+t.heights[(int)Corners.Left]-1)*height;
+				float zMinF = (z+0+t.sideInsets[(int)Neighbors.BottomIdx]+t.baselines[(int)Corners.Front]-1)*height;
+				float zMaxF = (z-t.sideInsets[(int)Neighbors.TopIdx]+t.heights[(int)Corners.Front]-1)*height;
+				float zMinB = (z+0+t.sideInsets[(int)Neighbors.BottomIdx]+t.baselines[(int)Corners.Back]-1)*height;
+				float zMaxB = (z-t.sideInsets[(int)Neighbors.TopIdx]+t.heights[(int)Corners.Back]-1)*height;
+				float zMinR = (z+0+t.sideInsets[(int)Neighbors.BottomIdx]+t.baselines[(int)Corners.Right]-1)*height;
+				float zMaxR = (z-t.sideInsets[(int)Neighbors.TopIdx]+t.heights[(int)Corners.Right]-1)*height;
+				Vector3 bl = new Vector3(lx, zMinL, ly);
+				Vector3 bf = new Vector3(fx, zMinF, fy);
+				Vector3 bb = new Vector3(bx, zMinB, by);
+				Vector3 br = new Vector3(rx, zMinR, ry);
+				Vector3 tl = new Vector3(lx, zMaxL, ly);
+				Vector3 tf = new Vector3(fx, zMaxF, fy);
+				Vector3 tb = new Vector3(bx, zMaxB, by);
+				Vector3 tr = new Vector3(rx, zMaxR, ry);
 				Neighbors mask = NeighborsOfTile(x, y, z);
 				if((mask & Neighbors.Top) == 0 || !avoidNeighbors) {
 					vertices[vertIdx+0] = tf; //5
@@ -798,15 +833,21 @@ public class Map : MonoBehaviour {
 					triIdx += 2*3;
 					vertIdx += 4;
 				}
+				if(t.invisible) { transparentTriIdx = triIdx; }
+				else { opaqueTriIdx = triIdx; }
 				t = t.next;
 			}
 		}
 		Array.Resize<Vector3>(ref vertices, vertIdx);
 		Array.Resize<Vector2>(ref uvs, vertIdx);
-		Array.Resize<int>(ref triangles, triIdx);
+		Array.Resize<int>(ref opaqueTriangles, opaqueTriIdx);
+		Array.Resize<int>(ref transparentTriangles, transparentTriIdx);
+
 		mesh.vertices = vertices;
 		mesh.uv = uvs;
-		mesh.triangles = triangles;
+		mesh.subMeshCount = 2;
+		mesh.SetTriangles(opaqueTriangles, 0);
+		mesh.SetTriangles(transparentTriangles, 1);
 		mesh.RecalculateNormals();
 		mesh.Optimize();
 		mf.sharedMesh = mesh;
@@ -894,6 +935,15 @@ public class Map : MonoBehaviour {
 		if(t != null) { 
 			t.InsetSides(inset, mask); 
 			RemakeMesh();
+		}
+	}
+	public void SetTileInvisible(int x, int y, int z, bool invis) {
+		MapTile t = TileAt(x,y,z);
+		if(t != null) {
+			if(t.invisible != invis) {
+				t.invisible = invis;
+				RemakeMesh();
+			}
 		}
 	}
 	

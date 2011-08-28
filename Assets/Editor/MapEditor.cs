@@ -38,6 +38,7 @@ public class MapEditor : Editor {
 	static Texture2D specPlaceholderTexture=null;
 	static int specSelectedSpec=0;
 	
+	static bool makeInvisibleTiles=false;
 	static float[] sideInsets={0,0,0,0,0,0};
 	static float[] cornerInsets={0,0,0,0};
 	
@@ -146,6 +147,7 @@ public class MapEditor : Editor {
 		}
 		if(editMode == EditMode.AddRemove || editMode == EditMode.Reshape) {
 			//show inset/offset settings for current stamp
+			makeInvisibleTiles = EditorGUILayout.Toggle("Invisible", makeInvisibleTiles);
 			GUILayout.Label("Side Insets (0-0.5)");
 			EditorGUILayout.BeginHorizontal();
 			sideInsets[(int)Map.Neighbors.FrontLeftIdx ] = Mathf.Clamp(EditorGUILayout.FloatField("-X", sideInsets[(int)Map.Neighbors.FrontLeftIdx  ]), 0, 0.5f);
@@ -209,6 +211,7 @@ public class MapEditor : Editor {
 			//now, show the parameters for this spec
 			bool oldEnabled = GUI.enabled;
 			GUI.enabled = specSelectedSpec < m.TileSpecCount;
+			
 			if(GUILayout.Button("Delete Tile")) {
 				RegisterUndo("Delete Tile Spec");
 				m.RemoveTileSpecAt(specSelectedSpec);
@@ -285,6 +288,8 @@ public class MapEditor : Editor {
 		int nx = idx-(ny*(int)m.size.x);
 		/*		int nz = tiles[idx].z;*/
 		int nz = editZ;
+		m.SetTileInvisible(nx, ny, nz, makeInvisibleTiles);
+		
 		m.InsetSidesOfTile(nx, ny, nz, sideInsets[(int)Map.Neighbors.FrontRightIdx], Map.Neighbors.FrontRight); 
 		m.InsetSidesOfTile(nx, ny, nz, sideInsets[(int)Map.Neighbors.FrontLeftIdx ], Map.Neighbors.FrontLeft ); 
 		m.InsetSidesOfTile(nx, ny, nz, sideInsets[(int)Map.Neighbors.BackRightIdx ], Map.Neighbors.BackRight ); 
@@ -310,6 +315,8 @@ public class MapEditor : Editor {
 		int nx = idx-(ny*(int)m.size.x);
 		/*		int nz = tiles[idx].z;*/
 		int nz = editZ;
+		m.SetTileInvisible(nx, ny, nz, false);
+		
 		RegisterUndo("Clear Insets");
 		m.InsetSidesOfTile(nx, ny, nz, 0, Map.Neighbors.All); 
 		m.InsetCornerOfTile(nx, ny, nz, 0, Map.Corners.Left ); 
