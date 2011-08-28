@@ -38,6 +38,9 @@ public class MapEditor : Editor {
 	static Texture2D specPlaceholderTexture=null;
 	static int specSelectedSpec=0;
 	
+	static float[] sideInsets={0,0,0,0,0,0};
+	static float[] cornerInsets={0,0,0,0};
+	
 	List<TileBounds> tiles=new List<TileBounds>();
 	
 	void RegisterUndo(string label) {
@@ -141,7 +144,31 @@ public class MapEditor : Editor {
 			editMode = nextMode;
 			editModeChanged = true;
 		}
-		if(editMode == EditMode.Paint) {
+		if(editMode == EditMode.AddRemove || editMode == EditMode.Reshape) {
+			//show inset/offset settings for current stamp
+			GUILayout.Label("Side Insets (0-0.5)");
+			EditorGUILayout.BeginHorizontal();
+			sideInsets[(int)Map.Neighbors.FrontLeftIdx ] = Mathf.Clamp(EditorGUILayout.FloatField("-X", sideInsets[(int)Map.Neighbors.FrontLeftIdx  ]), 0, 0.5f);
+			sideInsets[(int)Map.Neighbors.BackRightIdx ] = Mathf.Clamp(EditorGUILayout.FloatField("+X", sideInsets[(int)Map.Neighbors.BackRightIdx  ]), 0, 0.5f);
+			EditorGUILayout.EndHorizontal();
+			EditorGUILayout.BeginHorizontal();
+			sideInsets[(int)Map.Neighbors.FrontRightIdx] = Mathf.Clamp(EditorGUILayout.FloatField("-Y", sideInsets[(int)Map.Neighbors.FrontRightIdx ]), 0, 0.5f);
+			sideInsets[(int)Map.Neighbors.BackLeftIdx  ] = Mathf.Clamp(EditorGUILayout.FloatField("+Y", sideInsets[(int)Map.Neighbors.BackLeftIdx   ]), 0, 0.5f);
+			EditorGUILayout.EndHorizontal();
+			EditorGUILayout.BeginHorizontal();
+			sideInsets[(int)Map.Neighbors.BottomIdx    ] = Mathf.Clamp(EditorGUILayout.FloatField("-Z", sideInsets[(int)Map.Neighbors.BottomIdx     ]), 0, 0.5f);
+			sideInsets[(int)Map.Neighbors.TopIdx       ] = Mathf.Clamp(EditorGUILayout.FloatField("+Z", sideInsets[(int)Map.Neighbors.TopIdx        ]), 0, 0.5f);
+			EditorGUILayout.EndHorizontal();
+			GUILayout.Label("Corner Insets (0-0.5) (not yet implemented)");
+			EditorGUILayout.BeginHorizontal();
+			cornerInsets[(int)Map.Corners.Front] = Mathf.Clamp(EditorGUILayout.FloatField(" 0" , cornerInsets[(int)Map.Corners.Front]), 0, 0.5f);
+			cornerInsets[(int)Map.Corners.Right] = Mathf.Clamp(EditorGUILayout.FloatField("+X" , cornerInsets[(int)Map.Corners.Right]), 0, 0.5f);
+			EditorGUILayout.EndHorizontal();
+			EditorGUILayout.BeginHorizontal();
+			cornerInsets[(int)Map.Corners.Left ] = Mathf.Clamp(EditorGUILayout.FloatField("+Y" , cornerInsets[(int)Map.Corners.Left ]), 0, 0.5f);
+			cornerInsets[(int)Map.Corners.Back ] = Mathf.Clamp(EditorGUILayout.FloatField("+XY", cornerInsets[(int)Map.Corners.Back ]), 0, 0.5f);
+			EditorGUILayout.EndHorizontal();
+		} else if(editMode == EditMode.Paint) {
 			EditorGUILayout.Separator();
 			specScrollPos = EditorGUILayout.BeginScrollView(specScrollPos, true, false, GUILayout.Height(80));
 			EditorGUILayout.BeginHorizontal(GUILayout.Height(64));
@@ -252,14 +279,57 @@ public class MapEditor : Editor {
 		}
 	}
 	
-	void AddIsoTileAt(int idx) {
+	void BaseStampOffsetsAt(int idx) {
+		Map m = (Map)target;	
+		int ny = idx/(int)m.size.x;
+		int nx = idx-(ny*(int)m.size.x);
+		/*		int nz = tiles[idx].z;*/
+		int nz = editZ;
+		m.InsetSidesOfTile(nx, ny, nz, sideInsets[(int)Map.Neighbors.FrontRightIdx], Map.Neighbors.FrontRight); 
+		m.InsetSidesOfTile(nx, ny, nz, sideInsets[(int)Map.Neighbors.FrontLeftIdx ], Map.Neighbors.FrontLeft ); 
+		m.InsetSidesOfTile(nx, ny, nz, sideInsets[(int)Map.Neighbors.BackRightIdx ], Map.Neighbors.BackRight ); 
+		m.InsetSidesOfTile(nx, ny, nz, sideInsets[(int)Map.Neighbors.BackLeftIdx  ], Map.Neighbors.BackLeft  ); 
+		m.InsetSidesOfTile(nx, ny, nz, sideInsets[(int)Map.Neighbors.BottomIdx    ], Map.Neighbors.Bottom    ); 
+		m.InsetSidesOfTile(nx, ny, nz, sideInsets[(int)Map.Neighbors.TopIdx       ], Map.Neighbors.Top       ); 
+
+		m.InsetCornerOfTile(nx, ny, nz, cornerInsets[(int)Map.Corners.Left ], Map.Corners.Left ); 
+		m.InsetCornerOfTile(nx, ny, nz, cornerInsets[(int)Map.Corners.Front], Map.Corners.Front); 
+		m.InsetCornerOfTile(nx, ny, nz, cornerInsets[(int)Map.Corners.Right], Map.Corners.Right); 
+		m.InsetCornerOfTile(nx, ny, nz, cornerInsets[(int)Map.Corners.Back ], Map.Corners.Back ); 
+	}
+	
+	void StampOffsetsAt(int idx) {
+		RegisterUndo("Inset Tile");
+		BaseStampOffsetsAt(idx);
+		EditorUtility.SetDirty(target);
+	}
+	
+	void RemoveOffsetsAt(int idx) {
+		Map m = (Map)target;	
+		int ny = idx/(int)m.size.x;
+		int nx = idx-(ny*(int)m.size.x);
+		/*		int nz = tiles[idx].z;*/
+		int nz = editZ;
+		RegisterUndo("Clear Insets");
+		m.InsetSidesOfTile(nx, ny, nz, 0, Map.Neighbors.All); 
+		m.InsetCornerOfTile(nx, ny, nz, 0, Map.Corners.Left ); 
+		m.InsetCornerOfTile(nx, ny, nz, 0, Map.Corners.Front); 
+		m.InsetCornerOfTile(nx, ny, nz, 0, Map.Corners.Right); 
+		m.InsetCornerOfTile(nx, ny, nz, 0, Map.Corners.Back ); 
+		EditorUtility.SetDirty(target);
+	}
+	
+	void AddOrStampIsoTileAt(int idx) {
 		Map m = (Map)target;	
 		int ny = idx/(int)m.size.x;
 		int nx = idx-(ny*(int)m.size.x);
 /*		int nz = tiles[idx].z;*/
 		int nz = editZ;
 		RegisterUndo("Add Tile");
-		m.AddIsoTileAt(nx, ny, nz);
+		if(!m.HasTileAt(nx,ny,nz)) {
+			m.AddIsoTileAt(nx, ny, nz);
+		}
+		BaseStampOffsetsAt(idx);
 		EditorUtility.SetDirty(target);
 	}
 	
@@ -424,9 +494,7 @@ public class MapEditor : Editor {
 				TileBounds closest = tiles[closestIdx];
 				DrawWireBounds(closest.center, closest.size, Color.green);
 			}
-		} else if(editMode == EditMode.Reshape) {
-			
-		} else if(editMode == EditMode.Paint) {
+		} else if(editMode == EditMode.Reshape || editMode == EditMode.Paint) {
 			int neededBoxes = (int)(sz.x*sz.y);
 			if(dimsChanged || 
 				 editModeChanged ||
@@ -462,7 +530,7 @@ public class MapEditor : Editor {
 			draggingInMap = false;
 		}
 		if(e.type == EventType.mouseDown || (e.type == EventType.mouseDrag && draggingInMap)) {
-			if(editMode == EditMode.AddRemove) {
+			if(editMode == EditMode.AddRemove || editMode == EditMode.Reshape) {
 				if(closestIdx != -1) {
 					if(e.alt && e.shift) {
 						AdjustIsoHeightAt(closestIdx, collidedFace, collisionPoint, -1);
@@ -470,17 +538,25 @@ public class MapEditor : Editor {
 					} else if(e.shift) {
 						AdjustIsoHeightAt(closestIdx, collidedFace, collisionPoint, 1);
 						draggingInMap = false;
-					} else if(e.alt) {
-						RemoveIsoTileAt(closestIdx);
-						draggingInMap = true;
-					} else {
-						AddIsoTileAt(closestIdx);
-						draggingInMap = true;
+					} else if(editMode == EditMode.AddRemove) {
+						if(e.alt) {
+							RemoveIsoTileAt(closestIdx);
+							draggingInMap = true;
+						} else {
+							AddOrStampIsoTileAt(closestIdx);
+							draggingInMap = true;
+						}
+					} else if(editMode == EditMode.Reshape) {
+						if(e.alt) {
+							RemoveOffsetsAt(closestIdx);
+							draggingInMap = true;
+						} else {
+							StampOffsetsAt(closestIdx);
+							draggingInMap = true;
+						}
 					}
 					e.Use();
 				}
-			} else if(editMode == EditMode.Reshape) {
-					
 			} else if(editMode == EditMode.Paint) {
 				if(collidedFace != Map.Neighbors.None) {
 					SetTileSpecAt(closestIdx, collidedFace);

@@ -45,20 +45,6 @@
   </ItemGroup>
   <ItemGroup>
      <Compile Include="Assets\Scripts\Map.cs" />
-     <None Include="Assets\Path\License.txt" />
-     <None Include="Assets\Standard Assets\Skyboxes\ skybox info.txt" />
- <Reference Include="Library\ScriptAssemblies\Assembly-UnityScript-firstpass">
- <HintPath>Library\ScriptAssemblies\Assembly-UnityScript-firstpass.dll</HintPath>
- </Reference>
- <Reference Include="Assets\Path\Path.Runtime">
- <HintPath>Assets\Path\Path.Runtime.dll</HintPath>
- </Reference>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="Assembly-CSharp-firstpass-vs.csproj">
-      <Project>{7EA3EAD6-2A6D-4751-18FD-24EBE2559546}</Project>
-      <Name>Assembly-CSharp-firstpass-vs</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

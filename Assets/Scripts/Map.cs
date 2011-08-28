@@ -15,8 +15,20 @@ public class MapTile {
 	//indexed in same order as Map.Corners: l, f, r, b
 	public int[] heights = {1,1,1,1};
 	public int[] baselines = {0,0,0,0};
+	//these should range from 0 to 0.5. They can be used for things like corners of walls.
+	public float[] cornerInsets = {0,0,0,0};
 	//indexed in same order as Map.Neighbors: fl, fr, br, bl, b, t
 	public int[] tileSpecs = {-1,-1,-1,-1,-1,-1};
+	//these should range from 0 to 0.5. They can be used for walls or thin bridges.
+	public float[] sideInsets = {0,0,0,0,0,0};
+	
+	/*
+	More about insets:
+	 Side insets and corner insets are combined at mesh generation time.
+	 Side insets shift a pair of corners inwards.
+	 Corner insets shift an individual corner inwards, generating more triangles.
+	*/
+	
 	//unity creates empty instances of these guys in place of nulls, so we need this hack
 	public bool serializeHackUsable=false;
 	public MapTile(int z) {
@@ -24,6 +36,8 @@ public class MapTile {
 		this.tileSpecs = new int[]{-1, -1, -1, -1, -1, -1};
 		this.heights = new int[]{1,1,1,1};
 		this.baselines = new int[]{0,0,0,0};
+		this.cornerInsets = new float[]{0,0,0,0};
+		this.sideInsets = new float[]{0,0,0,0,0,0};
 	}
 	public void AdjustTileSpecsAfterRemoving(int i) {
 		for(int ti = 0; ti < tileSpecs.Length; ti++) {
@@ -165,14 +179,67 @@ public class MapTile {
 			ht -= hts;
 		}
 	}
+	public bool noInsets {
+		get { 
+			for(int i = 0; i < cornerInsets.Length; i++) {
+				if(cornerInsets[i] != 0) { return false; }
+			}
+			for(int i = 0; i < sideInsets.Length; i++) {
+				if(sideInsets[i] != 0) { return false; }
+			}
+			return true;
+		}
+	}
+	
+	public void InsetCorner(float inset, Map.Corners corner) {
+		if(cornerInsets == null || cornerInsets.Length == 0) {
+			cornerInsets = new float[]{0,0,0,0};
+		}
+		if(corner == Map.Corners.Left ) {
+			cornerInsets[(int)Map.Corners.Left ] = inset;
+		}
+		if(corner == Map.Corners.Front) {
+			cornerInsets[(int)Map.Corners.Front] = inset;
+		}
+		if(corner == Map.Corners.Right) {
+			cornerInsets[(int)Map.Corners.Right] = inset;
+		}
+		if(corner == Map.Corners.Back ) {
+			cornerInsets[(int)Map.Corners.Back ] = inset;
+		}
+	}
+	
+	public void InsetSides(float inset, Map.Neighbors mask) {
+		if(sideInsets == null || sideInsets.Length == 0) {
+			sideInsets = new float[]{0,0,0,0,0,0};
+		}
+		if((mask & Map.Neighbors.FrontLeft) != 0) {
+			sideInsets[0] = inset;
+		}
+		if((mask & Map.Neighbors.FrontRight) != 0) {
+			sideInsets[1] = inset;
+		}
+		if((mask & Map.Neighbors.BackRight) != 0) {
+			sideInsets[2] = inset;
+		}
+		if((mask & Map.Neighbors.BackLeft) != 0) {
+			sideInsets[3] = inset;
+		}
+		if((mask & Map.Neighbors.Bottom) != 0) {
+			sideInsets[4] = inset;
+		}
+		if((mask & Map.Neighbors.Top) != 0) {
+			sideInsets[5] = inset;
+		}
+	}
 	public bool IsAboveZ(int zed) {
 		return this.z > zed;
 	}
 	public int maxHeight {
 		get { return Math.Max(heights[(int)Map.Corners.Left], 
-														 Math.Max(heights[(int)Map.Corners.Front], 
-															        Math.Max(heights[(int)Map.Corners.Right], 
-																               heights[(int)Map.Corners.Left]))); }
+												  Math.Max(heights[(int)Map.Corners.Front], 
+															     Math.Max(heights[(int)Map.Corners.Right], 
+																            heights[(int)Map.Corners.Left]))); }
 	}
 	public int maxZ {
 		get { return z+maxHeight; }
@@ -187,12 +254,19 @@ public class MapTile {
 public class Map : MonoBehaviour {
 //  [FlagsAttribute] 
 	public enum Neighbors {
-		FrontLeft =1<<0, //-x 1
-		FrontRight=1<<1, //-y 2
-		BackRight =1<<2, //+x 4
-		BackLeft  =1<<3, //+y 8
-		Bottom    =1<<4, //-z 16
-		Top       =1<<5, //+z 32
+		FrontLeftIdx =0,
+		FrontRightIdx=1,
+		BackRightIdx =2,
+		BackLeftIdx  =3,
+		BottomIdx    =4,
+		TopIdx       =5,
+		
+		FrontLeft =1<<3, //-x
+		FrontRight=1<<4, //-y
+		BackRight =1<<5, //+x
+		BackLeft  =1<<6, //+y
+		Bottom    =1<<7, //-z
+		Top       =1<<8, //+z
 		
 		Sides     =FrontLeft|FrontRight|BackRight|BackLeft,
 		All       =Sides|Bottom|Top,
@@ -214,30 +288,32 @@ public class Map : MonoBehaviour {
 		//look above
 		//look below
 		//FIXME: for tiles of x and y dims > 1
+		int zMin=z-1, zMax=z+1;
+		MapTile t = TileAt(x,y,z);
+		if(t != null) { 
+			zMin = t.z-1;
+			zMax = t.z+t.maxHeight;
+		}
 		Neighbors mask = Neighbors.None;
-		if(x > 0 && x <= _size.x && HasTileAt(x-1, y, z)) {
-			mask = mask | Neighbors.FrontLeft;
-		}
-		if(y > 0 && y <= _size.y && HasTileAt(x, y-1, z)) {
-			mask = mask | Neighbors.FrontRight;
-		}
-		if(x >= -1 && x < _size.x-1 && HasTileAt(x+1, y, z)) {
-			mask = mask | Neighbors.BackRight;
-		}
-		if(y >= -1 && y < _size.y-1 && HasTileAt(x, y+1, z)) {
-			mask = mask | Neighbors.BackLeft;
+		for(int tz = zMin+1; tz < zMax; tz++) {
+			if(x > 0 && x <= _size.x && HasTileAt(x-1, y, tz)) {
+				mask = mask | Neighbors.FrontLeft;
+			}
+			if(y > 0 && y <= _size.y && HasTileAt(x, y-1, tz)) {
+				mask = mask | Neighbors.FrontRight;
+			}
+			if(x >= -1 && x < _size.x-1 && HasTileAt(x+1, y, tz)) {
+				mask = mask | Neighbors.BackRight;
+			}
+			if(y >= -1 && y < _size.y-1 && HasTileAt(x, y+1, tz)) {
+				mask = mask | Neighbors.BackLeft;
+			}
 		}
 		if(x >= 0 && x < _size.x && y >= 0 && y < _size.y) {
-			int zMin=z-1, zMax=z+1;
-			MapTile t = TileAt(x,y,z);
-			if(t != null) { 
-				zMin = t.z-1;
-				zMax = t.z+t.maxHeight;
-			}
-			if(z >= -1 && HasTileAt(x, y, zMax)) {
+			if(zMax >= 0 && HasTileAt(x, y, zMax)) {
 				mask = mask | Neighbors.Top;
 			}
-			if(z > 0 && HasTileAt(x, y, zMin)) {
+			if(zMin >= 0 && HasTileAt(x, y, zMin)) {
 				mask = mask | Neighbors.Bottom;
 			}
 		}
@@ -536,6 +612,34 @@ public class Map : MonoBehaviour {
 		}
 	}
 	
+	bool NoInsetNeighbors(int x, int y, MapTile t) {
+		int zMin=t.z-1, zMax=t.z+t.maxHeight;
+		MapTile neighbor=null;
+		for(int tz = zMin+1; tz < zMax; tz++) {
+			if(x > 0 && x <= _size.x && ((neighbor = TileAt(x-1, y, tz)) != null) && !neighbor.noInsets) {
+				return false;
+			}
+			if(y > 0 && y <= _size.y && ((neighbor = TileAt(x, y-1, tz)) != null) && !neighbor.noInsets) {
+				return false;
+			}
+			if(x >= -1 && x < _size.x-1 &&  ((neighbor = TileAt(x+1, y, tz)) != null) && !neighbor.noInsets) {
+				return false;
+			}
+			if(y >= -1 && y < _size.y-1 &&  ((neighbor = TileAt(x, y+1, tz)) != null) && !neighbor.noInsets) {
+				return false;
+			}
+		}
+		if(x >= 0 && x < _size.x && y >= 0 && y < _size.y) {
+			if(zMax >= 0 && ((neighbor = TileAt(x, y, zMax)) != null) && !neighbor.noInsets) {
+				return false;
+			}
+			if(zMin >= 0 && ((neighbor = TileAt(x, y, zMin)) != null) && !neighbor.noInsets) {
+				return false;
+			}
+		}
+		return true;
+	}
+	
 	void RemakeMesh() {
 		if(stacks == null) { return; }
 		
@@ -547,10 +651,10 @@ public class Map : MonoBehaviour {
 		if(mr == null) {
 			mr = gameObject.AddComponent<MeshRenderer>();
 		}
-		if(mr.sharedMaterials.Length == 0) {
+		if(mr.sharedMaterials.Length == 0 || mr.sharedMaterials[0] == null) {
 			mr.sharedMaterials = new Material[]{new Material(Shader.Find("Transparent/Cutout/Diffuse"))};
 		}
-		if(mr.sharedMaterials[0].mainTexture == null) {
+		if(mr.sharedMaterials[0].mainTexture != mainAtlas) {
 			mr.sharedMaterials[0].mainTexture = mainAtlas;	
 		}
 		Mesh mesh = mf.sharedMesh != null ? mf.sharedMesh : new Mesh();
@@ -575,31 +679,28 @@ public class Map : MonoBehaviour {
 			int x = i-(y*(int)_size.x);
 			while(!MapTileIsNull(t)) {
 				int z = t.z;
-				bool avoidNeighbors = t.maxHeight == 1;
-				Vector3 bl = new Vector3((x+0)*_sideLength-_sideLength/2, 
-				                         (z+t.baselines[(int)Corners.Left]-1)*height,
-				                         (y+1)*_sideLength-_sideLength/2);
-				Vector3 bf = new Vector3((x+0)*_sideLength-_sideLength/2,
-				                         (z+t.baselines[(int)Corners.Front]-1)*height, 
-				                         (y+0)*_sideLength-_sideLength/2);
-				Vector3 bb = new Vector3((x+1)*_sideLength-_sideLength/2,
-				                         (z+t.baselines[(int)Corners.Back]-1)*height, 
-				                         (y+1)*_sideLength-_sideLength/2);
-				Vector3 br = new Vector3((x+1)*_sideLength-_sideLength/2,
-				                         (z+t.baselines[(int)Corners.Right]-1)*height, 
-				                         (y+0)*_sideLength-_sideLength/2);
-				Vector3 tl = new Vector3((x+0)*_sideLength-_sideLength/2,
-				                         (z+t.heights[(int)Corners.Left]-1)*height, 
-				                         (y+1)*_sideLength-_sideLength/2);
-				Vector3 tf = new Vector3((x+0)*_sideLength-_sideLength/2,
-				                         (z+t.heights[(int)Corners.Front]-1)*height, 
-				                         (y+0)*_sideLength-_sideLength/2);
-				Vector3 tb = new Vector3((x+1)*_sideLength-_sideLength/2,
-				                         (z+t.heights[(int)Corners.Back]-1)*height, 
-				                         (y+1)*_sideLength-_sideLength/2);
-				Vector3 tr = new Vector3((x+1)*_sideLength-_sideLength/2,
-				                         (z+t.heights[(int)Corners.Right]-1)*height, 
-				                         (y+0)*_sideLength-_sideLength/2);
+				bool avoidNeighbors = t.maxHeight == 1 && t.noInsets && NoInsetNeighbors(x, y, t);
+				//TODO: include corner insets and their extra geometry
+				//TODO: stairs
+				float lx = (x+0+t.sideInsets[(int)Neighbors.FrontLeftIdx ])*_sideLength-_sideLength/2;
+				float fx = (x+0+t.sideInsets[(int)Neighbors.FrontLeftIdx ])*_sideLength-_sideLength/2;
+				float rx = (x+1-t.sideInsets[(int)Neighbors.BackRightIdx])*_sideLength-_sideLength/2;
+				float bx = (x+1-t.sideInsets[(int)Neighbors.BackRightIdx])*_sideLength-_sideLength/2;
+				float fy = (y+0+t.sideInsets[(int)Neighbors.FrontRightIdx])*_sideLength-_sideLength/2;
+				float ry = (y+0+t.sideInsets[(int)Neighbors.FrontRightIdx])*_sideLength-_sideLength/2;
+				float ly = (y+1-t.sideInsets[(int)Neighbors.BackLeftIdx ])*_sideLength-_sideLength/2;
+				float by = (y+1-t.sideInsets[(int)Neighbors.BackLeftIdx ])*_sideLength-_sideLength/2;
+				
+				float zMin = (z+0+t.sideInsets[(int)Neighbors.BottomIdx]+t.baselines[(int)Corners.Left]-1)*height;
+				float zMax = (z-t.sideInsets[(int)Neighbors.TopIdx]+t.heights[(int)Corners.Left]-1)*height;
+				Vector3 bl = new Vector3(lx, zMin, ly);
+				Vector3 bf = new Vector3(fx, zMin, fy);
+				Vector3 bb = new Vector3(bx, zMin, by);
+				Vector3 br = new Vector3(rx, zMin, ry);
+				Vector3 tl = new Vector3(lx, zMax, ly);
+				Vector3 tf = new Vector3(fx, zMax, fy);
+				Vector3 tb = new Vector3(bx, zMax, by);
+				Vector3 tr = new Vector3(rx, zMax, ry);
 				Neighbors mask = NeighborsOfTile(x, y, z);
 				if((mask & Neighbors.Top) == 0 || !avoidNeighbors) {
 					vertices[vertIdx+0] = tf; //5
@@ -778,6 +879,22 @@ public class Map : MonoBehaviour {
 		if(t == null) { return; }
 		t.AdjustHeightOnSides(deltaH, sides, top);
 		RemakeMesh();
+	}
+	
+	public void InsetCornerOfTile(int x, int y, int z, float inset, Map.Corners corner) {
+		MapTile t = TileAt(x,y,z);
+		if(t != null) { 
+			t.InsetCorner(inset, corner); 
+			RemakeMesh();
+		}
+	}
+	
+	public void InsetSidesOfTile(int x, int y, int z, float inset, Map.Neighbors mask) {
+		MapTile t = TileAt(x,y,z);
+		if(t != null) { 
+			t.InsetSides(inset, mask); 
+			RemakeMesh();
+		}
 	}
 	
 	public Vector3 TransformPointLocal(Vector3 tileCoord) {

@@ -47,11 +47,7 @@
      <Compile Include="Assets\Standard Assets\Scripts\General Scripts\ActivateTrigger.cs" />
      <Compile Include="Assets\Standard Assets\Scripts\Utility Scripts\CombineChildren.cs" />
      <Compile Include="Assets\Standard Assets\Scripts\Utility Scripts\MeshCombineUtility.cs" />
-     <None Include="Assets\Path\License.txt" />
      <None Include="Assets\Standard Assets\Skyboxes\ skybox info.txt" />
- <Reference Include="Assets\Path\Path.Runtime">
- <HintPath>Assets\Path\Path.Runtime.dll</HintPath>
- </Reference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

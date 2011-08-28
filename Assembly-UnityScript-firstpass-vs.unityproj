@@ -48,11 +48,7 @@
      <Compile Include="Assets\Standard Assets\Scripts\Camera Scripts\SmoothFollow.js" />
      <Compile Include="Assets\Standard Assets\Scripts\Camera Scripts\SmoothLookAt.js" />
      <Compile Include="Assets\Standard Assets\Scripts\General Scripts\DragRigidbody.js" />
-     <None Include="Assets\Path\License.txt" />
      <None Include="Assets\Standard Assets\Skyboxes\ skybox info.txt" />
- <Reference Include="Assets\Path\Path.Runtime">
- <HintPath>Assets\Path\Path.Runtime.dll</HintPath>
- </Reference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
