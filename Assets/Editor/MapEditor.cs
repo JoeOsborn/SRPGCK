@@ -81,16 +81,18 @@ public class MapEditor : Editor {
 					RegisterUndo("Change Tile Spec");
 					m.UpdateTileSpecAt(specSelectedSpec, nextTex);
 				}
-				string path = AssetDatabase.GetAssetPath(nextTex); 
-        TextureImporter textureImporter = AssetImporter.GetAtPath(path) as TextureImporter; 
-				textureImporter.textureType = TextureImporterType.Advanced;
-				textureImporter.anisoLevel = 1;
-				textureImporter.filterMode = FilterMode.Bilinear;
-				textureImporter.maxTextureSize = 1024;
-				textureImporter.textureFormat = TextureImporterFormat.AutomaticCompressed;
-        textureImporter.mipmapEnabled = false;    
-        textureImporter.isReadable = true;
-				AssetDatabase.ImportAsset(path);
+			  if(nextTex != null) {
+					string path = AssetDatabase.GetAssetPath(nextTex); 
+	        TextureImporter textureImporter = AssetImporter.GetAtPath(path) as TextureImporter; 
+					textureImporter.textureType = TextureImporterType.Advanced;
+					textureImporter.anisoLevel = 1;
+					textureImporter.filterMode = FilterMode.Bilinear;
+					textureImporter.maxTextureSize = 1024;
+					textureImporter.textureFormat = TextureImporterFormat.AutomaticCompressed;
+	        textureImporter.mipmapEnabled = false;    
+	        textureImporter.isReadable = true;
+					AssetDatabase.ImportAsset(path);
+				}
 			}
 		}	
 	}
@@ -148,27 +150,27 @@ public class MapEditor : Editor {
 		if(editMode == EditMode.AddRemove || editMode == EditMode.Reshape) {
 			//show inset/offset settings for current stamp
 			makeInvisibleTiles = EditorGUILayout.Toggle("Invisible", makeInvisibleTiles);
-			GUILayout.Label("Side Insets (0-0.5)");
+			GUILayout.Label("Side Insets");
 			EditorGUILayout.BeginHorizontal();
-			sideInsets[(int)Map.Neighbors.FrontLeftIdx ] = Mathf.Clamp(EditorGUILayout.FloatField("-X", sideInsets[(int)Map.Neighbors.FrontLeftIdx  ]), 0, 0.5f);
-			sideInsets[(int)Map.Neighbors.BackRightIdx ] = Mathf.Clamp(EditorGUILayout.FloatField("+X", sideInsets[(int)Map.Neighbors.BackRightIdx  ]), 0, 0.5f);
+			sideInsets[(int)Map.Neighbors.FrontLeftIdx ] = Mathf.Clamp(EditorGUILayout.FloatField("-X", sideInsets[(int)Map.Neighbors.FrontLeftIdx  ]), 0, 1.0f-sideInsets[(int)Map.Neighbors.BackRightIdx ]);
+			sideInsets[(int)Map.Neighbors.BackRightIdx ] = Mathf.Clamp(EditorGUILayout.FloatField("+X", sideInsets[(int)Map.Neighbors.BackRightIdx  ]), 0, 1.0f-sideInsets[(int)Map.Neighbors.FrontLeftIdx ]);
 			EditorGUILayout.EndHorizontal();
 			EditorGUILayout.BeginHorizontal();
-			sideInsets[(int)Map.Neighbors.FrontRightIdx] = Mathf.Clamp(EditorGUILayout.FloatField("-Y", sideInsets[(int)Map.Neighbors.FrontRightIdx ]), 0, 0.5f);
-			sideInsets[(int)Map.Neighbors.BackLeftIdx  ] = Mathf.Clamp(EditorGUILayout.FloatField("+Y", sideInsets[(int)Map.Neighbors.BackLeftIdx   ]), 0, 0.5f);
+			sideInsets[(int)Map.Neighbors.FrontRightIdx] = Mathf.Clamp(EditorGUILayout.FloatField("-Y", sideInsets[(int)Map.Neighbors.FrontRightIdx ]), 0, 1.0f-sideInsets[(int)Map.Neighbors.BackLeftIdx  ]);
+			sideInsets[(int)Map.Neighbors.BackLeftIdx  ] = Mathf.Clamp(EditorGUILayout.FloatField("+Y", sideInsets[(int)Map.Neighbors.BackLeftIdx   ]), 0, 1.0f-sideInsets[(int)Map.Neighbors.FrontRightIdx]);
 			EditorGUILayout.EndHorizontal();
 			EditorGUILayout.BeginHorizontal();
-			sideInsets[(int)Map.Neighbors.BottomIdx    ] = Mathf.Clamp(EditorGUILayout.FloatField("-Z", sideInsets[(int)Map.Neighbors.BottomIdx     ]), 0, 0.5f);
-			sideInsets[(int)Map.Neighbors.TopIdx       ] = Mathf.Clamp(EditorGUILayout.FloatField("+Z", sideInsets[(int)Map.Neighbors.TopIdx        ]), 0, 0.5f);
+			sideInsets[(int)Map.Neighbors.BottomIdx    ] = Mathf.Clamp(EditorGUILayout.FloatField("-Z", sideInsets[(int)Map.Neighbors.BottomIdx     ]), 0, 1.0f-sideInsets[(int)Map.Neighbors.TopIdx       ]);
+			sideInsets[(int)Map.Neighbors.TopIdx       ] = Mathf.Clamp(EditorGUILayout.FloatField("+Z", sideInsets[(int)Map.Neighbors.TopIdx        ]), 0, 1.0f-sideInsets[(int)Map.Neighbors.BottomIdx    ]);
 			EditorGUILayout.EndHorizontal();
-			GUILayout.Label("Corner Insets (0-0.5) (not yet implemented)");
+			GUILayout.Label("Corner Insets (not yet implemented)");
 			EditorGUILayout.BeginHorizontal();
-			cornerInsets[(int)Map.Corners.Front] = Mathf.Clamp(EditorGUILayout.FloatField(" 0" , cornerInsets[(int)Map.Corners.Front]), 0, 0.5f);
-			cornerInsets[(int)Map.Corners.Right] = Mathf.Clamp(EditorGUILayout.FloatField("+X" , cornerInsets[(int)Map.Corners.Right]), 0, 0.5f);
+			cornerInsets[(int)Map.Corners.Front] = Mathf.Clamp(EditorGUILayout.FloatField(" 0" , cornerInsets[(int)Map.Corners.Front]), 0, 1.0f);
+			cornerInsets[(int)Map.Corners.Right] = Mathf.Clamp(EditorGUILayout.FloatField("+X" , cornerInsets[(int)Map.Corners.Right]), 0, 1.0f);
 			EditorGUILayout.EndHorizontal();
 			EditorGUILayout.BeginHorizontal();
-			cornerInsets[(int)Map.Corners.Left ] = Mathf.Clamp(EditorGUILayout.FloatField("+Y" , cornerInsets[(int)Map.Corners.Left ]), 0, 0.5f);
-			cornerInsets[(int)Map.Corners.Back ] = Mathf.Clamp(EditorGUILayout.FloatField("+XY", cornerInsets[(int)Map.Corners.Back ]), 0, 0.5f);
+			cornerInsets[(int)Map.Corners.Left ] = Mathf.Clamp(EditorGUILayout.FloatField("+Y" , cornerInsets[(int)Map.Corners.Left ]), 0, 1.0f);
+			cornerInsets[(int)Map.Corners.Back ] = Mathf.Clamp(EditorGUILayout.FloatField("+XY", cornerInsets[(int)Map.Corners.Back ]), 0, 1.0f);
 			EditorGUILayout.EndHorizontal();
 		} else if(editMode == EditMode.Paint) {
 			EditorGUILayout.Separator();

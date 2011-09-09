@@ -44,7 +44,12 @@
 	</Reference>
   </ItemGroup>
   <ItemGroup>
+     <Compile Include="Assets\Scripts\Character.cs" />
      <Compile Include="Assets\Scripts\Map.cs" />
+     <Compile Include="Assets\Scripts\MapTile.cs" />
+     <Compile Include="Assets\Scripts\Overlay.cs" />
+     <Compile Include="Assets\Scripts\Prop.cs" />
+     <None Include="Assets\Shaders\OverlayClip.shader" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

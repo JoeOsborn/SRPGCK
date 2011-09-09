@@ -46,6 +46,7 @@
   <ItemGroup>
      <Compile Include="Assets\Editor\EditorGUIExt.cs" />
      <Compile Include="Assets\Editor\MapEditor.cs" />
+     <None Include="Assets\Shaders\OverlayClip.shader" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="Assembly-CSharp-vs.csproj">
