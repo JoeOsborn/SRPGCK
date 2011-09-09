@@ -415,6 +415,10 @@ public class Map : MonoBehaviour {
 		if(mr == null) {
 			mr = gameObject.AddComponent<MeshRenderer>();
 		}
+		MeshCollider mc = GetComponent<MeshCollider>();
+		if(mc == null) {
+			mc = gameObject.AddComponent<MeshCollider>();
+		}
 		if(mr.sharedMaterials.Length < 2 || mr.sharedMaterials[0] == null || mr.sharedMaterials[1] == null) {
 			mr.sharedMaterials = new Material[]{
 				new Material(Shader.Find("Transparent/Cutout/Diffuse")),
@@ -604,6 +608,7 @@ public class Map : MonoBehaviour {
 		mesh.RecalculateNormals();
 		mesh.Optimize();
 		mf.sharedMesh = mesh;
+		mc.convex = false;
 	}
 	
 	void ResetStacks(Vector2 oldSize) {
@@ -701,19 +706,21 @@ public class Map : MonoBehaviour {
 	}
 	
 	public Vector3 TransformPointLocal(Vector3 tileCoord) {
-		return new Vector3(tileCoord.x*sideLength-sideLength/2, tileCoord.z*tileHeight-tileHeight/2, tileCoord.y*sideLength-sideLength/2);
+		Debug.Log("Tile: "+tileCoord+" is local "+new Vector3(tileCoord.x*sideLength-sideLength/2, tileCoord.z*tileHeight, tileCoord.y*sideLength-sideLength/2));
+		return new Vector3(tileCoord.x*sideLength-sideLength/2, tileCoord.z*tileHeight, tileCoord.y*sideLength-sideLength/2);
 	}
 	public Vector3 InverseTransformPointLocal(Vector3 localCoord) {
-		return new Vector3((localCoord.x+sideLength/2)/sideLength, (localCoord.z+sideLength/2)/sideLength, localCoord.y);
+		Debug.Log("Local: "+localCoord+" is "+new Vector3((localCoord.x+sideLength/2)/sideLength, (localCoord.z+sideLength/2)/sideLength, localCoord.y/tileHeight));
+		return new Vector3((localCoord.x+sideLength/2)/sideLength, (localCoord.z+sideLength/2)/sideLength, localCoord.y/tileHeight);
 	}
 	public Vector3 TransformPointWorld(Vector3 tileCoord) {
 		return this.transform.TransformPoint(this.TransformPointLocal(tileCoord));
 	}
-	public Vector3 InverseTransformPointWorld(Vector3 localCoord) {
-		return this.InverseTransformPointLocal(this.transform.InverseTransformPoint(localCoord));
+	public Vector3 InverseTransformPointWorld(Vector3 worldCoord) {
+		return this.InverseTransformPointLocal(this.transform.InverseTransformPoint(worldCoord));
 	}
 	
-	public void PresentOverlay(string category, int id, Color color, Vector4[] positions) {
+	public Overlay PresentOverlay(string category, int id, Color color, Vector4[] positions) {
 		if(overlays == null) { overlays = new Dictionary<string, Dictionary<int, Overlay>>(); }
 		if(!overlays.ContainsKey(category)) {
 			overlays[category] = new Dictionary<int, Overlay>();
@@ -726,6 +733,7 @@ public class Map : MonoBehaviour {
 		ov.category = category;
 		ov.identifier = id;
 		overlays[category][id] = ov;
+		return ov;
 	}
 	public void RemoveOverlay(string category, int id) {
 		if(overlays == null) { return; }

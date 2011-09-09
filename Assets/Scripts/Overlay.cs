@@ -92,6 +92,37 @@ public class Overlay : MonoBehaviour {
 			MeshFilter mf = this.gameObject.AddComponent<MeshFilter>();
 			mf.mesh = map.OverlayMesh;
 			mr.material = shadeMaterial;
+			MeshCollider mc = this.gameObject.AddComponent<MeshCollider>();
+			mc.convex = false;
 		}
 	}	
+	
+	public bool Raycast(Ray r, out Vector3 hitSpot) {
+		MeshCollider mc = GetComponent<MeshCollider>();
+		hitSpot = Vector3.zero;
+		if(mc == null) { return false; }
+		RaycastHit hit;
+		if(mc.Raycast(r, out hit, 1000)) {
+			//make sure the normal here is upwards
+			Debug.Log("NORM:"+hit.normal+", DOT:"+Vector3.Dot(hit.normal, Vector3.up));
+			if(Vector3.Dot(hit.normal, Vector3.up) > 0.3) {
+				hitSpot = map.InverseTransformPointWorld(new Vector3(
+					Mathf.Floor(hit.point.x), 
+					Mathf.Floor(hit.point.y), 
+					Mathf.Floor(hit.point.z)
+				));
+				foreach(Vector4 p in positions) {
+					if(p.x == Mathf.Floor(hitSpot.x) &&
+					   p.y == Mathf.Floor(hitSpot.y)) {
+						if(hitSpot.z >= p.z && hitSpot.z <= p.z+p.w) {
+							return true;
+						}
+					}
+				}
+			}
+			return false;
+		}
+		hitSpot = Vector3.zero;
+		return false;
+	}
 }
