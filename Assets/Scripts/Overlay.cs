@@ -97,6 +97,20 @@ public class Overlay : MonoBehaviour {
 		}
 	}	
 	
+	public bool ContainsPosition(Vector3 hitSpot) {
+		const float ZEpsilon = 0.0015f;
+		foreach(Vector4 p in positions) {
+			if(p.x == Mathf.Floor(hitSpot.x) &&
+			   p.y == Mathf.Floor(hitSpot.y)) {
+/*				Debug.Log("Z OK? "+hitSpot.z+" vs "+p.z+".."+(p.z+p.w));*/
+				if(hitSpot.z >= p.z-ZEpsilon && hitSpot.z <= p.z+p.w+ZEpsilon) {
+					return true;
+				}
+			}
+		}
+		return false;	
+	}
+	
 	public bool Raycast(Ray r, out Vector3 hitSpot) {
 		MeshCollider mc = GetComponent<MeshCollider>();
 		hitSpot = Vector3.zero;
@@ -104,25 +118,18 @@ public class Overlay : MonoBehaviour {
 		RaycastHit hit;
 		if(mc.Raycast(r, out hit, 1000)) {
 			//make sure the normal here is upwards
-			Debug.Log("NORM:"+hit.normal+", DOT:"+Vector3.Dot(hit.normal, Vector3.up));
+/*			Debug.Log("NORM:"+hit.normal+", DOT:"+Vector3.Dot(hit.normal, Vector3.up));*/
 			if(Vector3.Dot(hit.normal, Vector3.up) > 0.3) {
 				hitSpot = map.InverseTransformPointWorld(new Vector3(
-					Mathf.Floor(hit.point.x), 
-					Mathf.Floor(hit.point.y), 
-					Mathf.Floor(hit.point.z)
+					hit.point.x, 
+					hit.point.y, 
+					hit.point.z
 				));
-				foreach(Vector4 p in positions) {
-					if(p.x == Mathf.Floor(hitSpot.x) &&
-					   p.y == Mathf.Floor(hitSpot.y)) {
-						if(hitSpot.z >= p.z && hitSpot.z <= p.z+p.w) {
-							return true;
-						}
-					}
-				}
+				Debug.Log("HIT: "+hitSpot);
+				if(this.ContainsPosition(hitSpot)) { return true; }
 			}
 			return false;
 		}
-		hitSpot = Vector3.zero;
 		return false;
 	}
 }

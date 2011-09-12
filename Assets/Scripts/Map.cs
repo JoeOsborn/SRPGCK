@@ -85,7 +85,7 @@ public class Map : MonoBehaviour {
 	[SerializeField]
 	Rect[] tileRects;
 	
-	[SerializeField]
+	//Note: dictionaries can't be serialized
 	Dictionary<string, Dictionary<int, Overlay>> overlays;
 	
 	public int TileSpecCount {
@@ -648,8 +648,62 @@ public class Map : MonoBehaviour {
 	void Update () {
 	}
 	
+	public bool HasTileAt(int x, int y) {
+		return x >= 0 && x < size.x && y >= 0 && y < size.y && !MapTileIsNull(TileStackAt(x,y));
+	}
 	public bool HasTileAt(int x, int y, int z) {
 		return !MapTileIsNull(TileAt(x,y,z));
+	}
+
+	public int NearestZLevel(int x, int y, int z) {
+		MapTile t = TileAt(x,y,z);
+		if(!MapTileIsNull(t)) { return t.maxZ-1; }
+		t = TileStackAt(x,y);
+		if(MapTileIsNull(t)) { return z; }
+ 		float closestDistance=Mathf.Infinity;
+		MapTile closestTile = t;
+		while(!MapTileIsNull(t) && !MapTileIsNull(t.next)) {
+			float dist = Mathf.Abs(t.maxZ-z);
+			if(dist < closestDistance) {
+				closestTile = t;
+			}
+			t = t.next;
+		}
+		return closestTile.maxZ-1;
+	}
+	
+	public int NextZLevel(int x, int y, int z, bool wrap=false) {
+		MapTile t = TileAt(x,y,z);
+		if(!MapTileIsNull(t)) { 
+			if(MapTileIsNull(t.next) && wrap) { return TileStackAt(x,y).maxZ-1; } 
+			if(!MapTileIsNull(t.next)) { return t.next.maxZ-1; }
+			if(MapTileIsNull(t.next)) { return t.maxZ-1; }
+		}
+		t = TileStackAt(x,y);
+		//return the first one whose maxZ exceeds z, or the bottom of the pile if wrapping.
+		while(!MapTileIsNull(t)) {
+			if(t.maxZ-1 >= z) { return t.maxZ-1; }
+			t = t.next;
+		}
+		if(MapTileIsNull(t) && wrap) { 
+			t = TileStackAt(x,y); 
+			if(!MapTileIsNull(t)) { 
+				return t.maxZ-1; 
+			} 
+		}
+		return z;
+	}
+	
+	public int[] ZLevelsWithin(int x, int y, int z, int range) {
+		if(x<0 || y<0 || x >= size.x || y >= size.y) { return new int[0]; }
+		MapTile t = TileStackAt(x,y);
+		if(MapTileIsNull(t)) { return new int[0]; }
+		List<int> zLevels = new List<int>();
+		while(!MapTileIsNull(t)) {
+			if(Mathf.Abs(t.maxZ-1-z) <= range) { zLevels.Add(t.maxZ-1); }
+			t = t.next;
+		}
+		return zLevels.ToArray();
 	}
 	
 	public MapTile TileAt(int x, int y, int z) {
@@ -706,11 +760,11 @@ public class Map : MonoBehaviour {
 	}
 	
 	public Vector3 TransformPointLocal(Vector3 tileCoord) {
-		Debug.Log("Tile: "+tileCoord+" is local "+new Vector3(tileCoord.x*sideLength-sideLength/2, tileCoord.z*tileHeight, tileCoord.y*sideLength-sideLength/2));
+/*		Debug.Log("Tile: "+tileCoord+" is local "+new Vector3(tileCoord.x*sideLength-sideLength/2, tileCoord.z*tileHeight, tileCoord.y*sideLength-sideLength/2));*/
 		return new Vector3(tileCoord.x*sideLength-sideLength/2, tileCoord.z*tileHeight, tileCoord.y*sideLength-sideLength/2);
 	}
 	public Vector3 InverseTransformPointLocal(Vector3 localCoord) {
-		Debug.Log("Local: "+localCoord+" is "+new Vector3((localCoord.x+sideLength/2)/sideLength, (localCoord.z+sideLength/2)/sideLength, localCoord.y/tileHeight));
+/*		Debug.Log("Local: "+localCoord+" is "+new Vector3((localCoord.x+sideLength/2)/sideLength, (localCoord.z+sideLength/2)/sideLength, localCoord.y/tileHeight));*/
 		return new Vector3((localCoord.x+sideLength/2)/sideLength, (localCoord.z+sideLength/2)/sideLength, localCoord.y/tileHeight);
 	}
 	public Vector3 TransformPointWorld(Vector3 tileCoord) {
@@ -740,7 +794,7 @@ public class Map : MonoBehaviour {
 		if(!overlays.ContainsKey(category)) { return; }
 		Overlay ov = overlays[category][id];
 		if(ov != null) {
-			Debug.Log("remove overlay "+ov);
+/*			Debug.Log("remove overlay "+ov);*/
 			overlays[category].Remove(id);
 			Destroy(ov.gameObject);
 		}
@@ -782,5 +836,118 @@ public class Map : MonoBehaviour {
 	}
 	public void InvalidateOverlayMesh() {
 		overlayMesh = null;
+	}
+	
+	public Scheduler scheduler {
+		get { 
+			return GetComponentInChildren<Scheduler>();
+		}
+	}
+	
+	public Vector4[] CoalesceTiles(Vector3[] spots) {
+		Vector4[] outputs = new Vector4[spots.Length];
+		int count=0;
+		foreach(Vector3 s in spots) {
+			MapTile t = TileAt((int)s.x, (int)s.y, (int)s.z);
+			float w = t.maxHeight;
+			bool merged = false;
+			for(int i = 0; i < count; i++) {
+				Vector4 v4 = outputs[i];
+				if(v4.x == s.x && v4.y == s.y) {
+					if((v4.z+v4.w >= t.z-1 && v4.z <= t.z-1) ||
+					   (v4.z == t.z+w)) {
+						outputs[i].z = Mathf.Min(v4.z, t.z);
+						outputs[i].w = Mathf.Max(v4.z+v4.w, t.z+w)-outputs[i].z;
+						merged = true;
+						break;
+					}
+				}
+			}
+			if(!merged) {
+				outputs[count] = new Vector4(s.x, s.y, t.z, w);
+				count++;
+			}
+		}
+		Array.Resize(ref outputs, count);
+		return outputs;
+	}
+	
+	struct PathNode {
+		public Vector3 pos;
+		public Vector3 prev;
+		public int distance;
+		public PathNode(Vector3 ps, Vector3 pr, int dist) {
+			pos = ps; prev = pr; distance = dist;
+		}
+		public override bool Equals(object obj)
+    {	
+      if (obj is PathNode)
+      {
+          return this.Equals((PathNode)obj);
+      }
+      return false;
+    }
+
+    public bool Equals(PathNode p)
+    {
+      return pos == p.pos;
+    }
+
+    public override int GetHashCode()
+    {
+      return pos.GetHashCode();
+    }
+
+    public static bool operator ==(PathNode lhs, PathNode rhs)
+    {
+      return lhs.Equals(rhs);
+    }
+
+    public static bool operator !=(PathNode lhs, PathNode rhs)
+    {
+      return !(lhs.Equals(rhs));
+    }
+	};
+	
+	public Vector3[] TilesNear(Vector3 tc, int move, int jump) {
+		int x = (int)Mathf.Floor(tc.x), y = (int)Mathf.Floor(tc.y), z = (int)Mathf.Floor(tc.z);
+		Vector2[] neighbors = new Vector2[]{
+			new Vector2(-1, 0),
+			new Vector2( 1, 0),
+			new Vector2( 0,-1),
+			new Vector2( 0, 1)
+		};
+		Stack<PathNode> open = new Stack<PathNode>();
+		List<PathNode> closed = new List<PathNode>();
+		List<Vector3> points = new List<Vector3>();
+		open.Push(new PathNode(new Vector3(x,y,z), new Vector3(x,y,z), 0));
+		MapTile t = TileAt(x,y,z);
+		if(MapTileIsNull(t)) { return new Vector3[0]; }
+		while(open.Count > 0) {
+			PathNode pn = open.Pop();
+			if(!closed.Contains(pn)) {
+				closed.Add(pn);
+				points.Add(pn.pos);
+				Debug.Log("push pt "+pn.pos);
+			}
+			if(pn.distance >= move) {
+				//don't bother adding any more points, they'll be too far
+				continue;
+			}
+			for(int i = 0; i < neighbors.Length; i++) {
+				Vector2 n = neighbors[i];
+				Vector2 adj = new Vector3(pn.pos.x+n.x, pn.pos.y+n.y);
+				//push to open (if not yet there) all tiles at adj.x, adj.y whose .maxZ is within jump of adj.z.
+				Debug.Log("push adj "+adj);
+				foreach(int adjZ in ZLevelsWithin((int)adj.x, (int)adj.y, (int)pn.pos.z, jump)) {
+					Vector3 pos = new Vector3(adj.x, adj.y, adjZ);
+					PathNode newPn = new PathNode(pos, pn.pos, pn.distance+1);
+					if(!closed.Contains(newPn) && !open.Contains(newPn)) {
+						open.Push(newPn);
+					}
+				}
+			}
+		}
+		return points.ToArray();
 	}
 }

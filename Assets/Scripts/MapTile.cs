@@ -239,10 +239,13 @@ public class MapTile {
 		return this.z > zed;
 	}
 	public int maxHeight {
-		get { return Math.Max(heights[(int)Map.Corners.Left], 
-												  Math.Max(heights[(int)Map.Corners.Front], 
-															     Math.Max(heights[(int)Map.Corners.Right], 
-																            heights[(int)Map.Corners.Left]))); }
+		get { 
+			if(heights == null || heights.Length == 0) { return 1; }
+			return Math.Max(heights[(int)Map.Corners.Left], 
+											Math.Max(heights[(int)Map.Corners.Front], 
+											     	   Math.Max(heights[(int)Map.Corners.Right], 
+														            heights[(int)Map.Corners.Back]))); 
+    }
 	}
 	public int maxZ {
 		get { return z+maxHeight; }
