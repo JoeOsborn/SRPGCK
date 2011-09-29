@@ -1,5 +1,5 @@
 using UnityEngine;
-using System.Collections;
+using System.Collections.Generic;
 
 public class PickTileMoveIO : MoveIO {
 	public bool supportKeyboard = true;
@@ -30,10 +30,10 @@ public class PickTileMoveIO : MoveIO {
 		instantiatedIndicator = Instantiate(indicator) as Transform;
 		instantiatedIndicator.gameObject.active = false;
 	}
-		
+	
 	override public void Update () {
 		base.Update();
-		if(!character.isActive) { return; }
+		if(character == null || !character.isActive) { return; }
 		//self.isActive?
 		if(supportMouse && Input.GetMouseButtonDown(0)) {
 			cycleIndicatorZ = false;
@@ -50,7 +50,12 @@ public class PickTileMoveIO : MoveIO {
 			} else {
 				firstClickTime = -1;
 				if(inside) {
-					PerformMove(hitSpot);
+					Vector3 indicatorSpot = new Vector3(indicatorXY.x, indicatorXY.y, indicatorZ);
+					PathNode pn = overlay.PositionAt(indicatorSpot);
+					if(pn != null && pn.canStop) {
+						PerformMove(indicatorSpot);
+						map.scheduler.EndMovePhase(character);
+					}
 				}
 			}
 		}
@@ -71,11 +76,13 @@ public class PickTileMoveIO : MoveIO {
 		}
 		if(supportKeyboard && Input.GetButtonDown("Confirm")) {
 			Vector3 indicatorSpot = new Vector3(indicatorXY.x, indicatorXY.y, indicatorZ);
-			if(overlay.ContainsPosition(indicatorSpot)) {
+			PathNode pn = overlay.PositionAt(indicatorSpot);
+			if(pn != null && pn.canStop) {
 				PerformMove(indicatorSpot);
+				map.scheduler.EndMovePhase(character);
 			}
 		}
-		
+		//FIXME: fix my cycling
 		if(cycleIndicatorZ) {
 			indicatorCycleT += Time.deltaTime;
 			if(indicatorCycleT >= indicatorCycleLength) {
@@ -88,12 +95,12 @@ public class PickTileMoveIO : MoveIO {
 	}
 	
 	override public void PresentMoves() {
-		Vector3[] destinations = GetComponent<MoveStrategy>().GetValidMoves();
-		Vector4[] bounds = map.CoalesceTiles(destinations);
+		MoveStrategy ms = GetComponent<MoveStrategy>();
+		PathNode[] destinations = ms.GetValidMoves();
 		overlay = map.PresentOverlay(
 			"move", this.gameObject.GetInstanceID(), 
 			new Color(0.2f, 0.3f, 0.9f, 0.7f),
-			bounds
+			destinations
 		);
 		Vector3 charPos = map.InverseTransformPointWorld(transform.position);
 		cycleIndicatorZ = false;

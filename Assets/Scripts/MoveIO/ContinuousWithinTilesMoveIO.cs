@@ -5,18 +5,20 @@ using System.Collections;
 public class ContinuousWithinTilesMoveIO : MoveIO {
 	public bool supportKeyboard = true;
 	public bool supportMouse = true;
+	public bool submitAllMoves = false;
 
 	public float moveSpeed = 12;
 
+	float firstClickTime = -1;
+	float doubleClickThreshold = 0.3f;
+
 	Overlay overlay;
-	MoveExecutor mover;
 	CharacterController cc;
 	
 	Vector3 moveDest=Vector3.zero;
 	
 	override public void Start() {
 		base.Start();
-		mover = GetComponent<MoveExecutor>();
 		cc = GetComponent<CharacterController>();
 		//HACK: 0.09f here is a hack for the charactercollider rather than 5.0
 		transform.localPosition = new Vector3(transform.localPosition.x, transform.localPosition.y+0.09f, transform.localPosition.z);
@@ -24,7 +26,7 @@ public class ContinuousWithinTilesMoveIO : MoveIO {
 
 	override public void Update () {
 		base.Update();
-		if(!character.isActive) { return; }
+		if(character == null || !character.isActive) { return; }
 		//click to move within area, move the character itself around
 		//keyboard to move within area, move the character itself around, prevent movement outside of overlay area
 		//end with mouse down on character or return/space key
@@ -32,9 +34,25 @@ public class ContinuousWithinTilesMoveIO : MoveIO {
 			Ray r = Camera.main.ScreenPointToRay(Input.mousePosition);
 			Vector3 hitSpot;
 			bool inside = overlay.Raycast(r, out hitSpot);
-			if(inside) {
-				moveDest = hitSpot;
-				mover.TemporaryMoveTo(moveDest);
+			moveDest = hitSpot;
+			if(Time.time-firstClickTime > doubleClickThreshold) {
+				firstClickTime = Time.time;
+				if(inside) {
+					if(submitAllMoves) {
+						PerformMove(moveDest);
+					} else {
+						TemporaryMove(moveDest);
+					}
+				}
+			} else {
+				firstClickTime = -1;
+				if(inside) {
+					if(submitAllMoves) {
+						PerformMove(moveDest);
+					} else {
+						TemporaryMove(moveDest);
+					}
+				}
 			}
 		}
 		float h = Input.GetAxis("Horizontal");
@@ -53,35 +71,49 @@ public class ContinuousWithinTilesMoveIO : MoveIO {
 			Vector3 newDest = map.InverseTransformPointWorld(character.transform.position-new Vector3(0,5.09f,0));
 /*			Debug.Log("Dest: " + newDest + " Inside? " + overlay.ContainsPosition(newDest));*/
 			//TODO: something with isGrounded to prevent falling off the world
-			if(overlay.ContainsPosition(newDest)) {
+			PathNode pn = overlay.PositionAt(newDest);
+			if(pn != null && pn.canStop) {
 				moveDest = newDest;
-				mover.TemporaryMoveTo(moveDest);
+				if(submitAllMoves) {
+					PerformMove(moveDest);
+				} else {
+					TemporaryMove(moveDest);
+				}
 			} else {
 				//moveDest is still the old one
-				mover.TemporaryMoveTo(moveDest);
+				if(submitAllMoves) {
+					PerformMove(moveDest);
+				} else {
+					TemporaryMove(moveDest);
+				}
 			}
 		}
 		if(supportKeyboard && Input.GetButtonDown("Confirm")) {
 			PerformMove(moveDest);
+			map.scheduler.EndMovePhase(character);
 		}
 	}
 	
 	public void OnGUI() {
 		if(supportMouse && character != null && character.isActive) {
-			if(GUILayout.Button("End Turn")) {
-				//if the mouse clicks on this character, end turn
+			GUILayout.BeginArea(new Rect(
+				Screen.width/2-48, Screen.height-32, 
+				96, 24
+			));
+			if(GUILayout.Button("End Move")) {
 				PerformMove(moveDest);
+				map.scheduler.EndMovePhase(character);
 			}
+			GUILayout.EndArea();
 		}
 	}
 	
 	override public void PresentMoves() {
-		Vector3[] destinations = GetComponent<MoveStrategy>().GetValidMoves();
-		Vector4[] bounds = map.CoalesceTiles(destinations);
+		PathNode[] destinations = GetComponent<MoveStrategy>().GetValidMoves();
 		overlay = map.PresentOverlay(
 			"move", this.gameObject.GetInstanceID(), 
 			new Color(0.2f, 0.3f, 0.9f, 0.7f),
-			bounds
+			destinations
 		);
 	}
 		

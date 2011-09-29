@@ -1,9 +1,10 @@
 using UnityEngine;
-using System.Collections;
+using System.Collections.Generic;
 
 public class Overlay : MonoBehaviour {
 	public Color color = Color.clear;
 	public Vector4[] positions;
+	public PathNode[] destinations;
 	public string category;
 	public int identifier;
 	
@@ -36,7 +37,7 @@ public class Overlay : MonoBehaviour {
 			shadeMaterial = new Material(shader);
 			//set shadeMaterial properties
 			shadeMaterial.SetVector("_MapWorldOrigin", new Vector4(map.transform.position.x, map.transform.position.y, map.transform.position.z, 1));
-			shadeMaterial.SetVector("_MapTileSize", new Vector4(map.sideLength, map.sideLength, map.tileHeight, 1));
+			shadeMaterial.SetVector("_MapTileSize", new Vector4(map.sideLength, map.tileHeight, map.sideLength, 1));
 			int mw = Mathf.NextPowerOfTwo((int)map.size.x);
 			int mh = Mathf.NextPowerOfTwo((int)map.size.y);
 			shadeMaterial.SetVector("_MapSizeInTiles", new Vector4(mw, 64, mh, 1));
@@ -98,17 +99,29 @@ public class Overlay : MonoBehaviour {
 	}	
 	
 	public bool ContainsPosition(Vector3 hitSpot) {
+		return PositionAt(hitSpot) != null;
+	}
+	
+	public PathNode PositionAt(Vector3 hitSpot) {
 		const float ZEpsilon = 0.0015f;
 		foreach(Vector4 p in positions) {
 			if(p.x == Mathf.Floor(hitSpot.x) &&
 			   p.y == Mathf.Floor(hitSpot.y)) {
-/*				Debug.Log("Z OK? "+hitSpot.z+" vs "+p.z+".."+(p.z+p.w));*/
+//				Debug.Log("Z OK? "+hitSpot.z+" vs "+(p.z)+".."+(p.z+p.w));
 				if(hitSpot.z >= p.z-ZEpsilon && hitSpot.z <= p.z+p.w+ZEpsilon) {
-					return true;
+					foreach(PathNode pn in destinations) {
+//						Debug.Log("PN OK? "+pn.pos+" vs "+p+"; "+(p.z)+".."+(p.z+p.w));
+						if(pn.pos.x == p.x &&
+							 pn.pos.y == p.y &&
+							 pn.pos.z >= p.z-ZEpsilon &&
+							 pn.pos.z <= p.z+p.w+ZEpsilon) {
+							return pn;
+						}
+					}
 				}
 			}
 		}
-		return false;	
+		return null;	
 	}
 	
 	public bool Raycast(Ray r, out Vector3 hitSpot) {

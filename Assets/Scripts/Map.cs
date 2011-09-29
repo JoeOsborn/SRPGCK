@@ -700,7 +700,8 @@ public class Map : MonoBehaviour {
 		if(MapTileIsNull(t)) { return new int[0]; }
 		List<int> zLevels = new List<int>();
 		while(!MapTileIsNull(t)) {
-			if(Mathf.Abs(t.maxZ-1-z) <= range) { zLevels.Add(t.maxZ-1); }
+			if(t.next != null && (t.next.z <= t.maxZ)) { t = t.next; continue; }
+			if((range<0) || Mathf.Abs(t.maxZ-1-z) <= range) { zLevels.Add(t.maxZ-1); }
 			t = t.next;
 		}
 		return zLevels.ToArray();
@@ -774,7 +775,7 @@ public class Map : MonoBehaviour {
 		return this.InverseTransformPointLocal(this.transform.InverseTransformPoint(worldCoord));
 	}
 	
-	public Overlay PresentOverlay(string category, int id, Color color, Vector4[] positions) {
+	public Overlay PresentOverlay(string category, int id, Color color, PathNode[] destinations) {
 		if(overlays == null) { overlays = new Dictionary<string, Dictionary<int, Overlay>>(); }
 		if(!overlays.ContainsKey(category)) {
 			overlays[category] = new Dictionary<int, Overlay>();
@@ -782,7 +783,8 @@ public class Map : MonoBehaviour {
 		GameObject go = new GameObject();
 		go.transform.parent = this.transform;
 		Overlay ov = go.AddComponent<Overlay>();
-		ov.positions = positions;
+		ov.destinations = destinations;
+		ov.positions = CoalesceTiles(destinations);
 		ov.color = color;
 		ov.category = category;
 		ov.identifier = id;
@@ -844,10 +846,11 @@ public class Map : MonoBehaviour {
 		}
 	}
 	
-	public Vector4[] CoalesceTiles(Vector3[] spots) {
+	public Vector4[] CoalesceTiles(PathNode[] spots) {
 		Vector4[] outputs = new Vector4[spots.Length];
 		int count=0;
-		foreach(Vector3 s in spots) {
+		foreach(PathNode sp in spots) {
+			Vector3 s = sp.pos;
 			MapTile t = TileAt((int)s.x, (int)s.y, (int)s.z);
 			float w = t.maxHeight;
 			bool merged = false;
@@ -871,45 +874,21 @@ public class Map : MonoBehaviour {
 		Array.Resize(ref outputs, count);
 		return outputs;
 	}
-	
-	struct PathNode {
-		public Vector3 pos;
-		public Vector3 prev;
-		public int distance;
-		public PathNode(Vector3 ps, Vector3 pr, int dist) {
-			pos = ps; prev = pr; distance = dist;
+	public Character CharacterAt(Vector3 tc) {
+		foreach(Character c in GetComponentsInChildren<Character>()) {
+			Vector3 ctc = InverseTransformPointWorld(c.transform.position-new Vector3(0,5,0));
+//			Debug.Log("TC:"+tc+", CTC:"+ctc);
+			if(Mathf.Floor(tc.x) == Mathf.Floor(ctc.x) &&
+			   Mathf.Floor(tc.y) == Mathf.Floor(ctc.y) &&
+			   Mathf.Floor(tc.z) == Mathf.Floor(ctc.z)) {
+				return c;
+			}
 		}
-		public override bool Equals(object obj)
-    {	
-      if (obj is PathNode)
-      {
-          return this.Equals((PathNode)obj);
-      }
-      return false;
-    }
-
-    public bool Equals(PathNode p)
-    {
-      return pos == p.pos;
-    }
-
-    public override int GetHashCode()
-    {
-      return pos.GetHashCode();
-    }
-
-    public static bool operator ==(PathNode lhs, PathNode rhs)
-    {
-      return lhs.Equals(rhs);
-    }
-
-    public static bool operator !=(PathNode lhs, PathNode rhs)
-    {
-      return !(lhs.Equals(rhs));
-    }
-	};
-	
-	public Vector3[] TilesNear(Vector3 tc, int move, int jump) {
+		return null;
+	}
+	public delegate PathDecision PathNodeIsValid(PathNode pn, Character c);
+	//maxDistance is distinct from move in that it's xyz distance
+	public PathNode[] PathsAround(Vector3 tc, int move, int jump, PathNodeIsValid isValid=null) {
 		int x = (int)Mathf.Floor(tc.x), y = (int)Mathf.Floor(tc.y), z = (int)Mathf.Floor(tc.z);
 		Vector2[] neighbors = new Vector2[]{
 			new Vector2(-1, 0),
@@ -919,18 +898,23 @@ public class Map : MonoBehaviour {
 		};
 		Stack<PathNode> open = new Stack<PathNode>();
 		List<PathNode> closed = new List<PathNode>();
-		List<Vector3> points = new List<Vector3>();
+		List<PathNode> nodes = new List<PathNode>();
 		open.Push(new PathNode(new Vector3(x,y,z), new Vector3(x,y,z), 0));
 		MapTile t = TileAt(x,y,z);
-		if(MapTileIsNull(t)) { return new Vector3[0]; }
+		if(MapTileIsNull(t)) { return new PathNode[0]; }
 		while(open.Count > 0) {
 			PathNode pn = open.Pop();
+			if(pn.distance > move) {
+				//this shouldn't be here
+				closed.Add(pn);
+				continue;
+			}
 			if(!closed.Contains(pn)) {
 				closed.Add(pn);
-				points.Add(pn.pos);
-				Debug.Log("push pt "+pn.pos);
+				nodes.Add(pn);
+//				Debug.Log("push pt "+pn.pos);
 			}
-			if(pn.distance >= move) {
+			if(pn.distance == move) {
 				//don't bother adding any more points, they'll be too far
 				continue;
 			}
@@ -938,16 +922,61 @@ public class Map : MonoBehaviour {
 				Vector2 n = neighbors[i];
 				Vector2 adj = new Vector3(pn.pos.x+n.x, pn.pos.y+n.y);
 				//push to open (if not yet there) all tiles at adj.x, adj.y whose .maxZ is within jump of adj.z.
-				Debug.Log("push adj "+adj);
-				foreach(int adjZ in ZLevelsWithin((int)adj.x, (int)adj.y, (int)pn.pos.z, jump)) {
+//				Debug.Log("push adj "+adj);
+				foreach(int adjZ in ZLevelsWithin((int)adj.x, (int)adj.y, (int)pn.pos.z, -1)) {
 					Vector3 pos = new Vector3(adj.x, adj.y, adjZ);
 					PathNode newPn = new PathNode(pos, pn.pos, pn.distance+1);
 					if(!closed.Contains(newPn) && !open.Contains(newPn)) {
-						open.Push(newPn);
+						PathDecision decision = isValid == null ? PathDecision.Normal : isValid(newPn, CharacterAt(pos));
+						if(decision == PathDecision.PassOnly) {
+							newPn.canStop = false;
+						}
+						bool heightOK = (decision != PathDecision.Normal || jump < 0) ? true : newPn.dz <= jump;
+						if((decision != PathDecision.Invalid) && heightOK) {
+							open.Push(newPn);
+						}
 					}
 				}
 			}
 		}
-		return points.ToArray();
+		return nodes.ToArray();
 	}
 }
+
+public enum PathDecision {
+	Invalid,
+	PassOnly,
+	Normal
+};
+
+[System.Serializable]
+public class PathNode {
+	public Vector3 pos;
+	public Vector3 prev;
+	public int distance;
+	public bool canStop=true;
+	public PathNode(Vector3 ps, Vector3 pr, int dist) {
+		pos = ps; prev = pr; distance = dist;
+	}
+	public int dz {
+		get { return (int)Mathf.Abs(pos.z - prev.z); }
+	}
+	public override bool Equals(object obj)
+  {	
+    if (obj is PathNode)
+    {
+        return this.Equals((PathNode)obj);
+    }
+    return false;
+  }
+
+  public bool Equals(PathNode p)
+  {
+    return p != null && pos == p.pos;
+  }
+
+  public override int GetHashCode()
+  {
+    return pos.GetHashCode();
+  }
+};

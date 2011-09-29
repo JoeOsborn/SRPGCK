@@ -29,11 +29,18 @@ public class MoveIO : MonoBehaviour {
 
 	}
 	
+	public virtual void TemporaryMove(Vector3 tc) {
+		MoveExecutor me = GetComponent<MoveExecutor>();
+		Vector3 src = me.temporaryPosition;
+		me.TemporaryMoveTo(tc);
+		map.scheduler.CharacterMovedTemporary(character, map.InverseTransformPointWorld(src), map.InverseTransformPointWorld(me.temporaryDestination));
+	}
+	
 	public virtual void PerformMove(Vector3 tc) {
 		//MOVE EXECUTOR: move there and then report back to character
-		GetComponent<MoveExecutor>().MoveTo(tc);
-		//CHARACTER: is move over?
-		//SCHEDULER: "If active character has moved on this turn, deactivate it"
-		map.scheduler.Deactivate(character);	
+		MoveExecutor me = GetComponent<MoveExecutor>();
+		Vector3 src = me.destination;
+		me.MoveTo(tc);
+		map.scheduler.CharacterMoved(character, map.InverseTransformPointWorld(src), map.InverseTransformPointWorld(me.destination));
 	}
 }
