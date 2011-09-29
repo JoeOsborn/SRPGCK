@@ -48,17 +48,25 @@
      <Compile Include="Assets\Scripts\Map.cs" />
      <Compile Include="Assets\Scripts\MapTile.cs" />
      <Compile Include="Assets\Scripts\MoveExecutor.cs" />
-     <Compile Include="Assets\Scripts\MoveIO\ContinuousWithinTilesMoveIO.cs" />
-     <Compile Include="Assets\Scripts\MoveIO\MoveIO.cs" />
-     <Compile Include="Assets\Scripts\MoveIO\PickTileMoveIO.cs" />
+     <Compile Include="Assets\Scripts\MoveIO.cs" />
      <Compile Include="Assets\Scripts\MoveStrategy.cs" />
+     <Compile Include="Assets\Scripts\Movement-Grid\GridMoveStrategy.cs" />
+     <Compile Include="Assets\Scripts\Movement-Grid\GridOverlay.cs" />
+     <Compile Include="Assets\Scripts\Movement-Grid\MoveIO\ContinuousWithinTilesMoveIO.cs" />
+     <Compile Include="Assets\Scripts\Movement-Grid\MoveIO\PickTileMoveIO.cs" />
+     <Compile Include="Assets\Scripts\Movement-Radial\RadialOverlay.cs" />
      <Compile Include="Assets\Scripts\Overlay.cs" />
      <Compile Include="Assets\Scripts\Prop.cs" />
+     <Compile Include="Assets\Scripts\Schedulers\CTScheduler.cs" />
      <Compile Include="Assets\Scripts\Schedulers\Scheduler.cs" />
      <Compile Include="Assets\Scripts\Schedulers\TeamPhasedPickAnyOnceScheduler.cs" />
      <Compile Include="Assets\Scripts\Schedulers\TeamPhasedPickOneSchedulerFeedback.cs" />
-     <Compile Include="Assets\Scripts\Schedulers\TeamPhasedPointBasedScheduler.cs" />
-     <None Include="Assets\Shaders\OverlayClip.shader" />
+     <Compile Include="Assets\Scripts\Schedulers\TeamPhasedPointsScheduler.cs" />
+     <None Include="Assets\Shaders\RadialOverlayOuterVolume.shader" />
+     <None Include="Assets\Shaders\CylinderOverlayClipInverted.shader" />
+     <None Include="Assets\Shaders\GridOverlayClip.shader" />
+     <None Include="Assets\Shaders\CylinderOverlayClip.shader" />
+     <None Include="Assets\Shaders\SphereOverlayClip.shader" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

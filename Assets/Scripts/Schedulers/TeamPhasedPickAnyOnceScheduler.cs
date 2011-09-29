@@ -54,6 +54,12 @@ public class TeamPhasedPickAnyOnceScheduler : Scheduler {
 		GUILayout.EndArea();
 	}
 	
+	override public void Activate(Character c, object ctx=null) {
+		base.Activate(c, ctx);	
+		//(for now): ON `activate`, MOVE
+		activeCharacter.GetComponent<MoveIO>().PresentMoves();
+	}
+	
 	override public void Update () {
 		base.Update();
 		if(activeCharacter == null) {

@@ -1,6 +1,9 @@
 using UnityEngine;
 using System.Collections.Generic;
 
+//TODO: Schedulers may also need to be responsible for scheduling timed attacks, 
+//      on seconds or on CT or end of turn or end of phase or whatever, according to the scheduler.
+
 public class Scheduler : MonoBehaviour {
 	[HideInInspector]
 	public List<Character> characters;
@@ -48,8 +51,6 @@ public class Scheduler : MonoBehaviour {
 	}
 	
 	public virtual void Update () {
-		//SCHEDULER: "If there is no active character and we have clicked on a character, activate it"
-		// (later, limit by phase and/or use a network adaptor)
 		if(activeCharacter != null && activeCharacter.isActive) { return; }
 		if(activeCharacter != null && !activeCharacter.isActive) { Deactivate(activeCharacter); }
 	}

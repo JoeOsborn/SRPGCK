@@ -775,16 +775,59 @@ public class Map : MonoBehaviour {
 		return this.InverseTransformPointLocal(this.transform.InverseTransformPoint(worldCoord));
 	}
 	
-	public Overlay PresentOverlay(string category, int id, Color color, PathNode[] destinations) {
+	public GridOverlay PresentGridOverlay(string category, int id, Color color, PathNode[] destinations) {
 		if(overlays == null) { overlays = new Dictionary<string, Dictionary<int, Overlay>>(); }
 		if(!overlays.ContainsKey(category)) {
 			overlays[category] = new Dictionary<int, Overlay>();
 		}
 		GameObject go = new GameObject();
 		go.transform.parent = this.transform;
-		Overlay ov = go.AddComponent<Overlay>();
+		GridOverlay ov = go.AddComponent<GridOverlay>();
 		ov.destinations = destinations;
 		ov.positions = CoalesceTiles(destinations);
+		ov.color = color;
+		ov.category = category;
+		ov.identifier = id;
+		overlays[category][id] = ov;
+		return ov;
+	}
+	public RadialOverlay PresentSphereOverlay(string category, int id, Color color, Vector3 origin, float radius, bool drawRim=false, bool drawOuterVolume=false, bool invert=false) {
+		if(overlays == null) { overlays = new Dictionary<string, Dictionary<int, Overlay>>(); }
+		if(!overlays.ContainsKey(category)) {
+			overlays[category] = new Dictionary<int, Overlay>();
+		}
+		GameObject go = new GameObject();
+		go.transform.parent = this.transform;
+		RadialOverlay ov = go.AddComponent<RadialOverlay>();
+		//Q: Is it proper to convert these into world coordinates here? should we expect tile coords instead? hrm hrm
+		ov.type = RadialOverlayType.Sphere;
+		ov.origin = TransformPointWorld(origin);
+		ov.radius = radius*sideLength;
+		ov.drawRim = drawRim;
+		ov.drawOuterVolume = drawOuterVolume;
+		ov.invert = invert;
+		ov.color = color;
+		ov.category = category;
+		ov.identifier = id;
+		overlays[category][id] = ov;
+		return ov;
+	}
+	public RadialOverlay PresentCylinderOverlay(string category, int id, Color color, Vector3 origin, float radius, float height, bool drawRim=false, bool drawOuterVolume=false, bool invert=false) {
+		if(overlays == null) { overlays = new Dictionary<string, Dictionary<int, Overlay>>(); }
+		if(!overlays.ContainsKey(category)) {
+			overlays[category] = new Dictionary<int, Overlay>();
+		}
+		GameObject go = new GameObject();
+		go.transform.parent = this.transform;
+		RadialOverlay ov = go.AddComponent<RadialOverlay>();
+		//Q: Is it proper to convert these into world coordinates here? should we expect tile coords instead? hrm hrm
+		ov.type = RadialOverlayType.Cylinder;
+		ov.origin = TransformPointWorld(origin);
+		ov.radius = radius*sideLength;
+		ov.height = height*tileHeight;
+		ov.drawRim = drawRim;
+		ov.drawOuterVolume = drawOuterVolume;
+		ov.invert = invert;
 		ov.color = color;
 		ov.category = category;
 		ov.identifier = id;

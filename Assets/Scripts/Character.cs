@@ -13,8 +13,8 @@ public class Character : MonoBehaviour {
 	[SerializeField]
 	protected Hashtable customData;
 	
-	public T GetCustomData<T>(string s) {
-		if(customData == null) { return default(T); }
+	public T GetCustomData<T>(string s, T defaultValue=default(T)) {
+		if(customData == null || !HasCustomData(s)) { return defaultValue; }
 		return (T)customData[s];
 	}
 	public void SetCustomData<T>(string s, T o) {
@@ -37,8 +37,6 @@ public class Character : MonoBehaviour {
 	
 	public void Activate() {
 		isActive = true;
-		//CHARACTER (for now): ON `activate`, MOVE
-		GetComponent<MoveIO>().PresentMoves();
 	}
 	
 	public void Deactivate() {
