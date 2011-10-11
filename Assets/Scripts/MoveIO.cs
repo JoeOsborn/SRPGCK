@@ -3,10 +3,15 @@ using System.Collections;
 
 //TODO: PickTileMoveIO needs a way to wait the character facing a direction. 
 //      ContinuousWithinTilesMoveIO may need something like that for its mouse-based inputs, too.
+//	    Actually, WaitIO may be different from MoveIO.
 
 public class MoveIO : MonoBehaviour {
-	protected Map map;
-	protected Character character;
+
+	[System.NonSerialized]
+	public Map map;
+
+	[System.NonSerialized]
+	public Character character;
 	
 	[HideInInspector]
 	public bool isActive;
@@ -28,19 +33,27 @@ public class MoveIO : MonoBehaviour {
 		if(!isActive) { return; }
 	}
 	
-	public virtual void PresentMoves() {
+	protected virtual void PresentMoves() {
 		isActive = true;
 	}
 	
-	public virtual void FinishMove() {
+	protected virtual void FinishMove() {
 		isActive = false;
 		map.scheduler.EndMovePhase(character);
 	}
+	
+	public virtual void PresentValidMoves() {
+		SendMessage("PresentMoves", null);
+	}
+	
+	public virtual void EndMovePhase() {
+		if(isActive) {
+			SendMessage("FinishMove", null);
+		}
+	}
 
 	public virtual void Deactivate() {
-		if(isActive) {
-			FinishMove();
-		}
+		EndMovePhase();
 	}
 		
 	public virtual void TemporaryMove(Vector3 tc) {
@@ -51,6 +64,17 @@ public class MoveIO : MonoBehaviour {
 			character, 
 			map.InverseTransformPointWorld(src), 
 			map.InverseTransformPointWorld(me.temporaryDestination)
+		);
+	}
+
+	public virtual void IncrementalMove(Vector3 tc) {
+		MoveExecutor me = GetComponent<MoveExecutor>();
+		Vector3 src = me.position;
+		me.IncrementalMoveTo(tc);
+		map.scheduler.CharacterMovedIncremental(
+			character, 
+			map.InverseTransformPointWorld(src), 
+			map.InverseTransformPointWorld(me.destination)
 		);
 	}
 	
@@ -64,6 +88,6 @@ public class MoveIO : MonoBehaviour {
 			map.InverseTransformPointWorld(src),
 			map.InverseTransformPointWorld(me.destination)
 		);
-		FinishMove();
+		EndMovePhase();
 	}
 }

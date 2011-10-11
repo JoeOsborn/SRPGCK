@@ -109,9 +109,8 @@ public class GridOverlay : Overlay {
 					hit.point.z
 				));
 /*				Debug.Log("HIT: "+hitSpot);*/
-				if(this.ContainsPosition(hitSpot)) { return true; }
 			}
-			return false;
+			return true;
 		}
 		return false;
 	}

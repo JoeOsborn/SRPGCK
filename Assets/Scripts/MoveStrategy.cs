@@ -6,8 +6,8 @@ public class MoveStrategy : MonoBehaviour {
 	protected Character character;
 	
 	public bool canCrossWalls=false;
-	public int zDelta=3;
-	public int xyRange=3;
+	public float zDelta=3;
+	public float xyRange=3;
 	public bool canCrossEnemies=false;
 	
 	virtual public void Start () {

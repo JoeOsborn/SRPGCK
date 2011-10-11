@@ -74,7 +74,7 @@ public class Map : MonoBehaviour {
 	}
 	
 	[SerializeField]
-	MapTile[] stacks;
+	MapColumn[] stacks;
 
 	[SerializeField]
 	List<TileSpec> tileSpecs=new List<TileSpec>();
@@ -99,9 +99,13 @@ public class Map : MonoBehaviour {
 	}
 	public void RemoveTileSpecAt(int i) {
 		for(int mi = 0; mi < stacks.Length; mi++) {
-			MapTile t = stacks[mi];
-			if(!MapTileIsNull(t)) {
-				t.AdjustTileSpecsAfterRemoving(i);
+			MapColumn tl = stacks[mi];
+			if(tl == null) { continue; }
+			for(int ti = 0; ti < tl.Count; i++) {
+				MapTile t = tl.At(ti);
+				if(!MapTileIsNull(t)) {
+					t.AdjustTileSpecsAfterRemoving(i);
+				}
 			}
 		}
 		tileSpecs.RemoveAt(i);
@@ -152,6 +156,7 @@ public class Map : MonoBehaviour {
 			if(value == _size) { return; }
 			Vector2 oldSize = _size;
 			_size = value;
+			Debug.Log("size reset");
 			ResetStacks(oldSize);
 		}
 	}
@@ -180,40 +185,84 @@ public class Map : MonoBehaviour {
 			RemakeMesh();
 		}
 	}
-	MapTile TileStackAt(int x, int y) {
-		int idx = y*(int)_size.x+x;
-		if(idx >= stacks.Length) {
-			return null;
-		}
-		return stacks[idx];
-	}
 	void SetTileStackAt(MapTile stack, int x, int y) {
 		int idx = y*(int)_size.x+x;
 		if(idx >= stacks.Length) {
 			Array.Resize(ref stacks, idx+1);
 		}
-		stacks[idx] = stack;
+		if(stacks[idx] == null) {
+			stacks[idx] = new MapColumn();
+		}
+		if(stacks[idx].Count > 0) {
+			stacks[idx].Clear();
+		}
+		stacks[idx].Add(stack);
+	}
+	
+	MapColumn TileColumnAt(int x, int y) {
+		int idx = y*(int)_size.x+x;
+		if(idx >= stacks.Length) {
+			return null;
+		}
+		return stacks[idx];	
+	}
+	
+	MapTile NextTile(MapTile t) {
+		MapColumn stack = TileColumnAt(t.x, t.y);
+		if(stack == null) { return null; }
+		int tidx = stack.IndexOf(t);
+		if(tidx == -1) { return null; }
+		if(tidx+1 >= stack.Count) {
+			return null;
+		}
+/*		Debug.Log("next after "+t+" at "+tidx+" is "+stack.At(tidx+1)+" where count is "+stack.Count);*/
+		return stack.At(tidx+1);
+	}
+	
+	void SetNextTile(MapTile prev, MapTile next) {
+		int idx = prev.y*(int)_size.x+prev.x;
+		if(idx >= stacks.Length) {
+			return;
+		}
+		MapColumn stack = stacks[idx];
+		if(stack == null) { return; }
+		int tidx = stack.IndexOf(prev);
+		if(tidx == -1) { return; }
+		//FIXME: delete prev.next from the list if prev.next is non-nil!!! also make sure other aspects of removal are working
+		//Remove, then insert! also, make sure the semantic is right... or get rid of the idea of the linked list metaphor?? i dunno man
+		stack.Insert(tidx, next);
 	}
 	
 	public void AddIsoTileAt(int x, int y, int z) {
 		if(stacks == null) {
+			Debug.Log("add reset");
 			ResetStacks(Vector2.zero);
 		}
-		MapTile stack = TileStackAt(x,y);
-		if(MapTileIsNull(stack)) {
-			stack = new MapTile(z);
+		MapColumn stackC = TileColumnAt(x,y);
+		MapTile stack=null;
+		bool added = false;
+		if(stackC == null || stackC.Count == 0) {
+			stack = new MapTile(x, y, z);
 			stack.serializeHackUsable = true;
 			SetTileStackAt(stack, x, y);
-		}
-		if(stack.IsAboveZ(z)) {
-			MapTile newStack = new MapTile(z);
+			added = true;
+		} else {
+			MapTile newStack = new MapTile(x, y, z);
 			newStack.serializeHackUsable = true;
-			SetTileStackAt(newStack, x, y);
-			newStack.next = stack;
-		} else if(!stack.ContainsZ(z)) {
-			if(MapTileIsNull(stack.next)) {
-				stack.next = new MapTile(z);
-				stack.next.serializeHackUsable = true;
+			bool present = false;
+			for(int i = 0; i < stackC.Count; i++) {
+				stack = stackC.At(i);
+				if(stack.IsAboveZ(z)) {
+					stackC.Insert(i, newStack);
+					present = true;
+					added = true;
+					break;
+				} else if(stack.ContainsZ(z)) {
+					present = true;
+					break;
+				}
+			}
+			if(!present) {
 				if(stack.maxZ == z && stack.maxHeight != 1) {
 					//don't propagate heights, just clobber the old ones
 					int max = stack.maxHeight;
@@ -221,42 +270,13 @@ public class Map : MonoBehaviour {
 					//stack.heights = new int[]{1,1,1,1};
 					stack.heights = new int[]{max, max, max, max};
 				}
-			} else {
-				MapTile prev = stack, n;
-				while(!MapTileIsNull(n = prev.next)) {
-					if(n.IsAboveZ(z)) {
-						prev.next = new MapTile(z);
-						prev.next.serializeHackUsable = true;
-						if(prev.maxZ == z && prev.maxHeight != 1) {
-							//don't propagate heights, just clobber the old ones
-							int max = prev.maxHeight;
-							//prev.next.heights = stack.heights;
-							//prev.heights = new int[]{1,1,1,1};
-							prev.heights = new int[]{max,max,max,max};
-						}
-						prev.next.next = n;
-						break;
-					} else if(n.ContainsZ(z)) {
-						break;
-					}
-					prev = n;
-				}
-				if(MapTileIsNull(n)) {
-					prev.next = new MapTile(z);
-					prev.next.serializeHackUsable = true;
-					if(prev.maxZ == z && prev.maxHeight != 1) {
-						//don't propagate heights, just clobber the old ones
-						int max = prev.maxHeight;
-						//prev.next.heights = prev.heights;
-						//prev.heights = new int[]{1,1,1,1};
-						prev.heights = new int[]{max,max,max,max};
-					}
-				}
+				stackC.Add(newStack);
+				added = true;
 			}
-		} else {
-			//cannot add on an existing tile
 		}
-		RemakeMesh();
+		if(added) {
+			RemakeMesh();
+		}
 	}
 
 	public void RemoveIsoTileAt(int x, int y, int z) {
@@ -264,47 +284,25 @@ public class Map : MonoBehaviour {
 			//no tile to remove
 			return;
 		}
-		MapTile stack = TileStackAt(x,y);
-		if(MapTileIsNull(stack)) {
+		MapColumn stackC = TileColumnAt(x,y);
+		MapTile stack;
+		if(stackC == null || stackC.Count == 0) {
 			//no tile to remove
 			return;
 		}
-		if(stack.IsAboveZ(z)) {
-			//no tile to remove
-			return;
-		} else if(!stack.ContainsZ(z)) {
-			if(MapTileIsNull(stack.next)) {
-				//no tile to remove
-				return;
-			} else {
-				MapTile prev = stack, n;
-				while(!MapTileIsNull(n = prev.next)) {
-					if(n.IsAboveZ(z)) {
-						//no tile to remove
-						return;
-					} else if(n.ContainsZ(z)) {
-						//cut this tile out of the chain
-						prev.next = n.next;
-						//don't propagate heights
-						/*if(n.maxHeight > 1 && prev.maxZ == n.z) {
-							prev.heights = n.heights;
-						}*/
-						break;
-					}
-					prev = n;
-				}
-			}
-		} else {
-			//remove this tile
-			if(!MapTileIsNull(stack.next)) {
-				SetTileStackAt(stack.next, x, y);
-			} else {
-				MapTile dummyStack = new MapTile(-1);
-				dummyStack.serializeHackUsable = false;
-				SetTileStackAt(dummyStack, x, y);
+		bool removed = false;
+		for(int i = 0; i < stackC.Count; i++) { 
+			stack = stackC.At(i);
+			if(stack.IsAboveZ(z)) { return; }
+			if(stack.ContainsZ(z)) {
+				stackC.RemoveAt(i);
+				removed = true;
+				break;
 			}
 		}
-		RemakeMesh();
+		if(removed) {
+			RemakeMesh();
+		}
 	}
 	
 	bool MapTileIsNull(MapTile t) {
@@ -419,6 +417,7 @@ public class Map : MonoBehaviour {
 		if(mc == null) {
 			mc = gameObject.AddComponent<MeshCollider>();
 		}
+		
 		if(mr.sharedMaterials.Length < 2 || mr.sharedMaterials[0] == null || mr.sharedMaterials[1] == null) {
 			mr.sharedMaterials = new Material[]{
 				new Material(Shader.Find("Transparent/Cutout/Diffuse")),
@@ -453,11 +452,13 @@ public class Map : MonoBehaviour {
 		int transparentTriIdx = 0;
 				
 		for(int i = 0; i < stacks.Length; i++) {
-			MapTile t = stacks[i];
-			if(MapTileIsNull(t)) { continue; }
+			MapColumn tlist = stacks[i];
+			if(tlist == null) { continue; }
 			int y = i/(int)_size.x;
 			int x = i-(y*(int)_size.x);
-			while(!MapTileIsNull(t)) {
+			for(int ti = 0; ti < tlist.Count; ti++) {
+				MapTile t = tlist.At(ti);
+				if(MapTileIsNull(t)) { Debug.Log("tile "+t+" at "+ti+" is null somehow"); }
 				int z = t.z;
 				int[] triangles = t.invisible ? transparentTriangles : opaqueTriangles;
 				int triIdx = t.invisible ? transparentTriIdx : opaqueTriIdx;
@@ -592,7 +593,6 @@ public class Map : MonoBehaviour {
 				}
 				if(t.invisible) { transparentTriIdx = triIdx; }
 				else { opaqueTriIdx = triIdx; }
-				t = t.next;
 			}
 		}
 		Array.Resize<Vector3>(ref vertices, vertIdx);
@@ -609,10 +609,13 @@ public class Map : MonoBehaviour {
 		mesh.Optimize();
 		mf.sharedMesh = mesh;
 		mc.convex = false;
+
+		InvalidateOverlayMesh();
 	}
 	
 	void ResetStacks(Vector2 oldSize) {
-		MapTile[] newStacks = new MapTile[(int)_size.x*(int)_size.y];
+		MapColumn[] newStacks = new MapColumn[(int)_size.x*(int)_size.y];
+		Debug.Log("reset");
 		for(int i = 0; i < newStacks.Length; i++) {
 			if(oldSize != Vector2.zero) {
 				if(oldSize == _size) {
@@ -640,6 +643,7 @@ public class Map : MonoBehaviour {
 	// Use this for initialization
 	void Start () {
 		if(this.stacks == null) {
+			Debug.Log("start reset"); 
 			ResetStacks(Vector2.zero);
 		}
 	}
@@ -649,60 +653,75 @@ public class Map : MonoBehaviour {
 	}
 	
 	public bool HasTileAt(int x, int y) {
-		return x >= 0 && x < size.x && y >= 0 && y < size.y && !MapTileIsNull(TileStackAt(x,y));
+		MapColumn c = TileColumnAt(x,y);
+		return x >= 0 && x < size.x && y >= 0 && y < size.y && c != null && c.Count > 0;
 	}
 	public bool HasTileAt(int x, int y, int z) {
 		return !MapTileIsNull(TileAt(x,y,z));
 	}
 
 	public int NearestZLevel(int x, int y, int z) {
-		MapTile t = TileAt(x,y,z);
-		if(!MapTileIsNull(t)) { return t.maxZ-1; }
-		t = TileStackAt(x,y);
-		if(MapTileIsNull(t)) { return z; }
- 		float closestDistance=Mathf.Infinity;
-		MapTile closestTile = t;
-		while(!MapTileIsNull(t) && !MapTileIsNull(t.next)) {
-			float dist = Mathf.Abs(t.maxZ-z);
-			if(dist < closestDistance) {
-				closestTile = t;
+		MapColumn c = TileColumnAt(x,y);
+		int dz = int.MaxValue;
+		MapTile closest = null;
+		if(c == null || c.Count == 0) { return 0; }
+		for(int i = 0; i < c.Count; i++) {
+			MapTile s = c.At(i);
+			MapTile next = i+1 >= c.Count ? null : c.At(i+1);
+			if(next == null || next.z > s.maxZ) {
+				int thisDz = (int)Mathf.Abs(s.maxZ - z);
+				if(thisDz < dz) {
+					dz = thisDz;
+					closest = s;
+				}
 			}
-			t = t.next;
 		}
-		return closestTile.maxZ-1;
+		return closest.maxZ-1;
 	}
 	
 	public int NextZLevel(int x, int y, int z, bool wrap=false) {
-		MapTile t = TileAt(x,y,z);
-		if(!MapTileIsNull(t)) { 
-			if(MapTileIsNull(t.next) && wrap) { return TileStackAt(x,y).maxZ-1; } 
-			if(!MapTileIsNull(t.next)) { return t.next.maxZ-1; }
-			if(MapTileIsNull(t.next)) { return t.maxZ-1; }
+		MapColumn mc = TileColumnAt(x,y);
+		if(mc == null) { return 0; }
+		int lowestValidZ = -1;
+		int lastValidZ = -1;
+		
+		for(int i = 0; i < mc.Count; i++) {
+			bool valid = false;
+			MapTile t = mc.At(i);
+			if(MapTileIsNull(t)) { 
+				if(wrap) { return lowestValidZ; }
+				return lastValidZ;
+			} else {
+				MapTile n = NextTile(t);
+				if(MapTileIsNull(n)) {
+					valid = true;
+				} else {
+					if(n.z > t.maxZ) { valid = true; }
+				}
+				if(valid) {
+					if(lowestValidZ == -1) { lowestValidZ = t.maxZ-1; }
+					lastValidZ = t.maxZ-1;
+					if(lastValidZ > z) { return lastValidZ; }
+				}
+			}
 		}
-		t = TileStackAt(x,y);
-		//return the first one whose maxZ exceeds z, or the bottom of the pile if wrapping.
-		while(!MapTileIsNull(t)) {
-			if(t.maxZ-1 >= z) { return t.maxZ-1; }
-			t = t.next;
-		}
-		if(MapTileIsNull(t) && wrap) { 
-			t = TileStackAt(x,y); 
-			if(!MapTileIsNull(t)) { 
-				return t.maxZ-1; 
-			} 
-		}
-		return z;
+		return lowestValidZ;
 	}
 	
+	//TODO: include a direction argument for ramps
 	public int[] ZLevelsWithin(int x, int y, int z, int range) {
 		if(x<0 || y<0 || x >= size.x || y >= size.y) { return new int[0]; }
-		MapTile t = TileStackAt(x,y);
-		if(MapTileIsNull(t)) { return new int[0]; }
+		MapColumn c = TileColumnAt(x,y);
+		if(c == null || c.Count == 0) { return new int[0]; }
 		List<int> zLevels = new List<int>();
-		while(!MapTileIsNull(t)) {
-			if(t.next != null && (t.next.z <= t.maxZ)) { t = t.next; continue; }
-			if((range<0) || Mathf.Abs(t.maxZ-1-z) <= range) { zLevels.Add(t.maxZ-1); }
-			t = t.next;
+		for(int i = 0; i < c.Count; i++) {
+			MapTile t = c.At(i);
+			//skip anybody with a tile immediately above them
+			if(i+1 < c.Count && c.At(i).z <= t.maxZ) { continue; }
+			//skip tiles that are not within range
+			if(range < 0 || Mathf.Abs(t.maxZ-1-z) <= range) { 
+				zLevels.Add(t.maxZ-1); 
+			}
 		}
 		return zLevels.ToArray();
 	}
@@ -716,14 +735,12 @@ public class Map : MonoBehaviour {
 			return null; 
 		}
 		if(stacks == null) { return null; }
-		MapTile stack = TileStackAt(x, y);
-		if(MapTileIsNull(stack)) { return null; }
-		if(stack.ContainsZ(z)) { return stack; }
-		if(stack.IsAboveZ(z)) { return null; }
-		MapTile n = stack;
-		while(!MapTileIsNull(n = n.next)) {
-			if(n.ContainsZ(z)) { return n; }
-			if(n.IsAboveZ(z)) { return null; }
+		MapColumn c = TileColumnAt(x,y);
+		if(c == null) { return null; }
+		for(int i = 0; i < c.Count; i++) {
+			MapTile t = c.At(i);
+			if(t.ContainsZ(z)) { return t; }
+			if(t.IsAboveZ(z)) { return null; }
 		}
 		return null;
 	}
@@ -731,7 +748,7 @@ public class Map : MonoBehaviour {
 	public void AdjustHeightOnSidesOfTile(int x, int y, int z, int deltaH, Neighbors sides, bool top) {
 		MapTile t = TileAt(x,y,z);
 		if(t == null) { return; }
-		t.AdjustHeightOnSides(deltaH, sides, top);
+		t.AdjustHeightOnSides(deltaH, sides, top, NextTile(t));
 		RemakeMesh();
 	}
 	
@@ -802,6 +819,7 @@ public class Map : MonoBehaviour {
 		//Q: Is it proper to convert these into world coordinates here? should we expect tile coords instead? hrm hrm
 		ov.type = RadialOverlayType.Sphere;
 		ov.origin = TransformPointWorld(origin);
+		ov.tileRadius = radius;
 		ov.radius = radius*sideLength;
 		ov.drawRim = drawRim;
 		ov.drawOuterVolume = drawOuterVolume;
@@ -824,6 +842,7 @@ public class Map : MonoBehaviour {
 		ov.type = RadialOverlayType.Cylinder;
 		ov.origin = TransformPointWorld(origin);
 		ov.radius = radius*sideLength;
+		ov.tileRadius = radius;
 		ov.height = height*tileHeight;
 		ov.drawRim = drawRim;
 		ov.drawOuterVolume = drawOuterVolume;
@@ -865,12 +884,14 @@ public class Map : MonoBehaviour {
 				int meshesUsed = 0;
 				CombineInstance[] combine = new CombineInstance[meshFilters.Length+1];
 				combine[meshesUsed].mesh = GetComponent<MeshFilter>().mesh;
-				combine[meshesUsed].transform = transform.localToWorldMatrix;
+				//translate all these matrices by the inverse of the local translation matrix
+				combine[meshesUsed].transform = transform.localToWorldMatrix * Matrix4x4.TRS(transform.position, Quaternion.identity, Vector3.one).inverse;
 				meshesUsed++;
 				foreach(MeshFilter mf in meshFilters) {
 					if(IsProp(mf.gameObject)) {
 						combine[meshesUsed].mesh = mf.sharedMesh;
-						combine[meshesUsed].transform = mf.transform.localToWorldMatrix;
+						//translate all these matrices by the inverse of the local translation matrix
+						combine[meshesUsed].transform = mf.transform.localToWorldMatrix * Matrix4x4.TRS(new Vector3(0,tileHeight/_sideLength,0), Quaternion.identity, Vector3.one).inverse;
 						meshesUsed++;
 					}
 				}
@@ -879,8 +900,10 @@ public class Map : MonoBehaviour {
 			return overlayMesh;
 		}
 	}
+
 	public void InvalidateOverlayMesh() {
 		overlayMesh = null;
+		BroadcastMessage("OverlayMeshInvalidated", null, SendMessageOptions.DontRequireReceiver);
 	}
 	
 	public Scheduler scheduler {
@@ -931,7 +954,7 @@ public class Map : MonoBehaviour {
 	}
 	public delegate PathDecision PathNodeIsValid(PathNode pn, Character c);
 	//maxDistance is distinct from move in that it's xyz distance
-	public PathNode[] PathsAround(Vector3 tc, int move, int jump, PathNodeIsValid isValid=null) {
+	public PathNode[] PathsAround(Vector3 tc, float move, float jump, PathNodeIsValid isValid=null) {
 		int x = (int)Mathf.Floor(tc.x), y = (int)Mathf.Floor(tc.y), z = (int)Mathf.Floor(tc.z);
 		Vector2[] neighbors = new Vector2[]{
 			new Vector2(-1, 0),
@@ -996,9 +1019,9 @@ public enum PathDecision {
 public class PathNode {
 	public Vector3 pos;
 	public Vector3 prev;
-	public int distance;
+	public float distance;
 	public bool canStop=true;
-	public PathNode(Vector3 ps, Vector3 pr, int dist) {
+	public PathNode(Vector3 ps, Vector3 pr, float dist) {
 		pos = ps; prev = pr; distance = dist;
 	}
 	public int dz {

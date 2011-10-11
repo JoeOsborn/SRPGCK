@@ -18,6 +18,10 @@ public class Overlay : MonoBehaviour {
 		
 	}
 	
+	virtual public void OverlayMeshInvalidated() {
+		Destroy(this.renderer);
+	}
+	
 	virtual public void Update() {
 		if(map == null) {
 			if(this.transform.parent != null) {

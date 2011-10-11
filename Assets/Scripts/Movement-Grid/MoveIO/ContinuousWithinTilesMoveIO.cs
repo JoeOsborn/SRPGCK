@@ -19,7 +19,7 @@ public class ContinuousWithinTilesMoveIO : MoveIO {
 	override public void Start() {
 		base.Start();
 		cc = GetComponent<CharacterController>();
-		//HACK: 0.09f here is a hack for the charactercollider rather than 5.0
+		//HACK: 0.09f here is a hack for the charactercontroller collider rather than 5.0
 		transform.localPosition = new Vector3(transform.localPosition.x, transform.localPosition.y+0.09f, transform.localPosition.z);
 	}
 
@@ -34,15 +34,13 @@ public class ContinuousWithinTilesMoveIO : MoveIO {
 			Ray r = Camera.main.ScreenPointToRay(Input.mousePosition);
 			Vector3 hitSpot;
 			bool inside = overlay.Raycast(r, out hitSpot);
-			moveDest = hitSpot;
-			if(Time.time-firstClickTime > doubleClickThreshold) {
-				firstClickTime = Time.time;
-				if(inside) {
+			if(inside && overlay.ContainsPosition(hitSpot)) {
+				moveDest = hitSpot;
+				if(Time.time-firstClickTime > doubleClickThreshold) {
+					firstClickTime = Time.time;
 					TemporaryMove(moveDest);
-				}
-			} else {
-				firstClickTime = -1;
-				if(inside) {
+				} else {
+					firstClickTime = -1;
 					TemporaryMove(moveDest);
 				}
 			}
@@ -67,7 +65,7 @@ public class ContinuousWithinTilesMoveIO : MoveIO {
 			if(pn != null && pn.canStop) {
 				moveDest = newDest;
 				TemporaryMove(moveDest);
-			} else {
+			} else if(overlay.ContainsPosition(moveDest)) {
 				//moveDest is still the old one
 				TemporaryMove(moveDest);
 			}
@@ -90,7 +88,7 @@ public class ContinuousWithinTilesMoveIO : MoveIO {
 		}
 	}
 	
-	override public void PresentMoves() {
+	override protected void PresentMoves() {
 		PathNode[] destinations = GetComponent<GridMoveStrategy>().GetValidMoves();
 		overlay = map.PresentGridOverlay(
 			"move", this.gameObject.GetInstanceID(), 
@@ -99,7 +97,7 @@ public class ContinuousWithinTilesMoveIO : MoveIO {
 		);
 	}
 
-	override public void FinishMove() {
+	override protected void FinishMove() {
 		overlay = null;
 		if(map.IsShowingOverlay("move", this.gameObject.GetInstanceID())) {
 			map.RemoveOverlay("move", this.gameObject.GetInstanceID());

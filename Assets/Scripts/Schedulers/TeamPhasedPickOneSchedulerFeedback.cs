@@ -28,7 +28,7 @@ public class TeamPhasedPickOneSchedulerFeedback : MonoBehaviour {
 		}
 	}
 	
-	public void BeginPhase(int newTeamID) {
+	public void PhaseBegan(int newTeamID) {
 		Character c = GetComponent<Character>();
 		if(c != null && newTeamID == c.GetEffectiveTeamID()) {
 			//unshade
@@ -37,7 +37,7 @@ public class TeamPhasedPickOneSchedulerFeedback : MonoBehaviour {
 /*			Debug.Log("back to "+standardColor);*/
 		}
 	}
-	public void EndPhase(int teamID) {
+	public void PhaseEnded(int teamID) {
 		Character c = GetComponent<Character>();
 		if(c != null && teamID == c.GetEffectiveTeamID()) {
 			//shade

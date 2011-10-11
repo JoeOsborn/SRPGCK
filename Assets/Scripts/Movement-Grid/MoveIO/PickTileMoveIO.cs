@@ -14,7 +14,7 @@ public class PickTileMoveIO : MoveIO {
 	
 	bool cycleIndicatorZ = false;
 	float indicatorCycleT=0;
-	float indicatorCycleLength=1.0f;
+	public float indicatorCycleLength=1.0f;
 	
 	float lastIndicatorKeyboardMove=0;
 	float indicatorKeyboardMoveThreshold=0.3f;
@@ -36,7 +36,7 @@ public class PickTileMoveIO : MoveIO {
 		if(character == null || !character.isActive) { return; }
 		if(!isActive) { return; }
 		//self.isActive?
-		if(supportMouse && Input.GetMouseButtonDown(0)) {
+		if(supportMouse && Input.GetMouseButton(0)) {
 			cycleIndicatorZ = false;
 			Ray r = Camera.main.ScreenPointToRay(Input.mousePosition);
 			Vector3 hitSpot;
@@ -44,14 +44,14 @@ public class PickTileMoveIO : MoveIO {
 			hitSpot.x = Mathf.Floor(hitSpot.x)+0.5f;
 			hitSpot.y = Mathf.Floor(hitSpot.y)+0.5f;
 			hitSpot.z = Mathf.Floor(hitSpot.z+0.5f);
+			indicatorXY = new Vector2(hitSpot.x, hitSpot.y);
+			indicatorZ = hitSpot.z;
 			if(Time.time-firstClickTime > doubleClickThreshold) {
-				indicatorXY = new Vector2(hitSpot.x, hitSpot.y);
-				indicatorZ = hitSpot.z;
 				firstClickTime = Time.time;
 			} else {
 				firstClickTime = -1;
-				if(inside) {
-					Vector3 indicatorSpot = new Vector3(indicatorXY.x, indicatorXY.y, indicatorZ);
+				Vector3 indicatorSpot = new Vector3(indicatorXY.x, indicatorXY.y, indicatorZ);
+				if(Input.GetMouseButtonDown(0) && inside && overlay.ContainsPosition(indicatorSpot)) {
 					PathNode pn = overlay.PositionAt(indicatorSpot);
 					if(pn != null && pn.canStop) {
 						PerformMove(indicatorSpot);
@@ -81,7 +81,6 @@ public class PickTileMoveIO : MoveIO {
 				PerformMove(indicatorSpot);
 			}
 		}
-		//FIXME: fix my cycling
 		if(cycleIndicatorZ) {
 			indicatorCycleT += Time.deltaTime;
 			if(indicatorCycleT >= indicatorCycleLength) {
@@ -93,44 +92,27 @@ public class PickTileMoveIO : MoveIO {
 		instantiatedIndicator.position = map.TransformPointWorld(new Vector3(indicatorXY.x, indicatorXY.y, indicatorZ))+new Vector3(0,0.1f,0);
 	}
 	
-	override public void PresentMoves() {
+	override protected void PresentMoves() {
 		base.PresentMoves();
+		Debug.Log("present");
 		GridMoveStrategy ms = GetComponent<GridMoveStrategy>();
 		PathNode[] destinations = ms.GetValidMoves();
 		Vector3 charPos = map.InverseTransformPointWorld(transform.position);
-/*		map.PresentSphereOverlay(
-			"move", this.gameObject.GetInstanceID(), 
-			new Color(0.3f, 0.3f, 0.3f, 0.3f),
-			charPos,
-			3,
-			false,
-			false,
-			true
-		);
-*/	
-	/*	map.PresentCylinderOverlay(
-				"move", this.gameObject.GetInstanceID(), 
-				new Color(0.3f, 0.3f, 0.3f, 0.3f),
-				charPos,
-				3, //out by 3
-				3, //up by 1.5, down by 1.5
-				true,
-				true,
-				true
-			);*/
 		overlay = map.PresentGridOverlay(
 			"move", this.gameObject.GetInstanceID(), 
 			new Color(0.2f, 0.3f, 0.9f, 0.7f),
 			destinations
 		);
+		Debug.Log("overlay:"+overlay);
+		Debug.Log("dest count:"+destinations.Length);
 		cycleIndicatorZ = false;
 		indicatorXY = new Vector2(Mathf.Floor(charPos.x)+0.5f, Mathf.Floor(charPos.y)+0.5f);
-		indicatorZ = Mathf.Floor(charPos.z);
+		indicatorZ = map.NearestZLevel((int)indicatorXY.x, (int)indicatorXY.y, (int)Mathf.Floor(charPos.z));
 		instantiatedIndicator.gameObject.active = true;
 		instantiatedIndicator.parent = map.transform;
 	}
 	
-	override public void FinishMove() {
+	override protected void FinishMove() {
 		instantiatedIndicator.gameObject.active = false;
 		overlay = null;
 		if(map.IsShowingOverlay("move", this.gameObject.GetInstanceID())) {

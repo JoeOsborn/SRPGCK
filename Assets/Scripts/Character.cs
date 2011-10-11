@@ -3,28 +3,13 @@ using System.Collections;
 using System.Collections.Generic;
 
 public class Character : MonoBehaviour {	
-	Map map=null;
+	[System.NonSerialized]
+	public Map map=null;
 
 	//I believe this is a stored property here in character, not merely a query to scheduler for whether active==this (what if you can have multiple active dudes?)
 	public bool isActive=false;
 
 	public int teamID;
-	
-	[SerializeField]
-	protected Hashtable customData;
-	
-	public T GetCustomData<T>(string s, T defaultValue=default(T)) {
-		if(customData == null || !HasCustomData(s)) { return defaultValue; }
-		return (T)customData[s];
-	}
-	public void SetCustomData<T>(string s, T o) {
-		if(customData == null) { customData = new Hashtable(); }
-		customData[s] = o;
-	}
-	public bool HasCustomData(string s) {
-		if(customData == null) { return false; }
-		return customData.ContainsKey(s);
-	}
 	
 	// Use this for initialization
 	void Start () {

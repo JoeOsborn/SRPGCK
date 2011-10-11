@@ -9,11 +9,13 @@ public enum TurnLimitMode {
 public class TeamPhasedPointsScheduler : Scheduler {
 	public TurnLimitMode limitMode=TurnLimitMode.Time;
 	
-	public double defaultLimiterMax=10;
-	public double defaultLimiterDiminishScale=0.75;
-	public double defaultMoveAPCost=1; //per tile move cost
-	public double defaultAPLossPerSecond=0;
+	public bool onlyDrainAPForXYDistance = true;
 	
+	public float defaultLimiterMax=10;
+	public float defaultLimiterDiminishScale=0.75f;
+	public float defaultMoveAPCost=1; //per tile move cost
+	public float defaultAPLossPerSecond=0;
+		
 	public int teamCount=2;
 
 	public int currentTeam=0;
@@ -23,21 +25,12 @@ public class TeamPhasedPointsScheduler : Scheduler {
 	[HideInInspector]
 	public int pointsRemaining=0;
 	
-	[HideInInspector]
-	public Hashtable characterUses;
-	
-	[HideInInspector]
-	public double limiter;
-	
 	override public void Start () {
-		characterUses = new Hashtable();
 		pointsRemaining = pointsPerPhase;
-		limiter = 0;
 		foreach(Character c in characters) {
-			if(c.GetEffectiveTeamID() == currentTeam) {
-				characterUses[c] = 0;
-			}
-			c.SendMessage("BeginTurn", currentTeam, SendMessageOptions.DontRequireReceiver);
+			PhasedPointsCharacter ppc = c.GetComponent<PhasedPointsCharacter>();
+			ppc.UsesThisPhase = 0;
+			ppc.Limiter = 0;
 		}
 	}
 	
@@ -45,21 +38,19 @@ public class TeamPhasedPointsScheduler : Scheduler {
 		if(activeCharacter != null) {
 			Deactivate(activeCharacter);
 		}
-		foreach(Character c in characters) {
-			c.SendMessage("EndPhase", currentTeam, SendMessageOptions.DontRequireReceiver);
-		}
+		map.BroadcastMessage("PhaseEnded", currentTeam, SendMessageOptions.DontRequireReceiver);
 		currentTeam++;
 		if(currentTeam >= teamCount) {
 			currentTeam = 0;
 		}
-		characterUses.Clear();
 		pointsRemaining = pointsPerPhase;
 		foreach(Character c in characters) {
 			if(c.GetEffectiveTeamID() == currentTeam) {
-				characterUses[c] = 0;
+				PhasedPointsCharacter ppc = c.GetComponent<PhasedPointsCharacter>();
+				ppc.UsesThisPhase = 0;
 			}
-			c.SendMessage("BeginPhase", currentTeam, SendMessageOptions.DontRequireReceiver);
 		}
+		map.BroadcastMessage("PhaseBegan", currentTeam, SendMessageOptions.DontRequireReceiver);
 	}
 	
 	public void OnGUI() {
@@ -74,56 +65,91 @@ public class TeamPhasedPointsScheduler : Scheduler {
 		}
 		if(activeCharacter != null) {
 			if(GUILayout.Button("End Move")) {
-				Deactivate(activeCharacter);
+				EndMovePhase(activeCharacter);
 			}
 		}
 		GUILayout.EndArea();
 	}
 	
-	public void DecreaseAP(double amt) {
+	public void DecreaseAP(float amt) {
 		if(activeCharacter != null && limitMode == TurnLimitMode.AP) {
-			limiter -= amt;
+			PhasedPointsCharacter ppc = activeCharacter.GetComponent<PhasedPointsCharacter>();
+			ppc.Limiter -= amt;
+		}
+	}
+	
+	override public void AddCharacter(Character c) {
+		base.AddCharacter(c);
+		if(c.GetComponent<PhasedPointsCharacter>() == null) {
+			c.gameObject.AddComponent<PhasedPointsCharacter>();
 		}
 	}
 	
 	override public void Activate(Character c, object ctx=null) {
 		if(c == null) { return; }
-		int uses = characterUses.ContainsKey(c) ? (int)characterUses[c] : 0;
+		PhasedPointsCharacter ppc = c.GetComponent<PhasedPointsCharacter>();
+		int uses = ppc.UsesThisPhase;
 		if(limitMode == TurnLimitMode.AP) {
 			//set C's AP based on uses
-			limiter = c.GetCustomData<double>("SchedulerTurnAPMax", defaultLimiterMax);
+			ppc.Limiter = ppc.MaxTurnAP;
 		} else if(limitMode == TurnLimitMode.Time) {
 			//set timer based on uses
-			limiter = c.GetCustomData<double>("SchedulerTurnTimeMax", defaultLimiterMax);
+			ppc.Limiter = ppc.MaxTurnTime;
 		}
-		double downscaleFactor = c.GetCustomData<double>("SchedulerTurnDiminishScale", defaultLimiterDiminishScale);
-		limiter *= Mathf.Pow((float)downscaleFactor, uses);
-		Debug.Log("starting AP: "+limiter);
+		float downscaleFactor = ppc.TurnDiminishScale;
+		ppc.Limiter *= Mathf.Pow(downscaleFactor, uses);
+		if(limitMode == TurnLimitMode.AP) {
+			//???: Is it okay for the scheduler to determine the move strategy's max range?
+			//???: What about characters' intrinsic stats and so on?
+			MoveStrategy ms = c.GetComponent<MoveStrategy>();
+			ms.xyRange = GetMaximumTraversalDistance(c);
+		}
+	 	//FIXME: can we do something here for time-based traversal distance limitation?
+		//???: What about characters' intrinsic movement stats and so on?
+		Debug.Log("starting AP: "+ppc.Limiter);
 		base.Activate(c, ctx);
-		characterUses[c] = uses+1;
+		ppc.UsesThisPhase = uses+1;
 		//(for now): ON `activate`, MOVE
-		activeCharacter.GetComponent<MoveIO>().PresentMoves();
+		activeCharacter.SendMessage("PresentMoves", null);
+	}
+	
+	override public void CharacterMovedIncremental(Character c, Vector3 from, Vector3 to) {
+		CharacterMoved(c, from, to);
 	}
 	
 	override public void CharacterMoved(Character c, Vector3 from, Vector3 to) {
-		//FIXME: should get a path node instead of an instantaneous vector, since we don't really want straight-line distance
+		//FIXME: should get path nodes instead of an instantaneous vector, since we don't really want straight-line distance
+		Debug.Log("moved to "+to);
+		PhasedPointsCharacter ppc = c.GetComponent<PhasedPointsCharacter>();
 		if(limitMode == TurnLimitMode.AP) {
-			double moveAPCost = c.GetCustomData<double>("SchedulerTurnMoveAPCost", defaultMoveAPCost);
-			Debug.Log("Distance: "+Vector3.Distance(to, from));
-			DecreaseAP(moveAPCost * Vector3.Distance(to, from));
-			Debug.Log("new AP: "+limiter);
+			float moveAPCost = ppc.PerUnitMovementAPCost;
+			float distance = 0;
+			if(onlyDrainAPForXYDistance) {
+				distance = Vector2.Distance(new Vector2(to.x, to.y), new Vector2(from.x, from.y));
+			} else {
+				distance = Vector3.Distance(to, from);
+			}
+			Debug.Log("Distance: "+distance);
+			DecreaseAP(moveAPCost * distance);
+			Debug.Log("new AP: "+ppc.Limiter);
 		}
 	}
 	
-	override public float GetMaximumTraversalDistance() {
-		double moveAPCost = activeCharacter.GetCustomData<double>("SchedulerTurnMoveAPCost", defaultMoveAPCost);
-		return (float)(moveAPCost * limiter);
+	//NEXT: maybe this is best phrased as a call from the scheduler to the MoveStrategy letting it know
+	//some relevant information? Or else a call from the MoveStrategy to the scheduler -- either way,
+	//the MoveStrategy must be AP-savvy in order to get the correct paths.
+	public float GetMaximumTraversalDistance(Character c=null) {
+		//FIXME: only right for AP-limited scheduler
+		if(c == null) { c = activeCharacter; }
+		if(c == null) { return 0; }
+		PhasedPointsCharacter ppc = c.GetComponent<PhasedPointsCharacter>();
+		float moveAPCost = ppc.PerUnitMovementAPCost;
+		return (float)(ppc.Limiter/moveAPCost);
 	}
 	
 	override public void EndMovePhase(Character c) {
-		//figure out what's going on here for the valkyria situation
-		
-//		Deactivate(c);
+		base.EndMovePhase(c);
+		Deactivate(c);
 	}
 	
 	override public void Update () {
@@ -134,17 +160,18 @@ public class TeamPhasedPointsScheduler : Scheduler {
 			}
 		}
 		if(activeCharacter) {
+			PhasedPointsCharacter ppc = activeCharacter.GetComponent<PhasedPointsCharacter>();
 			if(limitMode == TurnLimitMode.Time) {
-				limiter -= Time.deltaTime;
+				ppc.Limiter -= Time.deltaTime;
 			} else if(limitMode == TurnLimitMode.AP) {
-				double waitAPCost = activeCharacter.GetCustomData<double>("SchedulerTurnAPLossPerSecond", defaultAPLossPerSecond);
+				float waitAPCost = ppc.PerSecondAPCost;
 				DecreaseAP(waitAPCost * Time.deltaTime);
 			}
-			if(limiter <= 0) {
+			if(ppc.Limiter <= 0) {
 				Deactivate(activeCharacter);
 			}
 		}
-		if(Input.GetMouseButtonDown(0)) {
+		if(activeCharacter == null && Input.GetMouseButtonDown(0)) {
 			Ray r = Camera.main.ScreenPointToRay(Input.mousePosition);
 			RaycastHit[] hits = Physics.RaycastAll(r);
 			float closestDistance = Mathf.Infinity;

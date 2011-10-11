@@ -10,8 +10,7 @@ public class TileSpec {
 
 [System.Serializable]
 public class MapTile {
-	public MapTile next=null;
-	public int z=0;
+	public int x=0,y=0,z=0;
 	//indexed in same order as Map.Corners: l, f, r, b
 	public int[] heights = {1,1,1,1};
 	public int[] baselines = {0,0,0,0};
@@ -33,7 +32,9 @@ public class MapTile {
 	
 	//unity creates empty instances of these guys in place of nulls, so we need this hack
 	public bool serializeHackUsable=false;
-	public MapTile(int z) {
+	public MapTile(int x, int y, int z) {
+		this.x = x;
+		this.y = y;
 		this.z = z;
 		this.invisible = false;
 		this.tileSpecs = new int[]{-1, -1, -1, -1, -1, -1};
@@ -72,7 +73,7 @@ public class MapTile {
 			tileSpecs[5] = spec;
 		}
 	}
-	public void AdjustHeightOnSides(int ht, Map.Neighbors mask, bool top) {
+	public void AdjustHeightOnSides(int ht, Map.Neighbors mask, bool top, MapTile next) {
 		if(top && (heights == null || heights.Length == 0)) {
 			heights = new int[]{1, 1, 1, 1};
 		}
@@ -253,5 +254,37 @@ public class MapTile {
 	public bool ContainsZ(int zed) {
 		//note <, not <=!
 		return zed >= this.z && zed < (this.z+this.maxHeight);
+	}
+}
+
+[System.Serializable]
+public class MapColumn {
+	[SerializeField]
+	List<MapTile> tiles;
+	
+	public MapColumn() {
+		tiles = new List<MapTile>();
+	}
+	
+	public MapTile At(int i) {
+		return tiles[i];
+	}
+	public void RemoveAt(int i) {
+		tiles.RemoveAt(i);
+	}
+	public int Count {
+		get { return tiles.Count; }
+	}
+	public void Clear() {
+		tiles.Clear();
+	}
+	public void Add(MapTile t) {
+		tiles.Add(t);
+	}
+	public void Insert(int idx, MapTile t) {
+		tiles.Insert(idx, t);
+	}
+	public int IndexOf(MapTile t) {
+		return tiles.IndexOf(t);
 	}
 }

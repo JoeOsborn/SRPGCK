@@ -13,7 +13,6 @@ public class TeamPhasedPickAnyOnceScheduler : Scheduler {
 		foreach(Character c in characters) {
 			if(c.GetEffectiveTeamID() == currentTeam) {
 				remainingCharacters.Add(c);
-				c.SendMessage("BeginTurn", currentTeam, SendMessageOptions.DontRequireReceiver);
 			}
 		}
 	}
@@ -22,9 +21,7 @@ public class TeamPhasedPickAnyOnceScheduler : Scheduler {
 		if(activeCharacter != null) {
 			Deactivate(activeCharacter);
 		}
-		foreach(Character c in characters) {
-			c.SendMessage("EndPhase", currentTeam, SendMessageOptions.DontRequireReceiver);
-		}
+		map.BroadcastMessage("PhaseEnded", currentTeam, SendMessageOptions.DontRequireReceiver);
 		currentTeam++;
 		if(currentTeam >= teamCount) {
 			currentTeam = 0;
@@ -34,8 +31,8 @@ public class TeamPhasedPickAnyOnceScheduler : Scheduler {
 			if(c.GetEffectiveTeamID() == currentTeam) {
 				remainingCharacters.Add(c);
 			}
-			c.SendMessage("BeginPhase", currentTeam, SendMessageOptions.DontRequireReceiver);
 		}
+		map.BroadcastMessage("PhaseBegan", currentTeam, SendMessageOptions.DontRequireReceiver);
 	}
 
 	override public void EndMovePhase(Character c) {
@@ -57,7 +54,7 @@ public class TeamPhasedPickAnyOnceScheduler : Scheduler {
 	override public void Activate(Character c, object ctx=null) {
 		base.Activate(c, ctx);	
 		//(for now): ON `activate`, MOVE
-		activeCharacter.GetComponent<MoveIO>().PresentMoves();
+		activeCharacter.SendMessage("PresentMoves", null);
 	}
 	
 	override public void Update () {

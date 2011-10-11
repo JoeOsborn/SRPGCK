@@ -2,18 +2,18 @@ using UnityEngine;
 using System.Collections;
 
 public class MoveExecutor : MonoBehaviour {
-	Map map;
+	[System.NonSerialized]
+	public Map map;
 	public Vector3 position;
 	public Vector3 destination;
 	public Vector3 temporaryPosition;
 	public Vector3 temporaryDestination;
-	// Use this for initialization
-	void Start () {
+
+	virtual public void Start () {
 
 	}
 	
-	// Update is called once per frame
-	void Update () {
+	virtual public void Update () {
 		if(map == null) {
 			if(this.transform.parent != null) {
 				map = this.transform.parent.GetComponent<Map>();
@@ -29,17 +29,21 @@ public class MoveExecutor : MonoBehaviour {
 		}
 	}
 
-	public void TemporaryMoveTo(Vector3 tileCoord) {
+	virtual public void TemporaryMoveTo(Vector3 tileCoord) {
 		temporaryDestination = map.TransformPointWorld(tileCoord)+new Vector3(0,5f,0);
 		temporaryPosition = destination;
 		this.transform.position = destination;
 	}
-	
-	public void MoveTo(Vector3 tileCoord) {
+
+	virtual public void IncrementalMoveTo(Vector3 tileCoord) {
 		destination = map.TransformPointWorld(tileCoord)+new Vector3(0,5f,0);
 		position = destination;
 		temporaryDestination = destination;
 		temporaryPosition = destination;
 		this.transform.position = destination;
+	}
+	
+	virtual public void MoveTo(Vector3 tileCoord) {
+		IncrementalMoveTo(tileCoord);
 	}
 }

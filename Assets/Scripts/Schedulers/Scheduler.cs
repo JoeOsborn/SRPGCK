@@ -10,13 +10,15 @@ public class Scheduler : MonoBehaviour {
 	[HideInInspector]
 	public Character activeCharacter;
 	
-	public void AddCharacter(Character c) {
+	protected Map map;
+	
+	virtual public void AddCharacter(Character c) {
 		if(!characters.Contains(c)) {
 			characters.Add(c);
 		}
 	}
 	
-	public void RemoveCharacter(Character c) {
+	virtual public void RemoveCharacter(Character c) {
 		characters.Remove(c);
 	}
 	
@@ -31,10 +33,6 @@ public class Scheduler : MonoBehaviour {
 		c.SendMessage("Deactivate", context, SendMessageOptions.RequireReceiver);
 	}
 	
-	public virtual float GetMaximumTraversalDistance() {
-		return float.MaxValue;
-	}
-	
 	public virtual void EndMovePhase(Character c) {
 
 	}
@@ -46,11 +44,15 @@ public class Scheduler : MonoBehaviour {
 	public virtual void CharacterMoved(Character c, Vector3 src, Vector3 dest) {
 		
 	}
+	public virtual void CharacterMovedIncremental(Character c, Vector3 src, Vector3 dest) {
+		CharacterMovedTemporary(c, src, dest);
+	}
 	public virtual void CharacterMovedTemporary(Character c, Vector3 src, Vector3 dest) {
 		
 	}
 	
 	public virtual void Update () {
+		if(map == null) { map = transform.parent.GetComponent<Map>(); }
 		if(activeCharacter != null && activeCharacter.isActive) { return; }
 		if(activeCharacter != null && !activeCharacter.isActive) { Deactivate(activeCharacter); }
 	}
