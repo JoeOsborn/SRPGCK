@@ -37,12 +37,18 @@ public class Overlay : MonoBehaviour {
 		}
 		if(this.renderer == null && shadeMaterial != null) {
 			//add a mesh renderer
-			MeshRenderer mr = this.gameObject.AddComponent<MeshRenderer>();
-			MeshFilter mf = this.gameObject.AddComponent<MeshFilter>();
+			MeshFilter mf = gameObject.GetComponent<MeshFilter>();
+			if(mf == null) { mf = gameObject.AddComponent<MeshFilter>(); }
 			mf.mesh = map.OverlayMesh;
-			mr.material = shadeMaterial;
-			MeshCollider mc = this.gameObject.AddComponent<MeshCollider>();
+			AddShadeMaterial();
+			MeshCollider mc = this.gameObject.GetComponent<MeshCollider>();
+			if(mc == null) { mc = this.gameObject.AddComponent<MeshCollider>(); }			
 			mc.convex = false;
 		}
+	}
+	
+	virtual protected void AddShadeMaterial() {
+		MeshRenderer mr = this.gameObject.AddComponent<MeshRenderer>();
+		mr.material = shadeMaterial;
 	}
 }

@@ -792,7 +792,7 @@ public class Map : MonoBehaviour {
 		return this.InverseTransformPointLocal(this.transform.InverseTransformPoint(worldCoord));
 	}
 	
-	public GridOverlay PresentGridOverlay(string category, int id, Color color, PathNode[] destinations) {
+	public GridOverlay PresentGridOverlay(string category, int id, Color color, Color selectedColor, PathNode[] destinations) {
 		if(overlays == null) { overlays = new Dictionary<string, Dictionary<int, Overlay>>(); }
 		if(!overlays.ContainsKey(category)) {
 			overlays[category] = new Dictionary<int, Overlay>();
@@ -803,6 +803,7 @@ public class Map : MonoBehaviour {
 		ov.destinations = destinations;
 		ov.positions = CoalesceTiles(destinations);
 		ov.color = color;
+		ov.selectedColor = selectedColor;
 		ov.category = category;
 		ov.identifier = id;
 		overlays[category][id] = ov;
@@ -891,7 +892,7 @@ public class Map : MonoBehaviour {
 					if(IsProp(mf.gameObject)) {
 						combine[meshesUsed].mesh = mf.sharedMesh;
 						//translate all these matrices by the inverse of the local translation matrix
-						combine[meshesUsed].transform = mf.transform.localToWorldMatrix * Matrix4x4.TRS(new Vector3(0,tileHeight/_sideLength,0), Quaternion.identity, Vector3.one).inverse;
+						combine[meshesUsed].transform = mf.transform.localToWorldMatrix;
 						meshesUsed++;
 					}
 				}
@@ -997,7 +998,8 @@ public class Map : MonoBehaviour {
 						if(decision == PathDecision.PassOnly) {
 							newPn.canStop = false;
 						}
-						bool heightOK = (decision != PathDecision.Normal || jump < 0) ? true : newPn.dz <= jump;
+						float dz = DZForMove(newPn.pos, pn.pos, n.x, n.y);
+						bool heightOK = (decision != PathDecision.Normal || jump < 0) ? true : dz <= jump;
 						if((decision != PathDecision.Invalid) && heightOK) {
 							open.Push(newPn);
 						}
@@ -1006,6 +1008,34 @@ public class Map : MonoBehaviour {
 			}
 		}
 		return nodes.ToArray();
+	}
+	public Neighbors EnteringSideFromXYDelta(float dx, float dy) {
+		if(dx > 0) { return Neighbors.FrontLeft; }
+		if(dx < 0) { return Neighbors.BackRight; }
+		if(dy > 0) { return Neighbors.FrontRight; }
+		if(dy < 0) { return Neighbors.BackLeft; }
+		Debug.LogError("entering side uses weird deltas "+dx+","+dy);
+		return Neighbors.None;
+	}
+	public Neighbors ExitingSideFromXYDelta(float dx, float dy) {
+		if(dx > 0) { return Neighbors.BackRight; }
+		if(dx < 0) { return Neighbors.FrontLeft; }
+		if(dy > 0) { return Neighbors.BackLeft; }
+		if(dy < 0) { return Neighbors.FrontRight; }
+		Debug.LogError("exiting side uses weird deltas "+dx+","+dy);
+		return Neighbors.None;
+	}
+	public float DZForMove(Vector3 to, Vector3 from, float dx, float dy) {
+		MapTile toTile = TileAt((int)to.x, (int)to.y, (int)to.z);
+		Neighbors entering = EnteringSideFromXYDelta(dx, dy);
+		MapTile fromTile = TileAt((int)from.x, (int)from.y, (int)from.z);
+		Neighbors exiting = ExitingSideFromXYDelta(dx, dy);
+		if(fromTile == null || toTile == null) { return float.MaxValue; }
+		float lldz = Mathf.Abs(fromTile.LowestHeightAt(exiting) - toTile.LowestHeightAt(entering));
+		float ludz = Mathf.Abs(fromTile.LowestHeightAt(exiting) - toTile.HighestHeightAt(entering));
+		float uldz = Mathf.Abs(fromTile.HighestHeightAt(exiting) - toTile.LowestHeightAt(entering));
+		float uudz = Mathf.Abs(fromTile.HighestHeightAt(exiting) - toTile.HighestHeightAt(entering));
+		return Mathf.Max(lldz, Mathf.Max(ludz, Mathf.Max(uldz, uudz)));
 	}
 }
 

@@ -48,6 +48,7 @@
      <Compile Include="Assets\Editor\MapEditor.cs" />
      <None Include="Assets\Shaders\RadialOverlayOuterVolume.shader" />
      <None Include="Assets\Shaders\CylinderOverlayClipInverted.shader" />
+     <None Include="Assets\Shaders\GridOverlayHighlightSelected.shader" />
      <None Include="Assets\Shaders\GridOverlayClip.shader" />
      <None Include="Assets\Shaders\CylinderOverlayClip.shader" />
      <None Include="Assets\Shaders\SphereOverlayClip.shader" />

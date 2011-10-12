@@ -5,8 +5,6 @@ public class PickTileMoveIO : MoveIO {
 	public bool supportKeyboard = true;
 	public bool supportMouse = true;
 	
-	public Transform indicator;
-
 	GridOverlay overlay;
 	
 	float firstClickTime = -1;
@@ -22,13 +20,8 @@ public class PickTileMoveIO : MoveIO {
 	Vector2 indicatorXY=Vector2.zero;
 	float indicatorZ=0;
 	
-	Transform instantiatedIndicator;
-	
-	
 	override public void Start() {
 		base.Start();
-		instantiatedIndicator = Instantiate(indicator) as Transform;
-		instantiatedIndicator.gameObject.active = false;
 	}
 	
 	override public void Update () {
@@ -88,8 +81,12 @@ public class PickTileMoveIO : MoveIO {
 				indicatorZ = map.NextZLevel((int)indicatorXY.x, (int)indicatorXY.y, (int)indicatorZ, true);
 			}
 		}
-		
-		instantiatedIndicator.position = map.TransformPointWorld(new Vector3(indicatorXY.x, indicatorXY.y, indicatorZ))+new Vector3(0,0.1f,0);
+		if(overlay != null) {
+			MapTile t = map.TileAt((int)indicatorXY.x, (int)indicatorXY.y, (int)indicatorZ);
+			if(t != null) {
+				overlay.selectedPoint = new Vector4((int)indicatorXY.x, (int)indicatorXY.y, t.z, t.maxZ);
+			}
+		}
 	}
 	
 	override protected void PresentMoves() {
@@ -101,19 +98,17 @@ public class PickTileMoveIO : MoveIO {
 		overlay = map.PresentGridOverlay(
 			"move", this.gameObject.GetInstanceID(), 
 			new Color(0.2f, 0.3f, 0.9f, 0.7f),
+			new Color(0.4f, 0.6f, 0.9f, 0.85f),
 			destinations
 		);
-		Debug.Log("overlay:"+overlay);
-		Debug.Log("dest count:"+destinations.Length);
 		cycleIndicatorZ = false;
 		indicatorXY = new Vector2(Mathf.Floor(charPos.x)+0.5f, Mathf.Floor(charPos.y)+0.5f);
 		indicatorZ = map.NearestZLevel((int)indicatorXY.x, (int)indicatorXY.y, (int)Mathf.Floor(charPos.z));
-		instantiatedIndicator.gameObject.active = true;
-		instantiatedIndicator.parent = map.transform;
+		MapTile t = map.TileAt((int)indicatorXY.x, (int)indicatorXY.y, (int)indicatorZ);
+		overlay.selectedPoint = new Vector4((int)indicatorXY.x, (int)indicatorXY.y, t.z, t.maxZ);
 	}
 	
 	override protected void FinishMove() {
-		instantiatedIndicator.gameObject.active = false;
 		overlay = null;
 		if(map.IsShowingOverlay("move", this.gameObject.GetInstanceID())) {
 			map.RemoveOverlay("move", this.gameObject.GetInstanceID());

@@ -73,6 +73,44 @@ public class MapTile {
 			tileSpecs[5] = spec;
 		}
 	}
+	public float LowestHeightAt(Map.Neighbors side) {
+		int hcl = heights[(int)Map.Corners.Left];
+		int hcf = heights[(int)Map.Corners.Front];
+		int hcr = heights[(int)Map.Corners.Right];
+		int hcb = heights[(int)Map.Corners.Back];
+		switch(side) {
+			case Map.Neighbors.FrontLeft:
+				return Mathf.Min(hcl, hcf);
+			case Map.Neighbors.FrontRight:
+				return Mathf.Min(hcr, hcf);
+			case Map.Neighbors.BackLeft:
+				return Mathf.Min(hcl, hcb);
+			case Map.Neighbors.BackRight:
+				return Mathf.Min(hcr, hcb);
+			default: 
+				Debug.LogError("given neighbor is not a side edge: "+side);
+				return this.z;
+		}
+	}
+	public float HighestHeightAt(Map.Neighbors side) {
+		int hcl = heights[(int)Map.Corners.Left];
+		int hcf = heights[(int)Map.Corners.Front];
+		int hcr = heights[(int)Map.Corners.Right];
+		int hcb = heights[(int)Map.Corners.Back];
+		switch(side) {
+			case Map.Neighbors.FrontLeft:
+				return Mathf.Max(hcl, hcf);
+			case Map.Neighbors.FrontRight:
+				return Mathf.Max(hcr, hcf);
+			case Map.Neighbors.BackLeft:
+				return Mathf.Max(hcl, hcb);
+			case Map.Neighbors.BackRight:
+				return Mathf.Max(hcr, hcb);
+			default: 
+				Debug.LogError("given neighbor is not a side edge: "+side);
+				return this.maxZ;
+		}
+	}
 	public void AdjustHeightOnSides(int ht, Map.Neighbors mask, bool top, MapTile next) {
 		if(top && (heights == null || heights.Length == 0)) {
 			heights = new int[]{1, 1, 1, 1};
