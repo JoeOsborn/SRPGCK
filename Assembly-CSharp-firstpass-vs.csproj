@@ -18,7 +18,7 @@
 	<DebugType>full</DebugType>
 	<Optimize>false</Optimize>
 	<OutputPath>Temp\bin\Debug\</OutputPath>
-	<DefineConstants>DEBUG;TRACE;UNITY_3_4_0;UNITY_3_4;UNITY_EDITOR;ENABLE_PROFILER;UNITY_STANDALONE_OSX;ENABLE_GENERICS;ENABLE_DUCK_TYPING;ENABLE_TERRAIN;ENABLE_MOVIES;ENABLE_NETWORK;ENABLE_CLOTH;ENABLE_WWW</DefineConstants>
+	<DefineConstants>DEBUG;TRACE;UNITY_3_4_1;UNITY_3_4;UNITY_EDITOR;ENABLE_PROFILER;UNITY_STANDALONE_OSX;ENABLE_GENERICS;ENABLE_DUCK_TYPING;ENABLE_TERRAIN;ENABLE_MOVIES;ENABLE_NETWORK;ENABLE_CLOTH;ENABLE_WWW</DefineConstants>
 	<ErrorReport>prompt</ErrorReport>
 	<WarningLevel>4</WarningLevel>
 	<NoWarn>0169</NoWarn>
@@ -44,10 +44,45 @@
 	</Reference>
   </ItemGroup>
   <ItemGroup>
-     <Compile Include="Assets\Standard Assets\Scripts\General Scripts\ActivateTrigger.cs" />
-     <Compile Include="Assets\Standard Assets\Scripts\Utility Scripts\CombineChildren.cs" />
-     <Compile Include="Assets\Standard Assets\Scripts\Utility Scripts\MeshCombineUtility.cs" />
-     <None Include="Assets\Standard Assets\Skyboxes\ skybox info.txt" />
+     <Compile Include="Assets\Plugins\SPRGKit\Character.cs" />
+     <Compile Include="Assets\Plugins\SPRGKit\Map.cs" />
+     <Compile Include="Assets\Plugins\SPRGKit\MapTile.cs" />
+     <Compile Include="Assets\Plugins\SPRGKit\MoveExecutor.cs" />
+     <Compile Include="Assets\Plugins\SPRGKit\MoveIO.cs" />
+     <Compile Include="Assets\Plugins\SPRGKit\MoveStrategy.cs" />
+     <Compile Include="Assets\Plugins\SPRGKit\Movement-Grid\GridMoveStrategy.cs" />
+     <Compile Include="Assets\Plugins\SPRGKit\Movement-Grid\GridOverlay.cs" />
+     <Compile Include="Assets\Plugins\SPRGKit\Movement-Grid\MoveIO\ContinuousWithinTilesMoveIO.cs" />
+     <Compile Include="Assets\Plugins\SPRGKit\Movement-Grid\MoveIO\PickTileMoveIO.cs" />
+     <Compile Include="Assets\Plugins\SPRGKit\Movement-Radial\MoveIO\ContinuousMoveIO.cs" />
+     <Compile Include="Assets\Plugins\SPRGKit\Movement-Radial\MoveIO\PickSpotMoveIO.cs" />
+     <Compile Include="Assets\Plugins\SPRGKit\Movement-Radial\RadialMoveStrategy.cs" />
+     <Compile Include="Assets\Plugins\SPRGKit\Movement-Radial\RadialOverlay.cs" />
+     <Compile Include="Assets\Plugins\SPRGKit\Overlay.cs" />
+     <Compile Include="Assets\Plugins\SPRGKit\Prop.cs" />
+     <Compile Include="Assets\Plugins\SPRGKit\ProxyMoveExecutor.cs" />
+     <Compile Include="Assets\Plugins\SPRGKit\ProxyMoveIO.cs" />
+     <Compile Include="Assets\Plugins\SPRGKit\Schedulers\CTCharacter.cs" />
+     <Compile Include="Assets\Plugins\SPRGKit\Schedulers\CTScheduler.cs" />
+     <Compile Include="Assets\Plugins\SPRGKit\Schedulers\PhasedPointsCharacter.cs" />
+     <Compile Include="Assets\Plugins\SPRGKit\Schedulers\Scheduler.cs" />
+     <Compile Include="Assets\Plugins\SPRGKit\Schedulers\TeamPhasedPickAnyOnceScheduler.cs" />
+     <Compile Include="Assets\Plugins\SPRGKit\Schedulers\TeamPhasedPickOneSchedulerFeedback.cs" />
+     <Compile Include="Assets\Plugins\SPRGKit\Schedulers\TeamPhasedPointsScheduler.cs" />
+     <Compile Include="Assets\Plugins\SpriteSystem\Billboard.cs" />
+     <Compile Include="Assets\Plugins\SpriteSystem\DisplayGraph2D.cs" />
+     <Compile Include="Assets\Plugins\SpriteSystem\DisplayGroup.cs" />
+     <Compile Include="Assets\Plugins\SpriteSystem\DisplayObject.cs" />
+     <Compile Include="Assets\Plugins\SpriteSystem\Layer.cs" />
+     <Compile Include="Assets\Plugins\SpriteSystem\Sprite.cs" />
+     <Compile Include="Assets\Plugins\SpriteSystem\SpriteAnimation.cs" />
+     <None Include="Assets\Plugins\SPRGKit\Shaders\RadialOverlayOuterVolume.shader" />
+     <None Include="Assets\Plugins\SPRGKit\Shaders\CylinderOverlayClipInverted.shader" />
+     <None Include="Assets\Plugins\SPRGKit\Shaders\GridOverlayHighlightSelected.shader" />
+     <None Include="Assets\Plugins\SPRGKit\Todo.txt" />
+     <None Include="Assets\Plugins\SPRGKit\Shaders\GridOverlayClip.shader" />
+     <None Include="Assets\Plugins\SPRGKit\Shaders\CylinderOverlayClip.shader" />
+     <None Include="Assets\Plugins\SPRGKit\Shaders\SphereOverlayClip.shader" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

@@ -44,19 +44,22 @@
 	</Reference>
   </ItemGroup>
   <ItemGroup>
+     <Compile Include="Assets\Editor\BillboardEditor.cs" />
      <Compile Include="Assets\Editor\EditorGUIExt.cs" />
      <Compile Include="Assets\Editor\MapEditor.cs" />
-     <None Include="Assets\Shaders\RadialOverlayOuterVolume.shader" />
-     <None Include="Assets\Shaders\CylinderOverlayClipInverted.shader" />
-     <None Include="Assets\Shaders\GridOverlayHighlightSelected.shader" />
-     <None Include="Assets\Shaders\GridOverlayClip.shader" />
-     <None Include="Assets\Shaders\CylinderOverlayClip.shader" />
-     <None Include="Assets\Shaders\SphereOverlayClip.shader" />
+     <Compile Include="Assets\Editor\SpriteEditor.cs" />
+     <None Include="Assets\Plugins\SPRGKit\Shaders\RadialOverlayOuterVolume.shader" />
+     <None Include="Assets\Plugins\SPRGKit\Shaders\CylinderOverlayClipInverted.shader" />
+     <None Include="Assets\Plugins\SPRGKit\Shaders\GridOverlayHighlightSelected.shader" />
+     <None Include="Assets\Plugins\SPRGKit\Todo.txt" />
+     <None Include="Assets\Plugins\SPRGKit\Shaders\GridOverlayClip.shader" />
+     <None Include="Assets\Plugins\SPRGKit\Shaders\CylinderOverlayClip.shader" />
+     <None Include="Assets\Plugins\SPRGKit\Shaders\SphereOverlayClip.shader" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="Assembly-CSharp-vs.csproj">
-      <Project>{BE8F6771-4116-F1FE-50EB-9CE59E289CD7}</Project>
-      <Name>Assembly-CSharp-vs</Name>
+    <ProjectReference Include="Assembly-CSharp-firstpass-vs.csproj">
+      <Project>{7EA3EAD6-2A6D-4751-18FD-24EBE2559546}</Project>
+      <Name>Assembly-CSharp-firstpass-vs</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
