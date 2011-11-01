@@ -19,7 +19,7 @@ public class ContinuousWithinTilesMoveIO : MoveIO {
 	override public void Start() {
 		base.Start();
 		cc = GetComponent<CharacterController>();
-		//HACK: 0.09f here is a hack for the charactercontroller collider rather than 5.0
+		//HACK: 0.09f here is a hack for the charactercontroller collider
 		transform.localPosition = new Vector3(transform.localPosition.x, transform.localPosition.y+0.09f, transform.localPosition.z);
 	}
 
@@ -60,7 +60,7 @@ public class ContinuousWithinTilesMoveIO : MoveIO {
 			Vector3 targetDirection = h * right + v * forward;
 			cc.SimpleMove(targetDirection*moveSpeed);
 			//another approach (instead of ContainsPosition): place invisible box colliders at the edges of tiles which shouldn't be crossed
-			//HACK: 5.09f here is a hack for the charactercollider rather than 5.0
+			//HACK: 5.09f here is a hack for the charactercollider
 			Vector3 newDest = map.InverseTransformPointWorld(character.transform.position-new Vector3(0,5.09f,0));
 /*			Debug.Log("Dest: " + newDest + " Inside? " + overlay.ContainsPosition(newDest));*/
 			//TODO: something with isGrounded to prevent falling off the world
@@ -79,7 +79,7 @@ public class ContinuousWithinTilesMoveIO : MoveIO {
 	}
 	
 	public void OnGUI() {
-		if(supportMouse && character != null && character.isActive) {
+		if(character != null && character.isActive && map.arbiter.IsLocalPlayer(character.EffectiveTeamID) && supportMouse) {
 			GUILayout.BeginArea(new Rect(
 				Screen.width/2-48, Screen.height-32, 
 				96, 24

@@ -54,16 +54,18 @@ public class TeamPhasedPointsScheduler : Scheduler {
 	}
 	
 	public void OnGUI() {
+		if(!map.arbiter.IsLocalPlayer(currentTeam)) { return; }
 		GUILayout.BeginArea(new Rect(
 			8, 8, 
 			96, 128
 		));
 		GUILayout.Label("Current Team: "+currentTeam);
 		GUILayout.Label("Points Left: "+pointsRemaining);
-		if(GUILayout.Button("End Phase")) {
+		if(!(activeCharacter != null && activeCharacter.GetComponent<MoveExecutor>().IsMoving) && 
+		  GUILayout.Button("End Phase")) {
 			EndPhase();
 		}
-		if(activeCharacter != null) {
+		if(activeCharacter != null && activeCharacter.GetComponent<MoveExecutor>().IsMoving) {
 			if(GUILayout.Button("End Move")) {
 				EndMovePhase(activeCharacter);
 			}

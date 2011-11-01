@@ -40,12 +40,14 @@ public class TeamPhasedPickAnyOnceScheduler : Scheduler {
 	}
 	
 	public void OnGUI() {
+		if(!map.arbiter.IsLocalPlayer(currentTeam)) { return; }
 		GUILayout.BeginArea(new Rect(
 			8, 8, 
 			96, 128
 		));
 		GUILayout.Label("Current Team:"+currentTeam);
-		if(GUILayout.Button("End Phase")) {
+		if(!(activeCharacter != null && activeCharacter.GetComponent<MoveExecutor>().IsMoving) && 
+		  GUILayout.Button("End Phase")) {
 			EndPhase();
 		}
 		GUILayout.EndArea();

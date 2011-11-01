@@ -25,12 +25,14 @@ public class Scheduler : MonoBehaviour {
 	public virtual void Activate(Character c, object context=null) {
 		activeCharacter = c;
 		c.SendMessage("Activate", context, SendMessageOptions.RequireReceiver);
+		map.BroadcastMessage("ActivatedCharacter", c, SendMessageOptions.DontRequireReceiver);
 	}
 	
 	public virtual void Deactivate(Character c=null, object context=null) {
 		if(c == null) { c = activeCharacter; }
 		if(activeCharacter == c) { activeCharacter = null; }
 		c.SendMessage("Deactivate", context, SendMessageOptions.RequireReceiver);
+		map.BroadcastMessage("DeactivatedCharacter", c, SendMessageOptions.DontRequireReceiver);
 	}
 	
 	public virtual void EndMovePhase(Character c) {

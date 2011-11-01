@@ -9,7 +9,7 @@ public class PickTileMoveIO : MoveIO {
 	
 	bool awaitingConfirmation = false;
 	
-	GridOverlay overlay;
+	public GridOverlay overlay;
 	
 	float firstClickTime = -1;
 	float doubleClickThreshold = 0.3f;
@@ -129,7 +129,7 @@ public class PickTileMoveIO : MoveIO {
 	}
 	
 	public void OnGUI() {
-		if(!isActive) { return; }
+		if(!isActive || !map.arbiter.IsLocalPlayer(character.EffectiveTeamID)) { return; }
   	MoveExecutor me = GetComponent<MoveExecutor>();
 		if(me.IsMoving) { return; }
 		if(requireConfirmation && awaitingConfirmation) {
@@ -174,11 +174,7 @@ public class PickTileMoveIO : MoveIO {
 			new Color(0.4f, 0.6f, 0.9f, 0.85f),
 			destinations
 		);
-		cycleIndicatorZ = false;
-		indicatorXY = new Vector2(Mathf.Floor(charPos.x), Mathf.Floor(charPos.y));
-		indicatorZ = map.NearestZLevel((int)indicatorXY.x, (int)indicatorXY.y, (int)Mathf.Floor(charPos.z));
-		MapTile t = map.TileAt((int)indicatorXY.x, (int)indicatorXY.y, (int)indicatorZ);
-		overlay.selectedPoint = new Vector4((int)indicatorXY.x, (int)indicatorXY.y, t.z, t.maxZ);
+		FocusOnPoint(charPos);
 	}
 	
 	override protected void FinishMove() {
@@ -188,4 +184,28 @@ public class PickTileMoveIO : MoveIO {
 		}	
 		base.FinishMove();
 	}
+	
+	public void FocusOnPoint(Vector3 pos) {
+		cycleIndicatorZ = false;
+		indicatorXY = new Vector2(Mathf.Floor(pos.x), Mathf.Floor(pos.y));
+		indicatorZ = map.NearestZLevel((int)indicatorXY.x, (int)indicatorXY.y, (int)Mathf.Floor(pos.z));
+		MapTile t = map.TileAt((int)indicatorXY.x, (int)indicatorXY.y, (int)indicatorZ);
+		overlay.selectedPoint = new Vector4((int)indicatorXY.x, (int)indicatorXY.y, t.z, t.maxZ);
+	}
+	
+	public override void TemporaryMoveToPathNode(PathNode pn) {
+		FocusOnPoint(pn.pos);
+		base.TemporaryMoveToPathNode(pn);
+	}
+
+	public override void IncrementalMoveToPathNode(PathNode pn) {
+		FocusOnPoint(pn.pos);
+		base.IncrementalMoveToPathNode(pn);
+	}
+	
+	public virtual void PerformMoveToPathNode(PathNode pn) {
+		FocusOnPoint(pn.pos);
+		base.PerformMoveToPathNode(pn);
+	}	
+	
 }

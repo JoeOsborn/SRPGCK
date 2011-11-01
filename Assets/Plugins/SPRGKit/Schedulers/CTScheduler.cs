@@ -78,7 +78,7 @@ public class CTScheduler : Scheduler {
 	//after c acts, reduce c's CT by per-act cost (40)
 	
 	public void OnGUI() {
-		if(activeCharacter != null) {
+		if(activeCharacter != null && map.arbiter.IsLocalPlayer(activeCharacter.EffectiveTeamID)) {
 			GUILayout.BeginArea(new Rect(
 				8, 8, 
 				128, 128
@@ -87,7 +87,8 @@ public class CTScheduler : Scheduler {
 			GUILayout.Label(activeCharacter.gameObject.name);
 			CTCharacter ctc = activeCharacter.GetComponent<CTCharacter>();
 			GUILayout.Label("CT: "+Mathf.Floor(ctc.CT));
-			if(GUILayout.Button("End Turn")) {
+			if(!activeCharacter.GetComponent<MoveExecutor>().IsMoving && 
+			  GUILayout.Button("End Turn")) {
 				Deactivate(activeCharacter);
 			}
 			GUILayout.EndArea();
