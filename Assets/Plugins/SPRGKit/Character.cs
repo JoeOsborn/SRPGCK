@@ -16,9 +16,9 @@ public class Character : MonoBehaviour {
 	}
 	
 	//can be modulated by charm, etc
-	public int GetEffectiveTeamID() {
+	public int EffectiveTeamID { get {
 		return teamID;
-	}
+	} }
 	
 	public void Activate() {
 		isActive = true;

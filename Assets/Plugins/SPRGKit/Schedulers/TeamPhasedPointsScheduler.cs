@@ -45,7 +45,7 @@ public class TeamPhasedPointsScheduler : Scheduler {
 		}
 		pointsRemaining = pointsPerPhase;
 		foreach(Character c in characters) {
-			if(c.GetEffectiveTeamID() == currentTeam) {
+			if(c.EffectiveTeamID == currentTeam) {
 				PhasedPointsCharacter ppc = c.GetComponent<PhasedPointsCharacter>();
 				ppc.UsesThisPhase = 0;
 			}
@@ -111,6 +111,7 @@ public class TeamPhasedPointsScheduler : Scheduler {
 		ppc.UsesThisPhase = uses+1;
 		//(for now): ON `activate`, MOVE
 		activeCharacter.SendMessage("PresentMoves", null);
+		pointsRemaining--;
 	}
 	
 	override public void CharacterMovedIncremental(Character c, Vector3 from, Vector3 to) {
@@ -171,7 +172,8 @@ public class TeamPhasedPointsScheduler : Scheduler {
 				Deactivate(activeCharacter);
 			}
 		}
-		if(activeCharacter == null && Input.GetMouseButtonDown(0)) {
+		if(GetComponent<Arbiter>().IsLocalPlayer(currentTeam) && activeCharacter == null && Input.GetMouseButtonDown(0)) {
+			//TODO: need another caller for Activate()
 			Ray r = Camera.main.ScreenPointToRay(Input.mousePosition);
 			RaycastHit[] hits = Physics.RaycastAll(r);
 			float closestDistance = Mathf.Infinity;
@@ -185,9 +187,8 @@ public class TeamPhasedPointsScheduler : Scheduler {
 					}
 				}
 			}
-			if(closestCharacter != null && !closestCharacter.isActive && closestCharacter.GetEffectiveTeamID() == currentTeam) {
+			if(closestCharacter != null && !closestCharacter.isActive && closestCharacter.EffectiveTeamID == currentTeam) {
 				Activate(closestCharacter);
-				pointsRemaining--;
 			}
 		}
 	}

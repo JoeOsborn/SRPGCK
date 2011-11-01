@@ -11,7 +11,7 @@ public class TeamPhasedPickAnyOnceScheduler : Scheduler {
 	override public void Start () {
 		base.Start();
 		foreach(Character c in characters) {
-			if(c.GetEffectiveTeamID() == currentTeam) {
+			if(c.EffectiveTeamID == currentTeam) {
 				remainingCharacters.Add(c);
 			}
 		}
@@ -28,7 +28,7 @@ public class TeamPhasedPickAnyOnceScheduler : Scheduler {
 		}
 		remainingCharacters.Clear();
 		foreach(Character c in characters ){
-			if(c.GetEffectiveTeamID() == currentTeam) {
+			if(c.EffectiveTeamID == currentTeam) {
 				remainingCharacters.Add(c);
 			}
 		}
@@ -52,7 +52,8 @@ public class TeamPhasedPickAnyOnceScheduler : Scheduler {
 	}
 	
 	override public void Activate(Character c, object ctx=null) {
-		base.Activate(c, ctx);	
+		base.Activate(c, ctx);			
+		remainingCharacters.Remove(c);
 		//(for now): ON `activate`, MOVE
 		activeCharacter.SendMessage("PresentMoves", null);
 	}
@@ -64,7 +65,8 @@ public class TeamPhasedPickAnyOnceScheduler : Scheduler {
 				EndPhase();
 			}
 		}
-		if(Input.GetMouseButtonDown(0)) {
+		if(GetComponent<Arbiter>().IsLocalPlayer(currentTeam) && Input.GetMouseButtonDown(0)) {
+			//TODO: need another caller for Activate()
 			Ray r = Camera.main.ScreenPointToRay(Input.mousePosition);
 			RaycastHit[] hits = Physics.RaycastAll(r);
 			float closestDistance = Mathf.Infinity;
@@ -78,9 +80,8 @@ public class TeamPhasedPickAnyOnceScheduler : Scheduler {
 					}
 				}
 			}
-			if(closestCharacter != null && !closestCharacter.isActive && closestCharacter.GetEffectiveTeamID() == currentTeam) {
+			if(closestCharacter != null && !closestCharacter.isActive && closestCharacter.EffectiveTeamID == currentTeam) {
 				Activate(closestCharacter);
-				remainingCharacters.Remove(closestCharacter);
 			}
 		}
 	}

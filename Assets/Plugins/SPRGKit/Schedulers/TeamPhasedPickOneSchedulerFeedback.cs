@@ -30,7 +30,7 @@ public class TeamPhasedPickOneSchedulerFeedback : MonoBehaviour {
 	
 	public void PhaseBegan(int newTeamID) {
 		Character c = GetComponent<Character>();
-		if(c != null && newTeamID == c.GetEffectiveTeamID()) {
+		if(c != null && newTeamID == c.EffectiveTeamID) {
 			//unshade
 			MeshRenderer mr = GetComponent<MeshRenderer>();
 			mr.material.color = standardColor;
@@ -39,7 +39,7 @@ public class TeamPhasedPickOneSchedulerFeedback : MonoBehaviour {
 	}
 	public void PhaseEnded(int teamID) {
 		Character c = GetComponent<Character>();
-		if(c != null && teamID == c.GetEffectiveTeamID()) {
+		if(c != null && teamID == c.EffectiveTeamID) {
 			//shade
 			MeshRenderer mr = GetComponent<MeshRenderer>();
 			mr.material.color = wrongTeamColor;

@@ -37,6 +37,9 @@ public class PickTileMoveIO : MoveIO {
 		base.Update();
 		if(character == null || !character.isActive) { return; }
 		if(!isActive) { return; }
+		if(!map.arbiter.IsLocalPlayer(character.EffectiveTeamID)) {
+			return;
+		}
 		if(GUIUtility.hotControl != 0) { return; }
 		MoveExecutor me = GetComponent<MoveExecutor>();
 		if(me.IsMoving) { return; }

@@ -44,12 +44,14 @@
 	</Reference>
   </ItemGroup>
   <ItemGroup>
+     <Compile Include="Assets\Plugins\SPRGKit\Arbiter.cs" />
      <Compile Include="Assets\Plugins\SPRGKit\Character.cs" />
      <Compile Include="Assets\Plugins\SPRGKit\Map.cs" />
      <Compile Include="Assets\Plugins\SPRGKit\MapTile.cs" />
      <Compile Include="Assets\Plugins\SPRGKit\MoveExecutor.cs" />
      <Compile Include="Assets\Plugins\SPRGKit\MoveIO.cs" />
      <Compile Include="Assets\Plugins\SPRGKit\MoveStrategy.cs" />
+     <Compile Include="Assets\Plugins\SPRGKit\Movement-Grid\GridAI\GridAI.cs" />
      <Compile Include="Assets\Plugins\SPRGKit\Movement-Grid\GridMoveStrategy.cs" />
      <Compile Include="Assets\Plugins\SPRGKit\Movement-Grid\GridOverlay.cs" />
      <Compile Include="Assets\Plugins\SPRGKit\Movement-Grid\MoveIO\ContinuousWithinTilesMoveIO.cs" />
@@ -58,6 +60,7 @@
      <Compile Include="Assets\Plugins\SPRGKit\Movement-Radial\MoveIO\PickSpotMoveIO.cs" />
      <Compile Include="Assets\Plugins\SPRGKit\Movement-Radial\RadialMoveStrategy.cs" />
      <Compile Include="Assets\Plugins\SPRGKit\Movement-Radial\RadialOverlay.cs" />
+     <Compile Include="Assets\Plugins\SPRGKit\Network\DiscreteMoveNetwork.cs" />
      <Compile Include="Assets\Plugins\SPRGKit\Overlay.cs" />
      <Compile Include="Assets\Plugins\SPRGKit\Prop.cs" />
      <Compile Include="Assets\Plugins\SPRGKit\ProxyMoveExecutor.cs" />

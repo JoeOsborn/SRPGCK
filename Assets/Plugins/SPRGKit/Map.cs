@@ -910,6 +910,11 @@ public class Map : MonoBehaviour {
 			return GetComponentInChildren<Scheduler>();
 		}
 	}
+	public Arbiter arbiter {
+		get { 
+			return GetComponentInChildren<Arbiter>();
+		}
+	}
 	
 	public Vector4[] CoalesceTiles(PathNode[] spots) {
 		Vector4[] outputs = new Vector4[spots.Length];

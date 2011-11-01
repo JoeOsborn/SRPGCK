@@ -10,7 +10,7 @@ public class GridMoveStrategy : MoveStrategy {
 	public virtual PathDecision PathNodeIsValid(PathNode pn, Character c) {
 		if(c != null) {
 			if(pn.distance > xyRange) { return PathDecision.Invalid; }
-			if(!canCrossEnemies && c.GetEffectiveTeamID() != character.GetEffectiveTeamID()) { return PathDecision.Invalid; }
+			if(!canCrossEnemies && c.EffectiveTeamID != character.EffectiveTeamID) { return PathDecision.Invalid; }
 			return PathDecision.PassOnly;
 		}
 		if(canCrossWalls && pn.dz > zDelta) {

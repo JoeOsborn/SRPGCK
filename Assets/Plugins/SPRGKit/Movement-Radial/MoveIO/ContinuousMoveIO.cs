@@ -35,6 +35,9 @@ public class ContinuousMoveIO : MoveIO {
 		base.Update();
 		if(character == null || !character.isActive) { return; }
 		if(!isActive) { return; }
+		if(!map.arbiter.IsLocalPlayer(character.EffectiveTeamID)) {
+			return;
+		}
 		if(supportMouse && Input.GetMouseButton(0)) {
 			Ray r = Camera.main.ScreenPointToRay(Input.mousePosition);
 			Vector3 hitSpot;

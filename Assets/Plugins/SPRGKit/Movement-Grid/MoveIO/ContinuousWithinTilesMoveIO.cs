@@ -30,6 +30,9 @@ public class ContinuousWithinTilesMoveIO : MoveIO {
 		//click to move within area, move the character itself around
 		//keyboard to move within area, move the character itself around, prevent movement outside of overlay area
 		//end with mouse down on character or return/space key
+		if(!map.arbiter.IsLocalPlayer(character.EffectiveTeamID)) {
+			return;
+		}
 		if(supportMouse && Input.GetMouseButton(0)) {
 			Ray r = Camera.main.ScreenPointToRay(Input.mousePosition);
 			Vector3 hitSpot;

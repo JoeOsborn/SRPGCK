@@ -44,6 +44,9 @@ public class PickSpotMoveIO : MoveIO {
 		base.Update();
 		if(character == null || !character.isActive) { return; }
 		if(!isActive) { return; }
+		if(!map.arbiter.IsLocalPlayer(character.EffectiveTeamID)) {
+			return;
+		}
 		//self.isActive?
 		if(supportMouse && Input.GetMouseButton(0)) {
 			cycleIndicatorZ = false;
