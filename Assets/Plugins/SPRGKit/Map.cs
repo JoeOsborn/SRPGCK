@@ -715,7 +715,7 @@ public class Map : MonoBehaviour {
 		for(int i = 0; i < c.Count; i++) {
 			MapTile t = c.At(i);
 			//skip anybody with a tile immediately above them
-			if(i+1 < c.Count && c.At(i).z <= t.maxZ) { continue; }
+			if(i+1 < c.Count && c.At(i+1).z <= t.maxZ) { continue; }
 			//skip tiles that are not within range
 			if(range < 0 || Mathf.Abs(t.avgZ-z) <= range) { 
 				zLevels.Add(t.avgZ); 
@@ -957,6 +957,7 @@ public class Map : MonoBehaviour {
 		return null;
 	}
 	public delegate PathDecision PathNodeIsValid(PathNode pn, Character c);
+	
 	//maxDistance is distinct from move in that it's xyz distance
 	public PathNode[] PathsAround(Vector3 tc, float move, float jump, PathNodeIsValid isValid=null) {
 		int x = (int)Mathf.Floor(tc.x), y = (int)Mathf.Floor(tc.y), z = (int)Mathf.Floor(tc.z);
@@ -990,18 +991,49 @@ public class Map : MonoBehaviour {
 			}
 			for(int i = 0; i < neighbors.Length; i++) {
 				Vector2 n = neighbors[i];
-				Vector2 adj = new Vector3(pn.pos.x+n.x, pn.pos.y+n.y);
+				int jumpDistance = jump > 0 ? (int)(jump/2) : 0;
+				Vector2 adj = new Vector2(pn.pos.x+n.x, pn.pos.y+n.y);
 				//push to open (if not yet there) all tiles at adj.x, adj.y whose .maxZ is within jump of adj.z.
-//				Debug.Log("push adj "+adj);
 				foreach(int adjZ in ZLevelsWithin((int)adj.x, (int)adj.y, (int)pn.pos.z, -1)) {
 					Vector3 pos = new Vector3(adj.x, adj.y, adjZ);
-					PathNode newPn = new PathNode(pos, pn, pn.distance+1);
+					float dz = DZForMove(pos, pn.pos);
+					PathNode newPn = new PathNode(pos, pn, pn.distance+1+0.01f*dz);
 					if(!closed.Contains(newPn) && !open.Contains(newPn)) {
 						PathDecision decision = isValid == null ? PathDecision.Normal : isValid(newPn, CharacterAt(pos));
 						if(decision == PathDecision.PassOnly) {
 							newPn.canStop = false;
 						}
-						float dz = DZForMove(newPn.pos, pn.pos, n.x, n.y);
+						//can't jump over things, can only jump across things
+						if(pos.z < pn.pos.z) {
+							//FIXME: duplication
+							//go out further in adj until we get past jump/2
+							for(int j = 0; j < jumpDistance; j++) {
+								//don't go further than our move would allow
+								if(pn.distance+2+j > move) { continue; }
+								Vector2 jumpAdj = new Vector2(pn.pos.x+n.x*(j+2), pn.pos.y+n.y*(j+2));
+								bool jumped = false, cannotJump = false;
+								foreach(int jumpAdjZ in ZLevelsWithin((int)jumpAdj.x, (int)jumpAdj.y, (int)pn.pos.z, -1)) {
+									Vector3 jumpPos = new Vector3(jumpAdj.x, jumpAdj.y, jumpAdjZ);
+									float jumpDZ = DZForMove(jumpPos, pn.pos);
+									//TODO: decide whether we can only cross like this downwards, or if up is also allowed
+									if(jumpDZ <= jump) {
+										PathNode jumpPn = new PathNode(jumpPos, pn, pn.distance+2+j+0.01f*jumpDZ);
+										jumpPn.isLeap = true;
+										PathDecision jumpDecision = isValid == null ? PathDecision.Normal : isValid(jumpPn, CharacterAt(jumpPos));
+										if(jumpDecision == PathDecision.PassOnly) {
+											jumpPn.canStop = false;
+										}
+										if((jumpDecision != PathDecision.Invalid)) {
+											open.Push(jumpPn);
+											jumped = true;
+										}
+									} else if(jumpAdjZ > pn.pos.z) { //don't jump through a wall
+										cannotJump = true;
+									}
+								}
+								if(jumped || cannotJump) { break; }
+							}
+						} 
 						bool heightOK = (decision != PathDecision.Normal || jump < 0) ? true : dz <= jump;
 						if((decision != PathDecision.Invalid) && heightOK) {
 							open.Push(newPn);
@@ -1013,22 +1045,24 @@ public class Map : MonoBehaviour {
 		return nodes.ToArray();
 	}
 	public Neighbors EnteringSideFromXYDelta(float dx, float dy) {
-		if(dx > 0) { return Neighbors.FrontLeft; }
-		if(dx < 0) { return Neighbors.BackRight; }
-		if(dy > 0) { return Neighbors.FrontRight; }
-		if(dy < 0) { return Neighbors.BackLeft; }
-		Debug.LogError("entering side uses weird deltas "+dx+","+dy);
+		if(dx > 0) { return Neighbors.FrontLeftIdx; }
+		if(dx < 0) { return Neighbors.BackRightIdx; }
+		if(dy > 0) { return Neighbors.FrontRightIdx; }
+		if(dy < 0) { return Neighbors.BackLeftIdx; }
+/*		Debug.LogError("entering side uses weird deltas "+dx+","+dy);*/
 		return Neighbors.None;
 	}
 	public Neighbors ExitingSideFromXYDelta(float dx, float dy) {
-		if(dx > 0) { return Neighbors.BackRight; }
-		if(dx < 0) { return Neighbors.FrontLeft; }
-		if(dy > 0) { return Neighbors.BackLeft; }
-		if(dy < 0) { return Neighbors.FrontRight; }
-		Debug.LogError("exiting side uses weird deltas "+dx+","+dy);
+		if(dx > 0) { return Neighbors.BackRightIdx; }
+		if(dx < 0) { return Neighbors.FrontLeftIdx; }
+		if(dy > 0) { return Neighbors.BackLeftIdx; }
+		if(dy < 0) { return Neighbors.FrontRightIdx; }
+/*		Debug.LogError("exiting side uses weird deltas "+dx+","+dy);*/
 		return Neighbors.None;
 	}
-	public float DZForMove(Vector3 to, Vector3 from, float dx, float dy) {
+	public float DZForMove(Vector3 to, Vector3 from) {
+		float dx = to.x-from.x;
+		float dy = to.y-from.y;
 		MapTile toTile = TileAt((int)to.x, (int)to.y, (int)to.z);
 		Neighbors entering = EnteringSideFromXYDelta(dx, dy);
 		MapTile fromTile = TileAt((int)from.x, (int)from.y, (int)from.z);
@@ -1053,6 +1087,7 @@ public class PathNode {
 	public PathNode prev=null;
 	public float distance;
 	public bool canStop=true;
+	public bool isLeap=false;
 	public PathNode(Vector3 ps, PathNode pr, float dist) {
 		pos = ps; prev = pr; distance = dist;
 	}
@@ -1063,7 +1098,7 @@ public class PathNode {
   {	
     if (obj is PathNode)
     {
-        return this.Equals((PathNode)obj);
+      return this.Equals((PathNode)obj);
     }
     return false;
   }

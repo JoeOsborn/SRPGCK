@@ -79,13 +79,13 @@ public class MapTile {
 		int hcr = heights[(int)Map.Corners.Right];
 		int hcb = heights[(int)Map.Corners.Back];
 		switch(side) {
-			case Map.Neighbors.FrontLeft:
+			case Map.Neighbors.FrontLeftIdx:
 				return Mathf.Min(hcl, hcf);
-			case Map.Neighbors.FrontRight:
+			case Map.Neighbors.FrontRightIdx:
 				return Mathf.Min(hcr, hcf);
-			case Map.Neighbors.BackLeft:
+			case Map.Neighbors.BackLeftIdx:
 				return Mathf.Min(hcl, hcb);
-			case Map.Neighbors.BackRight:
+			case Map.Neighbors.BackRightIdx:
 				return Mathf.Min(hcr, hcb);
 			default: 
 				Debug.LogError("given neighbor is not a side edge: "+side);
@@ -98,13 +98,13 @@ public class MapTile {
 		int hcr = heights[(int)Map.Corners.Right];
 		int hcb = heights[(int)Map.Corners.Back];
 		switch(side) {
-			case Map.Neighbors.FrontLeft:
+			case Map.Neighbors.FrontLeftIdx:
 				return Mathf.Max(hcl, hcf);
-			case Map.Neighbors.FrontRight:
+			case Map.Neighbors.FrontRightIdx:
 				return Mathf.Max(hcr, hcf);
-			case Map.Neighbors.BackLeft:
+			case Map.Neighbors.BackLeftIdx:
 				return Mathf.Max(hcl, hcb);
-			case Map.Neighbors.BackRight:
+			case Map.Neighbors.BackRightIdx:
 				return Mathf.Max(hcr, hcb);
 			default: 
 				Debug.LogError("given neighbor is not a side edge: "+side);

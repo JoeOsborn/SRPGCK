@@ -23,8 +23,22 @@ public class MoveExecutor : MonoBehaviour {
 	protected float moveTimeRemaining=0;
 	protected MoveFinished moveCallback;
 	
-	public float XYSpeed = 6;
-	public float ZSpeed = 10;
+	public float XYSpeed = 12;
+	public float ZSpeedUp = 15;
+	public float ZSpeedDown = 20;
+	
+	public MoveType currentMoveType;
+	public string currentAnimation;	
+	public void TriggerAnimation(string animType, bool force=false) {
+		if(currentAnimation != animType || force) {
+			currentAnimation = animType;
+			SendMessage("UseAnimation", animType, SendMessageOptions.DontRequireReceiver);
+		}
+	}
+	
+	void UseAnimation(string anim) {
+		Debug.Log("triggered "+anim);
+	}
 
 	virtual public void Start () {
 
@@ -49,6 +63,11 @@ public class MoveExecutor : MonoBehaviour {
 			Debug.Log("too many nodes!");
 		}
 		pathIndex = animNodes.Count-1;
+		if(animNodes.Count > 1) {
+			currentMoveType = MoveTypeForMove(pn.pos, animNodes[pathIndex-1].pos);
+		} else {
+			currentMoveType = MoveType.None;
+		}
 	}
 
 	virtual public void TemporaryMoveTo(PathNode pn, MoveFinished callback, float timeout=10.0f) {
@@ -101,6 +120,42 @@ public class MoveExecutor : MonoBehaviour {
 		set { this.transform.position = value+transformOffset; }
 	}
 	
+	public enum MoveType {
+		None,
+		
+		Step,
+		Hop, 
+		Jump,
+		Fall,
+		Leap,
+
+		Knockback,
+		KnockbackFall
+	};
+	
+	/*animations:	
+		step (|dy| <= 1) (simultaneous slide)
+		hop (|dy| == 2) (simultaneous slide)
+		jump (dy > 2) (jump, then slide)
+		fall (dy < -2) (slide, then fall)
+		leap (|dx/dz| > 1) (slide with arc)
+		
+		knockback (|dy| <= 1) (simultaneous slide)
+		knockback-fall (|dy| > 1) (slide, then fall)*/
+	
+	public MoveType MoveTypeForMove(Vector3 to, Vector3 from) {
+		float dx = to.x-from.x;
+		float dy = to.y-from.y;
+		float dz = map.DZForMove(to, from);
+		float adz = Mathf.Abs(dz);
+		if(Mathf.Abs(dx)+Mathf.Abs(dy) > 1) { return MoveType.Leap; }
+		if(adz <= 1) { return MoveType.Step; }
+		if(adz == 2) { return MoveType.Hop; }
+		if(dz > 2) { return MoveType.Jump; }
+		if(dz < -2) { return MoveType.Fall; }
+		return MoveType.None;
+	}
+	
 	virtual public void Update () {
 		Vector3 tp = transformPosition;
 		if(map == null) {
@@ -124,13 +179,16 @@ public class MoveExecutor : MonoBehaviour {
 		if(moveTimeRemaining > 0 && animNodes != null && animNodes.Count > 0) {
 			moveTimeRemaining -= Time.deltaTime;
 			Vector3 animDest = map.TransformPointWorld(animNodes[pathIndex].pos);
-			float dsquared = (animDest-tp).sqrMagnitude;
+			Vector3 d = animDest-tp;
+			float dsquared = d.sqrMagnitude;
 			float dt = Time.deltaTime;
-			float AnimatedMoveSquareDistanceThreshold = (XYSpeed*dt)*(XYSpeed*dt)+(ZSpeed*dt)*(ZSpeed*dt);
+			float zspeed = d.y < 0 ? ZSpeedDown : ZSpeedUp;
+			float AnimatedMoveSquareDistanceThreshold = (XYSpeed*dt)*(XYSpeed*dt)+(zspeed*dt)*(zspeed*dt);
 			if(dsquared < AnimatedMoveSquareDistanceThreshold) {
 				if(pathIndex > 0) {
 					pathIndex--;
-					
+					PathNode pn = animNodes[pathIndex];
+					currentMoveType = MoveTypeForMove(pn.pos, animNodes[pathIndex+1].pos);
 				} else {
 					transformPosition = tp = temporaryDestination;
 					if(position != destination) {
@@ -147,12 +205,65 @@ public class MoveExecutor : MonoBehaviour {
 					ClearPath();
 				}
 			} else {
-				Vector3 d = animDest - tp;
-				//slide character in x/y/z towards animDest by own xyspeed/zspeed
-				float dx = Mathf.Min(Mathf.Abs(d.x), XYSpeed*dt)*Mathf.Sign(d.x);
-				float dy = Mathf.Min(Mathf.Abs(d.y),  ZSpeed*dt)*Mathf.Sign(d.y);
-				float dz = Mathf.Min(Mathf.Abs(d.z), XYSpeed*dt)*Mathf.Sign(d.z);
-				transformPosition = new Vector3(tp.x + dx, tp.y + dy, tp.z + dz);
+				Vector3 newPos = tp;
+				switch(currentMoveType) {
+					default:
+					case MoveType.Leap:
+						newPos.x = Mathf.MoveTowards(newPos.x, animDest.x, XYSpeed*2*dt);
+						newPos.y = Mathf.MoveTowards(newPos.y, animDest.y, zspeed*dt);
+						newPos.z = Mathf.MoveTowards(newPos.z, animDest.z, XYSpeed*2*dt);
+						TriggerAnimation("leaping");
+						break;
+					case MoveType.Knockback:
+						newPos.x = Mathf.MoveTowards(newPos.x, animDest.x, XYSpeed*dt);
+						newPos.y = Mathf.MoveTowards(newPos.y, animDest.y, zspeed*dt);
+						newPos.z = Mathf.MoveTowards(newPos.z, animDest.z, XYSpeed*dt);
+						TriggerAnimation("knockback");
+						break;
+					case MoveType.Step:
+						newPos.x = Mathf.MoveTowards(newPos.x, animDest.x, XYSpeed*dt);
+						newPos.y = Mathf.MoveTowards(newPos.y, animDest.y, zspeed*dt);
+						newPos.z = Mathf.MoveTowards(newPos.z, animDest.z, XYSpeed*dt);
+						TriggerAnimation("stepping");
+						break;
+					case MoveType.Hop:
+						newPos.x = Mathf.MoveTowards(newPos.x, animDest.x, XYSpeed*dt);
+						newPos.y = Mathf.MoveTowards(newPos.y, animDest.y, zspeed*2*dt);
+						newPos.z = Mathf.MoveTowards(newPos.z, animDest.z, XYSpeed*dt);
+						TriggerAnimation("hopping");
+						break;
+					case MoveType.Jump:
+						if(d.y != 0) {
+							newPos.y = Mathf.MoveTowards(newPos.y, animDest.y, zspeed*dt);
+							TriggerAnimation("jumping");
+						} else {
+							newPos.x = Mathf.MoveTowards(newPos.x, animDest.x, XYSpeed*dt);
+							newPos.z = Mathf.MoveTowards(newPos.z, animDest.z, XYSpeed*dt);
+							TriggerAnimation("jumpsliding");
+						}
+						break;
+					case MoveType.Fall:
+						if(d.x != 0 || d.z != 0) {
+							newPos.x = Mathf.MoveTowards(newPos.x, animDest.x, XYSpeed*dt);
+							newPos.z = Mathf.MoveTowards(newPos.z, animDest.z, XYSpeed*dt);
+							TriggerAnimation("fallsliding");
+						} else {
+							newPos.y = Mathf.MoveTowards(newPos.y, animDest.y, zspeed*dt);
+							TriggerAnimation("falling");
+						}
+						break;
+					case MoveType.KnockbackFall:
+						if(d.x != 0 || d.z != 0) {
+							newPos.x = Mathf.MoveTowards(newPos.x, animDest.x, XYSpeed*dt);
+							newPos.z = Mathf.MoveTowards(newPos.z, animDest.z, XYSpeed*dt);
+							TriggerAnimation("knockbackfallsliding");
+						} else {
+							newPos.y = Mathf.MoveTowards(newPos.y, animDest.y, zspeed*dt);
+							TriggerAnimation("knockbackfalling");
+						}
+						break;
+				}
+				transformPosition = newPos;
 			}
 		} else if(position != destination || temporaryPosition != temporaryDestination) {
 			position = destination;

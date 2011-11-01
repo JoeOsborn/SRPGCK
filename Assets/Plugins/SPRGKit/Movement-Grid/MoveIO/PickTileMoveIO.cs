@@ -203,7 +203,7 @@ public class PickTileMoveIO : MoveIO {
 		base.IncrementalMoveToPathNode(pn);
 	}
 	
-	public virtual void PerformMoveToPathNode(PathNode pn) {
+	public override void PerformMoveToPathNode(PathNode pn) {
 		FocusOnPoint(pn.pos);
 		base.PerformMoveToPathNode(pn);
 	}	
