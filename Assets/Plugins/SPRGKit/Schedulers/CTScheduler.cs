@@ -31,7 +31,7 @@ public class CTScheduler : Scheduler {
 		ctc.HasActed = false;
 		//(for now): ON `activate`, MOVE
 //		Debug.Log("activate"); 
-		activeCharacter.SendMessage("PresentMoves", null);
+		BeginMovePhase(c);
 	}
 	
 	override public void Deactivate(Character c, object ctx=null) {
@@ -76,25 +76,7 @@ public class CTScheduler : Scheduler {
 		}
 	}
 	//after c acts, reduce c's CT by per-act cost (40)
-	
-	public void OnGUI() {
-		if(activeCharacter != null && map.arbiter.IsLocalPlayer(activeCharacter.EffectiveTeamID)) {
-			GUILayout.BeginArea(new Rect(
-				8, 8, 
-				128, 128
-			));
-			GUILayout.Label("Current Character:");
-			GUILayout.Label(activeCharacter.gameObject.name);
-			CTCharacter ctc = activeCharacter.GetComponent<CTCharacter>();
-			GUILayout.Label("CT: "+Mathf.Floor(ctc.CT));
-			if(!activeCharacter.GetComponent<MoveExecutor>().IsMoving && 
-			  GUILayout.Button("End Turn")) {
-				Deactivate(activeCharacter);
-			}
-			GUILayout.EndArea();
-		}
-	}
-	
+		
 	override public void Update () {
 		base.Update();
 		//if there is no active unit

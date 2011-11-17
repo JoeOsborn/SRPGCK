@@ -1,7 +1,7 @@
 using UnityEngine;
 using System.Collections;
 
-public class TeamPhasedPickOneSchedulerFeedback : MonoBehaviour {
+public class TeamRoundsPickOneSchedulerFeedback : MonoBehaviour {
 	protected Map map;
 	
 	public Color wrongTeamColor=new Color(0.3f, 0.3f, 0.3f, 1);
@@ -28,7 +28,7 @@ public class TeamPhasedPickOneSchedulerFeedback : MonoBehaviour {
 		}
 	}
 	
-	public void PhaseBegan(int newTeamID) {
+	public void RoundBegan(int newTeamID) {
 		Character c = GetComponent<Character>();
 		if(c != null && newTeamID == c.EffectiveTeamID) {
 			//unshade
@@ -37,7 +37,7 @@ public class TeamPhasedPickOneSchedulerFeedback : MonoBehaviour {
 /*			Debug.Log("back to "+standardColor);*/
 		}
 	}
-	public void PhaseEnded(int teamID) {
+	public void RoundEnded(int teamID) {
 		Character c = GetComponent<Character>();
 		if(c != null && teamID == c.EffectiveTeamID) {
 			//shade

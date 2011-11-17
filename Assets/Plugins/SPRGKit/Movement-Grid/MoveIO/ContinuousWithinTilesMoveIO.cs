@@ -14,7 +14,7 @@ public class ContinuousWithinTilesMoveIO : MoveIO {
 	GridOverlay overlay;
 	CharacterController cc;
 	
-	Vector3 moveDest=Vector3.zero;
+	public Vector3 moveDest=Vector3.zero;
 	
 	override public void Start() {
 		base.Start();
@@ -77,20 +77,7 @@ public class ContinuousWithinTilesMoveIO : MoveIO {
 			PerformMove(moveDest);
 		}
 	}
-	
-	public void OnGUI() {
-		if(character != null && character.isActive && map.arbiter.IsLocalPlayer(character.EffectiveTeamID) && supportMouse) {
-			GUILayout.BeginArea(new Rect(
-				Screen.width/2-48, Screen.height-32, 
-				96, 24
-			));
-			if(GUILayout.Button("End Move")) {
-				PerformMove(moveDest);
-			}
-			GUILayout.EndArea();
-		}
-	}
-	
+		
 	override protected void PresentMoves() {
 		PathNode[] destinations = GetComponent<GridMoveStrategy>().GetValidMoves();
 		overlay = map.PresentGridOverlay(

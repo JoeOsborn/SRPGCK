@@ -2,12 +2,12 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
-public class PhasedPointsCharacter : MonoBehaviour {	
+public class RoundPointsCharacter : MonoBehaviour {	
 	
 	protected Character character;
 	
 	[SerializeField]
-	protected int _usesThisPhase;
+	protected int _usesThisRound;
 	[SerializeField]
 	protected float _limiter;
 		
@@ -19,12 +19,12 @@ public class PhasedPointsCharacter : MonoBehaviour {
 		if(character == null) { character = GetComponent<Character>(); }
 	}
 	
-	virtual public int UsesThisPhase {
+	virtual public int UsesThisRound {
 		get {
-			return _usesThisPhase;
+			return _usesThisRound;
 		}
 		set {
-			_usesThisPhase = value;
+			_usesThisRound = value;
 		}
 	}
 	virtual public float Limiter {
@@ -38,27 +38,27 @@ public class PhasedPointsCharacter : MonoBehaviour {
 	
 	virtual public float MaxTurnAP {
 		get {
-			return ((TeamPhasedPointsScheduler)character.map.scheduler).defaultLimiterMax;
+			return ((TeamRoundsPointsScheduler)character.map.scheduler).defaultLimiterMax;
 		}
 	}
 	virtual public float MaxTurnTime {
 		get {
-			return ((TeamPhasedPointsScheduler)character.map.scheduler).defaultLimiterMax;
+			return ((TeamRoundsPointsScheduler)character.map.scheduler).defaultLimiterMax;
 		}
 	}
 	virtual public float TurnDiminishScale {
 		get {
-			return ((TeamPhasedPointsScheduler)character.map.scheduler).defaultLimiterDiminishScale;
+			return ((TeamRoundsPointsScheduler)character.map.scheduler).defaultLimiterDiminishScale;
 		}
 	}
 	virtual public float PerUnitMovementAPCost {
 		get {
-			return ((TeamPhasedPointsScheduler)character.map.scheduler).defaultMoveAPCost;
+			return ((TeamRoundsPointsScheduler)character.map.scheduler).defaultMoveAPCost;
 		}
 	}
 	virtual public float PerSecondAPCost {
 		get {
-			return ((TeamPhasedPointsScheduler)character.map.scheduler).defaultAPLossPerSecond;
+			return ((TeamRoundsPointsScheduler)character.map.scheduler).defaultAPLossPerSecond;
 		}
 	}
 }

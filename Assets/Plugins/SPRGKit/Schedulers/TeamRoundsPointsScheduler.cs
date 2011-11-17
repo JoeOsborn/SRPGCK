@@ -6,7 +6,7 @@ public enum TurnLimitMode {
 	Time
 }
 
-public class TeamPhasedPointsScheduler : Scheduler {
+public class TeamRoundsPointsScheduler : Scheduler {
 	public TurnLimitMode limitMode=TurnLimitMode.Time;
 	
 	public bool onlyDrainAPForXYDistance = true;
@@ -20,77 +20,57 @@ public class TeamPhasedPointsScheduler : Scheduler {
 
 	public int currentTeam=0;
 	
-	public int pointsPerPhase=8;
+	public int pointsPerRound=8;
 
 	[HideInInspector]
 	public int pointsRemaining=0;
 	
 	override public void Start () {
-		pointsRemaining = pointsPerPhase;
+		pointsRemaining = pointsPerRound;
 		foreach(Character c in characters) {
-			PhasedPointsCharacter ppc = c.GetComponent<PhasedPointsCharacter>();
-			ppc.UsesThisPhase = 0;
+			RoundPointsCharacter ppc = c.GetComponent<RoundPointsCharacter>();
+			ppc.UsesThisRound = 0;
 			ppc.Limiter = 0;
 		}
 	}
 	
-	public void EndPhase() {
+	public void EndRound() {
 		if(activeCharacter != null) {
 			Deactivate(activeCharacter);
 		}
-		map.BroadcastMessage("PhaseEnded", currentTeam, SendMessageOptions.DontRequireReceiver);
+		map.BroadcastMessage("RoundEnded", currentTeam, SendMessageOptions.DontRequireReceiver);
 		currentTeam++;
 		if(currentTeam >= teamCount) {
 			currentTeam = 0;
 		}
-		pointsRemaining = pointsPerPhase;
+		pointsRemaining = pointsPerRound;
 		foreach(Character c in characters) {
 			if(c.EffectiveTeamID == currentTeam) {
-				PhasedPointsCharacter ppc = c.GetComponent<PhasedPointsCharacter>();
-				ppc.UsesThisPhase = 0;
+				RoundPointsCharacter ppc = c.GetComponent<RoundPointsCharacter>();
+				ppc.UsesThisRound = 0;
 			}
 		}
-		map.BroadcastMessage("PhaseBegan", currentTeam, SendMessageOptions.DontRequireReceiver);
-	}
-	
-	public void OnGUI() {
-		if(!map.arbiter.IsLocalPlayer(currentTeam)) { return; }
-		GUILayout.BeginArea(new Rect(
-			8, 8, 
-			96, 128
-		));
-		GUILayout.Label("Current Team: "+currentTeam);
-		GUILayout.Label("Points Left: "+pointsRemaining);
-		if(!(activeCharacter != null && activeCharacter.GetComponent<MoveExecutor>().IsMoving) && 
-		  GUILayout.Button("End Phase")) {
-			EndPhase();
-		}
-		if(activeCharacter != null && activeCharacter.GetComponent<MoveExecutor>().IsMoving) {
-			if(GUILayout.Button("End Move")) {
-				EndMovePhase(activeCharacter);
-			}
-		}
-		GUILayout.EndArea();
+		map.BroadcastMessage("RoundBegan", currentTeam, SendMessageOptions.DontRequireReceiver);
 	}
 	
 	public void DecreaseAP(float amt) {
 		if(activeCharacter != null && limitMode == TurnLimitMode.AP) {
-			PhasedPointsCharacter ppc = activeCharacter.GetComponent<PhasedPointsCharacter>();
+			RoundPointsCharacter ppc = activeCharacter.GetComponent<RoundPointsCharacter>();
 			ppc.Limiter -= amt;
 		}
 	}
 	
 	override public void AddCharacter(Character c) {
 		base.AddCharacter(c);
-		if(c.GetComponent<PhasedPointsCharacter>() == null) {
-			c.gameObject.AddComponent<PhasedPointsCharacter>();
+		if(c.GetComponent<RoundPointsCharacter>() == null) {
+			c.gameObject.AddComponent<RoundPointsCharacter>();
 		}
 	}
 	
 	override public void Activate(Character c, object ctx=null) {
 		if(c == null) { return; }
-		PhasedPointsCharacter ppc = c.GetComponent<PhasedPointsCharacter>();
-		int uses = ppc.UsesThisPhase;
+		RoundPointsCharacter ppc = c.GetComponent<RoundPointsCharacter>();
+		int uses = ppc.UsesThisRound;
 		if(limitMode == TurnLimitMode.AP) {
 			//set C's AP based on uses
 			ppc.Limiter = ppc.MaxTurnAP;
@@ -110,9 +90,9 @@ public class TeamPhasedPointsScheduler : Scheduler {
 		//???: What about characters' intrinsic movement stats and so on?
 		Debug.Log("starting AP: "+ppc.Limiter);
 		base.Activate(c, ctx);
-		ppc.UsesThisPhase = uses+1;
+		ppc.UsesThisRound = uses+1;
 		//(for now): ON `activate`, MOVE
-		activeCharacter.SendMessage("PresentMoves", null);
+		BeginMovePhase(activeCharacter);
 		pointsRemaining--;
 	}
 	
@@ -123,7 +103,7 @@ public class TeamPhasedPointsScheduler : Scheduler {
 	override public void CharacterMoved(Character c, Vector3 from, Vector3 to) {
 		//FIXME: should get path nodes instead of an instantaneous vector, since we don't really want straight-line distance
 		Debug.Log("moved to "+to);
-		PhasedPointsCharacter ppc = c.GetComponent<PhasedPointsCharacter>();
+		RoundPointsCharacter ppc = c.GetComponent<RoundPointsCharacter>();
 		if(limitMode == TurnLimitMode.AP) {
 			float moveAPCost = ppc.PerUnitMovementAPCost;
 			float distance = 0;
@@ -145,7 +125,7 @@ public class TeamPhasedPointsScheduler : Scheduler {
 		//FIXME: only right for AP-limited scheduler
 		if(c == null) { c = activeCharacter; }
 		if(c == null) { return 0; }
-		PhasedPointsCharacter ppc = c.GetComponent<PhasedPointsCharacter>();
+		RoundPointsCharacter ppc = c.GetComponent<RoundPointsCharacter>();
 		float moveAPCost = ppc.PerUnitMovementAPCost;
 		return (float)(ppc.Limiter/moveAPCost);
 	}
@@ -159,11 +139,11 @@ public class TeamPhasedPointsScheduler : Scheduler {
 		base.Update();
 		if(activeCharacter == null) {
 			if(pointsRemaining == 0) {
-				EndPhase();
+				EndRound();
 			}
 		}
 		if(activeCharacter) {
-			PhasedPointsCharacter ppc = activeCharacter.GetComponent<PhasedPointsCharacter>();
+			RoundPointsCharacter ppc = activeCharacter.GetComponent<RoundPointsCharacter>();
 			if(limitMode == TurnLimitMode.Time) {
 				ppc.Limiter -= Time.deltaTime;
 			} else if(limitMode == TurnLimitMode.AP) {

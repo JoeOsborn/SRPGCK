@@ -11,10 +11,10 @@ public class GridAI : MonoBehaviour {
 	public void CharacterDeactivated() {
 		
 	}
-	public void PhaseBegan() {
+	public void RoundBegan() {
 		
 	}
-	public void PhaseEnded() {
+	public void RoundEnded() {
 		
 	}*/
 	public void Update() {

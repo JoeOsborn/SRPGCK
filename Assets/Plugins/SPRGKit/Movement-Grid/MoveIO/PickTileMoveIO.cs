@@ -7,7 +7,7 @@ public class PickTileMoveIO : MoveIO {
 	
 	public bool requireConfirmation = true;
 	
-	bool awaitingConfirmation = false;
+	public bool awaitingConfirmation = false;
 	
 	public GridOverlay overlay;
 	
@@ -23,15 +23,6 @@ public class PickTileMoveIO : MoveIO {
 	
 	Vector2 indicatorXY=Vector2.zero;
 	float indicatorZ=0;
-	
-	Texture2D areaBGTexture;
-	
-	override public void Start() {
-		base.Start();
-		areaBGTexture = new Texture2D(1,1);
-		areaBGTexture.SetPixel(0, 0, new Color(0.3f, 0.3f, 0.8f, 0.5f));
-		areaBGTexture.Apply();
-	}
 	
 	override public void Update () {
 		base.Update();
@@ -128,35 +119,9 @@ public class PickTileMoveIO : MoveIO {
 		}
 	}
 	
-	public void OnGUI() {
-		if(!isActive || !map.arbiter.IsLocalPlayer(character.EffectiveTeamID)) { return; }
-  	MoveExecutor me = GetComponent<MoveExecutor>();
-		if(me.IsMoving) { return; }
-		if(requireConfirmation && awaitingConfirmation) {
-			GUIStyle bgStyle = new GUIStyle();
-			bgStyle.normal.background = areaBGTexture;
-			GUILayout.BeginArea(new Rect(
-				Screen.width/2-64, Screen.height/2-32, 
-				128, 64
-			), bgStyle); {
-			  GUILayout.BeginVertical(); {
-			    GUIStyle centeredStyle = GUI.skin.GetStyle("Label");
-			    centeredStyle.alignment = TextAnchor.MiddleCenter;
-			    GUILayout.Label("Move here?", centeredStyle);
-			    GUILayout.BeginHorizontal(); {
-			      if(GUILayout.Button("No")) {
-			      	awaitingConfirmation = false;
-			      	TemporaryMove(map.InverseTransformPointWorld(me.position));
-			      } else if(GUILayout.Button("Yes")) {
-							PathNode pn = overlay.PositionAt(new Vector3(indicatorXY.x, indicatorXY.y, indicatorZ));
-			      	PerformMoveToPathNode(pn);
-			      	awaitingConfirmation = false;
-			      }
-			    } GUILayout.EndHorizontal();
-			  } GUILayout.EndVertical();
-			} GUILayout.EndArea();
-		}
-	}
+	public Vector3 IndicatorPosition {
+		get { return new Vector3(indicatorXY.x, indicatorXY.y, indicatorZ); }
+	}	
 	
 	override protected void PresentMoves() {
 		base.PresentMoves();

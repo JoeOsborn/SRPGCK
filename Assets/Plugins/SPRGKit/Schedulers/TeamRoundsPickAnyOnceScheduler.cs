@@ -1,7 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-public class TeamPhasedPickAnyOnceScheduler : Scheduler {
+public class TeamRoundsPickAnyOnceScheduler : Scheduler {
 	public int teamCount=2;
 
 	public int currentTeam=0;
@@ -17,11 +17,11 @@ public class TeamPhasedPickAnyOnceScheduler : Scheduler {
 		}
 	}
 	
-	public void EndPhase() {
+	public void EndRound() {
 		if(activeCharacter != null) {
 			Deactivate(activeCharacter);
 		}
-		map.BroadcastMessage("PhaseEnded", currentTeam, SendMessageOptions.DontRequireReceiver);
+		map.BroadcastMessage("RoundEnded", currentTeam, SendMessageOptions.DontRequireReceiver);
 		currentTeam++;
 		if(currentTeam >= teamCount) {
 			currentTeam = 0;
@@ -32,39 +32,26 @@ public class TeamPhasedPickAnyOnceScheduler : Scheduler {
 				remainingCharacters.Add(c);
 			}
 		}
-		map.BroadcastMessage("PhaseBegan", currentTeam, SendMessageOptions.DontRequireReceiver);
+		map.BroadcastMessage("RoundBegan", currentTeam, SendMessageOptions.DontRequireReceiver);
 	}
 
 	override public void EndMovePhase(Character c) {
+		base.EndMovePhase(c);
 		Deactivate(c);
-	}
-	
-	public void OnGUI() {
-		if(!map.arbiter.IsLocalPlayer(currentTeam)) { return; }
-		GUILayout.BeginArea(new Rect(
-			8, 8, 
-			96, 128
-		));
-		GUILayout.Label("Current Team:"+currentTeam);
-		if(!(activeCharacter != null && activeCharacter.GetComponent<MoveExecutor>().IsMoving) && 
-		  GUILayout.Button("End Phase")) {
-			EndPhase();
-		}
-		GUILayout.EndArea();
 	}
 	
 	override public void Activate(Character c, object ctx=null) {
 		base.Activate(c, ctx);			
 		remainingCharacters.Remove(c);
 		//(for now): ON `activate`, MOVE
-		activeCharacter.SendMessage("PresentMoves", null);
+		BeginMovePhase(c);
 	}
 	
 	override public void Update () {
 		base.Update();
 		if(activeCharacter == null) {
 			if(remainingCharacters.Count == 0) {
-				EndPhase();
+				EndRound();
 			}
 		}
 		if(GetComponent<Arbiter>().IsLocalPlayer(currentTeam) && Input.GetMouseButtonDown(0)) {

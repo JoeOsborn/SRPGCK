@@ -35,6 +35,10 @@ public class Scheduler : MonoBehaviour {
 		map.BroadcastMessage("DeactivatedCharacter", c, SendMessageOptions.DontRequireReceiver);
 	}
 	
+	public virtual void BeginMovePhase(Character c) {
+		c.SendMessage("PresentMoves", null);	
+	}
+	
 	public virtual void EndMovePhase(Character c) {
 
 	}
