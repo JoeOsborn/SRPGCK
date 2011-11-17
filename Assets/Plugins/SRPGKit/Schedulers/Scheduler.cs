@@ -42,7 +42,7 @@ public class Scheduler : MonoBehaviour {
 	public virtual void EndMovePhase(Character c) {
 
 	}
-	
+
 	public virtual void Start () {
 	
 	}

@@ -1,10 +1,6 @@
 using UnityEngine;
 using System.Collections;
 
-//TODO: PickTileMoveIO needs a way to wait the character facing a direction. 
-//      ContinuousWithinTilesMoveIO may need something like that for its mouse-based inputs, too.
-//	    Actually, WaitIO may be different from MoveIO.
-
 public class MoveIO : MonoBehaviour {
 
 	[System.NonSerialized]

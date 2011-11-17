@@ -23,8 +23,8 @@ public class DebugGUI : MonoBehaviour {
 					if(mio.isActive && a.IsLocalPlayer(mio.character.EffectiveTeamID)) {
 			  		MoveExecutor me = mio.GetComponent<MoveExecutor>();
 						if(!me.IsMoving &&
-							mio.requireConfirmation && 
-							mio.awaitingConfirmation) {
+							mio.RequireConfirmation && 
+							mio.AwaitingConfirmation) {
 							GUIStyle bgStyle = new GUIStyle();
 							bgStyle.normal.background = areaBGTexture;
 							GUILayout.BeginArea(new Rect(
@@ -37,12 +37,12 @@ public class DebugGUI : MonoBehaviour {
 							    GUILayout.Label("Move here?", centeredStyle);
 							    GUILayout.BeginHorizontal(); {
 							      if(GUILayout.Button("No")) {
-							      	mio.awaitingConfirmation = false;
+							      	mio.AwaitingConfirmation = false;
 							      	mio.TemporaryMove(map.InverseTransformPointWorld(me.position));
 							      } else if(GUILayout.Button("Yes")) {
 											PathNode pn = mio.overlay.PositionAt(mio.IndicatorPosition);
 							      	mio.PerformMoveToPathNode(pn);
-							      	mio.awaitingConfirmation = false;
+							      	mio.AwaitingConfirmation = false;
 							      }
 							    } GUILayout.EndHorizontal();
 							  } GUILayout.EndVertical();

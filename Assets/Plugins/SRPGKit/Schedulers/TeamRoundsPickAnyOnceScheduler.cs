@@ -27,7 +27,7 @@ public class TeamRoundsPickAnyOnceScheduler : Scheduler {
 			currentTeam = 0;
 		}
 		remainingCharacters.Clear();
-		foreach(Character c in characters ){
+		foreach(Character c in characters) {
 			if(c.EffectiveTeamID == currentTeam) {
 				remainingCharacters.Add(c);
 			}

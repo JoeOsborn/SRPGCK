@@ -1,7 +1,13 @@
 using UnityEngine;
-using System.Collections.Generic;
 
-public class PickTileMoveIO : MoveIO {
+public interface ITilePickerOwner {
+	void Pick(TilePicker tp, Vector3 p);
+	void Pick(TilePicker tp, PathNode pn);
+	void TentativePick(TilePicker tp, Vector3 p);
+	void TentativePick(TilePicker tp, PathNode pn);
+}
+
+public class TilePicker {
 	public bool supportKeyboard = true;
 	public bool supportMouse = true;
 	
@@ -9,31 +15,28 @@ public class PickTileMoveIO : MoveIO {
 	
 	public bool awaitingConfirmation = false;
 	
-	public GridOverlay overlay;
-	
 	float firstClickTime = -1;
 	float doubleClickThreshold = 0.3f;
 	
 	bool cycleIndicatorZ = false;
 	float indicatorCycleT=0;
-	public float indicatorCycleLength=1.0f;
 	
 	float lastIndicatorKeyboardMove=0;
 	float indicatorKeyboardMoveThreshold=0.3f;
 	
 	Vector2 indicatorXY=Vector2.zero;
 	float indicatorZ=0;
+	public float indicatorCycleLength=1.0f;
 	
-	override public void Update () {
-		base.Update();
-		if(character == null || !character.isActive) { return; }
-		if(!isActive) { return; }
-		if(!map.arbiter.IsLocalPlayer(character.EffectiveTeamID)) {
-			return;
-		}
-		if(GUIUtility.hotControl != 0) { return; }
-		MoveExecutor me = GetComponent<MoveExecutor>();
-		if(me.IsMoving) { return; }
+	public Map map;
+	
+	public GridOverlay overlay;
+	
+	public MoveExecutor moveExecutor;
+	
+	public ITilePickerOwner owner;
+	
+	public void Update() {
 		if(supportMouse && Input.GetMouseButton(0) && (!awaitingConfirmation || !requireConfirmation)) {
 			cycleIndicatorZ = false;
 			Ray r = Camera.main.ScreenPointToRay(Input.mousePosition);
@@ -51,9 +54,9 @@ public class PickTileMoveIO : MoveIO {
 					PathNode pn = overlay.PositionAt(indicatorSpot);
 					if(pn != null && pn.canStop) {
 						if(!requireConfirmation) {
-			      	PerformMoveToPathNode(pn);
+			      	owner.Pick(this, pn);
 						} else {
-							TemporaryMove(indicatorSpot);
+							owner.TentativePick(this, indicatorSpot);
 							awaitingConfirmation = true;
 						}
 					}
@@ -88,17 +91,17 @@ public class PickTileMoveIO : MoveIO {
 			PathNode pn = overlay.PositionAt(indicatorSpot);
 			if(pn != null && pn.canStop) {
 				if(awaitingConfirmation || !requireConfirmation) {
-	      	PerformMoveToPathNode(pn);
-	      	awaitingConfirmation = false;
+					owner.Pick(this, pn);
+  	    	awaitingConfirmation = false;
 				} else if(requireConfirmation) {
-					TemporaryMove(indicatorSpot);
+					owner.TentativePick(this, indicatorSpot);
 					awaitingConfirmation = true;
 				}
 			}
 		}
 		if(supportKeyboard && Input.GetButtonDown("Cancel")) {
 			if(awaitingConfirmation && requireConfirmation) {
-				TemporaryMove(map.InverseTransformPointWorld(me.position));
+				owner.TentativePick(this, map.InverseTransformPointWorld(moveExecutor.position));
 				awaitingConfirmation = false;
 			} else {
 				//Back out of move phase!
@@ -118,36 +121,19 @@ public class PickTileMoveIO : MoveIO {
 			}
 		}
 	}
-	
 	public Vector3 IndicatorPosition {
 		get { return new Vector3(indicatorXY.x, indicatorXY.y, indicatorZ); }
 	}	
-	
-	override protected void PresentMoves() {
-		base.PresentMoves();
-//		Debug.Log("present");
+	public void PresentOverlay(GridOverlay overlay, Vector3 charPos) {
+		this.overlay = overlay;
 		if(requireConfirmation) {
 			awaitingConfirmation = false;
 		}
-		GridMoveStrategy ms = GetComponent<GridMoveStrategy>();
-		PathNode[] destinations = ms.GetValidMoves();
-		MoveExecutor me = GetComponent<MoveExecutor>();
-		Vector3 charPos = map.InverseTransformPointWorld(me.position);
-		overlay = map.PresentGridOverlay(
-			"move", this.gameObject.GetInstanceID(), 
-			new Color(0.2f, 0.3f, 0.9f, 0.7f),
-			new Color(0.4f, 0.6f, 0.9f, 0.85f),
-			destinations
-		);
 		FocusOnPoint(charPos);
 	}
-	
-	override protected void FinishMove() {
+	public void Clear() {
 		overlay = null;
-		if(map.IsShowingOverlay("move", this.gameObject.GetInstanceID())) {
-			map.RemoveOverlay("move", this.gameObject.GetInstanceID());
-		}	
-		base.FinishMove();
+		awaitingConfirmation = false;
 	}
 	
 	public void FocusOnPoint(Vector3 pos) {
@@ -157,20 +143,4 @@ public class PickTileMoveIO : MoveIO {
 		MapTile t = map.TileAt((int)indicatorXY.x, (int)indicatorXY.y, (int)indicatorZ);
 		overlay.selectedPoint = new Vector4((int)indicatorXY.x, (int)indicatorXY.y, t.z, t.maxZ);
 	}
-	
-	public override void TemporaryMoveToPathNode(PathNode pn) {
-		FocusOnPoint(pn.pos);
-		base.TemporaryMoveToPathNode(pn);
-	}
-
-	public override void IncrementalMoveToPathNode(PathNode pn) {
-		FocusOnPoint(pn.pos);
-		base.IncrementalMoveToPathNode(pn);
-	}
-	
-	public override void PerformMoveToPathNode(PathNode pn) {
-		FocusOnPoint(pn.pos);
-		base.PerformMoveToPathNode(pn);
-	}	
-	
 }
