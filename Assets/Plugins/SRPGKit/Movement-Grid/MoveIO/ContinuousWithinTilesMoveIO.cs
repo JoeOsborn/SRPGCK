@@ -1,7 +1,7 @@
 using UnityEngine;
 using System.Collections;
 
-[RequireComponent (typeof(CharacterController))]
+[System.Serializable]
 public class ContinuousWithinTilesMoveIO : MoveIO {
 	public bool supportKeyboard = true;
 	public bool supportMouse = true;
@@ -18,19 +18,23 @@ public class ContinuousWithinTilesMoveIO : MoveIO {
 	
 	override public void Start() {
 		base.Start();
-		cc = GetComponent<CharacterController>();
+		cc = owner.character.GetComponent<CharacterController>();
 		//HACK: 0.09f here is a hack for the charactercontroller collider
-		transform.localPosition = new Vector3(transform.localPosition.x, transform.localPosition.y+0.09f, transform.localPosition.z);
+		owner.character.transform.localPosition = new Vector3(
+			owner.character.transform.localPosition.x, 
+			owner.character.transform.localPosition.y+0.09f, 
+			owner.character.transform.localPosition.z
+		);
 	}
 
 	override public void Update () {
 		base.Update();
-		if(character == null || !character.isActive) { return; }
+		if(owner.character == null || !owner.character.isActive) { return; }
 		if(!isActive) { return; }
 		//click to move within area, move the character itself around
 		//keyboard to move within area, move the character itself around, prevent movement outside of overlay area
 		//end with mouse down on character or return/space key
-		if(!map.arbiter.IsLocalPlayer(character.EffectiveTeamID)) {
+		if(!owner.arbiter.IsLocalPlayer(owner.character.EffectiveTeamID)) {
 			return;
 		}
 		if(supportMouse && Input.GetMouseButton(0)) {
@@ -61,7 +65,7 @@ public class ContinuousWithinTilesMoveIO : MoveIO {
 			cc.SimpleMove(targetDirection*moveSpeed);
 			//another approach (instead of ContainsPosition): place invisible box colliders at the edges of tiles which shouldn't be crossed
 			//HACK: 5.09f here is a hack for the charactercollider
-			Vector3 newDest = map.InverseTransformPointWorld(character.transform.position-new Vector3(0,5.09f,0));
+			Vector3 newDest = owner.map.InverseTransformPointWorld(owner.character.transform.position-new Vector3(0,5.09f,0));
 /*			Debug.Log("Dest: " + newDest + " Inside? " + overlay.ContainsPosition(newDest));*/
 			//TODO: something with isGrounded to prevent falling off the world
 			PathNode pn = overlay.PositionAt(newDest);
@@ -78,10 +82,10 @@ public class ContinuousWithinTilesMoveIO : MoveIO {
 		}
 	}
 		
-	override protected void PresentMoves() {
-		PathNode[] destinations = GetComponent<GridMoveStrategy>().GetValidMoves();
-		overlay = map.PresentGridOverlay(
-			"move", this.gameObject.GetInstanceID(), 
+	override public void PresentMoves() {
+		PathNode[] destinations = (owner.strategy as GridMoveStrategy).GetValidMoves();
+		overlay = owner.map.PresentGridOverlay(
+			"move", owner.character.gameObject.GetInstanceID(), 
 			new Color(0.2f, 0.3f, 0.9f, 0.7f),
 			new Color(0.4f, 0.6f, 0.9f, 0.7f),
 			destinations
@@ -90,8 +94,8 @@ public class ContinuousWithinTilesMoveIO : MoveIO {
 
 	override protected void FinishMove() {
 		overlay = null;
-		if(map.IsShowingOverlay("move", this.gameObject.GetInstanceID())) {
-			map.RemoveOverlay("move", this.gameObject.GetInstanceID());
+		if(owner.map.IsShowingOverlay("move", owner.character.gameObject.GetInstanceID())) {
+			owner.map.RemoveOverlay("move", owner.character.gameObject.GetInstanceID());
 		}	
 		base.FinishMove();
 	}

@@ -1,14 +1,17 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-public class MoveExecutor : MonoBehaviour {
+[System.Serializable]
+public class MoveExecutor {
 	[System.NonSerialized]
-	public Map map;
+	public MoveSkill owner;
 	
 	public Vector3 transformOffset = new Vector3(0, 5, 0);
 	
+	[HideInInspector]
 	public Vector3 position;
 	protected PathNode destNode;
+	[HideInInspector]
 	public Vector3 temporaryPosition;
 	protected PathNode temporaryDestNode;
 	
@@ -27,19 +30,9 @@ public class MoveExecutor : MonoBehaviour {
 	public float ZSpeedUp = 15;
 	public float ZSpeedDown = 20;
 	
+	[HideInInspector]
 	public MoveType currentMoveType;
-	public string currentAnimation;	
-	public void TriggerAnimation(string animType, bool force=false) {
-		if(currentAnimation != animType || force) {
-			currentAnimation = animType;
-			SendMessage("UseAnimation", animType, SendMessageOptions.DontRequireReceiver);
-		}
-	}
 	
-	void UseAnimation(string anim) {
-		Debug.Log("triggered "+anim);
-	}
-
 	virtual public void Start () {
 
 	}
@@ -49,6 +42,11 @@ public class MoveExecutor : MonoBehaviour {
 			animNodes.Clear();
 		}
 		pathIndex = -1;
+	}
+	
+	virtual public void Cancel() {
+		owner.character.TriggerAnimation("idle");
+		transformPosition = position;
 	}
 	
 	virtual protected void CreatePath(PathNode pn) {
@@ -65,6 +63,7 @@ public class MoveExecutor : MonoBehaviour {
 		pathIndex = animNodes.Count-1;
 		if(animNodes.Count > 1) {
 			currentMoveType = MoveTypeForMove(pn.pos, animNodes[pathIndex-1].pos);
+			owner.character.Facing = FacingForMove(pn.pos, animNodes[pathIndex-1].pos);
 		} else {
 			currentMoveType = MoveType.None;
 		}
@@ -87,13 +86,13 @@ public class MoveExecutor : MonoBehaviour {
 	}
 	
 	public Vector3 temporaryDestination {
-		get { return map.TransformPointWorld(temporaryDestNode.pos); }
+		get { return owner.map.TransformPointWorld(temporaryDestNode.pos); }
 	}
 	
 	public Vector3 destination {
-		get { return map.TransformPointWorld(destNode.pos); }
+		get { return owner.map.TransformPointWorld(destNode.pos); }
 	}
-
+	
 	virtual public void IncrementalMoveTo(PathNode pn, MoveFinished callback, float timeout=10.0f) {
 		transformPosition = position;
 		destNode = pn;
@@ -116,8 +115,8 @@ public class MoveExecutor : MonoBehaviour {
 	}
 	
 	public Vector3 transformPosition {
-		get { return this.transform.position-transformOffset; }
-		set { this.transform.position = value+transformOffset; }
+		get { return owner.character.transform.position-transformOffset; }
+		set { owner.character.transform.position = value+transformOffset; }
 	}
 	
 	public enum MoveType {
@@ -146,7 +145,7 @@ public class MoveExecutor : MonoBehaviour {
 	public MoveType MoveTypeForMove(Vector3 to, Vector3 from) {
 		float dx = to.x-from.x;
 		float dy = to.y-from.y;
-		float dz = map.DZForMove(to, from);
+		float dz = owner.map.DZForMove(to, from);
 		float adz = Mathf.Abs(dz);
 		if(Mathf.Abs(dx)+Mathf.Abs(dy) > 1) { return MoveType.Leap; }
 		if(adz <= 1) { return MoveType.Step; }
@@ -156,29 +155,29 @@ public class MoveExecutor : MonoBehaviour {
 		return MoveType.None;
 	}
 	
+	public Quaternion FacingForMove(Vector3 to, Vector3 from) {
+		return Quaternion.LookRotation(to-from);
+	}
+	
+	virtual public void Activate() {
+		Vector3 startPos = owner.map.InverseTransformPointWorld(transformPosition);
+		startPos.x = Mathf.Round(startPos.x);
+		startPos.y = Mathf.Round(startPos.y);
+		startPos.z = Mathf.Round(startPos.z);
+		destNode = new PathNode(startPos, null, 0);
+		position = destination;
+		temporaryDestNode = destNode;
+		temporaryPosition = temporaryDestination;
+		transformPosition = position;	
+	}
+	virtual public void Deactivate() {
+	}
+	
 	virtual public void Update () {
 		Vector3 tp = transformPosition;
-		if(map == null) {
-			if(this.transform.parent != null) {
-				map = this.transform.parent.GetComponent<Map>();
-			}
-			if(map == null) { 
-				Debug.Log("Characters must be children of Map objects!");
-				return;
-			}
-			Vector3 startPos = map.InverseTransformPointWorld(tp);
-			startPos.x = Mathf.Round(startPos.x);
-			startPos.y = Mathf.Round(startPos.y);
-			startPos.z = Mathf.Round(startPos.z);
-			destNode = new PathNode(startPos, null, 0);
-			position = destination;
-			temporaryDestNode = destNode;
-			temporaryPosition = temporaryDestination;
-			transformPosition = tp = position;
-		}
 		if(moveTimeRemaining > 0 && animNodes != null && animNodes.Count > 0) {
 			moveTimeRemaining -= Time.deltaTime;
-			Vector3 animDest = map.TransformPointWorld(animNodes[pathIndex].pos);
+			Vector3 animDest = owner.map.TransformPointWorld(animNodes[pathIndex].pos);
 			Vector3 d = animDest-tp;
 			float dsquared = d.sqrMagnitude;
 			float dt = Time.deltaTime;
@@ -189,6 +188,7 @@ public class MoveExecutor : MonoBehaviour {
 					pathIndex--;
 					PathNode pn = animNodes[pathIndex];
 					currentMoveType = MoveTypeForMove(pn.pos, animNodes[pathIndex+1].pos);
+					owner.character.Facing = FacingForMove(pn.pos, animNodes[pathIndex+1].pos);
 				} else {
 					transformPosition = tp = temporaryDestination;
 					if(position != destination) {
@@ -212,54 +212,54 @@ public class MoveExecutor : MonoBehaviour {
 						newPos.x = Mathf.MoveTowards(newPos.x, animDest.x, XYSpeed*2*dt);
 						newPos.y = Mathf.MoveTowards(newPos.y, animDest.y, zspeed*dt);
 						newPos.z = Mathf.MoveTowards(newPos.z, animDest.z, XYSpeed*2*dt);
-						TriggerAnimation("leaping");
+						owner.character.TriggerAnimation("leaping");
 						break;
 					case MoveType.Knockback:
 						newPos.x = Mathf.MoveTowards(newPos.x, animDest.x, XYSpeed*dt);
 						newPos.y = Mathf.MoveTowards(newPos.y, animDest.y, zspeed*dt);
 						newPos.z = Mathf.MoveTowards(newPos.z, animDest.z, XYSpeed*dt);
-						TriggerAnimation("knockback");
+						owner.character.TriggerAnimation("knockback");
 						break;
 					case MoveType.Step:
 						newPos.x = Mathf.MoveTowards(newPos.x, animDest.x, XYSpeed*dt);
 						newPos.y = Mathf.MoveTowards(newPos.y, animDest.y, zspeed*dt);
 						newPos.z = Mathf.MoveTowards(newPos.z, animDest.z, XYSpeed*dt);
-						TriggerAnimation("stepping");
+						owner.character.TriggerAnimation("stepping");
 						break;
 					case MoveType.Hop:
 						newPos.x = Mathf.MoveTowards(newPos.x, animDest.x, XYSpeed*dt);
 						newPos.y = Mathf.MoveTowards(newPos.y, animDest.y, zspeed*2*dt);
 						newPos.z = Mathf.MoveTowards(newPos.z, animDest.z, XYSpeed*dt);
-						TriggerAnimation("hopping");
+						owner.character.TriggerAnimation("hopping");
 						break;
 					case MoveType.Jump:
 						if(d.y != 0) {
 							newPos.y = Mathf.MoveTowards(newPos.y, animDest.y, zspeed*dt);
-							TriggerAnimation("jumping");
+							owner.character.TriggerAnimation("jumping");
 						} else {
 							newPos.x = Mathf.MoveTowards(newPos.x, animDest.x, XYSpeed*dt);
 							newPos.z = Mathf.MoveTowards(newPos.z, animDest.z, XYSpeed*dt);
-							TriggerAnimation("jumpsliding");
+							owner.character.TriggerAnimation("jumpsliding");
 						}
 						break;
 					case MoveType.Fall:
 						if(d.x != 0 || d.z != 0) {
 							newPos.x = Mathf.MoveTowards(newPos.x, animDest.x, XYSpeed*dt);
 							newPos.z = Mathf.MoveTowards(newPos.z, animDest.z, XYSpeed*dt);
-							TriggerAnimation("fallsliding");
+							owner.character.TriggerAnimation("fallsliding");
 						} else {
 							newPos.y = Mathf.MoveTowards(newPos.y, animDest.y, zspeed*dt);
-							TriggerAnimation("falling");
+							owner.character.TriggerAnimation("falling");
 						}
 						break;
 					case MoveType.KnockbackFall:
 						if(d.x != 0 || d.z != 0) {
 							newPos.x = Mathf.MoveTowards(newPos.x, animDest.x, XYSpeed*dt);
 							newPos.z = Mathf.MoveTowards(newPos.z, animDest.z, XYSpeed*dt);
-							TriggerAnimation("knockbackfallsliding");
+							owner.character.TriggerAnimation("knockbackfallsliding");
 						} else {
 							newPos.y = Mathf.MoveTowards(newPos.y, animDest.y, zspeed*dt);
-							TriggerAnimation("knockbackfalling");
+							owner.character.TriggerAnimation("knockbackfalling");
 						}
 						break;
 				}

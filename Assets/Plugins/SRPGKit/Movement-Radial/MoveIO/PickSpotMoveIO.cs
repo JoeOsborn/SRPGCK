@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections;
 
+[System.Serializable]
 public class PickSpotMoveIO : MoveIO {
 	public bool supportKeyboard = true;
 	public bool supportMouse = true;
@@ -36,15 +37,15 @@ public class PickSpotMoveIO : MoveIO {
 	
 	override public void Start() {
 		base.Start();
-		instantiatedIndicator = Instantiate(indicator) as Transform;
+		instantiatedIndicator = Object.Instantiate(indicator) as Transform;
 		instantiatedIndicator.gameObject.active = false;
 	}
 	
 	override public void Update () {
 		base.Update();
-		if(character == null || !character.isActive) { return; }
+		if(owner.character == null || !owner.character.isActive) { return; }
 		if(!isActive) { return; }
-		if(!map.arbiter.IsLocalPlayer(character.EffectiveTeamID)) {
+		if(!owner.arbiter.IsLocalPlayer(owner.character.EffectiveTeamID)) {
 			return;
 		}
 		//self.isActive?
@@ -99,10 +100,10 @@ public class PickSpotMoveIO : MoveIO {
 			Vector3 offset = dx * right + dy * forward;
 
 			if(indicatorXY.x+dx >= 0 && indicatorXY.y+dy >= 0 &&
-				 map.HasTileAt((int)(indicatorXY.x+dx), (int)(indicatorXY.y+dy))) {
+				 owner.map.HasTileAt((int)(indicatorXY.x+dx), (int)(indicatorXY.y+dy))) {
 				indicatorXY.x += offset.x;
 				indicatorXY.y += offset.z;
-				indicatorZ = map.NearestZLevel((int)indicatorXY.x, (int)indicatorXY.y, (int)indicatorZ);
+				indicatorZ = owner.map.NearestZLevel((int)indicatorXY.x, (int)indicatorXY.y, (int)indicatorZ);
 			}
 		}
 		if(supportKeyboard && Input.GetButtonDown("Confirm")) {
@@ -117,23 +118,27 @@ public class PickSpotMoveIO : MoveIO {
 			indicatorCycleT += Time.deltaTime;
 			if(indicatorCycleT >= indicatorCycleLength) {
 				indicatorCycleT -= indicatorCycleLength;
-				indicatorZ = map.NextZLevel((int)indicatorXY.x, (int)indicatorXY.y, (int)indicatorZ, true);
+				indicatorZ = owner.map.NextZLevel((int)indicatorXY.x, (int)indicatorXY.y, (int)indicatorZ, true);
 			}
 		}
 		
-		instantiatedIndicator.position = map.TransformPointWorld(new Vector3(indicatorXY.x, indicatorXY.y, indicatorZ))+new Vector3(0,0.1f,0);
+		instantiatedIndicator.position = owner.map.TransformPointWorld(new Vector3(
+			indicatorXY.x, 
+			indicatorXY.y, 
+			indicatorZ
+		))+new Vector3(0,0.1f,0);
 	}
 	
-	override protected void PresentMoves() {
+	override public void PresentMoves() {
 		base.PresentMoves();
 		Debug.Log("Present");
-		RadialMoveStrategy ms = GetComponent<RadialMoveStrategy>();
-		Vector3 charPos = map.InverseTransformPointWorld(transform.position);
+		RadialMoveStrategy ms = owner.strategy as RadialMoveStrategy;
+		Vector3 charPos = owner.map.InverseTransformPointWorld(owner.character.transform.position);
 		Debug.Log("show at "+charPos);
 		//TODO: base radius in part on points-scheduler available points
 		if(overlayType == RadialOverlayType.Sphere) {
-			overlay = map.PresentSphereOverlay(
-						"move", this.gameObject.GetInstanceID(), 
+			overlay = owner.map.PresentSphereOverlay(
+						"move", owner.character.gameObject.GetInstanceID(), 
 						overlayColor,
 						charPos,
 						ms.GetMoveRadius(),
@@ -142,8 +147,8 @@ public class PickSpotMoveIO : MoveIO {
 						invertOverlay
 					);
 		} else if(overlayType == RadialOverlayType.Cylinder) {
-			overlay = map.PresentCylinderOverlay(
-						"move", this.gameObject.GetInstanceID(), 
+			overlay = owner.map.PresentCylinderOverlay(
+						"move", owner.character.gameObject.GetInstanceID(), 
 						new Color(0.3f, 0.3f, 0.3f, 0.3f),
 						charPos,
 						ms.GetMoveRadius(),
@@ -155,17 +160,17 @@ public class PickSpotMoveIO : MoveIO {
 		}
 		cycleIndicatorZ = false;
 		indicatorXY = new Vector2(charPos.x, charPos.y);
-		indicatorZ = map.NearestZLevel((int)indicatorXY.x, (int)indicatorXY.y, (int)Mathf.Floor(charPos.z));
+		indicatorZ = owner.map.NearestZLevel((int)indicatorXY.x, (int)indicatorXY.y, (int)Mathf.Floor(charPos.z));
 		instantiatedIndicator.gameObject.active = true;
-		instantiatedIndicator.parent = map.transform;
-		instantiatedIndicator.position = map.TransformPointWorld(new Vector3(indicatorXY.x, indicatorXY.y, indicatorZ))+new Vector3(0,0.1f,0);
+		instantiatedIndicator.parent = owner.map.transform;
+		instantiatedIndicator.position = owner.map.TransformPointWorld(new Vector3(indicatorXY.x, indicatorXY.y, indicatorZ))+new Vector3(0,0.1f,0);
 	}
 	
 	override protected void FinishMove() {
 		instantiatedIndicator.gameObject.active = false;
 		overlay = null;
-		if(map.IsShowingOverlay("move", this.gameObject.GetInstanceID())) {
-			map.RemoveOverlay("move", this.gameObject.GetInstanceID());
+		if(owner.map.IsShowingOverlay("move", owner.character.gameObject.GetInstanceID())) {
+			owner.map.RemoveOverlay("move", owner.character.gameObject.GetInstanceID());
 		}	
 		base.FinishMove();
 	}

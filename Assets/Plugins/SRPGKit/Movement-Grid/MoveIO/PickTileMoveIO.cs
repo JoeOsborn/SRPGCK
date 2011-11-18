@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 
+[System.Serializable]
 public class PickTileMoveIO : MoveIO, ITilePickerOwner {
 	public bool supportKeyboard = true;
 	public bool supportMouse = true;
@@ -26,13 +27,13 @@ public class PickTileMoveIO : MoveIO, ITilePickerOwner {
 	
 	override public void Update () {
 		base.Update();
-		if(character == null || !character.isActive) { return; }
+		if(owner.character == null || !owner.character.isActive) { return; }
 		if(!isActive) { return; }
-		if(!map.arbiter.IsLocalPlayer(character.EffectiveTeamID)) {
+		if(!owner.arbiter.IsLocalPlayer(owner.character.EffectiveTeamID)) {
 			return;
 		}
 		if(GUIUtility.hotControl != 0) { return; }
-		MoveExecutor me = GetComponent<MoveExecutor>();
+		MoveExecutor me = owner.executor;
 		if(me.IsMoving) { return; }
 		tilePicker.supportKeyboard      = supportKeyboard;
 		tilePicker.supportMouse         = supportMouse;
@@ -42,20 +43,26 @@ public class PickTileMoveIO : MoveIO, ITilePickerOwner {
 		tilePicker.Update();
 	}
 	
+	public Map Map { get { return owner.map; } }
+	
+	public void CancelPick(TilePicker tp) {
+		owner.Cancel();
+	}
+	
 	public Vector3 IndicatorPosition {
 		get { return tilePicker.IndicatorPosition; }
 	}	
 	
-	override protected void PresentMoves() {
+	override public void PresentMoves() {
 		base.PresentMoves();
 		tilePicker.requireConfirmation = requireConfirmation;
-		tilePicker.map = map;
-		GridMoveStrategy ms = GetComponent<GridMoveStrategy>();
+		tilePicker.map = owner.map;
+		GridMoveStrategy ms = owner.strategy as GridMoveStrategy;
 		PathNode[] destinations = ms.GetValidMoves();
-		MoveExecutor me = GetComponent<MoveExecutor>();
-		Vector3 charPos = map.InverseTransformPointWorld(me.position);
-		overlay = map.PresentGridOverlay(
-			"move", this.gameObject.GetInstanceID(), 
+		MoveExecutor me = owner.executor;
+		Vector3 charPos = owner.map.InverseTransformPointWorld(me.position);
+		overlay = owner.map.PresentGridOverlay(
+			"move", owner.character.gameObject.GetInstanceID(), 
 			new Color(0.2f, 0.3f, 0.9f, 0.7f),
 			new Color(0.4f, 0.6f, 0.9f, 0.85f),
 			destinations
@@ -64,14 +71,15 @@ public class PickTileMoveIO : MoveIO, ITilePickerOwner {
 	}
 	
 	override protected void FinishMove() {
-		overlay = null;
-		tilePicker.Clear();
-		if(map.IsShowingOverlay("move", this.gameObject.GetInstanceID())) {
-			map.RemoveOverlay("move", this.gameObject.GetInstanceID());
-		}	
 		base.FinishMove();
 	}
-	
+	override public void Deactivate() {
+		overlay = null;
+		tilePicker.Clear();
+		if(owner.map.IsShowingOverlay("move", owner.character.gameObject.GetInstanceID())) {
+			owner.map.RemoveOverlay("move", owner.character.gameObject.GetInstanceID());
+		}	
+	}	
 	public void FocusOnPoint(Vector3 pos) {
 		tilePicker.FocusOnPoint(pos);
 	}

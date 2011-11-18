@@ -22,6 +22,10 @@ public class Scheduler : MonoBehaviour {
 		characters.Remove(c);
 	}
 	
+	public virtual void SkillApplied(Skill s) {
+		
+	}
+	
 	public virtual void Activate(Character c, object context=null) {
 		activeCharacter = c;
 		c.SendMessage("Activate", context, SendMessageOptions.RequireReceiver);
@@ -33,15 +37,7 @@ public class Scheduler : MonoBehaviour {
 		if(activeCharacter == c) { activeCharacter = null; }
 		c.SendMessage("Deactivate", context, SendMessageOptions.RequireReceiver);
 		map.BroadcastMessage("DeactivatedCharacter", c, SendMessageOptions.DontRequireReceiver);
-	}
-	
-	public virtual void BeginMovePhase(Character c) {
-		c.SendMessage("PresentMoves", null);	
-	}
-	
-	public virtual void EndMovePhase(Character c) {
-
-	}
+	}	
 
 	public virtual void Start () {
 	

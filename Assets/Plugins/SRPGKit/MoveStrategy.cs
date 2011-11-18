@@ -1,9 +1,10 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-public class MoveStrategy : MonoBehaviour {
-	protected Map map;
-	protected Character character;
+[System.Serializable]
+public class MoveStrategy {
+	[System.NonSerialized]
+	public Skill owner;
 	
 	public bool canCrossWalls=false;
 	public float zDelta=3;
@@ -15,7 +16,11 @@ public class MoveStrategy : MonoBehaviour {
 	}
 	
 	virtual public void Update () {
-		if(map == null && transform.parent != null) { map = transform.parent.GetComponent<Map>(); }
-		if(character == null && GetComponent<Character>() != null) { character = GetComponent<Character>(); }
+		
+	}
+	
+	virtual public void Activate() {
+	}
+	virtual public void Deactivate() {
 	}
 }

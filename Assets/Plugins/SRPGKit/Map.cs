@@ -775,6 +775,23 @@ public class Map : MonoBehaviour {
 		}
 	}
 	
+	public Vector2 TransformKeyboardAxes(float h, float v, bool switchXY=true) {
+		//use the camera and the map's own rotation
+		Transform cam = Camera.main.transform;
+		//h*right+v*forward
+		Vector3 xp = cam.TransformDirection(new Vector3(1, 0, 0));
+		xp.y = 0;
+		xp = xp.normalized;
+		Vector3 yp = new Vector3(-xp.z, 0, xp.x);
+		Debug.Log("XP:"+xp+", YP:"+yp+", hxp:"+(h*xp)+", vyp:"+(v*yp)+", h:"+h+", v:"+v);
+		Vector3 result = h*xp + v*yp;
+		if(switchXY) {
+			return new Vector2(-result.z, result.x);
+		} else {
+			return new Vector2(result.x, result.z);
+		}
+	}
+	
 	public Vector3 TransformPointLocal(Vector3 tileCoord) {
 /*		Debug.Log("Tile: "+tileCoord+" is local "+new Vector3(tileCoord.x*sideLength, tileCoord.z*tileHeight, tileCoord.y*sideLength));*/
 		return new Vector3(tileCoord.x*sideLength, tileCoord.z*tileHeight, tileCoord.y*sideLength);

@@ -5,6 +5,7 @@ using System.Collections;
 //it is only used to track moves made by another script.
 //for example, you may have a MoveIO that handles movement and animation
 //on its own; in that case, use a ProxyMoveExecutor to "dummy out" the ME features.
+[System.Serializable]
 public class ProxyMoveExecutor : MoveExecutor {
 	override public void TemporaryMoveTo(PathNode pn, MoveFinished callback, float timeout=10.0f) {
 		Vector3 src = temporaryPosition;
@@ -23,7 +24,7 @@ public class ProxyMoveExecutor : MoveExecutor {
 	}
 	
 	public void UpdatePositions() {
-		destNode = new PathNode(transform.position, null, 0);
+		destNode = new PathNode(owner.character.transform.position, null, 0);
 		position = destination;
 		temporaryPosition = position;
 		temporaryDestNode = destNode;

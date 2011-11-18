@@ -31,7 +31,6 @@ public class CTScheduler : Scheduler {
 		ctc.HasActed = false;
 		//(for now): ON `activate`, MOVE
 //		Debug.Log("activate"); 
-		BeginMovePhase(c);
 	}
 	
 	override public void Deactivate(Character c, object ctx=null) {
@@ -47,21 +46,28 @@ public class CTScheduler : Scheduler {
 			ctc.CT = Mathf.Max(ctc.CT-cost, 0);
 		}
 	}
-	
-	override public void EndMovePhase(Character c) {
-		base.EndMovePhase(c);
-		//reduce c's CT by any-movement cost (30)
-		if(c != null) {
-			CTCharacter ctc = c.GetComponent<CTCharacter>();
-			float cost = ctc.PerMoveCTCost;
-			if(coalesceCTDecrements) {
-				pendingCTDecrement += cost;
+	//TODO: replace me with a "skill finished" callback
+	override public void SkillApplied(Skill s) {
+		base.SkillApplied(s);
+		if(s.character != null) {
+			CTCharacter ctc = s.character.GetComponent<CTCharacter>();
+			if(s is MoveSkill) {
+				//reduce c's CT by any-movement cost (30)
+				float cost = ctc.PerMoveCTCost;
+				if(coalesceCTDecrements) {
+					pendingCTDecrement += cost;
+				} else {
+					ctc.CT = Mathf.Max(ctc.CT-cost, 0);
+				}
+				ctc.HasMoved = true;		
+			} else if(s is WaitSkill) {
+				Deactivate(s.character);
 			} else {
-				ctc.CT = Mathf.Max(ctc.CT-cost, 0);
+				//TODO:0: reduce c's ct
+				ctc.HasActed = true;
 			}
-			ctc.HasMoved = true;		
 		}
-	}
+	}	
 	
 	override public void CharacterMoved(Character c, Vector3 src, Vector3 dest) {
 		base.CharacterMoved(c, src, dest);

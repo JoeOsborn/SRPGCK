@@ -35,16 +35,16 @@ public class TeamRoundsPickAnyOnceScheduler : Scheduler {
 		map.BroadcastMessage("RoundBegan", currentTeam, SendMessageOptions.DontRequireReceiver);
 	}
 
-	override public void EndMovePhase(Character c) {
-		base.EndMovePhase(c);
-		Deactivate(c);
+	override public void SkillApplied(Skill s) {
+		base.SkillApplied(s);
+		Deactivate(s.character);
 	}
 	
 	override public void Activate(Character c, object ctx=null) {
 		base.Activate(c, ctx);			
 		remainingCharacters.Remove(c);
 		//(for now): ON `activate`, MOVE
-		BeginMovePhase(c);
+		c.moveSkill.Activate();
 	}
 	
 	override public void Update () {

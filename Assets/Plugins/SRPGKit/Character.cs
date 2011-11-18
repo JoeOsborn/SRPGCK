@@ -11,8 +11,49 @@ public class Character : MonoBehaviour {
 
 	public int teamID;
 	
-	// Use this for initialization
+	//FIXME:0: may not work with deserialization
+	public List<Skill> skills;
+	
+	[HideInInspector]
+	public string currentAnimation;	
+	
+	public MoveSkill moveSkill { get { 
+		for(int i = 0; i < skills.Count; i++) { 
+			if(skills[i] is MoveSkill) { 
+				return skills[i] as MoveSkill; 
+			} 
+		} 
+		return null; 
+	} }
+
+	public WaitSkill waitSkill { get { 
+		for(int i = 0; i < skills.Count; i++) { 
+			if(skills[i] is WaitSkill) { 
+				return skills[i] as WaitSkill; 
+			} 
+		} 
+		return null; 
+	} }
+	
+	public void AddSkill(Skill s) {
+		skills.Add(s);
+		s.character = this;
+		s.Start();
+	}
+	
 	void Start () {
+		if(skills == null) { skills = new List<Skill>(); }
+		for(int i = 0; i < skills.Count; i++) {
+			skills[i].character = this;
+			skills[i].Start();
+		}
+		if(this.moveSkill == null) {
+//			Debug.LogError("No move skill!");
+			AddSkill(new StandardPickTileMoveSkill());
+		}
+		if(this.waitSkill == null) {
+			AddSkill(new WaitSkill());
+		}
 	}
 	
 	//can be modulated by charm, etc
@@ -25,8 +66,30 @@ public class Character : MonoBehaviour {
 	}
 	
 	public void Deactivate() {
+		if(this.moveSkill.isActive) {
+			this.moveSkill.Deactivate(); 
+		}
 		isActive = false;
 	}
+	
+	public void TriggerAnimation(string animType, bool force=false) {
+		if(currentAnimation != animType || force) {
+			currentAnimation = animType;
+			Debug.Log("triggering "+animType);
+			SendMessage("UseAnimation", animType, SendMessageOptions.DontRequireReceiver);
+		}
+	}
+	
+	public virtual Quaternion Facing { 
+		get {
+			return transform.rotation;
+		} 
+		set {
+			transform.rotation = value;
+			SendMessage("UseFacing", transform.rotation, SendMessageOptions.DontRequireReceiver);
+		}
+	}
+	
 	
 	void Update () {
 		if(map == null) {
@@ -39,6 +102,11 @@ public class Character : MonoBehaviour {
 			if(map == null) { 
 				Debug.Log("Characters must be children of Map objects!");
 				return; 
+			}
+		}
+		for(int i = 0; i < skills.Count; i++) {
+			if(skills[i].isActive) {
+				skills[i].Update();
 			}
 		}
 		//Five things are going on here:

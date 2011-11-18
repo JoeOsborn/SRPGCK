@@ -1,10 +1,12 @@
 using UnityEngine;
 
 public interface ITilePickerOwner {
+	Map Map { get; }
 	void Pick(TilePicker tp, Vector3 p);
 	void Pick(TilePicker tp, PathNode pn);
 	void TentativePick(TilePicker tp, Vector3 p);
 	void TentativePick(TilePicker tp, PathNode pn);
+	void CancelPick(TilePicker tp);
 }
 
 public class TilePicker {
@@ -75,13 +77,16 @@ public class TilePicker {
 		  (!awaitingConfirmation || !requireConfirmation)) {
 			cycleIndicatorZ = true;
 			indicatorCycleT = 0;
-			float dx = (h == 0 ? 0 : Mathf.Sign(h));
-			float dy = (v == 0 ? 0 : Mathf.Sign(v));
-			if(indicatorXY.x+dx >= 0 && indicatorXY.y+dy >= 0 &&
-				 map.HasTileAt((int)(indicatorXY.x+dx), (int)(indicatorXY.y+dy))) {
+			Vector2 d = owner.Map.TransformKeyboardAxes(h, v);
+			Debug.Log("Got "+d);
+			if(Mathf.Abs(d.x) > Mathf.Abs(d.y)) { d.x = Mathf.Sign(d.x); d.y = 0; }
+			else { d.x = 0; d.y = Mathf.Sign(d.y); }
+			Debug.Log("Became "+d);
+			if(indicatorXY.x+d.x >= 0 && indicatorXY.y+d.y >= 0 &&
+				 map.HasTileAt((int)(indicatorXY.x+d.x), (int)(indicatorXY.y+d.y))) {
 				lastIndicatorKeyboardMove = Time.time;
-				indicatorXY.x += dx;
-				indicatorXY.y += dy;
+				indicatorXY.x += d.x;
+				indicatorXY.y += d.y;
 				indicatorZ = map.NearestZLevel((int)indicatorXY.x, (int)indicatorXY.y, (int)indicatorZ);
 			}
 		}
@@ -104,7 +109,7 @@ public class TilePicker {
 				owner.TentativePick(this, map.InverseTransformPointWorld(moveExecutor.position));
 				awaitingConfirmation = false;
 			} else {
-				//Back out of move phase!
+				owner.CancelPick(this);
 			}
 		}
 		if(cycleIndicatorZ && (!awaitingConfirmation || !requireConfirmation)) {

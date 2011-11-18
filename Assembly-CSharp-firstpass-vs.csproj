@@ -5,7 +5,7 @@
 	<Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
 	<ProductVersion>9.0.21022</ProductVersion>
 	<SchemaVersion>2.0</SchemaVersion>
-	<ProjectGuid>{7EA3EAD6-2A6D-4751-18FD-24EBE2559546}</ProjectGuid>
+	<ProjectGuid>{AD2D1443-AC1E-E430-A2A7-102CDD877B0F}</ProjectGuid>
 	<OutputType>Library</OutputType>
 	<AppDesignerFolder>Properties</AppDesignerFolder>
 	<RootNamespace></RootNamespace>
@@ -44,34 +44,41 @@
 	</Reference>
   </ItemGroup>
   <ItemGroup>
-     <Compile Include="Assets\Plugins\SPRGKit\Arbiter.cs" />
-     <Compile Include="Assets\Plugins\SPRGKit\Character.cs" />
-     <Compile Include="Assets\Plugins\SPRGKit\Map.cs" />
-     <Compile Include="Assets\Plugins\SPRGKit\MapTile.cs" />
-     <Compile Include="Assets\Plugins\SPRGKit\MoveExecutor.cs" />
-     <Compile Include="Assets\Plugins\SPRGKit\MoveIO.cs" />
-     <Compile Include="Assets\Plugins\SPRGKit\MoveStrategy.cs" />
-     <Compile Include="Assets\Plugins\SPRGKit\Movement-Grid\GridAI\GridAI.cs" />
-     <Compile Include="Assets\Plugins\SPRGKit\Movement-Grid\GridMoveStrategy.cs" />
-     <Compile Include="Assets\Plugins\SPRGKit\Movement-Grid\GridOverlay.cs" />
-     <Compile Include="Assets\Plugins\SPRGKit\Movement-Grid\MoveIO\ContinuousWithinTilesMoveIO.cs" />
-     <Compile Include="Assets\Plugins\SPRGKit\Movement-Grid\MoveIO\PickTileMoveIO.cs" />
-     <Compile Include="Assets\Plugins\SPRGKit\Movement-Radial\MoveIO\ContinuousMoveIO.cs" />
-     <Compile Include="Assets\Plugins\SPRGKit\Movement-Radial\MoveIO\PickSpotMoveIO.cs" />
-     <Compile Include="Assets\Plugins\SPRGKit\Movement-Radial\RadialMoveStrategy.cs" />
-     <Compile Include="Assets\Plugins\SPRGKit\Movement-Radial\RadialOverlay.cs" />
-     <Compile Include="Assets\Plugins\SPRGKit\Network\DiscreteMoveNetwork.cs" />
-     <Compile Include="Assets\Plugins\SPRGKit\Overlay.cs" />
-     <Compile Include="Assets\Plugins\SPRGKit\Prop.cs" />
-     <Compile Include="Assets\Plugins\SPRGKit\ProxyMoveExecutor.cs" />
-     <Compile Include="Assets\Plugins\SPRGKit\ProxyMoveIO.cs" />
-     <Compile Include="Assets\Plugins\SPRGKit\Schedulers\CTCharacter.cs" />
-     <Compile Include="Assets\Plugins\SPRGKit\Schedulers\CTScheduler.cs" />
-     <Compile Include="Assets\Plugins\SPRGKit\Schedulers\PhasedPointsCharacter.cs" />
-     <Compile Include="Assets\Plugins\SPRGKit\Schedulers\Scheduler.cs" />
-     <Compile Include="Assets\Plugins\SPRGKit\Schedulers\TeamPhasedPickAnyOnceScheduler.cs" />
-     <Compile Include="Assets\Plugins\SPRGKit\Schedulers\TeamPhasedPickOneSchedulerFeedback.cs" />
-     <Compile Include="Assets\Plugins\SPRGKit\Schedulers\TeamPhasedPointsScheduler.cs" />
+     <Compile Include="Assets\Plugins\SRPGKit\Arbiter.cs" />
+     <Compile Include="Assets\Plugins\SRPGKit\Character.cs" />
+     <Compile Include="Assets\Plugins\SRPGKit\DebugGUI.cs" />
+     <Compile Include="Assets\Plugins\SRPGKit\Map.cs" />
+     <Compile Include="Assets\Plugins\SRPGKit\MapTile.cs" />
+     <Compile Include="Assets\Plugins\SRPGKit\MoveExecutor.cs" />
+     <Compile Include="Assets\Plugins\SRPGKit\MoveIO.cs" />
+     <Compile Include="Assets\Plugins\SRPGKit\MoveStrategy.cs" />
+     <Compile Include="Assets\Plugins\SRPGKit\Movement-Grid\GridAI\GridAI.cs" />
+     <Compile Include="Assets\Plugins\SRPGKit\Movement-Grid\GridMoveStrategy.cs" />
+     <Compile Include="Assets\Plugins\SRPGKit\Movement-Grid\GridOverlay.cs" />
+     <Compile Include="Assets\Plugins\SRPGKit\Movement-Grid\MoveIO\ContinuousWithinTilesMoveIO.cs" />
+     <Compile Include="Assets\Plugins\SRPGKit\Movement-Grid\MoveIO\PickTileMoveIO.cs" />
+     <Compile Include="Assets\Plugins\SRPGKit\Movement-Grid\TilePicker.cs" />
+     <Compile Include="Assets\Plugins\SRPGKit\Movement-Radial\MoveIO\ContinuousMoveIO.cs" />
+     <Compile Include="Assets\Plugins\SRPGKit\Movement-Radial\MoveIO\PickSpotMoveIO.cs" />
+     <Compile Include="Assets\Plugins\SRPGKit\Movement-Radial\RadialMoveStrategy.cs" />
+     <Compile Include="Assets\Plugins\SRPGKit\Movement-Radial\RadialOverlay.cs" />
+     <Compile Include="Assets\Plugins\SRPGKit\Network\DiscreteMoveNetwork.cs" />
+     <Compile Include="Assets\Plugins\SRPGKit\Overlay.cs" />
+     <Compile Include="Assets\Plugins\SRPGKit\Prop.cs" />
+     <Compile Include="Assets\Plugins\SRPGKit\ProxyMoveExecutor.cs" />
+     <Compile Include="Assets\Plugins\SRPGKit\ProxyMoveIO.cs" />
+     <Compile Include="Assets\Plugins\SRPGKit\Schedulers\CTCharacter.cs" />
+     <Compile Include="Assets\Plugins\SRPGKit\Schedulers\CTScheduler.cs" />
+     <Compile Include="Assets\Plugins\SRPGKit\Schedulers\RoundPointsCharacter.cs" />
+     <Compile Include="Assets\Plugins\SRPGKit\Schedulers\Scheduler.cs" />
+     <Compile Include="Assets\Plugins\SRPGKit\Schedulers\TeamRoundsPickAnyOnceScheduler.cs" />
+     <Compile Include="Assets\Plugins\SRPGKit\Schedulers\TeamRoundsPickOneSchedulerFeedback.cs" />
+     <Compile Include="Assets\Plugins\SRPGKit\Schedulers\TeamRoundsPointsScheduler.cs" />
+     <Compile Include="Assets\Plugins\SRPGKit\Skills\MoveSkill.cs" />
+     <Compile Include="Assets\Plugins\SRPGKit\Skills\Skill.cs" />
+     <Compile Include="Assets\Plugins\SRPGKit\Skills\StandardPickTileMoveSkill.cs" />
+     <Compile Include="Assets\Plugins\SRPGKit\Skills\WaitIO.cs" />
+     <Compile Include="Assets\Plugins\SRPGKit\Skills\WaitSkill.cs" />
      <Compile Include="Assets\Plugins\SpriteSystem\Billboard.cs" />
      <Compile Include="Assets\Plugins\SpriteSystem\DisplayGraph2D.cs" />
      <Compile Include="Assets\Plugins\SpriteSystem\DisplayGroup.cs" />
@@ -79,13 +86,13 @@
      <Compile Include="Assets\Plugins\SpriteSystem\Layer.cs" />
      <Compile Include="Assets\Plugins\SpriteSystem\Sprite.cs" />
      <Compile Include="Assets\Plugins\SpriteSystem\SpriteAnimation.cs" />
-     <None Include="Assets\Plugins\SPRGKit\Shaders\RadialOverlayOuterVolume.shader" />
-     <None Include="Assets\Plugins\SPRGKit\Shaders\CylinderOverlayClipInverted.shader" />
-     <None Include="Assets\Plugins\SPRGKit\Shaders\GridOverlayHighlightSelected.shader" />
-     <None Include="Assets\Plugins\SPRGKit\Todo.txt" />
-     <None Include="Assets\Plugins\SPRGKit\Shaders\GridOverlayClip.shader" />
-     <None Include="Assets\Plugins\SPRGKit\Shaders\CylinderOverlayClip.shader" />
-     <None Include="Assets\Plugins\SPRGKit\Shaders\SphereOverlayClip.shader" />
+     <None Include="Assets\Plugins\SRPGKit\Shaders\RadialOverlayOuterVolume.shader" />
+     <None Include="Assets\Plugins\SRPGKit\Shaders\CylinderOverlayClipInverted.shader" />
+     <None Include="Assets\Plugins\SRPGKit\Shaders\GridOverlayHighlightSelected.shader" />
+     <None Include="Assets\Plugins\SRPGKit\Todo.txt" />
+     <None Include="Assets\Plugins\SRPGKit\Shaders\GridOverlayClip.shader" />
+     <None Include="Assets\Plugins\SRPGKit\Shaders\CylinderOverlayClip.shader" />
+     <None Include="Assets\Plugins\SRPGKit\Shaders\SphereOverlayClip.shader" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

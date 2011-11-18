@@ -83,7 +83,7 @@ public class TeamRoundsPointsScheduler : Scheduler {
 		if(limitMode == TurnLimitMode.AP) {
 			//???: Is it okay for the scheduler to determine the move strategy's max range?
 			//???: What about characters' intrinsic stats and so on?
-			MoveStrategy ms = c.GetComponent<MoveStrategy>();
+			MoveStrategy ms = c.moveSkill.strategy;
 			ms.xyRange = GetMaximumTraversalDistance(c);
 		}
 	 	//FIXME: can we do something here for time-based traversal distance limitation?
@@ -92,7 +92,7 @@ public class TeamRoundsPointsScheduler : Scheduler {
 		base.Activate(c, ctx);
 		ppc.UsesThisRound = uses+1;
 		//(for now): ON `activate`, MOVE
-		BeginMovePhase(activeCharacter);
+		activeCharacter.moveSkill.Activate();
 		pointsRemaining--;
 	}
 	
@@ -130,9 +130,9 @@ public class TeamRoundsPointsScheduler : Scheduler {
 		return (float)(ppc.Limiter/moveAPCost);
 	}
 	
-	override public void EndMovePhase(Character c) {
-		base.EndMovePhase(c);
-		Deactivate(c);
+	override public void SkillApplied(Skill s) {
+		base.SkillApplied(s);
+		Deactivate(s.character);
 	}
 	
 	override public void Update () {

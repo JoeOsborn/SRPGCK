@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections;
 
+[System.Serializable]
 public class ContinuousMoveIO : MoveIO {
 	public bool supportKeyboard = true;
 	public bool supportMouse = true;
@@ -26,16 +27,20 @@ public class ContinuousMoveIO : MoveIO {
 	
 	override public void Start() {
 		base.Start();
-		cc = GetComponent<CharacterController>();
+		cc = owner.character.GetComponent<CharacterController>();
 		//HACK: 0.09f here is a hack for the charactercontroller collider rather than 5.0
-		transform.localPosition = new Vector3(transform.localPosition.x, transform.localPosition.y+0.09f, transform.localPosition.z);
+		owner.character.transform.localPosition = new Vector3(
+			owner.character.transform.localPosition.x, 
+			owner.character.transform.localPosition.y+0.09f, 
+			owner.character.transform.localPosition.z
+		);
 	}
 	
 	override public void Update () {
 		base.Update();
-		if(character == null || !character.isActive) { return; }
+		if(owner.character == null || !owner.character.isActive) { return; }
 		if(!isActive) { return; }
-		if(!map.arbiter.IsLocalPlayer(character.EffectiveTeamID)) {
+		if(!owner.arbiter.IsLocalPlayer(owner.character.EffectiveTeamID)) {
 			return;
 		}
 		if(supportMouse && Input.GetMouseButton(0)) {
@@ -70,7 +75,7 @@ public class ContinuousMoveIO : MoveIO {
 			cc.SimpleMove(offset*moveSpeed);
 			//another approach (instead of ContainsPosition): place invisible box colliders at the edges of tiles which shouldn't be crossed
 			//HACK: 5.09f here is a hack for the charactercollider rather than 5.0
-			Vector3 newDest = map.InverseTransformPointWorld(character.transform.position-new Vector3(0,5.09f,0));
+			Vector3 newDest = owner.map.InverseTransformPointWorld(owner.character.transform.position-new Vector3(0,5.09f,0));
 
 			PathNode pn = overlay.PositionAt(newDest);
 			if(pn != null && pn.canStop) {
@@ -89,7 +94,7 @@ public class ContinuousMoveIO : MoveIO {
 		}
 	}
 	
-	override protected void PresentMoves() {
+	override public void PresentMoves() {
 		base.PresentMoves();
 		//TODO: convert this or create a new moveIO that's really trivial and doesn't do any movement on its own, instead watching for movements in its transform and using IncrementalMove appropriately. may also need to be paired with a custom trivial MoveExecutor.
 		/*
@@ -99,12 +104,12 @@ public class ContinuousMoveIO : MoveIO {
 		lastPosition = transform.position;
 		*/
 		
-		RadialMoveStrategy ms = GetComponent<RadialMoveStrategy>();
-		Vector3 charPos = map.InverseTransformPointWorld(transform.position);
+		RadialMoveStrategy ms = owner.strategy as RadialMoveStrategy;
+		Vector3 charPos = owner.map.InverseTransformPointWorld(owner.character.transform.position);
 		Debug.Log("show at "+charPos);
 		if(overlayType == RadialOverlayType.Sphere) {
-			overlay = map.PresentSphereOverlay(
-						"move", this.gameObject.GetInstanceID(), 
+			overlay = owner.map.PresentSphereOverlay(
+						"move", owner.character.gameObject.GetInstanceID(), 
 						overlayColor,
 						charPos,
 						ms.GetMoveRadius(),
@@ -113,8 +118,8 @@ public class ContinuousMoveIO : MoveIO {
 						invertOverlay
 					);
 		} else if(overlayType == RadialOverlayType.Cylinder) {
-			overlay = map.PresentCylinderOverlay(
-						"move", this.gameObject.GetInstanceID(), 
+			overlay = owner.map.PresentCylinderOverlay(
+						"move", owner.character.gameObject.GetInstanceID(), 
 						new Color(0.3f, 0.3f, 0.3f, 0.3f),
 						charPos,
 						ms.GetMoveRadius(),
@@ -129,8 +134,8 @@ public class ContinuousMoveIO : MoveIO {
 	
 	override protected void FinishMove() {
 		overlay = null;
-		if(map.IsShowingOverlay("move", this.gameObject.GetInstanceID())) {
-			map.RemoveOverlay("move", this.gameObject.GetInstanceID());
+		if(owner.map.IsShowingOverlay("move", owner.character.gameObject.GetInstanceID())) {
+			owner.map.RemoveOverlay("move", owner.character.gameObject.GetInstanceID());
 		}	
 		base.FinishMove();
 	}
