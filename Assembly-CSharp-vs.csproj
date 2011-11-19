@@ -5,7 +5,7 @@
 	<Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
 	<ProductVersion>9.0.21022</ProductVersion>
 	<SchemaVersion>2.0</SchemaVersion>
-	<ProjectGuid>{BE8F6771-4116-F1FE-50EB-9CE59E289CD7}</ProjectGuid>
+	<ProjectGuid>{1BE71344-7BF0-5D19-60FC-DA871F69AF6E}</ProjectGuid>
 	<OutputType>Library</OutputType>
 	<AppDesignerFolder>Properties</AppDesignerFolder>
 	<RootNamespace></RootNamespace>
@@ -18,7 +18,7 @@
 	<DebugType>full</DebugType>
 	<Optimize>false</Optimize>
 	<OutputPath>Temp\bin\Debug\</OutputPath>
-	<DefineConstants>DEBUG;TRACE;UNITY_3_4_1;UNITY_3_4;UNITY_EDITOR;ENABLE_PROFILER;UNITY_STANDALONE_OSX;ENABLE_GENERICS;ENABLE_DUCK_TYPING;ENABLE_TERRAIN;ENABLE_MOVIES;ENABLE_NETWORK;ENABLE_CLOTH;ENABLE_WWW</DefineConstants>
+	<DefineConstants>DEBUG;TRACE;UNITY_3_4_2;UNITY_3_4;UNITY_EDITOR;ENABLE_PROFILER;UNITY_STANDALONE_OSX;ENABLE_GENERICS;ENABLE_DUCK_TYPING;ENABLE_TERRAIN;ENABLE_MOVIES;ENABLE_NETWORK;ENABLE_CLOTH;ENABLE_WWW</DefineConstants>
 	<ErrorReport>prompt</ErrorReport>
 	<WarningLevel>4</WarningLevel>
 	<NoWarn>0169</NoWarn>
@@ -44,41 +44,17 @@
 	</Reference>
   </ItemGroup>
   <ItemGroup>
-     <Compile Include="Assets\SPRGKit\Character.cs" />
-     <Compile Include="Assets\SPRGKit\Map.cs" />
-     <Compile Include="Assets\SPRGKit\MapTile.cs" />
-     <Compile Include="Assets\SPRGKit\MoveExecutor.cs" />
-     <Compile Include="Assets\SPRGKit\MoveIO.cs" />
-     <Compile Include="Assets\SPRGKit\MoveStrategy.cs" />
-     <Compile Include="Assets\SPRGKit\Movement-Grid\GridMoveStrategy.cs" />
-     <Compile Include="Assets\SPRGKit\Movement-Grid\GridOverlay.cs" />
-     <Compile Include="Assets\SPRGKit\Movement-Grid\MoveIO\ContinuousWithinTilesMoveIO.cs" />
-     <Compile Include="Assets\SPRGKit\Movement-Grid\MoveIO\PickTileMoveIO.cs" />
-     <Compile Include="Assets\SPRGKit\Movement-Radial\MoveIO\ContinuousMoveIO.cs" />
-     <Compile Include="Assets\SPRGKit\Movement-Radial\MoveIO\PickSpotMoveIO.cs" />
-     <Compile Include="Assets\SPRGKit\Movement-Radial\RadialMoveStrategy.cs" />
-     <Compile Include="Assets\SPRGKit\Movement-Radial\RadialOverlay.cs" />
-     <Compile Include="Assets\SPRGKit\Overlay.cs" />
-     <Compile Include="Assets\SPRGKit\Prop.cs" />
-     <Compile Include="Assets\SPRGKit\ProxyMoveExecutor.cs" />
-     <Compile Include="Assets\SPRGKit\ProxyMoveIO.cs" />
-     <Compile Include="Assets\SPRGKit\Schedulers\CTCharacter.cs" />
-     <Compile Include="Assets\SPRGKit\Schedulers\CTScheduler.cs" />
-     <Compile Include="Assets\SPRGKit\Schedulers\PhasedPointsCharacter.cs" />
-     <Compile Include="Assets\SPRGKit\Schedulers\Scheduler.cs" />
-     <Compile Include="Assets\SPRGKit\Schedulers\TeamPhasedPickAnyOnceScheduler.cs" />
-     <Compile Include="Assets\SPRGKit\Schedulers\TeamPhasedPickOneSchedulerFeedback.cs" />
-     <Compile Include="Assets\SPRGKit\Schedulers\TeamPhasedPointsScheduler.cs" />
-     <None Include="Assets\SPRGKit\Shaders\RadialOverlayOuterVolume.shader" />
-     <None Include="Assets\SPRGKit\Shaders\CylinderOverlayClipInverted.shader" />
-     <None Include="Assets\SPRGKit\Shaders\GridOverlayHighlightSelected.shader" />
-     <None Include="Assets\SPRGKit\Shaders\GridOverlayClip.shader" />
-     <None Include="Assets\SPRGKit\Shaders\CylinderOverlayClip.shader" />
-     <None Include="Assets\SPRGKit\Shaders\SphereOverlayClip.shader" />
+     <Compile Include="Assets\SRPGKit\DebugGUI.cs" />
+     <None Include="Assets\Plugins\SRPGKit\Shaders\RadialOverlayOuterVolume.shader" />
+     <None Include="Assets\Plugins\SRPGKit\Shaders\CylinderOverlayClipInverted.shader" />
+     <None Include="Assets\Plugins\SRPGKit\Shaders\GridOverlayHighlightSelected.shader" />
+     <None Include="Assets\Plugins\SRPGKit\Shaders\GridOverlayClip.shader" />
+     <None Include="Assets\Plugins\SRPGKit\Shaders\CylinderOverlayClip.shader" />
+     <None Include="Assets\Plugins\SRPGKit\Shaders\SphereOverlayClip.shader" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="Assembly-CSharp-firstpass-vs.csproj">
-      <Project>{7EA3EAD6-2A6D-4751-18FD-24EBE2559546}</Project>
+      <Project>{AD2D1443-AC1E-E430-A2A7-102CDD877B0F}</Project>
       <Name>Assembly-CSharp-firstpass-vs</Name>
     </ProjectReference>
   </ItemGroup>

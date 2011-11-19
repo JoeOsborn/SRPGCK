@@ -44,14 +44,15 @@
 	</Reference>
   </ItemGroup>
   <ItemGroup>
-     <Compile Include="Assets\Editor\BillboardEditor.cs" />
-     <Compile Include="Assets\Editor\EditorGUIExt.cs" />
-     <Compile Include="Assets\Editor\MapEditor.cs" />
-     <Compile Include="Assets\Editor\SpriteEditor.cs" />
+     <Compile Include="Assets\Editor\SRPGKit\EditorGUIExt.cs" />
+     <Compile Include="Assets\Editor\SRPGKit\MapEditor.cs" />
+     <Compile Include="Assets\Editor\SpriteSystem\BillboardEditor.cs" />
+     <Compile Include="Assets\Editor\SpriteSystem\SpriteEditor.cs" />
+     <Compile Include="Assets\Editor\iTween\iTweenEventDataEditor.cs" />
+     <Compile Include="Assets\Editor\iTween\iTweenPathEditor.cs" />
      <None Include="Assets\Plugins\SRPGKit\Shaders\RadialOverlayOuterVolume.shader" />
      <None Include="Assets\Plugins\SRPGKit\Shaders\CylinderOverlayClipInverted.shader" />
      <None Include="Assets\Plugins\SRPGKit\Shaders\GridOverlayHighlightSelected.shader" />
-     <None Include="Assets\Plugins\SRPGKit\Todo.txt" />
      <None Include="Assets\Plugins\SRPGKit\Shaders\GridOverlayClip.shader" />
      <None Include="Assets\Plugins\SRPGKit\Shaders\CylinderOverlayClip.shader" />
      <None Include="Assets\Plugins\SRPGKit\Shaders\SphereOverlayClip.shader" />

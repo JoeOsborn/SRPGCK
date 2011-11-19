@@ -1,3 +1,0 @@
-NEXT: better animated movements and animation hooks! (e.g. for z changes, stride vs fall vs jump; for x changes, hop vs walk)
-NEXT: jumps across gaps!
-NEXT: integrate jacob's sprite stuff!
