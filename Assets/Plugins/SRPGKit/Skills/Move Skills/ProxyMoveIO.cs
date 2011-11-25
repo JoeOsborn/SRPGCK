@@ -11,8 +11,8 @@ public class ProxyMoveIO : MoveIO {
 	
 	Vector3 lastPosition=Vector3.zero;
 	
-	override public void Start() {
-		base.Start();
+	override public void Activate() {
+		base.Activate();
 		lastPosition = owner.character.transform.position;
 	}
 	

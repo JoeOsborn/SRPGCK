@@ -16,8 +16,8 @@ public class ContinuousWithinTilesMoveIO : MoveIO {
 	
 	public Vector3 moveDest=Vector3.zero;
 	
-	override public void Start() {
-		base.Start();
+	override public void Activate() {
+		base.Activate();
 		cc = owner.character.GetComponent<CharacterController>();
 		//HACK: 0.09f here is a hack for the charactercontroller collider
 		owner.character.transform.localPosition = new Vector3(

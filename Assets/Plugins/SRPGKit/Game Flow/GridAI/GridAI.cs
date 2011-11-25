@@ -23,17 +23,16 @@ public class GridAI : MonoBehaviour {
 		if(c == null || !GetComponent<Arbiter>().IsAIPlayer(c.EffectiveTeamID)) {
 			return;
 		}
-		CTCharacter ctc = c.GetComponent<CTCharacter>();
 		if(c.moveSkill.executor.IsMoving) { return; }
-		if(!ctc.HasMoved) {
-			c.moveSkill.Activate();
+		if(!c.GetComponent<CTCharacter>().HasMoved) {
+			c.moveSkill.ActivateSkill();
 			PickTileMoveIO mio = c.moveSkill.io as PickTileMoveIO;
 			if(mio != null && mio.overlay != null) {
 				PathNode[] dests = mio.overlay.destinations;
 				mio.PerformMoveToPathNode(dests[(int)Mathf.Floor(Random.Range(0, dests.Length))]);
 			}
 		} else {
-			c.waitSkill.Activate();
+			c.waitSkill.ActivateSkill();
 			Quaternion dir=Quaternion.Euler(0,0,0);
 			const float TAU = 360.0f;
 			switch((int)Mathf.Floor(Random.Range(0, 4))) {

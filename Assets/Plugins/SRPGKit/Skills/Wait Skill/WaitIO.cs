@@ -3,14 +3,21 @@ using System.Collections;
 
 [System.Serializable]
 public class WaitIO {
+	[HideInInspector]
+	[SerializeField]
 	public bool supportKeyboard = true;
+	[HideInInspector]
+	[SerializeField]
 	public bool supportMouse = true;
+	[HideInInspector]
 	[SerializeField]
 	protected bool requireConfirmation = true;
+	[HideInInspector]
 	public bool RequireConfirmation {
 		get { return requireConfirmation; } 
 		set { requireConfirmation = value; }
 	}
+	[HideInInspector]
 	[SerializeField]
 	protected bool awaitingConfirmation = false;
 	public bool AwaitingConfirmation { 
@@ -21,7 +28,11 @@ public class WaitIO {
 	float firstClickTime = -1;
 	float doubleClickThreshold = 0.3f;
 
+	[HideInInspector]
+	[SerializeField]
 	public GameObject waitArrows;
+	[HideInInspector]
+  [System.NonSerialized]
 	public Transform instantiatedWaitArrows;
 	public enum Arrow {
 		YP,
@@ -29,13 +40,13 @@ public class WaitIO {
 		YN,
 		XN
 	};
+	[HideInInspector]
+	[SerializeField]
 	public Arrow currentArrow = Arrow.YP;
 
+	[HideInInspector]
+	[System.NonSerialized]
 	public WaitSkill owner;
-	
-	public void Start() {
-
-	}
 	
 	public Arrow ArrowForFacing(Quaternion q) {
 		const float TAU = 360;
@@ -90,6 +101,7 @@ public class WaitIO {
 	}
 	
 	public void Activate() {
+		awaitingConfirmation = false;
 		instantiatedWaitArrows = (Object.Instantiate(waitArrows) as GameObject).transform;
 		instantiatedWaitArrows.parent = owner.map.transform;
 		instantiatedWaitArrows.position = owner.character.transform.position;

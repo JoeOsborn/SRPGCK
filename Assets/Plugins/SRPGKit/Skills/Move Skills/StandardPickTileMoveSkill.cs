@@ -23,20 +23,17 @@ public class StandardPickTileMoveSkill : MoveSkill {
 	
 	public override void Start() {
 		base.Start();
-		this.name = "Move";
 		io = new PickTileMoveIO();
 		strategy = new GridMoveStrategy();
 		executor = new MoveExecutor();
 		io.owner = this;
 		strategy.owner = this;
 		executor.owner = this;
-		io.Start();
-		strategy.Start();
-		executor.Start();
 	}
 	
-	public override void Activate() {
-		base.Activate();
+	public override void ActivateSkill() {
+		if(isActive) { return; }
+		base.ActivateSkill();
 		io.owner = this;
 		strategy.owner = this;
 		executor.owner = this;
@@ -65,14 +62,16 @@ public class StandardPickTileMoveSkill : MoveSkill {
 		//present moves
 		io.PresentMoves();
 	}	
-	public override void Deactivate() {
-		base.Deactivate();
+	public override void DeactivateSkill() {
+		if(!isActive) { return; }
 		io.Deactivate();
 		strategy.Deactivate();
 		executor.Deactivate();
+		base.DeactivateSkill();
 	}
 	public override void Update() {
 		base.Update();
+		if(!isActive) { return; }
 		io.Update();
 		strategy.Update();
 		executor.Update();	

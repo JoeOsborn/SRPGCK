@@ -127,14 +127,15 @@ public class DebugGUI : MonoBehaviour {
 				//TODO:0: support skills that aren't ms
 				//show list of skills
 				if(!ms.isActive && !ws.isActive) {
-					for(int i = 0; i < s.activeCharacter.skills.Count; i++) {
-						Skill skill = s.activeCharacter.skills[i];
+					Skill[] skills = s.activeCharacter.GetComponents<Skill>();
+					for(int i = 0; i < skills.Length; i++) {
+						Skill skill = skills[i];
 						if(!skill.isActive) {
 							if((skill is MoveSkill && !ctc.HasMoved) ||
 							   (!(skill is MoveSkill) && !ctc.HasActed) ||
 								 skill is WaitSkill) {
-								if(GUILayout.Button(skill.name)) {
-									skill.Activate();
+								if(GUILayout.Button(skill.skillName)) {
+									skill.ActivateSkill();
 									break;
 								}
 							}
@@ -142,7 +143,7 @@ public class DebugGUI : MonoBehaviour {
 					}
 				}
 				if((ms.isActive || ws.isActive) && showCancelButton) {
-					if(GUILayout.Button("Cancel "+(ms.isActive ? ms.name : ws.name))) {
+					if(GUILayout.Button("Cancel "+(ms.isActive ? ms.skillName : ws.skillName))) {
 						if(ms.isActive) { ms.Cancel(); }
 						if(ws.isActive) { ws.Cancel(); }
 					}	
@@ -181,7 +182,7 @@ public class DebugGUI : MonoBehaviour {
 				if(showAnySchedulerButtons &&
 					tps.activeCharacter != null && tps.activeCharacter.moveSkill.executor.IsMoving) {
 					if(GUILayout.Button("End Move")) {
-						tps.activeCharacter.moveSkill.Deactivate();
+						tps.activeCharacter.moveSkill.DeactivateSkill();
 					}
 				}
 				GUILayout.EndArea();

@@ -62,6 +62,10 @@
       <Project>{AD2D1443-AC1E-E430-A2A7-102CDD877B0F}</Project>
       <Name>Assembly-CSharp-firstpass</Name>
     </ProjectReference>
+    <ProjectReference Include="Assembly-CSharp.csproj">
+      <Project>{1BE71344-7BF0-5D19-60FC-DA871F69AF6E}</Project>
+      <Name>Assembly-CSharp</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

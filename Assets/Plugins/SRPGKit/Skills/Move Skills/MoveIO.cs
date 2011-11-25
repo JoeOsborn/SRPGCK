@@ -9,10 +9,6 @@ public class MoveIO {
 	[HideInInspector]
 	public bool isActive;
 	
-	public virtual void Start() {
-		
-	}
-
 	public virtual void Activate () {
 		isActive = true;
 	}
@@ -29,7 +25,7 @@ public class MoveIO {
 		if(isActive) {
 			owner.map.BroadcastMessage("SkillApplied", owner, SendMessageOptions.DontRequireReceiver);
 		}
-		owner.Deactivate();
+		owner.DeactivateSkill();
 	}
 	
 	public virtual void Deactivate() {

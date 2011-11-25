@@ -25,8 +25,8 @@ public class ContinuousMoveIO : MoveIO {
 
 	Vector3 moveDest=Vector3.zero;
 	
-	override public void Start() {
-		base.Start();
+	override public void Activate() {
+		base.Activate();
 		cc = owner.character.GetComponent<CharacterController>();
 		//HACK: 0.09f here is a hack for the charactercontroller collider rather than 5.0
 		owner.character.transform.localPosition = new Vector3(

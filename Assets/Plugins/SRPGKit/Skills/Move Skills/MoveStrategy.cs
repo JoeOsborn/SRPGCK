@@ -11,10 +11,6 @@ public class MoveStrategy {
 	public float xyRange=3;
 	public bool canCrossEnemies=false;
 	
-	virtual public void Start () {
-	
-	}
-	
 	virtual public void Update () {
 		
 	}

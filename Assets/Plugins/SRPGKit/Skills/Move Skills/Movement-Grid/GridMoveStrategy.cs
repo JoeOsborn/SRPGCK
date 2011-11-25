@@ -4,10 +4,6 @@ using System.Collections;
 [System.Serializable]
 public class GridMoveStrategy : MoveStrategy {
 
-	override public void Start () {
-		base.Start();
-	}
-	
 	public virtual PathDecision PathNodeIsValid(PathNode pn, Character c) {
 		if(c != null) {
 			if(pn.distance > xyRange) { return PathDecision.Invalid; }

@@ -33,10 +33,6 @@ public class MoveExecutor {
 	[HideInInspector]
 	public MoveType currentMoveType;
 	
-	virtual public void Start () {
-
-	}
-	
 	virtual protected void ClearPath() {
 		if(animNodes != null) {
 			animNodes.Clear();

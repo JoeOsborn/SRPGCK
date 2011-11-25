@@ -35,8 +35,8 @@ public class PickSpotMoveIO : MoveIO {
 	
 	Transform instantiatedIndicator;	
 	
-	override public void Start() {
-		base.Start();
+	override public void Activate() {
+		base.Activate();
 		instantiatedIndicator = Object.Instantiate(indicator) as Transform;
 		instantiatedIndicator.gameObject.active = false;
 	}

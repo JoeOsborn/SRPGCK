@@ -92,7 +92,7 @@ public class TeamRoundsPointsScheduler : Scheduler {
 		base.Activate(c, ctx);
 		ppc.UsesThisRound = uses+1;
 		//(for now): ON `activate`, MOVE
-		activeCharacter.moveSkill.Activate();
+		activeCharacter.moveSkill.ActivateSkill();
 		pointsRemaining--;
 	}
 	

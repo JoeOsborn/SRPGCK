@@ -18,7 +18,7 @@ public class CTScheduler : Scheduler {
 	
 	override public void AddCharacter(Character c) {
 		base.AddCharacter(c);
-		if(c.GetComponent<CTCharacter>() == null) {
+		if(c.gameObject.GetComponent<CTCharacter>() == null) {
 			c.gameObject.AddComponent<CTCharacter>();
 		}
 	}

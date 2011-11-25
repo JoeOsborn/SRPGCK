@@ -19,8 +19,8 @@ public class PickTileMoveIO : MoveIO, ITilePickerOwner {
 	
 	TilePicker tilePicker;
 	
-	override public void Start() {
-		base.Start();
+	override public void Activate() {
+		base.Activate();
 		tilePicker = new TilePicker();
 		tilePicker.owner = this;
 	}

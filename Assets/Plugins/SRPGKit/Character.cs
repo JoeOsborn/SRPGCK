@@ -6,54 +6,38 @@ public class Character : MonoBehaviour {
 	[System.NonSerialized]
 	public Map map=null;
 
-	//I believe this is a stored property here in character, not merely a query to scheduler for whether active==this (what if you can have multiple active dudes?)
+	//I believe this is a stored property here in character, 
+	//not merely a query to scheduler for whether active==this 
+	//(what if you can have multiple active dudes?)
 	public bool isActive=false;
 
 	public int teamID;
 	
-	//FIXME:0: may not work with deserialization
-	public List<Skill> skills;
+	//skills (and stats!) are components that are added/configured normally. skills can have a "path" that
+	//denotes how to get to them via menus, but that's an application concern
+	//a skill group is a gameobject that contains a bunch of skills with the right configurations,
+	//and it can add (by duplication) or remove its component skills from a target gameobject.
+	//Statistics are individual behaviors (though I wish they were components) added to Character. 
+	//Skills can require components using the normal Unity mechanisms. This tidily
+	//handles the problem of duplicate stats, too.
 	
 	[HideInInspector]
 	public string currentAnimation;	
 	
 	public MoveSkill moveSkill { get { 
-		for(int i = 0; i < skills.Count; i++) { 
-			if(skills[i] is MoveSkill) { 
-				return skills[i] as MoveSkill; 
-			} 
-		} 
-		return null; 
+		MoveSkill s = GetComponent<MoveSkill>();
+		if(s == null) { s = gameObject.AddComponent<StandardPickTileMoveSkill>(); }
+		return s;
 	} }
 
 	public WaitSkill waitSkill { get { 
-		for(int i = 0; i < skills.Count; i++) { 
-			if(skills[i] is WaitSkill) { 
-				return skills[i] as WaitSkill; 
-			} 
-		} 
-		return null; 
+		WaitSkill s = GetComponent<WaitSkill>();
+		if(s == null) { s = gameObject.AddComponent<WaitSkill>(); }
+		return s;
 	} }
 	
-	public void AddSkill(Skill s) {
-		skills.Add(s);
-		s.character = this;
-		s.Start();
-	}
-	
 	void Start () {
-		if(skills == null) { skills = new List<Skill>(); }
-		for(int i = 0; i < skills.Count; i++) {
-			skills[i].character = this;
-			skills[i].Start();
-		}
-		if(this.moveSkill == null) {
-//			Debug.LogError("No move skill!");
-			AddSkill(new StandardPickTileMoveSkill());
-		}
-		if(this.waitSkill == null) {
-			AddSkill(new WaitSkill());
-		}
+
 	}
 	
 	//can be modulated by charm, etc
@@ -67,7 +51,7 @@ public class Character : MonoBehaviour {
 	
 	public void Deactivate() {
 		if(this.moveSkill.isActive) {
-			this.moveSkill.Deactivate(); 
+			this.moveSkill.DeactivateSkill(); 
 		}
 		isActive = false;
 	}
@@ -102,11 +86,6 @@ public class Character : MonoBehaviour {
 			if(map == null) { 
 				Debug.Log("Characters must be children of Map objects!");
 				return; 
-			}
-		}
-		for(int i = 0; i < skills.Count; i++) {
-			if(skills[i].isActive) {
-				skills[i].Update();
 			}
 		}
 		//Five things are going on here:

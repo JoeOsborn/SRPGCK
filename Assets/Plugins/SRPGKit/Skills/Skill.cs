@@ -1,37 +1,30 @@
 using UnityEngine;
 
 [System.Serializable]
-public class Skill : System.Object {
-	public Character character;
-	
+public class Skill : MonoBehaviour {
 	public bool isActive=false;
-	public string name;
+	public string skillName;
+
+	[HideInInspector]
+	public string adder;
 	
 	public virtual void Start() {
 		
 	}
-	public virtual void Activate() {
+	public virtual void ActivateSkill() {
 		isActive = true;
 	}
-	public virtual void Deactivate() {
+	public virtual void DeactivateSkill() {
 		isActive = false;
 	}
 	public virtual void Update() {
 		
 	}
 	public virtual void Cancel() {
-		Deactivate();
+		DeactivateSkill();
 	}
 	
-	public enum ApplicationMode {
-		Replace,
-		Augment
-	}
-	
-	public virtual ApplicationMode Mode {
-		get { return ApplicationMode.Replace; }
-	}
-	
+	public Character character { get { return GetComponent<Character>(); } }
 	public Map map { get { return character.transform.parent.GetComponent<Map>(); } }
 	public Scheduler scheduler { get { return this.map.scheduler; } }
 	public Arbiter arbiter { get { return this.map.arbiter; } }

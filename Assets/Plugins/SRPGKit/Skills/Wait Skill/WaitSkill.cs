@@ -9,20 +9,20 @@ public class WaitSkill : Skill {
 	
 	public GameObject waitArrows;
 	
+	[HideInInspector]
 	public Quaternion initialFacing;
 
+	[HideInInspector]
+	[SerializeField]
 	public WaitIO io;
 	
 	public override void Start() {
 		base.Start();
-		this.name = "Wait";
+		this.skillName = "Wait";
 		if(waitArrows == null) {
 			waitArrows = Resources.Load("Wait Arrows") as GameObject;
 		}
 		io = new WaitIO();
-		io.owner = this;
-		io.waitArrows = waitArrows;
-		io.Start();
 /*		strategy = new GridMoveStrategy();
 		executor = new MoveExecutor();
 		io.owner = this;
@@ -37,8 +37,9 @@ public class WaitSkill : Skill {
 		Cancel();
 	}
 	
-	public override void Activate() {
-		base.Activate();
+	public override void ActivateSkill() {
+		if(isActive) { return; }
+		base.ActivateSkill();
 		initialFacing = character.Facing;
 		io.waitArrows = waitArrows;
 		io.owner = this;
@@ -74,15 +75,17 @@ public class WaitSkill : Skill {
 		//present moves
 /*		io.PresentMoves();*/
 	}	
-	public override void Deactivate() {
-		base.Deactivate();
+	public override void DeactivateSkill() {
+		if(!isActive) { return; }
 		io.Deactivate();
+		base.DeactivateSkill();
 /*		io.Deactivate();
 		strategy.Deactivate();
 		executor.Deactivate();
 */	}
 	public override void Update() {
 		base.Update();
+		if(!isActive) { return; }
 		io.Update();
 /*		io.Update();
 		strategy.Update();
@@ -91,6 +94,7 @@ public class WaitSkill : Skill {
 	public override void Cancel() {
 		//switch to idle animation
 /*		io.Cancel();*/
+		if(!isActive) { return; }
 		WaitInDirection(initialFacing);
 		base.Cancel();
 	}
@@ -101,6 +105,6 @@ public class WaitSkill : Skill {
 		if(isActive) {
 			map.BroadcastMessage("SkillApplied", this, SendMessageOptions.DontRequireReceiver);
 		}
-		this.Deactivate();
+		this.DeactivateSkill();
 	}
 }

@@ -44,7 +44,7 @@ public class TeamRoundsPickAnyOnceScheduler : Scheduler {
 		base.Activate(c, ctx);			
 		remainingCharacters.Remove(c);
 		//(for now): ON `activate`, MOVE
-		c.moveSkill.Activate();
+		c.moveSkill.ActivateSkill();
 	}
 	
 	override public void Update () {
