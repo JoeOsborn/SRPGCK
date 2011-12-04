@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System;
+using System.Linq;
 using UnityEditor;
 
 [System.Serializable]
@@ -783,7 +784,7 @@ public class Map : MonoBehaviour {
 		xp.y = 0;
 		xp = xp.normalized;
 		Vector3 yp = new Vector3(-xp.z, 0, xp.x);
-		Debug.Log("XP:"+xp+", YP:"+yp+", hxp:"+(h*xp)+", vyp:"+(v*yp)+", h:"+h+", v:"+v);
+/*		Debug.Log("XP:"+xp+", YP:"+yp+", hxp:"+(h*xp)+", vyp:"+(v*yp)+", h:"+h+", v:"+v);*/
 		Vector3 result = h*xp + v*yp;
 		if(switchXY) {
 			return new Vector2(-result.z, result.x);
@@ -963,7 +964,7 @@ public class Map : MonoBehaviour {
 	}
 	public Character CharacterAt(Vector3 tc) {
 		foreach(Character c in GetComponentsInChildren<Character>()) {
-			Vector3 ctc = InverseTransformPointWorld(c.transform.position-new Vector3(0,5,0));
+			Vector3 ctc = InverseTransformPointWorld(c.transform.position-c.transformOffset);
 //			Debug.Log("TC:"+tc+", CTC:"+ctc);
 			if(Mathf.Floor(tc.x) == Mathf.Floor(ctc.x) &&
 			   Mathf.Floor(tc.y) == Mathf.Floor(ctc.y) &&
@@ -973,26 +974,35 @@ public class Map : MonoBehaviour {
 		}
 		return null;
 	}
-	public delegate PathDecision PathNodeIsValid(PathNode pn, Character c);
+	public delegate PathDecision PathNodeIsValid(Vector3 start, PathNode pn, Character c);
+
+	readonly Vector2[] neighbors = {
+		new Vector2(-1, 0),
+		new Vector2( 1, 0),
+		new Vector2( 0,-1),
+		new Vector2( 0, 1)
+	};
 	
 	//maxDistance is distinct from move in that it's xyz distance
-	public PathNode[] PathsAround(Vector3 tc, float move, float jump, PathNodeIsValid isValid=null) {
+	public PathNode[] PathsAround(
+		Vector3 tc, 
+		float minRadius, float maxRadius, 
+		float zDownMin, float zDownMax, 
+		float zUpMin, float zUpMax, 
+		bool shouldJump,
+		PathNodeIsValid isValid=null
+	) {
 		int x = (int)Mathf.Floor(tc.x), y = (int)Mathf.Floor(tc.y), z = (int)Mathf.Floor(tc.z);
-		Vector2[] neighbors = new Vector2[]{
-			new Vector2(-1, 0),
-			new Vector2( 1, 0),
-			new Vector2( 0,-1),
-			new Vector2( 0, 1)
-		};
 		Stack<PathNode> open = new Stack<PathNode>();
 		List<PathNode> closed = new List<PathNode>();
 		List<PathNode> nodes = new List<PathNode>();
-		open.Push(new PathNode(new Vector3(x,y,z), null, 0));
+		PathNode startNode = new PathNode(new Vector3(x,y,z), null, 0);
+		open.Push(startNode);
 		MapTile t = TileAt(x,y,z);
 		if(MapTileIsNull(t)) { return new PathNode[0]; }
 		while(open.Count > 0) {
 			PathNode pn = open.Pop();
-			if(pn.distance > move) {
+			if(pn.distance > maxRadius) {
 				//this shouldn't be here
 				closed.Add(pn);
 				continue;
@@ -1000,43 +1010,44 @@ public class Map : MonoBehaviour {
 			if(!closed.Contains(pn)) {
 				closed.Add(pn);
 				nodes.Add(pn);
-//				Debug.Log("push pt "+pn.pos);
 			}
-			if(pn.distance == move) {
+			if(pn.distance == maxRadius) {
 				//don't bother adding any more points, they'll be too far
 				continue;
 			}
 			for(int i = 0; i < neighbors.Length; i++) {
 				Vector2 n = neighbors[i];
-				int jumpDistance = jump > 0 ? (int)(jump/2) : 0;
+				int jumpDistance = zDownMax > 0 ? (int)(zDownMax/2) : 0;
 				Vector2 adj = new Vector2(pn.pos.x+n.x, pn.pos.y+n.y);
-				//push to open (if not yet there) all tiles at adj.x, adj.y whose .maxZ is within jump of adj.z.
+				//push to open (if not yet there) all tiles at adj.x, adj.y whose .maxZ is within zDownMax of adj.z.
+				//TODO: fix people being able to walk through the floor!
 				foreach(int adjZ in ZLevelsWithin((int)adj.x, (int)adj.y, (int)pn.pos.z, -1)) {
 					Vector3 pos = new Vector3(adj.x, adj.y, adjZ);
-					float dz = DZForMove(pos, pn.pos);
-					PathNode newPn = new PathNode(pos, pn, pn.distance+1+0.01f*dz);
+					float signedDZ = SignedDZForMove(pos, pn.pos);
+					float adz = Mathf.Abs(signedDZ);
+					PathNode newPn = new PathNode(pos, pn, pn.distance+1+0.01f*adz);
 					if(!closed.Contains(newPn) && !open.Contains(newPn)) {
-						PathDecision decision = isValid == null ? PathDecision.Normal : isValid(newPn, CharacterAt(pos));
+						PathDecision decision = isValid == null ? PathDecision.Normal : isValid(tc, newPn, CharacterAt(pos));
 						if(decision == PathDecision.PassOnly) {
 							newPn.canStop = false;
 						}
 						//can't jump over things, can only jump across things
-						if(pos.z < pn.pos.z) {
+						if(shouldJump && pos.z < pn.pos.z) {
 							//FIXME: duplication
 							//go out further in adj until we get past jump/2
 							for(int j = 0; j < jumpDistance; j++) {
 								//don't go further than our move would allow
-								if(pn.distance+2+j > move) { continue; }
+								if(pn.distance+2+j > maxRadius) { continue; }
 								Vector2 jumpAdj = new Vector2(pn.pos.x+n.x*(j+2), pn.pos.y+n.y*(j+2));
 								bool jumped = false, cannotJump = false;
 								foreach(int jumpAdjZ in ZLevelsWithin((int)jumpAdj.x, (int)jumpAdj.y, (int)pn.pos.z, -1)) {
 									Vector3 jumpPos = new Vector3(jumpAdj.x, jumpAdj.y, jumpAdjZ);
-									float jumpDZ = DZForMove(jumpPos, pn.pos);
+									float jumpDZ = AbsDZForMove(jumpPos, pn.pos);
 									//TODO: decide whether we can only cross like this downwards, or if up is also allowed
-									if(jumpDZ <= jump) {
+									if(jumpDZ <= zDownMax) {
 										PathNode jumpPn = new PathNode(jumpPos, pn, pn.distance+2+j+0.01f*jumpDZ);
 										jumpPn.isLeap = true;
-										PathDecision jumpDecision = isValid == null ? PathDecision.Normal : isValid(jumpPn, CharacterAt(jumpPos));
+										PathDecision jumpDecision = isValid == null ? PathDecision.Normal : isValid(tc, jumpPn, CharacterAt(jumpPos));
 										if(jumpDecision == PathDecision.PassOnly) {
 											jumpPn.canStop = false;
 										}
@@ -1051,7 +1062,12 @@ public class Map : MonoBehaviour {
 								if(jumped || cannotJump) { break; }
 							}
 						} 
-						bool heightOK = (decision != PathDecision.Normal || jump < 0) ? true : dz <= jump;
+						bool heightOK = (signedDZ < 0 ? 
+							signedDZ > zDownMax : 
+							(signedDZ > 0 ? 
+								signedDZ < zUpMax : 
+								decision == PathDecision.Normal));
+/*						Debug.Log("Height OK? pos:"+newPn.pos+", dz:"+signedDZ+", down:"+zDownMin+".."+zDownMax+", up:"+zUpMin+".."+zUpMax+", decision:"+decision+": "+heightOK);*/
 						if((decision != PathDecision.Invalid) && heightOK) {
 							open.Push(newPn);
 						}
@@ -1059,7 +1075,9 @@ public class Map : MonoBehaviour {
 				}
 			}
 		}
-		return nodes.ToArray();
+		return nodes.Where(n => 
+			n.xyDistance >= minRadius && 
+			(n.signedDZ < 0 ? n.signedDZ <= zDownMin : (n.signedDZ > 0 ? n.signedDZ >= zUpMin : true))).ToArray();
 	}
 	public Neighbors EnteringSideFromXYDelta(float dx, float dy) {
 		if(dx > 0) { return Neighbors.FrontLeftIdx; }
@@ -1077,7 +1095,7 @@ public class Map : MonoBehaviour {
 /*		Debug.LogError("exiting side uses weird deltas "+dx+","+dy);*/
 		return Neighbors.None;
 	}
-	public float DZForMove(Vector3 to, Vector3 from) {
+	public float SignedDZForMove(Vector3 to, Vector3 from) {
 		float dx = to.x-from.x;
 		float dy = to.y-from.y;
 		MapTile toTile = TileAt((int)to.x, (int)to.y, (int)to.z);
@@ -1088,7 +1106,10 @@ public class Map : MonoBehaviour {
 				
 		float xz = (fromTile.LowestHeightAt(exiting)+fromTile.HighestHeightAt(exiting))/2.0f;
 		float ez = (toTile.LowestHeightAt(entering)+toTile.HighestHeightAt(entering))/2.0f;
-		return Mathf.Abs(xz-ez);
+		return ez-xz;
+	}
+	public float AbsDZForMove(Vector3 to, Vector3 from) {
+		return Mathf.Abs(SignedDZForMove(to, from));
 	}
 }
 
@@ -1108,8 +1129,15 @@ public class PathNode {
 	public PathNode(Vector3 ps, PathNode pr, float dist) {
 		pos = ps; prev = pr; distance = dist;
 	}
+	public Vector3 position { get { return pos; } }
 	public int dz {
-		get { return (int)Mathf.Abs(pos.z - (prev != null ? prev.pos.z : pos.z)); }
+		get { return (int)Mathf.Abs(signedDZ); }
+	}
+	public int signedDZ {
+		get { return (int)(pos.z - (prev != null ? prev.pos.z : pos.z)); }
+	}
+	public float xyDistance {
+		get { return (int)(Mathf.Abs(pos.x - (prev != null ? prev.pos.x : pos.x))+Mathf.Abs(pos.y - (prev != null ? prev.pos.y : pos.y))); }
 	}
 	public override bool Equals(object obj)
   {	

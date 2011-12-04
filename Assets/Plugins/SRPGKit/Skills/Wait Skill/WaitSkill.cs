@@ -13,15 +13,10 @@ public class WaitSkill : Skill {
 	public Quaternion initialFacing;
 
 	[HideInInspector]
-	[SerializeField]
 	public WaitIO io;
 	
 	public override void Start() {
 		base.Start();
-		this.skillName = "Wait";
-		if(waitArrows == null) {
-			waitArrows = Resources.Load("Wait Arrows") as GameObject;
-		}
 		io = new WaitIO();
 /*		strategy = new GridMoveStrategy();
 		executor = new MoveExecutor();
@@ -31,6 +26,12 @@ public class WaitSkill : Skill {
 		io.Start();
 		strategy.Start();
 		executor.Start();*/
+	}
+	
+	public override void Reset() {
+		base.Reset();
+		skillName = "Wait";
+		waitArrows = Resources.LoadAssetAtPath("Assets/SRPGKit/Prefabs/Wait Arrows.prefab", typeof(GameObject)) as GameObject;
 	}
 	
 	public virtual void CancelWaitPick() {
@@ -102,9 +103,6 @@ public class WaitSkill : Skill {
 		character.Facing = dir;
 	}
 	public virtual void FinishWaitPick() {
-		if(isActive) {
-			map.BroadcastMessage("SkillApplied", this, SendMessageOptions.DontRequireReceiver);
-		}
-		this.DeactivateSkill();
+		ApplySkill();
 	}
 }

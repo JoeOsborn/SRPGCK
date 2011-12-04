@@ -6,7 +6,9 @@ public class MoveExecutor {
 	[System.NonSerialized]
 	public MoveSkill owner;
 	
-	public Vector3 transformOffset = new Vector3(0, 5, 0);
+	public Vector3 transformOffset { get { 
+		return owner.transformOffset; 
+	} }
 	
 	[HideInInspector]
 	public Vector3 position;
@@ -141,7 +143,7 @@ public class MoveExecutor {
 	public MoveType MoveTypeForMove(Vector3 to, Vector3 from) {
 		float dx = to.x-from.x;
 		float dy = to.y-from.y;
-		float dz = owner.map.DZForMove(to, from);
+		float dz = owner.map.AbsDZForMove(to, from);
 		float adz = Mathf.Abs(dz);
 		if(Mathf.Abs(dx)+Mathf.Abs(dy) > 1) { return MoveType.Leap; }
 		if(adz <= 1) { return MoveType.Step; }
@@ -170,6 +172,7 @@ public class MoveExecutor {
 	}
 	
 	virtual public void Update () {
+		if(owner == null) { return; }
 		Vector3 tp = transformPosition;
 		if(moveTimeRemaining > 0 && animNodes != null && animNodes.Count > 0) {
 			moveTimeRemaining -= Time.deltaTime;

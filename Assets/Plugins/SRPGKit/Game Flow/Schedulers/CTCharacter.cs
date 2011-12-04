@@ -62,6 +62,11 @@ public class CTCharacter : MonoBehaviour {
 			return ((CTScheduler)GetComponent<Character>().map.scheduler).defaultPerMoveCTCost;
 		}
 	}
+	virtual public float PerActionCTCost {
+		get {
+			return ((CTScheduler)GetComponent<Character>().map.scheduler).defaultPerActionCTCost;
+		}
+	}
 	virtual public float PerTileCTCost {
 		get {
 			return ((CTScheduler)GetComponent<Character>().map.scheduler).defaultPerTileCTCost;

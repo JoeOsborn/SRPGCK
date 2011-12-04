@@ -74,8 +74,7 @@ public class ContinuousMoveIO : MoveIO {
 
 			cc.SimpleMove(offset*moveSpeed);
 			//another approach (instead of ContainsPosition): place invisible box colliders at the edges of tiles which shouldn't be crossed
-			//HACK: 5.09f here is a hack for the charactercollider rather than 5.0
-			Vector3 newDest = owner.map.InverseTransformPointWorld(owner.character.transform.position-new Vector3(0,5.09f,0));
+			Vector3 newDest = owner.map.InverseTransformPointWorld(owner.character.transform.position-owner.transformOffset+new Vector3(0,0.09f,0));
 
 			PathNode pn = overlay.PositionAt(newDest);
 			if(pn != null && pn.canStop) {
@@ -109,7 +108,7 @@ public class ContinuousMoveIO : MoveIO {
 		Debug.Log("show at "+charPos);
 		if(overlayType == RadialOverlayType.Sphere) {
 			overlay = owner.map.PresentSphereOverlay(
-						"move", owner.character.gameObject.GetInstanceID(), 
+						owner.skillName, owner.character.gameObject.GetInstanceID(), 
 						overlayColor,
 						charPos,
 						ms.GetMoveRadius(),
@@ -119,7 +118,7 @@ public class ContinuousMoveIO : MoveIO {
 					);
 		} else if(overlayType == RadialOverlayType.Cylinder) {
 			overlay = owner.map.PresentCylinderOverlay(
-						"move", owner.character.gameObject.GetInstanceID(), 
+						owner.skillName, owner.character.gameObject.GetInstanceID(), 
 						new Color(0.3f, 0.3f, 0.3f, 0.3f),
 						charPos,
 						ms.GetMoveRadius(),
@@ -134,8 +133,8 @@ public class ContinuousMoveIO : MoveIO {
 	
 	override protected void FinishMove() {
 		overlay = null;
-		if(owner.map.IsShowingOverlay("move", owner.character.gameObject.GetInstanceID())) {
-			owner.map.RemoveOverlay("move", owner.character.gameObject.GetInstanceID());
+		if(owner.map.IsShowingOverlay(owner.skillName, owner.character.gameObject.GetInstanceID())) {
+			owner.map.RemoveOverlay(owner.skillName, owner.character.gameObject.GetInstanceID());
 		}	
 		base.FinishMove();
 	}

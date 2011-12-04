@@ -17,6 +17,7 @@ public class PickTileMoveIO : MoveIO, ITilePickerOwner {
 	public GridOverlay overlay;
 	public float indicatorCycleLength=1.0f;
 	
+	[SerializeField]
 	TilePicker tilePicker;
 	
 	override public void Activate() {
@@ -62,7 +63,7 @@ public class PickTileMoveIO : MoveIO, ITilePickerOwner {
 		MoveExecutor me = owner.executor;
 		Vector3 charPos = owner.map.InverseTransformPointWorld(me.position);
 		overlay = owner.map.PresentGridOverlay(
-			"move", owner.character.gameObject.GetInstanceID(), 
+			owner.skillName, owner.character.gameObject.GetInstanceID(), 
 			new Color(0.2f, 0.3f, 0.9f, 0.7f),
 			new Color(0.4f, 0.6f, 0.9f, 0.85f),
 			destinations
@@ -70,14 +71,11 @@ public class PickTileMoveIO : MoveIO, ITilePickerOwner {
 		tilePicker.PresentOverlay(overlay, charPos);
 	}
 	
-	override protected void FinishMove() {
-		base.FinishMove();
-	}
 	override public void Deactivate() {
 		overlay = null;
 		tilePicker.Clear();
-		if(owner.map.IsShowingOverlay("move", owner.character.gameObject.GetInstanceID())) {
-			owner.map.RemoveOverlay("move", owner.character.gameObject.GetInstanceID());
+		if(owner.map.IsShowingOverlay(owner.skillName, owner.character.gameObject.GetInstanceID())) {
+			owner.map.RemoveOverlay(owner.skillName, owner.character.gameObject.GetInstanceID());
 		}	
 	}	
 	public void FocusOnPoint(Vector3 pos) {

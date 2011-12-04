@@ -10,6 +10,33 @@ public class DebugGUI : MonoBehaviour {
 		areaBGTexture.Apply();		
 	}
 	
+	protected void OnGUIConfirmation(string msg, out bool yesButton, out bool noButton) {
+		GUIStyle bgStyle = new GUIStyle();
+		bgStyle.normal.background = areaBGTexture;
+		GUILayout.BeginArea(new Rect(
+			Screen.width/2-64, Screen.height/2-32, 
+			128, 64
+		), bgStyle); {
+		  GUILayout.BeginVertical(); {
+		    GUIStyle centeredStyle = GUI.skin.GetStyle("Label");
+		    centeredStyle.alignment = TextAnchor.MiddleCenter;
+		    GUILayout.Label(msg, centeredStyle);
+		    GUILayout.BeginHorizontal(); {
+		      if(GUILayout.Button("No")) {
+						noButton = true;
+		      } else {
+						noButton = false;
+					}
+					if(GUILayout.Button("Yes")) {
+						yesButton = true;
+		      } else {
+						yesButton = false;
+					}
+		    } GUILayout.EndHorizontal();
+		  } GUILayout.EndVertical();
+		} GUILayout.EndArea();	
+	}
+	
 	public void OnGUI() {
 		Scheduler s = GetComponent<Scheduler>();
 		Arbiter a = GetComponent<Arbiter>();
@@ -19,6 +46,7 @@ public class DebugGUI : MonoBehaviour {
 			Map map = transform.parent.GetComponent<Map>();
 			StandardPickTileMoveSkill ms = s.activeCharacter.moveSkill as StandardPickTileMoveSkill;
 			MoveIO io = ms.io;
+			//TODO:0:0: confirmation for action skills, e.g. AttackSkill
 			if(ms.isActive && io != null) {
 				if(io is PickTileMoveIO) {
 					PickTileMoveIO mio = io as PickTileMoveIO;
@@ -27,28 +55,17 @@ public class DebugGUI : MonoBehaviour {
 						if(!me.IsMoving) {
 							if(mio.RequireConfirmation && 
 								 mio.AwaitingConfirmation) {
-								GUIStyle bgStyle = new GUIStyle();
-								bgStyle.normal.background = areaBGTexture;
-								GUILayout.BeginArea(new Rect(
-									Screen.width/2-64, Screen.height/2-32, 
-									128, 64
-								), bgStyle); {
-								  GUILayout.BeginVertical(); {
-								    GUIStyle centeredStyle = GUI.skin.GetStyle("Label");
-								    centeredStyle.alignment = TextAnchor.MiddleCenter;
-								    GUILayout.Label("Move here?", centeredStyle);
-								    GUILayout.BeginHorizontal(); {
-								      if(GUILayout.Button("No")) {
-								      	mio.AwaitingConfirmation = false;
-								      	mio.TemporaryMove(map.InverseTransformPointWorld(me.position));
-								      } else if(GUILayout.Button("Yes")) {
-												PathNode pn = mio.overlay.PositionAt(mio.IndicatorPosition);
-								      	mio.PerformMoveToPathNode(pn);
-								      	mio.AwaitingConfirmation = false;
-								      }
-								    } GUILayout.EndHorizontal();
-								  } GUILayout.EndVertical();
-								} GUILayout.EndArea();
+								bool yesButton=false, noButton=false;
+								OnGUIConfirmation("Move here?", out yesButton, out noButton);
+								if(yesButton) {
+									PathNode pn = mio.overlay.PositionAt(mio.IndicatorPosition);
+					      	mio.PerformMoveToPathNode(pn);
+					      	mio.AwaitingConfirmation = false;
+								}
+								if(noButton) {
+					      	mio.AwaitingConfirmation = false;
+					      	mio.TemporaryMove(map.InverseTransformPointWorld(me.position));
+								}
 							} 
 						} else {	
 							showCancelButton = false;
@@ -79,26 +96,15 @@ public class DebugGUI : MonoBehaviour {
 				if(a.IsLocalPlayer(s.activeCharacter.EffectiveTeamID)) {
 					if(wio.RequireConfirmation && 
 						 wio.AwaitingConfirmation) {
-						GUIStyle bgStyle = new GUIStyle();
-						bgStyle.normal.background = areaBGTexture;
-						GUILayout.BeginArea(new Rect(
-							Screen.width/2-64, Screen.height/2-32, 
-							128, 64
-						), bgStyle); {
-						  GUILayout.BeginVertical(); {
-						    GUIStyle centeredStyle = GUI.skin.GetStyle("Label");
-						    centeredStyle.alignment = TextAnchor.MiddleCenter;
-						    GUILayout.Label("Wait here?", centeredStyle);
-						    GUILayout.BeginHorizontal(); {
-						      if(GUILayout.Button("No")) {
-						      	wio.AwaitingConfirmation = false;
-						      } else if(GUILayout.Button("Yes")) {
-						  	  	wio.AwaitingConfirmation = false;
-										ws.FinishWaitPick();
-						      }
-						    } GUILayout.EndHorizontal();
-						  } GUILayout.EndVertical();
-						} GUILayout.EndArea();
+						bool yesButton=false, noButton=false;
+						OnGUIConfirmation("Wait here?", out yesButton, out noButton);
+						if(yesButton) {
+			  	  	wio.AwaitingConfirmation = false;
+							ws.FinishWaitPick();
+						}
+						if(noButton) {
+			      	wio.AwaitingConfirmation = false;
+						}
 					} else {
 					  if(s is CTScheduler) {
 					  	CTCharacter ctc = s.activeCharacter.GetComponent<CTCharacter>();
@@ -110,24 +116,54 @@ public class DebugGUI : MonoBehaviour {
 					showAnySchedulerButtons = false;
 				}
 			}
+			foreach(Skill skill in s.activeCharacter.GetComponents<Skill>()) {
+				if(skill.isActive && skill is AttackSkill) {
+					AttackSkill ask = skill as AttackSkill;
+					ActionIO aio = ask.io;
+					if(ask.isActive && aio != null) {
+						if(a.IsLocalPlayer(s.activeCharacter.EffectiveTeamID)) {
+							if(aio.RequireConfirmation && 
+								 aio.AwaitingConfirmation) {
+								bool yesButton=false, noButton=false;
+								OnGUIConfirmation("Confirm?", out yesButton, out noButton);
+								if(yesButton) {
+					  	  	aio.AwaitingConfirmation = false;
+									ask.ApplySkill();
+								}
+								if(noButton) {
+					      	aio.AwaitingConfirmation = false;
+								}
+							} else {
+						  	showCancelButton = false;
+							}
+							showAnySchedulerButtons = false;
+						}
+					}			
+				}
+			}
 		}
 		if(s is CTScheduler) {
 			if(s.activeCharacter != null && a.IsLocalPlayer(s.activeCharacter.EffectiveTeamID)) {
-				StandardPickTileMoveSkill ms = s.activeCharacter.moveSkill as StandardPickTileMoveSkill;
-				WaitSkill ws = s.activeCharacter.waitSkill as WaitSkill;
 				GUILayout.BeginArea(new Rect(
 					8, 8, 
-					128, 128
+					128, 150
 				));
 				GUILayout.Label("Current Character:");
 				GUILayout.Label(s.activeCharacter.gameObject.name);
 				CTCharacter ctc = s.activeCharacter.GetComponent<CTCharacter>();
 				GUILayout.Label("CT: "+Mathf.Floor(ctc.CT));
 				
-				//TODO:0: support skills that aren't ms
+				//TODO:0: support skills
 				//show list of skills
-				if(!ms.isActive && !ws.isActive) {
-					Skill[] skills = s.activeCharacter.GetComponents<Skill>();
+				Skill activeSkill = null;
+				Skill[] skills = s.activeCharacter.GetComponents<Skill>();
+				for(int i = 0; i < skills.Length; i++) {
+					if(skills[i].isActive) {
+						activeSkill = skills[i];
+						break;
+					}
+				}
+				if(activeSkill == null) {
 					for(int i = 0; i < skills.Length; i++) {
 						Skill skill = skills[i];
 						if(!skill.isActive) {
@@ -141,11 +177,9 @@ public class DebugGUI : MonoBehaviour {
 							}
 						}
 					}
-				}
-				if((ms.isActive || ws.isActive) && showCancelButton) {
-					if(GUILayout.Button("Cancel "+(ms.isActive ? ms.skillName : ws.skillName))) {
-						if(ms.isActive) { ms.Cancel(); }
-						if(ws.isActive) { ws.Cancel(); }
+				} else if(showCancelButton) {
+					if(GUILayout.Button("Cancel "+activeSkill.skillName)) {
+						activeSkill.Cancel();
 					}	
 				}
 				GUILayout.EndArea();
@@ -182,7 +216,7 @@ public class DebugGUI : MonoBehaviour {
 				if(showAnySchedulerButtons &&
 					tps.activeCharacter != null && tps.activeCharacter.moveSkill.executor.IsMoving) {
 					if(GUILayout.Button("End Move")) {
-						tps.activeCharacter.moveSkill.DeactivateSkill();
+						tps.activeCharacter.moveSkill.ApplySkill();
 					}
 				}
 				GUILayout.EndArea();

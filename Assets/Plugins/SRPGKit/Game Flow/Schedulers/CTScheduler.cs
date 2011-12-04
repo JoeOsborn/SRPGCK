@@ -63,7 +63,12 @@ public class CTScheduler : Scheduler {
 			} else if(s is WaitSkill) {
 				Deactivate(s.character);
 			} else {
-				//TODO:0: reduce c's ct
+				float cost = ctc.PerActionCTCost;
+				if(coalesceCTDecrements) {
+					pendingCTDecrement += cost;
+				} else {
+					ctc.CT = Mathf.Max(ctc.CT-cost, 0);
+				}
 				ctc.HasActed = true;
 			}
 		}
@@ -72,7 +77,7 @@ public class CTScheduler : Scheduler {
 	override public void CharacterMoved(Character c, Vector3 src, Vector3 dest) {
 		base.CharacterMoved(c, src, dest);
 		//reduce c's CT by per-tile movement cost (0)
-		//FIXME: multiply by number of tiles traversed
+		//FIXME: multiply by number of tiles traversed, needs pathnode
 		CTCharacter ctc = c.GetComponent<CTCharacter>();
 		float cost = ctc.PerTileCTCost;
 		if(coalesceCTDecrements) {

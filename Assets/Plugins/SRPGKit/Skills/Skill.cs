@@ -24,6 +24,19 @@ public class Skill : MonoBehaviour {
 		DeactivateSkill();
 	}
 	
+	public virtual void Reset() {
+		
+	}
+	public virtual void ApplySkill() {
+		if(isActive) {
+			map.BroadcastMessage("SkillApplied", this, SendMessageOptions.DontRequireReceiver);
+		}
+		DeactivateSkill();	
+	}
+	
+	public Vector3 transformOffset { get { 
+		return character.transformOffset; 
+	} }
 	public Character character { get { return GetComponent<Character>(); } }
 	public Map map { get { return character.transform.parent.GetComponent<Map>(); } }
 	public Scheduler scheduler { get { return this.map.scheduler; } }

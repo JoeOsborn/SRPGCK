@@ -22,10 +22,7 @@ public class MoveIO {
 	}
 	
 	protected virtual void FinishMove() {
-		if(isActive) {
-			owner.map.BroadcastMessage("SkillApplied", owner, SendMessageOptions.DontRequireReceiver);
-		}
-		owner.DeactivateSkill();
+		owner.ApplySkill();
 	}
 	
 	public virtual void Deactivate() {

@@ -15,7 +15,6 @@ public class StandardPickTileMoveSkill : MoveSkill {
 	public bool canCrossEnemies=false;
 	
 	//executor
-	public Vector3 transformOffset = new Vector3(0, 5, 0);
 	public bool animateTemporaryMovement=false;
 	public float XYSpeed = 12;
 	public float ZSpeedUp = 15;
@@ -49,7 +48,6 @@ public class StandardPickTileMoveSkill : MoveSkill {
 		strategy.xyRange = XYRange;
 		strategy.canCrossEnemies = canCrossEnemies;
 		
-		executor.transformOffset = transformOffset;
 		executor.animateTemporaryMovement = animateTemporaryMovement;
 		executor.XYSpeed = XYSpeed;
 		executor.ZSpeedUp = ZSpeedUp;
@@ -72,6 +70,9 @@ public class StandardPickTileMoveSkill : MoveSkill {
 	public override void Update() {
 		base.Update();
 		if(!isActive) { return; }
+		io.owner = this;
+		strategy.owner = this;
+		executor.owner = this;
 		io.Update();
 		strategy.Update();
 		executor.Update();	

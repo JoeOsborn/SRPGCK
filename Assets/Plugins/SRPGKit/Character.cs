@@ -13,27 +13,27 @@ public class Character : MonoBehaviour {
 
 	public int teamID;
 	
-	//skills (and stats!) are components that are added/configured normally. skills can have a "path" that
+	public Vector3 transformOffset = new Vector3(0, 5, 0);
+	
+	//skills (and stats!) are monobehaviors (though I wish I could make them components)
+	//that are added/configured normally. skill instances can have a "path" that
 	//denotes how to get to them via menus, but that's an application concern
 	//a skill group is a gameobject that contains a bunch of skills with the right configurations,
 	//and it can add (by duplication) or remove its component skills from a target gameobject.
-	//Statistics are individual behaviors (though I wish they were components) added to Character. 
-	//Skills can require components using the normal Unity mechanisms. This tidily
-	//handles the problem of duplicate stats, too.
+	//Statistics are individual monobehaviors added to Character. 
+	//Skills can require components such as stats using the normal Unity mechanisms. This tidily
+	//handles the problem of duplicate stats, too--a stat can simply check for another of its type and
+	//log an error if one is present
 	
 	[HideInInspector]
 	public string currentAnimation;	
 	
 	public MoveSkill moveSkill { get { 
-		MoveSkill s = GetComponent<MoveSkill>();
-		if(s == null) { s = gameObject.AddComponent<StandardPickTileMoveSkill>(); }
-		return s;
+		return GetComponent<MoveSkill>();
 	} }
 
 	public WaitSkill waitSkill { get { 
-		WaitSkill s = GetComponent<WaitSkill>();
-		if(s == null) { s = gameObject.AddComponent<WaitSkill>(); }
-		return s;
+		return GetComponent<WaitSkill>();
 	} }
 	
 	void Start () {
@@ -51,7 +51,7 @@ public class Character : MonoBehaviour {
 	
 	public void Deactivate() {
 		if(this.moveSkill.isActive) {
-			this.moveSkill.DeactivateSkill(); 
+			this.moveSkill.Cancel(); 
 		}
 		isActive = false;
 	}

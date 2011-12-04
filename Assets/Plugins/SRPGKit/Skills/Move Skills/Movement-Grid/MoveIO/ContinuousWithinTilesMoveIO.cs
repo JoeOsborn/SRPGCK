@@ -64,8 +64,7 @@ public class ContinuousWithinTilesMoveIO : MoveIO {
 			Vector3 targetDirection = h * right + v * forward;
 			cc.SimpleMove(targetDirection*moveSpeed);
 			//another approach (instead of ContainsPosition): place invisible box colliders at the edges of tiles which shouldn't be crossed
-			//HACK: 5.09f here is a hack for the charactercollider
-			Vector3 newDest = owner.map.InverseTransformPointWorld(owner.character.transform.position-new Vector3(0,5.09f,0));
+			Vector3 newDest = owner.map.InverseTransformPointWorld(owner.character.transform.position-owner.transformOffset+new Vector3(0,0.09f,0));
 /*			Debug.Log("Dest: " + newDest + " Inside? " + overlay.ContainsPosition(newDest));*/
 			//TODO: something with isGrounded to prevent falling off the world
 			PathNode pn = overlay.PositionAt(newDest);
@@ -85,7 +84,7 @@ public class ContinuousWithinTilesMoveIO : MoveIO {
 	override public void PresentMoves() {
 		PathNode[] destinations = (owner.strategy as GridMoveStrategy).GetValidMoves();
 		overlay = owner.map.PresentGridOverlay(
-			"move", owner.character.gameObject.GetInstanceID(), 
+			owner.skillName, owner.character.gameObject.GetInstanceID(), 
 			new Color(0.2f, 0.3f, 0.9f, 0.7f),
 			new Color(0.4f, 0.6f, 0.9f, 0.7f),
 			destinations
@@ -94,8 +93,8 @@ public class ContinuousWithinTilesMoveIO : MoveIO {
 
 	override protected void FinishMove() {
 		overlay = null;
-		if(owner.map.IsShowingOverlay("move", owner.character.gameObject.GetInstanceID())) {
-			owner.map.RemoveOverlay("move", owner.character.gameObject.GetInstanceID());
+		if(owner.map.IsShowingOverlay(owner.skillName, owner.character.gameObject.GetInstanceID())) {
+			owner.map.RemoveOverlay(owner.skillName, owner.character.gameObject.GetInstanceID());
 		}	
 		base.FinishMove();
 	}

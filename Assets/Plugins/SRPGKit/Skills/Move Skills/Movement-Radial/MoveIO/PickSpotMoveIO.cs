@@ -138,7 +138,7 @@ public class PickSpotMoveIO : MoveIO {
 		//TODO: base radius in part on points-scheduler available points
 		if(overlayType == RadialOverlayType.Sphere) {
 			overlay = owner.map.PresentSphereOverlay(
-						"move", owner.character.gameObject.GetInstanceID(), 
+						owner.skillName, owner.character.gameObject.GetInstanceID(), 
 						overlayColor,
 						charPos,
 						ms.GetMoveRadius(),
@@ -148,7 +148,7 @@ public class PickSpotMoveIO : MoveIO {
 					);
 		} else if(overlayType == RadialOverlayType.Cylinder) {
 			overlay = owner.map.PresentCylinderOverlay(
-						"move", owner.character.gameObject.GetInstanceID(), 
+						owner.skillName, owner.character.gameObject.GetInstanceID(), 
 						new Color(0.3f, 0.3f, 0.3f, 0.3f),
 						charPos,
 						ms.GetMoveRadius(),
@@ -169,8 +169,8 @@ public class PickSpotMoveIO : MoveIO {
 	override protected void FinishMove() {
 		instantiatedIndicator.gameObject.active = false;
 		overlay = null;
-		if(owner.map.IsShowingOverlay("move", owner.character.gameObject.GetInstanceID())) {
-			owner.map.RemoveOverlay("move", owner.character.gameObject.GetInstanceID());
+		if(owner.map.IsShowingOverlay(owner.skillName, owner.character.gameObject.GetInstanceID())) {
+			owner.map.RemoveOverlay(owner.skillName, owner.character.gameObject.GetInstanceID());
 		}	
 		base.FinishMove();
 	}

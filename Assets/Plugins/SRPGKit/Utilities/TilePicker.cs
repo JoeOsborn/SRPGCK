@@ -9,6 +9,7 @@ public interface ITilePickerOwner {
 	void CancelPick(TilePicker tp);
 }
 
+[System.Serializable]
 public class TilePicker {
 	public bool supportKeyboard = true;
 	public bool supportMouse = true;
@@ -26,7 +27,9 @@ public class TilePicker {
 	float lastIndicatorKeyboardMove=0;
 	float indicatorKeyboardMoveThreshold=0.3f;
 	
+	[SerializeField]
 	Vector2 indicatorXY=Vector2.zero;
+	[SerializeField]
 	float indicatorZ=0;
 	public float indicatorCycleLength=1.0f;
 	
@@ -78,10 +81,8 @@ public class TilePicker {
 			cycleIndicatorZ = true;
 			indicatorCycleT = 0;
 			Vector2 d = owner.Map.TransformKeyboardAxes(h, v);
-			Debug.Log("Got "+d);
 			if(Mathf.Abs(d.x) > Mathf.Abs(d.y)) { d.x = Mathf.Sign(d.x); d.y = 0; }
 			else { d.x = 0; d.y = Mathf.Sign(d.y); }
-			Debug.Log("Became "+d);
 			if(indicatorXY.x+d.x >= 0 && indicatorXY.y+d.y >= 0 &&
 				 map.HasTileAt((int)(indicatorXY.x+d.x), (int)(indicatorXY.y+d.y))) {
 				lastIndicatorKeyboardMove = Time.time;

@@ -62,6 +62,9 @@
      <Compile Include="Assets\Plugins\SRPGKit\Map\Overlays\Overlay.cs" />
      <Compile Include="Assets\Plugins\SRPGKit\Map\Overlays\RadialOverlay.cs" />
      <Compile Include="Assets\Plugins\SRPGKit\Map\Prop.cs" />
+     <Compile Include="Assets\Plugins\SRPGKit\Skills\Attack Skills\ActionIO.cs" />
+     <Compile Include="Assets\Plugins\SRPGKit\Skills\Attack Skills\ActionStrategy.cs" />
+     <Compile Include="Assets\Plugins\SRPGKit\Skills\Attack Skills\AttackSkill.cs" />
      <Compile Include="Assets\Plugins\SRPGKit\Skills\Move Skills\MoveExecutor.cs" />
      <Compile Include="Assets\Plugins\SRPGKit\Skills\Move Skills\MoveIO.cs" />
      <Compile Include="Assets\Plugins\SRPGKit\Skills\Move Skills\MoveSkill.cs" />
