@@ -10,6 +10,15 @@ public class DebugGUI : MonoBehaviour {
 		areaBGTexture.Apply();		
 	}
 	
+	public void Update() {
+		Scheduler s = GetComponent<Scheduler>();
+		if(s.activeCharacter != null) {
+			Camera cam = Camera.main;
+			MovableCamera mc = cam.transform.parent.GetComponent<MovableCamera>();
+			mc.targetPivot = s.activeCharacter.transform.position;
+		}
+	}
+	
 	protected void OnGUIConfirmation(string msg, out bool yesButton, out bool noButton) {
 		GUIStyle bgStyle = new GUIStyle();
 		bgStyle.normal.background = areaBGTexture;
@@ -117,10 +126,10 @@ public class DebugGUI : MonoBehaviour {
 				}
 			}
 			foreach(Skill skill in s.activeCharacter.GetComponents<Skill>()) {
-				if(skill.isActive && skill is AttackSkill) {
+				if(!skill.isPassive && skill.isActive && skill is AttackSkill) {
 					AttackSkill ask = skill as AttackSkill;
 					ActionIO aio = ask.io;
-					if(ask.isActive && aio != null) {
+					if(aio != null) {
 						if(a.IsLocalPlayer(s.activeCharacter.EffectiveTeamID)) {
 							if(aio.RequireConfirmation && 
 								 aio.AwaitingConfirmation) {
@@ -166,7 +175,7 @@ public class DebugGUI : MonoBehaviour {
 				if(activeSkill == null) {
 					for(int i = 0; i < skills.Length; i++) {
 						Skill skill = skills[i];
-						if(!skill.isActive) {
+						if(!skill.isPassive && !skill.isActive) {
 							if((skill is MoveSkill && !ctc.HasMoved) ||
 							   (!(skill is MoveSkill) && !ctc.HasActed) ||
 								 skill is WaitSkill) {

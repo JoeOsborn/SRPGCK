@@ -1,26 +1,36 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 [System.Serializable]
 public class Skill : MonoBehaviour {
+	public bool isPassive=false;
+	[HideInInspector]
 	public bool isActive=false;
 	public string skillName;
-
-	[HideInInspector]
-	public string adder;
 	
+	public StatEffect[] passiveEffects;
+	
+	public List<string> parameterNames;
+	public List<Formula> parameterFormulae;
+
+	Dictionary<string, Formula> runtimeParameters;
+
 	public virtual void Start() {
 		
 	}
 	public virtual void ActivateSkill() {
+		if(isPassive) { return; }
 		isActive = true;
 	}
 	public virtual void DeactivateSkill() {
+		if(isPassive) { return; }
 		isActive = false;
 	}
 	public virtual void Update() {
 		
 	}
 	public virtual void Cancel() {
+		if(isPassive) { return; }
 		DeactivateSkill();
 	}
 	
@@ -28,10 +38,22 @@ public class Skill : MonoBehaviour {
 		
 	}
 	public virtual void ApplySkill() {
-		if(isActive) {
-			map.BroadcastMessage("SkillApplied", this, SendMessageOptions.DontRequireReceiver);
-		}
+		map.BroadcastMessage("SkillApplied", this, SendMessageOptions.DontRequireReceiver);
 		DeactivateSkill();	
+	}
+	
+	void MakeParametersIfNecessary() {
+		if(runtimeParameters == null) {
+			runtimeParameters = new Dictionary<string, Formula>();
+			for(int i = 0; i < parameterNames.Count; i++) {
+				runtimeParameters.Add(parameterNames[i], parameterFormulae[i]);
+			}
+		}
+	}
+	
+	public float GetParam(string pname) {
+		MakeParametersIfNecessary();
+		return runtimeParameters[pname].GetValue(this);
 	}
 	
 	public Vector3 transformOffset { get { 

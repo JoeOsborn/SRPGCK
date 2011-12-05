@@ -4,13 +4,7 @@ using System.Collections;
 public class AttackSkill : Skill {
 	//strategy
 	public bool canCrossWalls=false;
-	public float XYRangeMin=1, XYRangeMax=1;
-	public float zRangeUpMin=0, zRangeUpMax=1, zRangeDownMin=0, zRangeDownMax=2;
-
 	public bool canEffectCrossWalls=true;
-	public float XYRadius=1;
-	public float zRadiusUp=0, zRadiusDown=0;
-	
 
 	//tile generation strategy (line/range/cone/etc)
 	[HideInInspector]
@@ -67,17 +61,17 @@ public class AttackSkill : Skill {
 		io.indicatorCycleLength = indicatorCycleLength;
 		
 		strategy.canCrossWalls = canCrossWalls;
-		strategy.zRangeUpMin = zRangeUpMin;
-		strategy.zRangeUpMax = zRangeUpMax;
-		strategy.zRangeDownMin = zRangeDownMin;
-		strategy.zRangeDownMax = zRangeDownMax;
-		strategy.xyRangeMin = XYRangeMin;
-		strategy.xyRangeMax = XYRangeMax;
+		strategy.zRangeUpMin = GetParam("range.z.up.min");
+		strategy.zRangeUpMax = GetParam("range.z.up.max");
+		strategy.zRangeDownMin = GetParam("range.z.down.min");
+		strategy.zRangeDownMax = GetParam("range.z.down.max");
+		strategy.xyRangeMin = GetParam("range.xy.min");
+		strategy.xyRangeMax = GetParam("range.xy.max");
 
 		strategy.canEffectCrossWalls = canEffectCrossWalls;
-		strategy.zRadiusUp = zRadiusUp;
-		strategy.zRadiusDown = zRadiusDown;
-		strategy.xyRadius = XYRadius;
+		strategy.zRadiusUp = GetParam("radius.z.up");
+		strategy.zRadiusDown = GetParam("radius.z.down");
+		strategy.xyRadius = GetParam("radius.xy");
 
 		/*	
 		executor.owner = this;

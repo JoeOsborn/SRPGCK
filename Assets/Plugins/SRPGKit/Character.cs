@@ -15,6 +15,12 @@ public class Character : MonoBehaviour {
 	
 	public Vector3 transformOffset = new Vector3(0, 5, 0);
 	
+	[HideInInspector]
+	public Dictionary<string, float> stats;
+
+	public List<string> statNames;
+	public List<float> statValues;
+	
 	//skills (and stats!) are monobehaviors (though I wish I could make them components)
 	//that are added/configured normally. skill instances can have a "path" that
 	//denotes how to get to them via menus, but that's an application concern
@@ -122,5 +128,43 @@ public class Character : MonoBehaviour {
 		if(map != null && map.scheduler != null) {
 			map.scheduler.RemoveCharacter(this);
 		}
+	}
+	
+	void MakeStatsIfNecessary() {
+		if(stats == null) {
+			stats = new Dictionary<string, float>();
+			for(int i = 0; i < statNames.Count; i++) {
+				stats.Add(statNames[i], statValues[i]);
+			}
+		}
+	}
+	
+	public Skill[] Skills { get {
+		//TODO: cache
+		return GetComponents<Skill>();
+	} }
+	
+	public bool HasStat(string statName) {
+		MakeStatsIfNecessary();
+		return stats.ContainsKey(statName);
+	}
+	
+	public float GetBaseStat(string statName) {
+		MakeStatsIfNecessary();
+		return stats[statName];	
+	}
+	
+	public float GetStat(string statName) {
+		float stat = GetBaseStat(statName);
+		foreach(Skill s in Skills) {
+			if(s.passiveEffects.Length != 0) {
+				foreach(StatEffect se in s.passiveEffects) {
+					if(se.statName == statName) {
+						stat = se.ModifyStat(stat, s);
+					}
+				}
+			}
+		}
+		return stat;
 	}
 }

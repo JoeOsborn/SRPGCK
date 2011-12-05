@@ -10,8 +10,8 @@ public class StandardPickTileMoveSkill : MoveSkill {
 	
 	//strategy
 	public bool canCrossWalls=false;
-	public float ZDelta=3;
-	public float XYRange=3;
+	public float ZDelta { get { return GetParam("range.z"); } }
+	public float XYRange { get { return GetParam("range.xy"); } }
 	public bool canCrossEnemies=false;
 	
 	//executor
