@@ -1,24 +1,30 @@
 using UnityEngine;
 
+public enum FormulaType {
+	Constant,
+	Lookup, //variable, argument, formula, or stat
+	TargetLookup, //variable, argument, formula, or stat
+	//any number of arguments
+	Add,
+	Subtract,
+	Multiply,
+	Divide,
+	Exponent,
+	Root,
+	//must be 2 arguments
+	RandomRange,
+	//must be 3 arguments
+	ClampRange,
+	//must be 1 argument
+	RoundDown,
+	RoundUp,
+	Round,
+	AbsoluteValue
+}
+
 [System.Serializable]
 public class Formula {
-	public enum Type {
-		Constant,
-		Lookup, //variable, argument, formula, or stat
-		TargetLookup, //variable, argument, formula, or stat
-		//everything else
-		Add,
-		Subtract,
-		Multiply,
-		Divide,
-		Exponent,
-		Root,
-		//must be 2 elements
-		RandomRange,
-		//must be 3 elements
-		ClampRange
-	}
-	public Type formulaType;
+	public FormulaType formulaType;
 	
 	//constant
 	public float constantValue;
@@ -41,10 +47,10 @@ public class Formula {
 		}
 		float result=-1;
 		switch(formulaType) {
-			case Type.Constant: 
+			case FormulaType.Constant: 
 				result = constantValue;
 				break;
-			case Type.Lookup: 
+			case FormulaType.Lookup: 
 				//HACK: don't provide the target if this is supposed to be a self lookup
 				if(scontext != null) {
 					result = Formulae.Lookup(lookupReference, scontext, null);
@@ -52,34 +58,34 @@ public class Formula {
 					result = Formulae.Lookup(lookupReference, scontext, ccontext);
 				}
 				break;
-			case Type.TargetLookup: 
+			case FormulaType.TargetLookup: 
 				result = Formulae.Lookup(lookupReference, scontext, ccontext);
 				break;
-			case Type.Add: 
+			case FormulaType.Add: 
 				result = arguments[0].GetValue(scontext, ccontext);
 				for(int i = 1; i < arguments.Length; i++) {
 					result += arguments[i].GetValue(scontext, ccontext);
 				}
 				break;
-			case Type.Subtract: 
+			case FormulaType.Subtract: 
 				result = arguments[0].GetValue(scontext, ccontext);
 				for(int i = 1; i < arguments.Length; i++) {
 					result -= arguments[i].GetValue(scontext, ccontext);
 				}
 				break;
-			case Type.Multiply: 
+			case FormulaType.Multiply: 
 			  result = arguments[0].GetValue(scontext, ccontext);
 			  for(int i = 1; i < arguments.Length; i++) {
 			  	result *= arguments[i].GetValue(scontext, ccontext);
 			  }
 				break;
-			case Type.Divide: 
+			case FormulaType.Divide: 
 			  result = arguments[0].GetValue(scontext, ccontext);
 			  for(int i = 1; i < arguments.Length; i++) {
 			  	result /= arguments[i].GetValue(scontext, ccontext);
 			  }
 				break;
-			case Type.Exponent: 
+			case FormulaType.Exponent: 
 			  result = arguments[0].GetValue(scontext, ccontext);
 				if(arguments.Length == 1) {
 					result = result * result;
@@ -89,7 +95,7 @@ public class Formula {
 			  	}
 				}
 				break;
-			case Type.Root: 
+			case FormulaType.Root: 
 			  result = arguments[0].GetValue(scontext, ccontext);
 				if(arguments.Length == 1) {
 					result = Mathf.Sqrt(result);
@@ -99,7 +105,7 @@ public class Formula {
 			  	}
 				}
 				break;
-			case Type.RandomRange: {
+			case FormulaType.RandomRange: {
 				float low=0, high=1;
 				if(arguments.Length >= 1) {
 					low = arguments[0].GetValue(scontext, ccontext);
@@ -110,7 +116,7 @@ public class Formula {
 				result = Random.Range(low, high);
 				break;
 			}
-			case Type.ClampRange: {
+			case FormulaType.ClampRange: {
 				float r = arguments[0].GetValue(scontext, ccontext);
 				float low=0, high=1;
 				if(arguments.Length >= 2) {
@@ -122,6 +128,18 @@ public class Formula {
 				result = Mathf.Clamp(r, low, high);
 				break;
 			}
+			case FormulaType.RoundDown: 
+				result = Mathf.Floor(arguments[0].GetValue(scontext, ccontext));
+				break;
+			case FormulaType.RoundUp: 
+				result = Mathf.Ceil(arguments[0].GetValue(scontext, ccontext));
+				break;
+			case FormulaType.Round: 
+				result = Mathf.Round(arguments[0].GetValue(scontext, ccontext));
+				break;
+			case FormulaType.AbsoluteValue: 
+				result = Mathf.Abs(arguments[0].GetValue(scontext, ccontext));
+				break;
 		}
 		return result;
 	}	

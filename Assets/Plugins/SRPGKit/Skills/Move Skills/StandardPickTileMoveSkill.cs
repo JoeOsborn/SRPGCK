@@ -38,6 +38,7 @@ public class StandardPickTileMoveSkill : MoveSkill {
 		executor.owner = this;
 
 		PickTileMoveIO mio = io as PickTileMoveIO;
+		if(mio == null) { io = new PickTileMoveIO(); io.owner = this; mio = io as PickTileMoveIO; }
 		mio.supportKeyboard = supportKeyboard;
 		mio.supportMouse = supportMouse;
 		mio.requireConfirmation = requireConfirmation;

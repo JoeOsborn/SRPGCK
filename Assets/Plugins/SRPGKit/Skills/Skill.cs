@@ -15,8 +15,12 @@ public class Skill : MonoBehaviour {
 
 	Dictionary<string, Formula> runtimeParameters;
 	
+	public List<StatEffect> targetEffects;
+	
 	//only relevant to targeted skills, sadly
+	[SerializeField]
 	protected List<Character> targets;
+	[SerializeField]
 	protected Character currentTarget;
 
 	public virtual void Start() {

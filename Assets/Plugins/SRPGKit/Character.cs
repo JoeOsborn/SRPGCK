@@ -153,7 +153,7 @@ public class Character : MonoBehaviour {
 	public void SetBaseStat(string statName, float amt) {
 		MakeStatsIfNecessary();
 		Formula f = stats[statName];
-		if(f.formulaType == Formula.Type.Constant) {
+		if(f.formulaType == FormulaType.Constant) {
 			f.constantValue = amt;
 		} else {
 			Debug.LogError("Can't set value of non-constant base stat "+statName);
@@ -163,7 +163,7 @@ public class Character : MonoBehaviour {
 	public void AdjustBaseStat(string statName, float amt) {
 		MakeStatsIfNecessary();
 		Formula f = stats[statName];
-		if(f.formulaType == Formula.Type.Constant) {
+		if(f.formulaType == FormulaType.Constant) {
 			f.constantValue += amt;
 		} else {
 			Debug.LogError("Can't adjust value of non-constant base stat "+statName);
@@ -176,7 +176,7 @@ public class Character : MonoBehaviour {
 			if(s.passiveEffects.Length != 0) {
 				foreach(StatEffect se in s.passiveEffects) {
 					if(se.statName == statName) {
-						stat = se.ModifyStat(stat, s);
+						stat = se.ModifyStat(stat, s, null);
 					}
 				}
 			}

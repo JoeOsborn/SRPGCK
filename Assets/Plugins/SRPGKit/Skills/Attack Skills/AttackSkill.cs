@@ -114,16 +114,14 @@ public class AttackSkill : Skill {
 		foreach(PathNode pn in io.targetTiles) {
 			Character c = map.CharacterAt(pn.pos);
 			if(c != null) {
-				if(!c.HasStat("health")) {
-					Debug.LogError("Attackable character "+c+" must have health stat.");
-					return;
-				}
 				targets.Add(c);
 			}
 		}
 		foreach(Character c in targets) {
 			currentTarget = c;
-			c.AdjustBaseStat("health", -1*GetParam("damage"));
+			foreach(StatEffect se in targetEffects) {
+				c.SetBaseStat(se.statName, se.ModifyStat(c.GetStat(se.statName), this, c));
+			}
 		}
 		base.ApplySkill();
 	}

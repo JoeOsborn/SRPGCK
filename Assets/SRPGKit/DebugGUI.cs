@@ -101,7 +101,7 @@ public class DebugGUI : MonoBehaviour {
 				}*/
 			}
 
-			foreach(Skill skill in ac.GetComponents<Skill>()) {
+			foreach(Skill skill in ac.Skills) {
 				if(!skill.isPassive && skill.isActive && skill is AttackSkill) {
 					AttackSkill ask = skill as AttackSkill;
 					ActionIO aio = ask.io;
@@ -118,8 +118,6 @@ public class DebugGUI : MonoBehaviour {
 								if(noButton) {
 					      	aio.AwaitingConfirmation = false;
 								}
-							} else {
-						  	showCancelButton = false;
 							}
 							showAnySchedulerButtons = false;
 						}
@@ -158,7 +156,7 @@ public class DebugGUI : MonoBehaviour {
 			if(ac != null && a.IsLocalPlayer(ac.EffectiveTeamID)) {
 				GUILayout.BeginArea(new Rect(
 					8, 8, 
-					128, 150
+					128, 180
 				));
 				GUILayout.Label("Current Character:");
 				GUILayout.Label(ac.gameObject.name);
@@ -169,7 +167,7 @@ public class DebugGUI : MonoBehaviour {
 				//TODO:0: support skills
 				//show list of skills
 				Skill activeSkill = null;
-				Skill[] skills = ac.GetComponents<Skill>();
+				Skill[] skills = ac.Skills;
 				for(int i = 0; i < skills.Length; i++) {
 					if(skills[i].isActive) {
 						activeSkill = skills[i];
