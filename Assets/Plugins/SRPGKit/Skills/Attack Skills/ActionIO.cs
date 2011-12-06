@@ -18,8 +18,8 @@ public class ActionIO : ITilePickerOwner {
 	public bool RequireConfirmation { get { return requireConfirmation; } }
 	
 	public bool AwaitingConfirmation {
-		get { return tilePicker.awaitingConfirmation; }
-		set { tilePicker.awaitingConfirmation = value; }
+		get { return tilePicker.AwaitingConfirmation; }
+		set { tilePicker.AwaitingConfirmation = value; }
 	}
 	
 	//grid
@@ -47,13 +47,10 @@ public class ActionIO : ITilePickerOwner {
 			return;
 		}
 		if(GUIUtility.hotControl != 0) { return; }
-/*		MoveExecutor me = owner.executor;*/
-/*		if(me.IsMoving) { return; }*/
 		tilePicker.supportKeyboard      = supportKeyboard;
 		tilePicker.supportMouse         = supportMouse;
 		tilePicker.requireConfirmation  = requireConfirmation;
 		tilePicker.indicatorCycleLength = indicatorCycleLength;
-/*		tilePicker.moveExecutor         = me;*/
 		tilePicker.Update();
 	}
 	
@@ -100,28 +97,28 @@ public class ActionIO : ITilePickerOwner {
 	}
 
 	public void TentativePick(TilePicker tp, Vector3 p) {
-		targetTiles = new PathNode[]{new PathNode(p, null, 0)};
-		Debug.Log("PICK C " + targetTiles);
-		//show preview
+		targetTiles = owner.strategy.GetTargetedTiles(p);
+		overlay.SetSelectedPoints(owner.map.CoalesceTiles(targetTiles));
+		//TODO: show preview indicator until cancelled
 	}	
 	
 	public void TentativePick(TilePicker tp, PathNode pn) {
-		targetTiles = new PathNode[]{pn};
-		Debug.Log("PICK D " + targetTiles);
-		//show preview
+		targetTiles = owner.strategy.GetTargetedTiles(pn.pos);
+		overlay.SetSelectedPoints(owner.map.CoalesceTiles(targetTiles));
+		//TODO: show preview indicator until cancelled
+	}
+	
+	public void CancelEffectPreview() {
+
 	}
 	
 	public void Pick(TilePicker tp, Vector3 p) {
-		targetTiles = new PathNode[]{new PathNode(p, null, 0)};
-		Debug.Log("PICK A " + targetTiles);
+		targetTiles = owner.strategy.GetTargetedTiles(p);
 		owner.ApplySkill();
-/*		PerformMove(p);	*/
 	}
 	
 	public void Pick(TilePicker tp, PathNode pn) {
-		targetTiles = new PathNode[]{pn};
-		Debug.Log("PICK B " + targetTiles);
+		targetTiles = owner.strategy.GetTargetedTiles(pn.pos);
 		owner.ApplySkill();
-/*		PerformMoveToPathNode(pn);	*/
 	}
 }

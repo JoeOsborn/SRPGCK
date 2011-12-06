@@ -76,11 +76,12 @@ public class Skill : MonoBehaviour {
 	}
 
 	public virtual bool ReactsAgainst(Skill s) {
-		return s != this &&
-					 reactionSkill && 
-					 !s.reactionSkill &&
-			 		 ReactionTypesMatch(s) &&
-			 		 s.currentTarget == character;
+		return s != this && //don't react against your own application
+					 s.character != character && //don't react against your own character's skills
+			 		 s.currentTarget == character && //only react to skills used against our character
+					 reactionSkill && //only react if you're a reaction skill
+					 !s.reactionSkill && //don't react against reaction skills
+			 		 ReactionTypesMatch(s); //only react if masks match
 	}
 	public virtual void SkillApplied(Skill s) {
 		if(ReactsAgainst(s)) {
@@ -110,7 +111,8 @@ public class Skill : MonoBehaviour {
 				foreach(Character c in targets) {
 					currentTarget = c;
 					foreach(StatEffect se in reactionEffects) {
-						currentTarget.SetBaseStat(se.statName, se.ModifyStat(c.GetStat(se.statName), this, currentTarget));
+						//TODO: associated equipment?
+						currentTarget.SetBaseStat(se.statName, se.ModifyStat(c.GetStat(se.statName), this, currentTarget, null));
 						Debug.Log("hit "+currentTarget+", new health "+currentTarget.GetStat("health"));
 					}
 				}

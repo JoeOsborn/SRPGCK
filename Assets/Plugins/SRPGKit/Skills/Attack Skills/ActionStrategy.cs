@@ -70,9 +70,9 @@ public class ActionStrategy {
 	public virtual PathNode[] GetTargetedTiles(Vector3 targetTC) {
 		return owner.map.PathsAround(
 			targetTC, 
-			xyRadius, xyRadius, 
-			zRadiusDown, zRadiusDown, 
-			zRadiusUp, zRadiusUp,
+			0, xyRadius, 
+			0, zRadiusDown, 
+			0, zRadiusUp,
 			false,
 			PathNodeIsValidRadius
 		);
@@ -80,6 +80,7 @@ public class ActionStrategy {
 	
 	public virtual PathNode[] GetReactionTiles(Vector3 attackerTC) {
 		PathNode[] validNodes = GetValidActions();
+		Debug.Log("valid reaction nodes: "+validNodes.Length);
 		if(validNodes.Any(n => Vector3.Distance(n.position, attackerTC) < 0.1)) {
 			return GetTargetedTiles(attackerTC);
 		}

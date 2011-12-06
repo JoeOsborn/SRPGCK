@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -21,6 +22,8 @@ public class Character : MonoBehaviour {
 	public List<string> statNames;
 	public List<Formula> statValues;
 	
+	public string[] equipmentSlots;
+	
 	//skills are monobehaviors (though I wish I could make them components)
 	//that are added/configured normally. skill instances can have a "path" that
 	//denotes how to get to them via menus, but that's an application concern
@@ -40,6 +43,10 @@ public class Character : MonoBehaviour {
 	
 	void Start () {
 
+	}
+	
+	public virtual void Reset() {
+		equipmentSlots = new string[]{"left", "right", "head", "body", "accessory"};
 	}
 	
 	//can be modulated by charm, etc
@@ -141,7 +148,11 @@ public class Character : MonoBehaviour {
 	
 	public Skill[] Skills { get {
 		//TODO: cache
-		return GetComponents<Skill>();
+		return GetComponentsInChildren<Skill>();
+	} }
+	public Equipment[] Equipment { get {
+		//TODO: cache
+		return GetComponentsInChildren<Equipment>();
 	} }
 	
 	public bool HasStat(string statName) {
@@ -176,15 +187,42 @@ public class Character : MonoBehaviour {
 	
 	public float GetStat(string statName) {
 		float stat = GetBaseStat(statName);
+		foreach(Equipment e in Equipment) {
+			if(e.passiveEffects.Length != 0) {
+				foreach(StatEffect se in e.passiveEffects) {
+					if(se.statName == statName) {
+						stat = se.ModifyStat(stat, null, this, e);
+					}
+				}
+			}
+		}
 		foreach(Skill s in Skills) {
 			if(s.passiveEffects.Length != 0) {
 				foreach(StatEffect se in s.passiveEffects) {
 					if(se.statName == statName) {
-						stat = se.ModifyStat(stat, s, null);
+						stat = se.ModifyStat(stat, s, this, null);
 					}
 				}
 			}
 		}
 		return stat;
+	}
+	
+	public bool IsFull(string equipmentSlot) {
+		return 
+			equipmentSlots.Where(s => s == equipmentSlot).Count() <=
+			Equipment.Where(e => e.equipmentSlots.Contains(equipmentSlot)).Count();
+	}
+	
+	public void Equip(Equipment e) {
+		string[] slots = e.equipmentSlots;
+		foreach(string s in slots) {
+			while(IsFull(s)) {
+				var conflicting = Equipment.Where(eq => eq.equipmentSlots.Contains(s));
+				if(conflicting.Count() == 0) { break; }
+				conflicting.ElementAt(0).Unequip();
+			}
+		}
+		e.EquipOn(this);
 	}
 }

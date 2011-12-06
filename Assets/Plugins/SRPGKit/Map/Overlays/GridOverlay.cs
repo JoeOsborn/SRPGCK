@@ -8,54 +8,40 @@ public class GridOverlay : Overlay {
 	
 	protected Material selectedHighlightMaterial;
 	
-	public Vector4 selectedPoint;
-	Vector4 lastSelectedPoint=new Vector4(-1,-1,-1,-1);
+	public Vector4[] selectedPoints;
+	
+	Texture2D indicatorTex;
+	
+	Color32[] blank;
 	
 	// Update is called once per frame
 	override public void Update() {
 		base.Update();
 		this.transform.localPosition = new Vector3(0,0.01f,0);
-		if(lastSelectedPoint != selectedPoint) {
-			selectedHighlightMaterial.SetVector("_SelectedPoint", selectedPoint);
-//			Debug.Log("shm:"+selectedHighlightMaterial+", selpt:"+selectedPoint);
-		}
-		lastSelectedPoint = selectedPoint;
 	}
-	override protected void CreateShadeMaterial () {
-		if(color == Color.clear) {
-			return;
-		}
-		Shader shader = Shader.Find("Custom/GridOverlayClip");
-		shadeMaterial = new Material(shader);
-		//set shadeMaterial properties
-		shadeMaterial.SetVector("_MapWorldOrigin", new Vector4(map.transform.position.x, map.transform.position.y, map.transform.position.z, 1) + new Vector4(-map.sideLength/2.0f,0.01f,-map.sideLength/2.0f,0));
-		shadeMaterial.SetVector("_MapTileSize", new Vector4(map.sideLength, map.tileHeight, map.sideLength, 1));
+	public void SetSelectedPoints(Vector4[] points) {
+		selectedPoints = points;
+		if(map == null || selectedColor == Color.clear) { return; }
+		selectedHighlightMaterial.SetTexture("_Boxes", BoundsTextureFor(indicatorTex, selectedPoints));
+	}
+	protected Texture2D BoundsTextureFor(Texture2D inTex, Vector4[] points) {
 		int mw = Mathf.NextPowerOfTwo((int)map.size.x);
 		int mh = Mathf.NextPowerOfTwo((int)map.size.y);
-		shadeMaterial.SetVector("_MapSizeInTiles", new Vector4(mw, 64, mh, 1));
-		lastSelectedPoint = selectedPoint;
-		shadeMaterial.SetColor("_Color", color);
-
-		Texture2D boxTex = new Texture2D(
-			mw, mh,
-			TextureFormat.ARGB32, false
-		);
+		Texture2D boxTex = (inTex != null && inTex.width == mw && inTex.height == mh) ? 
+			inTex : 
+			new Texture2D(
+				mw, mh,
+				TextureFormat.ARGB32, false
+			);
 		boxTex.filterMode = FilterMode.Point;
 		boxTex.wrapMode = TextureWrapMode.Repeat;
 		boxTex.anisoLevel = 1;
 
-		Color32[] blank = new Color32[(int)mw*(int)mh];
-		for(int i = 0; i < blank.Length; i++) {
-			blank[i].r = 0;
-			blank[i].g = 0;
-			blank[i].b = 0;
-			blank[i].a = 0;
-		}
 		boxTex.SetPixels32(blank);
 
-		//pack overlay positions into texture
-		for(int i = 0; i < positions.Length; i++) {
-			Vector4 p = positions[i];
+		//pack overlay points into texture
+		for(int i = 0; i < points.Length; i++) {
+			Vector4 p = points[i];
 			float minZ = p.z/64.0f;
 			float maxZ = (p.z+p.w)/64.0f;
 			Color col = boxTex.GetPixel((int)p.x, (int)p.y);
@@ -77,17 +63,36 @@ public class GridOverlay : Overlay {
 			}
 			boxTex.SetPixel((int)p.x, (int)p.y, col);
 		}
-		boxTex.Apply(false, true);
-
-		shadeMaterial.SetTexture("_Boxes", boxTex);
-		
-		Shader highlightShader = Shader.Find("Custom/GridOverlayHighlightSelected");
-		selectedHighlightMaterial = new Material(highlightShader);
-		selectedHighlightMaterial.SetVector("_MapWorldOrigin", new Vector4(map.transform.position.x, map.transform.position.y, map.transform.position.z, 1) + new Vector4(-map.sideLength/2.0f,0.01f,-map.sideLength/2.0f,0));
-		selectedHighlightMaterial.SetVector("_MapTileSize", new Vector4(map.sideLength, map.tileHeight, map.sideLength, 1));
-		//FIXME: consider giving selected point a w component for height range.
-		selectedHighlightMaterial.SetVector("_SelectedPoint", selectedPoint);
-		selectedHighlightMaterial.SetColor("_SelectedColor", selectedColor);
+		boxTex.Apply(false, false);
+		return boxTex;
+	}
+	override protected void CreateShadeMaterial () {
+		if(map == null) { return; }
+		int mw = Mathf.NextPowerOfTwo((int)map.size.x);
+		int mh = Mathf.NextPowerOfTwo((int)map.size.y);
+		if(blank == null || blank.Length != mw * mh) {
+			blank = new Color32[(int)mw*(int)mh];
+		}
+		if(color != Color.clear) {
+			Shader shader = Shader.Find("Custom/GridOverlayClip");
+			shadeMaterial = new Material(shader);
+			shadeMaterial.SetVector("_MapWorldOrigin", new Vector4(map.transform.position.x, map.transform.position.y, map.transform.position.z, 1) + new Vector4(-map.sideLength/2.0f,0.01f,-map.sideLength/2.0f,0));
+			shadeMaterial.SetVector("_MapTileSize", new Vector4(map.sideLength, map.tileHeight, map.sideLength, 1));
+			shadeMaterial.SetVector("_MapSizeInTiles", new Vector4(mw, 64, mh, 1));
+			shadeMaterial.SetColor("_Color", color);
+			Texture2D boxTex = BoundsTextureFor(null, positions);
+			shadeMaterial.SetTexture("_Boxes", boxTex);
+		}
+		if(selectedColor != Color.clear) {
+			Shader highlightShader = Shader.Find("Custom/GridOverlayClip");
+			selectedHighlightMaterial = new Material(highlightShader);
+			selectedHighlightMaterial.SetVector("_MapWorldOrigin", new Vector4(map.transform.position.x, map.transform.position.y, map.transform.position.z, 1) + new Vector4(-map.sideLength/2.0f,0.01f,-map.sideLength/2.0f,0));
+			selectedHighlightMaterial.SetVector("_MapTileSize", new Vector4(map.sideLength, map.tileHeight, map.sideLength, 1));
+			selectedHighlightMaterial.SetVector("_MapSizeInTiles", new Vector4(mw, 64, mh, 1));
+			selectedHighlightMaterial.SetColor("_Color", selectedColor);
+			indicatorTex = BoundsTextureFor(indicatorTex, selectedPoints);
+			selectedHighlightMaterial.SetTexture("_Boxes", indicatorTex);
+		}
 	}
 	
 	override protected void AddShadeMaterial() {

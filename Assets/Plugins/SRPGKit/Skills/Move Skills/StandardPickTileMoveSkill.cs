@@ -23,6 +23,16 @@ public class StandardPickTileMoveSkill : MoveSkill {
 	public float ZSpeedUp = 15;
 	public float ZSpeedDown = 20;
 	
+	public override MoveIO IO { get {
+		return moveIO;
+	} }
+	public override MoveStrategy Strategy { get {
+		return moveStrategy;
+	} }
+	public override MoveExecutor Executor { get {
+		return moveExecutor;
+	} }
+	
 	public override void Start() {
 		base.Start();
 		moveIO = new PickTileMoveIO();

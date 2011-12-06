@@ -28,9 +28,12 @@ public class TilePicker {
 	float indicatorKeyboardMoveThreshold=0.3f;
 	
 	[SerializeField]
-	Vector2 indicatorXY=Vector2.zero;
+	Vector2 indicatorXY=Vector2.zero;	
 	[SerializeField]
 	float indicatorZ=0;
+
+	Vector3 lastIndicator=Vector3.zero;
+
 	public float indicatorCycleLength=1.0f;
 	
 	public Map map;
@@ -40,6 +43,11 @@ public class TilePicker {
 	public MoveExecutor moveExecutor;
 	
 	public ITilePickerOwner owner;
+	
+	public bool AwaitingConfirmation {
+		get { return awaitingConfirmation; }
+		set { awaitingConfirmation = value; if(!awaitingConfirmation) { UpdateSelection(); } }
+	}
 	
 	public void Update() {
 		if(supportMouse && Input.GetMouseButton(0) && (!awaitingConfirmation || !requireConfirmation)) {
@@ -99,6 +107,7 @@ public class TilePicker {
 				if(awaitingConfirmation || !requireConfirmation) {
 					owner.Pick(this, pn);
   	    	awaitingConfirmation = false;
+					UpdateSelection();
 				} else if(requireConfirmation) {
 					owner.TentativePick(this, indicatorSpot);
 					awaitingConfirmation = true;
@@ -107,8 +116,11 @@ public class TilePicker {
 		}
 		if(supportKeyboard && Input.GetButtonDown("Cancel")) {
 			if(awaitingConfirmation && requireConfirmation) {
-				owner.TentativePick(this, map.InverseTransformPointWorld(moveExecutor.position));
+				if(moveExecutor != null) {
+					owner.TentativePick(this, map.InverseTransformPointWorld(moveExecutor.position));
+				}
 				awaitingConfirmation = false;
+				UpdateSelection();
 			} else {
 				owner.CancelPick(this);
 			}
@@ -120,12 +132,21 @@ public class TilePicker {
 				indicatorZ = map.NextZLevel((int)indicatorXY.x, (int)indicatorXY.y, (int)indicatorZ, true);
 			}
 		}
+		if(!awaitingConfirmation) {
+			Vector3 newIndicator = new Vector3((int)indicatorXY.x, (int)indicatorXY.y, (int)indicatorZ);
+			if(newIndicator != lastIndicator) {
+				UpdateSelection();
+			}
+			lastIndicator = newIndicator;
+		}
+	}
+	void UpdateSelection() {
 		if(overlay != null) {
 			MapTile t = map.TileAt((int)indicatorXY.x, (int)indicatorXY.y, (int)indicatorZ);
 			if(t != null) {
-				overlay.selectedPoint = new Vector4((int)indicatorXY.x, (int)indicatorXY.y, t.z, t.maxZ);
+				overlay.SetSelectedPoints(new Vector4[]{new Vector4((int)indicatorXY.x, (int)indicatorXY.y, t.z, t.maxZ)});
 			}
-		}
+		}	
 	}
 	public Vector3 IndicatorPosition {
 		get { return new Vector3(indicatorXY.x, indicatorXY.y, indicatorZ); }
@@ -146,7 +167,6 @@ public class TilePicker {
 		cycleIndicatorZ = false;
 		indicatorXY = new Vector2(Mathf.Floor(pos.x), Mathf.Floor(pos.y));
 		indicatorZ = map.NearestZLevel((int)indicatorXY.x, (int)indicatorXY.y, (int)Mathf.Floor(pos.z));
-		MapTile t = map.TileAt((int)indicatorXY.x, (int)indicatorXY.y, (int)indicatorZ);
-		overlay.selectedPoint = new Vector4((int)indicatorXY.x, (int)indicatorXY.y, t.z, t.maxZ);
+		UpdateSelection();
 	}
 }

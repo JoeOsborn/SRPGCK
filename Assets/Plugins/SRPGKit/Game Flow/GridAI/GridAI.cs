@@ -29,7 +29,22 @@ public class GridAI : MonoBehaviour {
 			PickTileMoveIO mio = c.moveSkill.IO as PickTileMoveIO;
 			if(mio != null && mio.overlay != null) {
 				PathNode[] dests = mio.overlay.destinations;
-				mio.PerformMoveToPathNode(dests[(int)Mathf.Floor(Random.Range(0, dests.Length))]);
+				if(dests.Length == 0) {
+					c.moveSkill.Cancel();
+					c.waitSkill.ActivateSkill();
+					Quaternion dir=Quaternion.Euler(0,0,0);
+					const float TAU = 360.0f;
+					switch((int)Mathf.Floor(Random.Range(0, 4))) {
+						case 0: dir = Quaternion.Euler(0, 0*TAU/4, 0); break;
+						case 1: dir = Quaternion.Euler(0, 1*TAU/4, 0); break;
+						case 2: dir = Quaternion.Euler(0, 2*TAU/4, 0); break;
+						case 3: dir = Quaternion.Euler(0, 3*TAU/4, 0); break;
+					}
+					c.waitSkill.WaitInDirection(dir);
+					c.waitSkill.FinishWaitPick();
+				} else {
+					mio.PerformMoveToPathNode(dests[(int)Mathf.Floor(Random.Range(0, dests.Length))]);
+				}
 			}
 		} else {
 			c.waitSkill.ActivateSkill();

@@ -10,8 +10,8 @@ public class PickTileMoveIO : MoveIO, ITilePickerOwner {
 	public bool RequireConfirmation { get { return requireConfirmation; } }
 	
 	public bool AwaitingConfirmation {
-		get { return tilePicker.awaitingConfirmation; }
-		set { tilePicker.awaitingConfirmation = value; }
+		get { return tilePicker.AwaitingConfirmation; }
+		set { tilePicker.AwaitingConfirmation = value; }
 	}
 	
 	public GridOverlay overlay;

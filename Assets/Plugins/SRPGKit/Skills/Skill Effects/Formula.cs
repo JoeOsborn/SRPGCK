@@ -40,7 +40,7 @@ public class Formula {
 	}
 	
 	bool firstTime = true;
-	public float GetValue(Skill scontext=null, Character ccontext=null) {
+	public float GetValue(Skill scontext=null, Character ccontext=null, Equipment econtext=null) {
 		if(firstTime) {
 			lookupReference = lookupReference.NormalizeName();
 			firstTime = false;
@@ -53,92 +53,92 @@ public class Formula {
 			case FormulaType.Lookup: 
 				//HACK: don't provide the target if this is supposed to be a self lookup
 				if(scontext != null) {
-					result = Formulae.Lookup(lookupReference, scontext, null);
+					result = Formulae.Lookup(lookupReference, scontext, null, econtext);
 				} else {
-					result = Formulae.Lookup(lookupReference, scontext, ccontext);
+					result = Formulae.Lookup(lookupReference, scontext, ccontext, econtext);
 				}
 				break;
 			case FormulaType.TargetLookup: 
-				result = Formulae.Lookup(lookupReference, scontext, ccontext);
+				result = Formulae.Lookup(lookupReference, scontext, ccontext, econtext);
 				break;
 			case FormulaType.Add: 
-				result = arguments[0].GetValue(scontext, ccontext);
+				result = arguments[0].GetValue(scontext, ccontext, econtext);
 				for(int i = 1; i < arguments.Length; i++) {
-					result += arguments[i].GetValue(scontext, ccontext);
+					result += arguments[i].GetValue(scontext, ccontext, econtext);
 				}
 				break;
 			case FormulaType.Subtract: 
-				result = arguments[0].GetValue(scontext, ccontext);
+				result = arguments[0].GetValue(scontext, ccontext, econtext);
 				for(int i = 1; i < arguments.Length; i++) {
-					result -= arguments[i].GetValue(scontext, ccontext);
+					result -= arguments[i].GetValue(scontext, ccontext, econtext);
 				}
 				break;
 			case FormulaType.Multiply: 
-			  result = arguments[0].GetValue(scontext, ccontext);
+			  result = arguments[0].GetValue(scontext, ccontext, econtext);
 			  for(int i = 1; i < arguments.Length; i++) {
-			  	result *= arguments[i].GetValue(scontext, ccontext);
+			  	result *= arguments[i].GetValue(scontext, ccontext, econtext);
 			  }
 				break;
 			case FormulaType.Divide: 
-			  result = arguments[0].GetValue(scontext, ccontext);
+			  result = arguments[0].GetValue(scontext, ccontext, econtext);
 			  for(int i = 1; i < arguments.Length; i++) {
-			  	result /= arguments[i].GetValue(scontext, ccontext);
+			  	result /= arguments[i].GetValue(scontext, ccontext, econtext);
 			  }
 				break;
 			case FormulaType.Exponent: 
-			  result = arguments[0].GetValue(scontext, ccontext);
+			  result = arguments[0].GetValue(scontext, ccontext, econtext);
 				if(arguments.Length == 1) {
 					result = result * result;
 				} else {
 			  	for(int i = 1; i < arguments.Length; i++) {
-			  		result = Mathf.Pow(result, arguments[i].GetValue(scontext, ccontext));
+			  		result = Mathf.Pow(result, arguments[i].GetValue(scontext, ccontext, econtext));
 			  	}
 				}
 				break;
 			case FormulaType.Root: 
-			  result = arguments[0].GetValue(scontext, ccontext);
+			  result = arguments[0].GetValue(scontext, ccontext, econtext);
 				if(arguments.Length == 1) {
 					result = Mathf.Sqrt(result);
 				} else {
 			  	for(int i = 1; i < arguments.Length; i++) {
-			  		result = Mathf.Pow(result, 1.0f/arguments[i].GetValue(scontext, ccontext));
+			  		result = Mathf.Pow(result, 1.0f/arguments[i].GetValue(scontext, ccontext, econtext));
 			  	}
 				}
 				break;
 			case FormulaType.RandomRange: {
 				float low=0, high=1;
 				if(arguments.Length >= 1) {
-					low = arguments[0].GetValue(scontext, ccontext);
+					low = arguments[0].GetValue(scontext, ccontext, econtext);
 				}
 				if(arguments.Length >= 2) {
-					high = arguments[1].GetValue(scontext, ccontext);
+					high = arguments[1].GetValue(scontext, ccontext, econtext);
 				}
 				result = Random.Range(low, high);
 				break;
 			}
 			case FormulaType.ClampRange: {
-				float r = arguments[0].GetValue(scontext, ccontext);
+				float r = arguments[0].GetValue(scontext, ccontext, econtext);
 				float low=0, high=1;
 				if(arguments.Length >= 2) {
-					low = arguments[1].GetValue(scontext, ccontext);
+					low = arguments[1].GetValue(scontext, ccontext, econtext);
 				}
 				if(arguments.Length >= 3) {
-					high = arguments[2].GetValue(scontext, ccontext);
+					high = arguments[2].GetValue(scontext, ccontext, econtext);
 				}
 				result = Mathf.Clamp(r, low, high);
 				break;
 			}
 			case FormulaType.RoundDown: 
-				result = Mathf.Floor(arguments[0].GetValue(scontext, ccontext));
+				result = Mathf.Floor(arguments[0].GetValue(scontext, ccontext, econtext));
 				break;
 			case FormulaType.RoundUp: 
-				result = Mathf.Ceil(arguments[0].GetValue(scontext, ccontext));
+				result = Mathf.Ceil(arguments[0].GetValue(scontext, ccontext, econtext));
 				break;
 			case FormulaType.Round: 
-				result = Mathf.Round(arguments[0].GetValue(scontext, ccontext));
+				result = Mathf.Round(arguments[0].GetValue(scontext, ccontext, econtext));
 				break;
 			case FormulaType.AbsoluteValue: 
-				result = Mathf.Abs(arguments[0].GetValue(scontext, ccontext));
+				result = Mathf.Abs(arguments[0].GetValue(scontext, ccontext, econtext));
 				break;
 		}
 		return result;

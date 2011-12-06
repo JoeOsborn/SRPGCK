@@ -13,11 +13,11 @@ public class StatEffect {
 	public EffectType effectType=EffectType.Augment;
 	public Formula value;
 	
-	public float ModifyStat(float stat, Skill scontext, Character ccontext) {
+	public float ModifyStat(float stat, Skill scontext, Character ccontext, Equipment econtext) {
 		switch(effectType) {
-			case EffectType.Augment: return stat+value.GetValue(scontext, ccontext);
-			case EffectType.Multiply: return stat*value.GetValue(scontext, ccontext);
-			case EffectType.Replace: return value.GetValue(scontext, ccontext);
+			case EffectType.Augment: return stat+value.GetValue(scontext, ccontext, econtext);
+			case EffectType.Multiply: return stat*value.GetValue(scontext, ccontext, econtext);
+			case EffectType.Replace: return value.GetValue(scontext, ccontext, econtext);
 		}
 		Debug.LogError("unknown stat effect");
 		return -1;

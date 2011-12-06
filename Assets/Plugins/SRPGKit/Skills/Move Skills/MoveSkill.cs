@@ -1,16 +1,11 @@
 using UnityEngine;
 
 [System.Serializable]
-public class MoveSkill : Skill {
-	public MoveIO IO { get {
-		return null;
-	} }
-	public MoveStrategy Strategy { get {
-		return null;
-	} }
-	public MoveExecutor Executor { get {
-		return null;
-	} }
+public abstract class MoveSkill : Skill {
+	public abstract MoveIO IO { get; }
+	public abstract MoveStrategy Strategy { get; }
+	public abstract MoveExecutor Executor { get; }
+
 	public override void Start() {
 		base.Start();
 	}

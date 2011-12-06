@@ -24,21 +24,27 @@ public class Formulae : MonoBehaviour {
 		else { instance = this; }
 	}
 
-	public static float Lookup(string fname, Skill scontext=null, Character ccontext=null) {
+	public static float Lookup(string fname, Skill scontext=null, Character ccontext=null, Equipment econtext=null) {
 		if(instance == null) { return -1; }
+		if(econtext != null) {
+			if(econtext.HasParam(fname)) {
+				return econtext.GetParam(fname);
+			}
+		}
 		if(ccontext != null) {
 			if(ccontext.HasStat(fname)) {
 				return ccontext.GetStat(fname);
 			}
 		}
 		if(scontext != null) {
+			//TODO: relevant equip check
 			if(scontext.character.HasStat(fname)) {
 				return scontext.character.GetStat(fname);
 			} else if(scontext.HasParam(fname)) {
 				return scontext.GetParam(fname);
 			}
 		}
-		return instance.LookupFormula(fname).GetValue(scontext, ccontext);
+		return instance.LookupFormula(fname).GetValue(scontext, ccontext, econtext);
 	}
 	
 	public Formula LookupFormula(string fname) {

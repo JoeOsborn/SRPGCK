@@ -46,6 +46,7 @@
   <ItemGroup>
      <Compile Include="Assets\Plugins\SRPGKit\Camera\MovableCamera.cs" />
      <Compile Include="Assets\Plugins\SRPGKit\Character.cs" />
+     <Compile Include="Assets\Plugins\SRPGKit\Equipment\Equipment.cs" />
      <Compile Include="Assets\Plugins\SRPGKit\Game Flow\Arbiter.cs" />
      <Compile Include="Assets\Plugins\SRPGKit\Game Flow\GridAI\GridAI.cs" />
      <Compile Include="Assets\Plugins\SRPGKit\Game Flow\Network\DiscreteMoveNetwork.cs" />

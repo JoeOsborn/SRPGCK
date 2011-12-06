@@ -116,7 +116,8 @@ public class AttackSkill : Skill {
 		foreach(Character c in targets) {
 			currentTarget = c;
 			foreach(StatEffect se in targetEffects) {
-				c.SetBaseStat(se.statName, se.ModifyStat(c.GetStat(se.statName), this, c));
+				//TODO: associated equipment?
+				c.SetBaseStat(se.statName, se.ModifyStat(c.GetStat(se.statName), this, c, null));
 			}
 		}
 		base.ApplySkill();
