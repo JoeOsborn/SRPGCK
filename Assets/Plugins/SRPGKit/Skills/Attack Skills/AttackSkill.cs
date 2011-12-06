@@ -42,6 +42,7 @@ public class AttackSkill : Skill {
 	public override void Reset() {
 		base.Reset();
 		skillName = "Attack";
+		skillGroup = "Act";
 	}
 	public override void Cancel() {
 		if(!isActive) { return; }

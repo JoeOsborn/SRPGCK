@@ -14,6 +14,7 @@ public class MoveSkill : Skill {
 	public override void Reset() {
 		base.Reset();
 		skillName = "Move";
+		skillSorting = -1;
 	}
 	public override void Cancel() {
 		if(!isActive) { return; }

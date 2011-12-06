@@ -1,13 +1,19 @@
 using UnityEngine;
-using System.Collections;
+using System;
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
+using System.Linq;
 
 public class DebugGUI : MonoBehaviour {
 	Texture2D areaBGTexture;
+	[SerializeField]
+	List<string> selectedGroup;
 	
 	public void Start() {
 		areaBGTexture = new Texture2D(1,1);
 		areaBGTexture.SetPixel(0, 0, new Color(0.3f, 0.3f, 0.8f, 0.5f));
-		areaBGTexture.Apply();		
+		areaBGTexture.Apply();
+		selectedGroup = new List<string>();
 	}
 	
 	public void Update() {
@@ -44,6 +50,98 @@ public class DebugGUI : MonoBehaviour {
 		    } GUILayout.EndHorizontal();
 		  } GUILayout.EndVertical();
 		} GUILayout.EndArea();	
+	}
+	
+	void SkillApplied(Skill s) {
+		selectedGroup = null;
+	}
+	void DeactivatedCharacter(Character c) {
+		selectedGroup = null;
+	}
+	
+	bool IsSkillEnabled(CTCharacter ctc, Skill s) {
+		return (!(s is MoveSkill) || !ctc.HasMoved) && 
+	  (((s is MoveSkill) || (s is WaitSkill)) || !ctc.HasActed);		
+	}
+	
+	IEnumerable<string> OnGUISkillGroup(Character ac, CTCharacter ctc, Skill[] skills, IEnumerable<string> selectedGroup) {
+		Regex delimiter = new Regex("//");
+		//group by skillGroup
+		//anything with selectedGroup as its group is the current level
+		//anything that is one away from selectedGroup is the next level
+		IEnumerable<string> nextSelectedGroup = selectedGroup;
+		int segmentCount = selectedGroup == null ? 0 : selectedGroup.Count();
+		string groupPath = selectedGroup == null ? "" : string.Join("//", selectedGroup.ToArray());
+		var groups = skills.OrderBy(x => x.skillName).GroupBy(x => x.skillGroup);
+		List<object> usedEntities = new List<object>();
+		//top level skills
+		
+		//TODO: can defer sort score calculation until later --
+		//find each subgroup prefix and do the deepGroupSkills calculation later
+		//since each prefix ought to be unique across a number of groups, we can use
+		//set union semantics.
+		foreach(var group in groups.Where(x => x.Key == groupPath)) {
+			foreach(Skill s in group) {
+				usedEntities.Add(s as object);
+			}
+		}
+		foreach(var group in groups.Where(x => 
+			x.Key != groupPath && 
+			x.Key != null && 
+			(groupPath == null || (x.Key.StartsWith(groupPath))))
+		) {
+			string[] groupSegments = delimiter.Split(group.Key);
+			//it's a next group
+			string[] groupKeySegments = new string[segmentCount+1];
+			Array.Copy(groupSegments, groupKeySegments, segmentCount+1);
+			string groupKey = string.Join("//", groupKeySegments);
+			if(!usedEntities.Contains(groupKey)) {
+				usedEntities.Add(groupKey);
+			}
+		}
+		//get it all ordered and sorted and interleaved and displayed nicely
+		var sorted = usedEntities.OrderBy(delegate(object x) {
+			if(x is Skill) {
+				return (x as Skill).skillSorting;
+			} else {
+				string key = x as string;
+				var deepGroupSkills = skills.Where(y => y.skillGroup != null && y.skillGroup.StartsWith(key));
+				return (int)Mathf.Round((float)deepGroupSkills.Average(y => y.skillSorting));
+			}
+		});
+		foreach(object o in sorted) {
+			if(o is Skill) {
+				Skill skill = o as Skill;
+				GUI.enabled = IsSkillEnabled(ctc, skill);
+				if(GUILayout.Button(skill.skillName)) {
+					skill.ActivateSkill();
+					break;
+				}
+				GUI.enabled = true;
+			} else {
+				string groupKey = o as string;
+				string[] groupSegments = delimiter.Split(groupKey);
+				string groupName = groupSegments[segmentCount];
+				var deepGroupSkills = skills.Where(x => x.skillGroup != null && x.skillGroup.StartsWith(groupKey));
+				GUI.enabled = deepGroupSkills.Any(x => IsSkillEnabled(ctc, x));
+				if(GUILayout.Button(groupName)) {
+					if(selectedGroup == null) {
+						nextSelectedGroup = new[] { groupName };
+					} else {
+						nextSelectedGroup = selectedGroup.Concat(new[] { groupName });
+					}
+				}
+				GUI.enabled = true;
+			}
+		}
+		if(selectedGroup != null && selectedGroup.Count() > 0) {
+			if(GUILayout.Button("Back") || Input.GetButtonDown("Cancel")) {
+				List<string> nextSel = selectedGroup.ToList();
+				nextSel.RemoveAt(nextSel.Count-1);
+				nextSelectedGroup = nextSel;
+			}
+		}
+		return nextSelectedGroup;
 	}
 	
 	public void OnGUI() {
@@ -175,19 +273,9 @@ public class DebugGUI : MonoBehaviour {
 					}
 				}
 				if(activeSkill == null) {
-					for(int i = 0; i < skills.Length; i++) {
-						Skill skill = skills[i];
-						if(!skill.isPassive && !skill.isActive) {
-							if((skill is MoveSkill && !ctc.HasMoved) ||
-							   (!(skill is MoveSkill) && !ctc.HasActed) ||
-								 skill is WaitSkill) {
-								if(GUILayout.Button(skill.skillName)) {
-									skill.ActivateSkill();
-									break;
-								}
-							}
-						}
-					}
+					//root: move, act group, wait
+					var nextSel = OnGUISkillGroup(ac, ctc, skills, selectedGroup);
+					selectedGroup = nextSel == null ? null : nextSel.ToList();
 				} else if(showCancelButton) {
 					if(GUILayout.Button("Cancel "+activeSkill.skillName)) {
 						activeSkill.Cancel();

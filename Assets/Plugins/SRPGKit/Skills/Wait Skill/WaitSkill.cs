@@ -31,6 +31,7 @@ public class WaitSkill : Skill {
 	public override void Reset() {
 		base.Reset();
 		skillName = "Wait";
+		skillSorting = 100000;
 		waitArrows = Resources.LoadAssetAtPath("Assets/SRPGKit/Prefabs/Wait Arrows.prefab", typeof(GameObject)) as GameObject;
 	}
 	

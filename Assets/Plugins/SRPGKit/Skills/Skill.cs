@@ -7,6 +7,8 @@ public class Skill : MonoBehaviour {
 	[HideInInspector]
 	public bool isActive=false;
 	public string skillName;
+	public string skillGroup="";
+	public int skillSorting = 0;
 	
 	public StatEffect[] passiveEffects;
 	
@@ -18,8 +20,10 @@ public class Skill : MonoBehaviour {
 	public List<StatEffect> targetEffects;
 	
 	//only relevant to targeted skills, sadly
+	[HideInInspector]
 	[SerializeField]
 	protected List<Character> targets;
+	[HideInInspector]
 	[SerializeField]
 	protected Character currentTarget;
 
