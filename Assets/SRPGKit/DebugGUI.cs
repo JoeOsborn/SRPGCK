@@ -51,15 +51,16 @@ public class DebugGUI : MonoBehaviour {
 		Arbiter a = GetComponent<Arbiter>();
 		bool showAnySchedulerButtons = true;
 		bool showCancelButton = true;
-		if(s.activeCharacter != null) {
+		Character ac = s.activeCharacter;
+		if(ac != null) {
 			Map map = transform.parent.GetComponent<Map>();
-			StandardPickTileMoveSkill ms = s.activeCharacter.moveSkill as StandardPickTileMoveSkill;
+			StandardPickTileMoveSkill ms = ac.moveSkill as StandardPickTileMoveSkill;
 			MoveIO io = ms.io;
 			//TODO:0:0: confirmation for action skills, e.g. AttackSkill
 			if(ms.isActive && io != null) {
 				if(io is PickTileMoveIO) {
 					PickTileMoveIO mio = io as PickTileMoveIO;
-					if(mio.isActive && a.IsLocalPlayer(s.activeCharacter.EffectiveTeamID)) {
+					if(mio.isActive && a.IsLocalPlayer(ac.EffectiveTeamID)) {
 			  		MoveExecutor me = ms.executor;
 						if(!me.IsMoving) {
 							if(mio.RequireConfirmation && 
@@ -99,38 +100,13 @@ public class DebugGUI : MonoBehaviour {
 					}
 				}*/
 			}
-			WaitSkill ws = s.activeCharacter.waitSkill as WaitSkill;
-			WaitIO wio = ws.io;
-			if(ws.isActive && wio != null) {
-				if(a.IsLocalPlayer(s.activeCharacter.EffectiveTeamID)) {
-					if(wio.RequireConfirmation && 
-						 wio.AwaitingConfirmation) {
-						bool yesButton=false, noButton=false;
-						OnGUIConfirmation("Wait here?", out yesButton, out noButton);
-						if(yesButton) {
-			  	  	wio.AwaitingConfirmation = false;
-							ws.FinishWaitPick();
-						}
-						if(noButton) {
-			      	wio.AwaitingConfirmation = false;
-						}
-					} else {
-					  if(s is CTScheduler) {
-					  	CTCharacter ctc = s.activeCharacter.GetComponent<CTCharacter>();
-					  	showCancelButton = !(ctc.HasMoved && ctc.HasActed);
-					  } else {
-					  	showCancelButton = true;
-					  }
-					}
-					showAnySchedulerButtons = false;
-				}
-			}
-			foreach(Skill skill in s.activeCharacter.GetComponents<Skill>()) {
+
+			foreach(Skill skill in ac.GetComponents<Skill>()) {
 				if(!skill.isPassive && skill.isActive && skill is AttackSkill) {
 					AttackSkill ask = skill as AttackSkill;
 					ActionIO aio = ask.io;
 					if(aio != null) {
-						if(a.IsLocalPlayer(s.activeCharacter.EffectiveTeamID)) {
+						if(a.IsLocalPlayer(ac.EffectiveTeamID)) {
 							if(aio.RequireConfirmation && 
 								 aio.AwaitingConfirmation) {
 								bool yesButton=false, noButton=false;
@@ -150,22 +126,50 @@ public class DebugGUI : MonoBehaviour {
 					}			
 				}
 			}
+			WaitSkill ws = ac.waitSkill as WaitSkill;
+			WaitIO wio = ws.io;
+			if(ws.isActive && wio != null) {
+				if(a.IsLocalPlayer(ac.EffectiveTeamID)) {
+					if(wio.RequireConfirmation && 
+						 wio.AwaitingConfirmation) {
+						bool yesButton=false, noButton=false;
+						OnGUIConfirmation("Wait here?", out yesButton, out noButton);
+						if(yesButton) {
+			  	  	wio.AwaitingConfirmation = false;
+							ws.FinishWaitPick();
+						}
+						if(noButton) {
+			      	wio.AwaitingConfirmation = false;
+						}
+					} else {
+					  if(s is CTScheduler) {
+					  	CTCharacter ctc = ac.GetComponent<CTCharacter>();
+					  	showCancelButton = !(ctc.HasMoved && ctc.HasActed);
+					  } else {
+					  	showCancelButton = true;
+					  }
+					}
+					showAnySchedulerButtons = false;
+				}
+			}
+			
 		}
 		if(s is CTScheduler) {
-			if(s.activeCharacter != null && a.IsLocalPlayer(s.activeCharacter.EffectiveTeamID)) {
+			if(ac != null && a.IsLocalPlayer(ac.EffectiveTeamID)) {
 				GUILayout.BeginArea(new Rect(
 					8, 8, 
 					128, 150
 				));
 				GUILayout.Label("Current Character:");
-				GUILayout.Label(s.activeCharacter.gameObject.name);
-				CTCharacter ctc = s.activeCharacter.GetComponent<CTCharacter>();
+				GUILayout.Label(ac.gameObject.name);
+				GUILayout.Label("Health: "+Mathf.Ceil(ac.GetStat("health")));
+				CTCharacter ctc = ac.GetComponent<CTCharacter>();
 				GUILayout.Label("CT: "+Mathf.Floor(ctc.CT));
 				
 				//TODO:0: support skills
 				//show list of skills
 				Skill activeSkill = null;
-				Skill[] skills = s.activeCharacter.GetComponents<Skill>();
+				Skill[] skills = ac.GetComponents<Skill>();
 				for(int i = 0; i < skills.Length; i++) {
 					if(skills[i].isActive) {
 						activeSkill = skills[i];
@@ -202,7 +206,7 @@ public class DebugGUI : MonoBehaviour {
 				));
 				GUILayout.Label("Current Team:"+tps.currentTeam);
 				if(showAnySchedulerButtons &&
-					!(tps.activeCharacter != null && tps.activeCharacter.moveSkill.executor.IsMoving) && 
+					!(ac != null && ac.moveSkill.executor.IsMoving) && 
 				  GUILayout.Button("End Round")) {
 					tps.EndRound();
 				}
@@ -218,14 +222,14 @@ public class DebugGUI : MonoBehaviour {
 				GUILayout.Label("Current Team: "+tps.currentTeam);
 				GUILayout.Label("Points Left: "+tps.pointsRemaining);
 				if(showAnySchedulerButtons &&
-					!(tps.activeCharacter != null && tps.activeCharacter.moveSkill.executor.IsMoving) && 
+					!(ac != null && ac.moveSkill.executor.IsMoving) && 
 				  GUILayout.Button("End Round")) {
 					tps.EndRound();
 				}
 				if(showAnySchedulerButtons &&
-					tps.activeCharacter != null && tps.activeCharacter.moveSkill.executor.IsMoving) {
+					ac != null && ac.moveSkill.executor.IsMoving) {
 					if(GUILayout.Button("End Move")) {
-						tps.activeCharacter.moveSkill.ApplySkill();
+						ac.moveSkill.ApplySkill();
 					}
 				}
 				GUILayout.EndArea();

@@ -14,6 +14,10 @@ public class Skill : MonoBehaviour {
 	public List<Formula> parameterFormulae;
 
 	Dictionary<string, Formula> runtimeParameters;
+	
+	//only relevant to targeted skills, sadly
+	protected List<Character> targets;
+	protected Character currentTarget;
 
 	public virtual void Start() {
 		
@@ -25,6 +29,8 @@ public class Skill : MonoBehaviour {
 	public virtual void DeactivateSkill() {
 		if(isPassive) { return; }
 		isActive = false;
+		targets = null;
+		currentTarget = null;
 	}
 	public virtual void Update() {
 		
@@ -46,14 +52,19 @@ public class Skill : MonoBehaviour {
 		if(runtimeParameters == null) {
 			runtimeParameters = new Dictionary<string, Formula>();
 			for(int i = 0; i < parameterNames.Count; i++) {
-				runtimeParameters.Add(parameterNames[i], parameterFormulae[i]);
+				runtimeParameters.Add(parameterNames[i].NormalizeName(), parameterFormulae[i]);
 			}
 		}
 	}
 	
+	public bool HasParam(string pname) {
+		MakeParametersIfNecessary();
+		return runtimeParameters.ContainsKey(pname);
+	}
+	
 	public float GetParam(string pname) {
 		MakeParametersIfNecessary();
-		return runtimeParameters[pname].GetValue(this);
+		return runtimeParameters[pname].GetValue(this, currentTarget);
 	}
 	
 	public Vector3 transformOffset { get { 

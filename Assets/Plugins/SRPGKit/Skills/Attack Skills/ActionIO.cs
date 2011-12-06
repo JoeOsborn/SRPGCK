@@ -31,6 +31,8 @@ public class ActionIO : ITilePickerOwner {
 	
 	TilePicker tilePicker;
 	
+	public PathNode[] targetTiles;
+	
 	public virtual void Activate () {
 		isActive = true;
 		//pick
@@ -53,10 +55,6 @@ public class ActionIO : ITilePickerOwner {
 		tilePicker.indicatorCycleLength = indicatorCycleLength;
 /*		tilePicker.moveExecutor         = me;*/
 		tilePicker.Update();
-	}
-	
-	protected virtual void ApplyAction() {
-		owner.ApplySkill();
 	}
 	
 	public virtual void Deactivate() {
@@ -102,19 +100,27 @@ public class ActionIO : ITilePickerOwner {
 	}
 
 	public void TentativePick(TilePicker tp, Vector3 p) {
-/*		TemporaryMove(p);*/
+		targetTiles = new PathNode[]{new PathNode(p, null, 0)};
+		Debug.Log("PICK C " + targetTiles);
+		//show preview
 	}	
 	
 	public void TentativePick(TilePicker tp, PathNode pn) {
-/*		TemporaryMoveToPathNode(pn);*/
+		targetTiles = new PathNode[]{pn};
+		Debug.Log("PICK D " + targetTiles);
+		//show preview
 	}
 	
 	public void Pick(TilePicker tp, Vector3 p) {
+		targetTiles = new PathNode[]{new PathNode(p, null, 0)};
+		Debug.Log("PICK A " + targetTiles);
 		owner.ApplySkill();
 /*		PerformMove(p);	*/
 	}
 	
 	public void Pick(TilePicker tp, PathNode pn) {
+		targetTiles = new PathNode[]{pn};
+		Debug.Log("PICK B " + targetTiles);
 		owner.ApplySkill();
 /*		PerformMoveToPathNode(pn);	*/
 	}

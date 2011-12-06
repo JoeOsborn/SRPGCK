@@ -17,6 +17,14 @@ public class CTScheduler : Scheduler {
 	}
 	
 	override public void AddCharacter(Character c) {
+		if(!c.HasStat("ct")) {
+			Debug.LogError("CT-scheduled character "+c+" must have CT stat.");
+			return;
+		}
+		if(!c.HasStat("speed")) {
+			Debug.LogError("CT-scheduled character "+c+" must have speed stat.");
+			return;
+		}
 		base.AddCharacter(c);
 		if(c.gameObject.GetComponent<CTCharacter>() == null) {
 			c.gameObject.AddComponent<CTCharacter>();

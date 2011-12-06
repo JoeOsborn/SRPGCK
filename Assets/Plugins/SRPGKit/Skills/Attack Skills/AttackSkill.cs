@@ -1,5 +1,5 @@
 using UnityEngine;
-using System.Collections;
+using System.Collections.Generic;
 
 public class AttackSkill : Skill {
 	//strategy
@@ -72,7 +72,7 @@ public class AttackSkill : Skill {
 		strategy.zRadiusUp = GetParam("radius.z.up");
 		strategy.zRadiusDown = GetParam("radius.z.down");
 		strategy.xyRadius = GetParam("radius.xy");
-
+		
 		/*	
 		executor.owner = this;
 		
@@ -105,6 +105,27 @@ public class AttackSkill : Skill {
 		io.Update();
 		strategy.Update();
 		//executor.Update();	
+	}
+	
+	public override void ApplySkill() {
+		//TODO: support reaction abilities and support abilities that depend on the attacking ability
+		//find any units within target tiles
+		targets = new List<Character>();
+		foreach(PathNode pn in io.targetTiles) {
+			Character c = map.CharacterAt(pn.pos);
+			if(c != null) {
+				if(!c.HasStat("health")) {
+					Debug.LogError("Attackable character "+c+" must have health stat.");
+					return;
+				}
+				targets.Add(c);
+			}
+		}
+		foreach(Character c in targets) {
+			currentTarget = c;
+			c.AdjustBaseStat("health", -1*GetParam("damage"));
+		}
+		base.ApplySkill();
 	}
 	
 }

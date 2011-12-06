@@ -5,32 +5,37 @@ using System.Collections.Generic;
 public class CTCharacter : MonoBehaviour {
 	[HideInInspector]
 	[SerializeField]
-	protected float _speed=6;
-	[HideInInspector]
-	[SerializeField]
-	protected float _ct=0;
-
-	[HideInInspector]
-	[SerializeField]
 	protected bool _hasMoved=false;
 	[HideInInspector]
 	[SerializeField]
 	protected bool _hasActed=false;
 	
+	Character character;
+	
+	void FindCharacter() {
+		if(character == null) {
+			character = GetComponent<Character>();
+		}
+	}
+	
 	virtual public float CT {
 		get {
-			return _ct;
+			FindCharacter();
+			return character.GetStat("ct");
 		}
 		set {
-			_ct = value;
+			FindCharacter();
+			character.SetBaseStat("ct", value);
 		}
 	}
 	virtual public float Speed {
 		get {
-			return _speed;
+			FindCharacter();
+			return character.GetStat("speed");
 		}
 		set {
-			_speed = value;
+			FindCharacter();
+			character.SetBaseStat("speed", value);
 		}
 	}
 

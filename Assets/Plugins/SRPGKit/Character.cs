@@ -16,20 +16,16 @@ public class Character : MonoBehaviour {
 	public Vector3 transformOffset = new Vector3(0, 5, 0);
 	
 	[HideInInspector]
-	public Dictionary<string, float> stats;
+	public Dictionary<string, Formula> stats;
 
 	public List<string> statNames;
-	public List<float> statValues;
+	public List<Formula> statValues;
 	
-	//skills (and stats!) are monobehaviors (though I wish I could make them components)
+	//skills are monobehaviors (though I wish I could make them components)
 	//that are added/configured normally. skill instances can have a "path" that
 	//denotes how to get to them via menus, but that's an application concern
 	//a skill group is a gameobject that contains a bunch of skills with the right configurations,
 	//and it can add (by duplication) or remove its component skills from a target gameobject.
-	//Statistics are individual monobehaviors added to Character. 
-	//Skills can require components such as stats using the normal Unity mechanisms. This tidily
-	//handles the problem of duplicate stats, too--a stat can simply check for another of its type and
-	//log an error if one is present
 	
 	[HideInInspector]
 	public string currentAnimation;	
@@ -132,9 +128,9 @@ public class Character : MonoBehaviour {
 	
 	void MakeStatsIfNecessary() {
 		if(stats == null) {
-			stats = new Dictionary<string, float>();
+			stats = new Dictionary<string, Formula>();
 			for(int i = 0; i < statNames.Count; i++) {
-				stats.Add(statNames[i], statValues[i]);
+				stats.Add(statNames[i].NormalizeName(), statValues[i]);
 			}
 		}
 	}
@@ -151,7 +147,27 @@ public class Character : MonoBehaviour {
 	
 	public float GetBaseStat(string statName) {
 		MakeStatsIfNecessary();
-		return stats[statName];	
+		return stats[statName].GetCharacterValue(this);	
+	}
+
+	public void SetBaseStat(string statName, float amt) {
+		MakeStatsIfNecessary();
+		Formula f = stats[statName];
+		if(f.formulaType == Formula.Type.Constant) {
+			f.constantValue = amt;
+		} else {
+			Debug.LogError("Can't set value of non-constant base stat "+statName);
+		}
+	}
+
+	public void AdjustBaseStat(string statName, float amt) {
+		MakeStatsIfNecessary();
+		Formula f = stats[statName];
+		if(f.formulaType == Formula.Type.Constant) {
+			f.constantValue += amt;
+		} else {
+			Debug.LogError("Can't adjust value of non-constant base stat "+statName);
+		}
 	}
 	
 	public float GetStat(string statName) {
