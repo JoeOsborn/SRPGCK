@@ -7,9 +7,11 @@ public class MoveStrategy {
 	public Skill owner;
 	
 	public bool canCrossWalls=false;
-	public float zDelta=3;
-	public float xyRange=3;
 	public bool canCrossEnemies=false;
+	[HideInInspector]
+	public float zDelta=3;
+	[HideInInspector]
+	public float xyRange=3;
 	
 	virtual public void Update () {
 		

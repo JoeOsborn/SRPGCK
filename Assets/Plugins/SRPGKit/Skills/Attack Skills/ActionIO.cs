@@ -85,7 +85,7 @@ public class ActionIO : ITilePickerOwner {
 		ActionStrategy strat = owner.strategy as ActionStrategy;
 		PathNode[] destinations = strat.GetValidActions();
 /*		MoveExecutor me = owner.executor;*/
-		Vector3 charPos = owner.map.InverseTransformPointWorld(owner.character.transform.position-owner.transformOffset);
+		Vector3 charPos = owner.character.TilePosition;
 		overlay = owner.map.PresentGridOverlay(
 			owner.skillName, owner.character.gameObject.GetInstanceID(), 
 			new Color(0.6f, 0.3f, 0.2f, 0.7f),

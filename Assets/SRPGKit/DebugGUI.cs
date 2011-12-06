@@ -72,7 +72,7 @@ public class DebugGUI : MonoBehaviour {
 		IEnumerable<string> nextSelectedGroup = selectedGroup;
 		int segmentCount = selectedGroup == null ? 0 : selectedGroup.Count();
 		string groupPath = selectedGroup == null ? "" : string.Join("//", selectedGroup.ToArray());
-		var groups = skills.OrderBy(x => x.skillName).GroupBy(x => x.skillGroup);
+		var groups = skills.Where(x => !x.isPassive).OrderBy(x => x.skillName).GroupBy(x => x.skillGroup);
 		List<object> usedEntities = new List<object>();
 		//top level skills
 		
@@ -153,13 +153,13 @@ public class DebugGUI : MonoBehaviour {
 		if(ac != null) {
 			Map map = transform.parent.GetComponent<Map>();
 			StandardPickTileMoveSkill ms = ac.moveSkill as StandardPickTileMoveSkill;
-			MoveIO io = ms.io;
+			MoveIO io = ms.moveIO;
 			//TODO:0:0: confirmation for action skills, e.g. AttackSkill
 			if(ms.isActive && io != null) {
 				if(io is PickTileMoveIO) {
 					PickTileMoveIO mio = io as PickTileMoveIO;
 					if(mio.isActive && a.IsLocalPlayer(ac.EffectiveTeamID)) {
-			  		MoveExecutor me = ms.executor;
+			  		MoveExecutor me = ms.Executor;
 						if(!me.IsMoving) {
 							if(mio.RequireConfirmation && 
 								 mio.AwaitingConfirmation) {
@@ -292,7 +292,7 @@ public class DebugGUI : MonoBehaviour {
 				));
 				GUILayout.Label("Current Team:"+tps.currentTeam);
 				if(showAnySchedulerButtons &&
-					!(ac != null && ac.moveSkill.executor.IsMoving) && 
+					!(ac != null && ac.moveSkill.Executor.IsMoving) && 
 				  GUILayout.Button("End Round")) {
 					tps.EndRound();
 				}
@@ -308,12 +308,12 @@ public class DebugGUI : MonoBehaviour {
 				GUILayout.Label("Current Team: "+tps.currentTeam);
 				GUILayout.Label("Points Left: "+tps.pointsRemaining);
 				if(showAnySchedulerButtons &&
-					!(ac != null && ac.moveSkill.executor.IsMoving) && 
+					!(ac != null && ac.moveSkill.Executor.IsMoving) && 
 				  GUILayout.Button("End Round")) {
 					tps.EndRound();
 				}
 				if(showAnySchedulerButtons &&
-					ac != null && ac.moveSkill.executor.IsMoving) {
+					ac != null && ac.moveSkill.Executor.IsMoving) {
 					if(GUILayout.Button("End Move")) {
 						ac.moveSkill.ApplySkill();
 					}

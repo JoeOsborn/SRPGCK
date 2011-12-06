@@ -42,7 +42,7 @@ public class MoveIO {
 	}
 	
 	public virtual void TemporaryMoveToPathNode(PathNode pn) {
-		MoveExecutor me = owner.executor;
+		MoveExecutor me = owner.Executor;
 		me.TemporaryMoveTo(pn, delegate(Vector3 src, PathNode endNode, bool finishedNicely) {
 			owner.scheduler.CharacterMovedTemporary(
 				owner.character, 
@@ -53,7 +53,7 @@ public class MoveIO {
 	}
 
 	public virtual void IncrementalMoveToPathNode(PathNode pn) {
-		MoveExecutor me = owner.executor;
+		MoveExecutor me = owner.Executor;
 		me.IncrementalMoveTo(pn, delegate(Vector3 src, PathNode endNode, bool finishedNicely) {
 			owner.scheduler.CharacterMovedIncremental(
 				owner.character, 
@@ -64,7 +64,7 @@ public class MoveIO {
 	}
 	
 	public virtual void PerformMoveToPathNode(PathNode pn) {
-		MoveExecutor me = owner.executor;
+		MoveExecutor me = owner.Executor;
 		me.MoveTo(pn, delegate(Vector3 src, PathNode endNode, bool finishedNicely) {
 			owner.scheduler.CharacterMoved(
 				owner.character, 

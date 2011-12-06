@@ -964,7 +964,7 @@ public class Map : MonoBehaviour {
 	}
 	public Character CharacterAt(Vector3 tc) {
 		foreach(Character c in GetComponentsInChildren<Character>()) {
-			Vector3 ctc = InverseTransformPointWorld(c.transform.position-c.transformOffset);
+			Vector3 ctc = c.TilePosition;
 //			Debug.Log("TC:"+tc+", CTC:"+ctc);
 			if(Mathf.Floor(tc.x) == Mathf.Floor(ctc.x) &&
 			   Mathf.Floor(tc.y) == Mathf.Floor(ctc.y) &&
@@ -992,6 +992,7 @@ public class Map : MonoBehaviour {
 		bool shouldJump,
 		PathNodeIsValid isValid=null
 	) {
+/*		Color debugColor = new Color(UnityEngine.Random.value, UnityEngine.Random.value, UnityEngine.Random.value, 1);*/
 		int x = (int)Mathf.Floor(tc.x), y = (int)Mathf.Floor(tc.y), z = (int)Mathf.Floor(tc.z);
 		Stack<PathNode> open = new Stack<PathNode>();
 		List<PathNode> closed = new List<PathNode>();
@@ -1031,6 +1032,7 @@ public class Map : MonoBehaviour {
 						if(decision == PathDecision.PassOnly) {
 							newPn.canStop = false;
 						}
+/*						Debug.DrawLine(TransformPointWorld(pn.position)+new Vector3(0,12,0), TransformPointWorld(pos)+new Vector3(0,12,0), debugColor, 10.0f);*/
 						//can't jump over things, can only jump across things
 						if(shouldJump && pos.z < pn.pos.z) {
 							//FIXME: duplication
@@ -1069,6 +1071,7 @@ public class Map : MonoBehaviour {
 								decision == PathDecision.Normal));
 /*						Debug.Log("Height OK? pos:"+newPn.pos+", dz:"+signedDZ+", down:"+zDownMin+".."+zDownMax+", up:"+zUpMin+".."+zUpMax+", decision:"+decision+": "+heightOK);*/
 						if((decision != PathDecision.Invalid) && heightOK) {
+/*							Debug.DrawLine(TransformPointWorld(pn.position)+new Vector3(2, 12, 0), TransformPointWorld(pos)+new Vector3(2, 12, 0), debugColor, 10.0f);*/
 							open.Push(newPn);
 						}
 					}
@@ -1077,7 +1080,7 @@ public class Map : MonoBehaviour {
 		}
 		return nodes.Where(n => 
 			n.xyDistance >= minRadius && 
-			(n.signedDZ < 0 ? n.signedDZ <= zDownMin : (n.signedDZ > 0 ? n.signedDZ >= zUpMin : true))).ToArray();
+			(n.signedDZ < 0 ? n.signedDZ <= -zDownMin : (n.signedDZ > 0 ? n.signedDZ >= zUpMin : true))).ToArray();
 	}
 	public Neighbors EnteringSideFromXYDelta(float dx, float dy) {
 		if(dx > 0) { return Neighbors.FrontLeftIdx; }

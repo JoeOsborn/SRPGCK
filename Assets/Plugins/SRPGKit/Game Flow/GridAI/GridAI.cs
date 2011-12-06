@@ -23,10 +23,10 @@ public class GridAI : MonoBehaviour {
 		if(c == null || !GetComponent<Arbiter>().IsAIPlayer(c.EffectiveTeamID)) {
 			return;
 		}
-		if(c.moveSkill.executor.IsMoving) { return; }
+		if(c.moveSkill.Executor.IsMoving) { return; }
 		if(!c.GetComponent<CTCharacter>().HasMoved) {
 			c.moveSkill.ActivateSkill();
-			PickTileMoveIO mio = c.moveSkill.io as PickTileMoveIO;
+			PickTileMoveIO mio = c.moveSkill.IO as PickTileMoveIO;
 			if(mio != null && mio.overlay != null) {
 				PathNode[] dests = mio.overlay.destinations;
 				mio.PerformMoveToPathNode(dests[(int)Mathf.Floor(Random.Range(0, dests.Length))]);

@@ -83,7 +83,7 @@ public class TeamRoundsPointsScheduler : Scheduler {
 		if(limitMode == TurnLimitMode.AP) {
 			//???: Is it okay for the scheduler to determine the move strategy's max range?
 			//???: What about characters' intrinsic stats and so on?
-			MoveStrategy ms = c.moveSkill.strategy;
+			MoveStrategy ms = c.moveSkill.Strategy;
 			ms.xyRange = GetMaximumTraversalDistance(c);
 		}
 	 	//FIXME: can we do something here for time-based traversal distance limitation?

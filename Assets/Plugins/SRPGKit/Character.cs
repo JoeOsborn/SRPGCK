@@ -47,6 +47,10 @@ public class Character : MonoBehaviour {
 		return teamID;
 	} }
 	
+	public Vector3 TilePosition { get {
+		return map == null ? Vector3.zero : map.InverseTransformPointWorld(transform.position-transformOffset);
+	} }
+	
 	public void Activate() {
 		isActive = true;
 	}

@@ -2,12 +2,15 @@ using UnityEngine;
 
 [System.Serializable]
 public class MoveSkill : Skill {
-	[HideInInspector]
-	public MoveIO io;
-	[HideInInspector]
-	public MoveStrategy strategy;
-	[HideInInspector]
-	public MoveExecutor executor;
+	public MoveIO IO { get {
+		return null;
+	} }
+	public MoveStrategy Strategy { get {
+		return null;
+	} }
+	public MoveExecutor Executor { get {
+		return null;
+	} }
 	public override void Start() {
 		base.Start();
 	}
@@ -18,7 +21,7 @@ public class MoveSkill : Skill {
 	}
 	public override void Cancel() {
 		if(!isActive) { return; }
-		executor.Cancel();
+		Executor.Cancel();
 		base.Cancel();
 	}
 }

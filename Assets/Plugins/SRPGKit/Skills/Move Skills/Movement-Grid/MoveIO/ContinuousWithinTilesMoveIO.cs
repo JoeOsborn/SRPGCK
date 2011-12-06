@@ -64,7 +64,7 @@ public class ContinuousWithinTilesMoveIO : MoveIO {
 			Vector3 targetDirection = h * right + v * forward;
 			cc.SimpleMove(targetDirection*moveSpeed);
 			//another approach (instead of ContainsPosition): place invisible box colliders at the edges of tiles which shouldn't be crossed
-			Vector3 newDest = owner.map.InverseTransformPointWorld(owner.character.transform.position-owner.transformOffset+new Vector3(0,0.09f,0));
+			Vector3 newDest = owner.character.TilePosition;
 /*			Debug.Log("Dest: " + newDest + " Inside? " + overlay.ContainsPosition(newDest));*/
 			//TODO: something with isGrounded to prevent falling off the world
 			PathNode pn = overlay.PositionAt(newDest);
@@ -82,7 +82,7 @@ public class ContinuousWithinTilesMoveIO : MoveIO {
 	}
 		
 	override public void PresentMoves() {
-		PathNode[] destinations = (owner.strategy as GridMoveStrategy).GetValidMoves();
+		PathNode[] destinations = (owner.Strategy as GridMoveStrategy).GetValidMoves();
 		overlay = owner.map.PresentGridOverlay(
 			owner.skillName, owner.character.gameObject.GetInstanceID(), 
 			new Color(0.2f, 0.3f, 0.9f, 0.7f),

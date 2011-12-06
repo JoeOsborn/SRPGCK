@@ -132,8 +132,8 @@ public class PickSpotMoveIO : MoveIO {
 	override public void PresentMoves() {
 		base.PresentMoves();
 		Debug.Log("Present");
-		RadialMoveStrategy ms = owner.strategy as RadialMoveStrategy;
-		Vector3 charPos = owner.map.InverseTransformPointWorld(owner.character.transform.position);
+		RadialMoveStrategy ms = owner.Strategy as RadialMoveStrategy;
+		Vector3 charPos = owner.character.TilePosition;
 		Debug.Log("show at "+charPos);
 		//TODO: base radius in part on points-scheduler available points
 		if(overlayType == RadialOverlayType.Sphere) {

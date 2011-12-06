@@ -1,17 +1,24 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
 
 [System.Serializable]
 public class ActionStrategy {
+	public bool canCrossWalls=true;
+	public bool canEffectCrossWalls=true;
+
 	[System.NonSerialized]
+	[HideInInspector]
 	public Skill owner;
 	
-	public bool canCrossWalls=true;
+	[HideInInspector]
 	public float xyRangeMin=1, xyRangeMax=1;
+	[HideInInspector]
 	public float zRangeUpMin=0, zRangeUpMax=1, zRangeDownMin=0, zRangeDownMax=2;
 
-	public bool canEffectCrossWalls=true;
+	[HideInInspector]
 	public float xyRadius;
+	[HideInInspector]
 	public float zRadiusUp=0, zRadiusDown=2;
 	
 	virtual public void Update () {
@@ -29,7 +36,10 @@ public class ActionStrategy {
 	public virtual PathDecision PathNodeIsValidRange(Vector3 start, PathNode pn, Character c) {
 		float dz = pn.position.z - start.z;
 		//TODO: replace with some type of collision check?
-		if(canCrossWalls && (dz < 0 ? (dz > zRangeDownMin || dz <= zRangeDownMax) : (dz < zRangeUpMin || dz >= zRangeUpMax))) {
+		if(canCrossWalls && (dz == 0 ? 
+			(zRangeDownMin > 0 && zRangeUpMin != 0) : 
+			(dz < 0 ? (dz > -zRangeDownMin || dz <= -zRangeDownMax) : 
+								(dz < zRangeUpMin || dz >= zRangeUpMax)))) {
 			return PathDecision.PassOnly;
 		}
 		return PathDecision.Normal;
@@ -46,8 +56,7 @@ public class ActionStrategy {
 	}
 	
 	public virtual PathNode[] GetValidActions() {
-		//for now, you get radius-3 around current tile
-		Vector3 tc = owner.map.InverseTransformPointWorld(owner.character.transform.position-owner.transformOffset);
+		Vector3 tc = owner.character.TilePosition;		
 		return owner.map.PathsAround(
 			tc, 
 			xyRangeMin, xyRangeMax, 
@@ -66,6 +75,14 @@ public class ActionStrategy {
 			zRadiusUp, zRadiusUp,
 			false,
 			PathNodeIsValidRadius
-		);	
+		);
+	}
+	
+	public virtual PathNode[] GetReactionTiles(Vector3 attackerTC) {
+		PathNode[] validNodes = GetValidActions();
+		if(validNodes.Any(n => Vector3.Distance(n.position, attackerTC) < 0.1)) {
+			return GetTargetedTiles(attackerTC);
+		}
+		return new PathNode[]{};
 	}
 }

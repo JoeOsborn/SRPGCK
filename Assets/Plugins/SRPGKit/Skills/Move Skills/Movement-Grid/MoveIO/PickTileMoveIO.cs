@@ -34,7 +34,7 @@ public class PickTileMoveIO : MoveIO, ITilePickerOwner {
 			return;
 		}
 		if(GUIUtility.hotControl != 0) { return; }
-		MoveExecutor me = owner.executor;
+		MoveExecutor me = owner.Executor;
 		if(me.IsMoving) { return; }
 		tilePicker.supportKeyboard      = supportKeyboard;
 		tilePicker.supportMouse         = supportMouse;
@@ -58,9 +58,9 @@ public class PickTileMoveIO : MoveIO, ITilePickerOwner {
 		base.PresentMoves();
 		tilePicker.requireConfirmation = requireConfirmation;
 		tilePicker.map = owner.map;
-		GridMoveStrategy ms = owner.strategy as GridMoveStrategy;
+		GridMoveStrategy ms = owner.Strategy as GridMoveStrategy;
 		PathNode[] destinations = ms.GetValidMoves();
-		MoveExecutor me = owner.executor;
+		MoveExecutor me = owner.Executor;
 		Vector3 charPos = owner.map.InverseTransformPointWorld(me.position);
 		overlay = owner.map.PresentGridOverlay(
 			owner.skillName, owner.character.gameObject.GetInstanceID(), 

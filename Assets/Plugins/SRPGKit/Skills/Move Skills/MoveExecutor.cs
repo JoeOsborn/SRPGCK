@@ -158,7 +158,7 @@ public class MoveExecutor {
 	}
 	
 	virtual public void Activate() {
-		Vector3 startPos = owner.map.InverseTransformPointWorld(transformPosition);
+		Vector3 startPos = owner.character.TilePosition;
 		startPos.x = Mathf.Round(startPos.x);
 		startPos.y = Mathf.Round(startPos.y);
 		startPos.z = Mathf.Round(startPos.z);

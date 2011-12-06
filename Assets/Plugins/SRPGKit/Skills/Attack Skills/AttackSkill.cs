@@ -2,13 +2,10 @@ using UnityEngine;
 using System.Collections.Generic;
 
 public class AttackSkill : Skill {
-	//strategy
-	public bool canCrossWalls=false;
-	public bool canEffectCrossWalls=true;
-
 	//tile generation strategy (line/range/cone/etc)
-	[HideInInspector]
 	public ActionStrategy strategy;
+	
+	public string[] actionTypes;
 
 	//io
 	public bool supportKeyboard = true;	
@@ -31,7 +28,6 @@ public class AttackSkill : Skill {
 	public override void Start() {
 		base.Start();
 		io = new ActionIO();
-		strategy = new ActionStrategy();
 		io.owner = this;
 		strategy.owner = this;
 		/*
@@ -43,6 +39,7 @@ public class AttackSkill : Skill {
 		base.Reset();
 		skillName = "Attack";
 		skillGroup = "Act";
+		actionTypes = new string[]{"attack"};
 	}
 	public override void Cancel() {
 		if(!isActive) { return; }
@@ -61,7 +58,6 @@ public class AttackSkill : Skill {
 		io.requireConfirmation = requireConfirmation;
 		io.indicatorCycleLength = indicatorCycleLength;
 		
-		strategy.canCrossWalls = canCrossWalls;
 		strategy.zRangeUpMin = GetParam("range.z.up.min");
 		strategy.zRangeUpMax = GetParam("range.z.up.max");
 		strategy.zRangeDownMin = GetParam("range.z.down.min");
@@ -69,7 +65,6 @@ public class AttackSkill : Skill {
 		strategy.xyRangeMin = GetParam("range.xy.min");
 		strategy.xyRangeMax = GetParam("range.xy.max");
 
-		strategy.canEffectCrossWalls = canEffectCrossWalls;
 		strategy.zRadiusUp = GetParam("radius.z.up");
 		strategy.zRadiusDown = GetParam("radius.z.down");
 		strategy.xyRadius = GetParam("radius.xy");
