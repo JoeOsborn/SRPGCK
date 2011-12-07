@@ -1,8 +1,11 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
 
 public class Equipment : MonoBehaviour {
-	Character wielder;
+	[HideInInspector]
+	[System.NonSerialized]
+	public Character wielder;
 	
 	public string equipmentName;
 	public string[] equipmentSlots;
@@ -61,5 +64,11 @@ public class Equipment : MonoBehaviour {
 	public void Unequip() {
 		wielder = null;
 		Destroy(gameObject);
+	}
+	
+	public bool Matches(string[] slots, string[] types) {
+		bool slotsOK = slots == null || slots.Length == 0 || slots.Any(s => equipmentSlots.Contains(s));
+		bool typesOK = types == null || types.Length == 0 || types.All(t => equipmentCategories.Contains(t));
+		return slotsOK && typesOK;
 	}
 }

@@ -25,11 +25,9 @@ public class Skill : MonoBehaviour {
 	
 	//only relevant to targeted skills, sadly
 	[HideInInspector]
-	[SerializeField]
-	protected List<Character> targets;
+	public List<Character> targets;
 	[HideInInspector]
-	[SerializeField]
-	protected Character currentTarget;
+	public Character currentTarget;
 	
 	//reaction
 	public bool reactionSkill=false;
@@ -37,7 +35,12 @@ public class Skill : MonoBehaviour {
 	//tile validation strategy (line/range/cone/etc)
 	public ActionStrategy reactionStrategy;
 	public StatEffect[] reactionEffects;
-	//also the reaction.chance param
+
+	[HideInInspector]
+	public Skill currentReactedSkill = null;
+
+	[HideInInspector]
+	public List<StatEffectRecord> lastEffects;
 
 	public virtual void Start() {
 		reactionStrategy.owner = this;	
@@ -86,9 +89,11 @@ public class Skill : MonoBehaviour {
 					 !s.reactionSkill && //don't react against reaction skills
 			 		 ReactionTypesMatch(s); //only react if masks match
 	}
-	public virtual void SkillApplied(Skill s) {
+	protected virtual void SkillApplied(Skill s) {
 		if(ReactsAgainst(s)) {
-			currentTarget = s.character;				
+			currentReactedSkill = s;
+			currentTarget = s.character;			
+			//TODO: do stuff based on lastEffects?
 			float v = GetParam("reaction.chance");
 			if(Random.value < v) {
 				reactionStrategy.owner = this;
@@ -111,16 +116,10 @@ public class Skill : MonoBehaviour {
 						targets.Add(c);
 					}
 				}
-				foreach(Character c in targets) {
-					currentTarget = c;
-					foreach(StatEffect se in reactionEffects) {
-						//TODO: associated equipment?
-						currentTarget.SetBaseStat(se.statName, se.ModifyStat(c.GetStat(se.statName), this, currentTarget, null));
-						Debug.Log("hit "+currentTarget+", new health "+currentTarget.GetStat("health"));
-					}
-				}
+				ApplyEffectsTo(reactionEffects, targets);
 				map.BroadcastMessage("SkillApplied", this, SendMessageOptions.DontRequireReceiver);
 			}
+			currentReactedSkill = null;
 		}
 	}
 	
@@ -140,7 +139,8 @@ public class Skill : MonoBehaviour {
 	
 	public float GetParam(string pname) {
 		MakeParametersIfNecessary();
-		return runtimeParameters[pname].GetValue(this, currentTarget);
+		//TODO: let all other equipment and skills modulate this param?
+		return runtimeParameters[pname].GetValue(this, null);
 	}
 	
 	public void AddParam(string pname, Formula f) {
@@ -148,6 +148,31 @@ public class Skill : MonoBehaviour {
 		runtimeParameters[pname] = f;
 		parameterNames = parameterNames.Concat(new string[]{pname}).ToList();
 		parameterFormulae = parameterFormulae.Concat(new Formula[]{f}).ToList();
+	}
+	
+	protected virtual void ApplyEffectsTo(StatEffect[] effects, List<Character> targs) {
+		if(lastEffects == null) {
+			lastEffects = new List<StatEffectRecord>();
+		} else {
+			lastEffects.Clear();
+		}
+		foreach(Character c in targs) {
+			currentTarget = c;
+			foreach(StatEffect se in effects) {
+				StatEffectRecord effect=null;
+				switch(se.target) {
+					case StatEffectTarget.Applier:
+						character.SetBaseStat(se.statName, se.ModifyStat(character.GetStat(se.statName), this, null, null, out effect));
+						Debug.Log("hit character, new "+se.statName+" "+character.GetStat(se.statName));
+						break;
+					case StatEffectTarget.Applied:
+						c.SetBaseStat(se.statName, se.ModifyStat(c.GetStat(se.statName), this, null, null, out effect));
+						Debug.Log("hit "+currentTarget+", new "+se.statName+" "+currentTarget.GetStat(se.statName));
+						break;
+				}
+				lastEffects.Add(effect);
+			}
+		}	
 	}
 	
 	

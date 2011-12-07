@@ -259,7 +259,6 @@ public class Character : MonoBehaviour {
 		}
 		List<int> usedSlots = new List<int>();
 		//free up other slots
-		//FIXME: 2h weapons unequip themselves! pass usedSlots into GetEmpty...
 		foreach(string s in neededSlots) {
 			if(slot != -1 && equipmentSlots[slot] == s && !usedSlots.Contains(slot)) {
 				usedSlots.Add(slot);

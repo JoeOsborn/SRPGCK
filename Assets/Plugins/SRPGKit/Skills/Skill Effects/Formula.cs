@@ -3,7 +3,7 @@ using UnityEngine;
 public enum FormulaType {
 	Constant,
 	Lookup, //variable, argument, formula, or stat
-	TargetLookup, //variable, argument, formula, or stat
+	Reserved_0,
 	//any number of arguments
 	Add,
 	Subtract,
@@ -22,6 +22,27 @@ public enum FormulaType {
 	AbsoluteValue
 }
 
+public enum LookupType {
+	Undefined,
+	SkillParam,
+	ActorStat,
+	ActorEquipmentParam,
+	ActorSkillParam, 
+	TargetStat,
+	TargetEquipmentParam,
+	TargetSkillParam,
+	NamedFormula
+}
+
+public enum FormulaMergeMode {
+	First,
+	Last,
+	Min,
+	Max,
+	Mean,
+	Sum
+}
+
 [System.Serializable]
 public class Formula {
 	public FormulaType formulaType;
@@ -31,6 +52,10 @@ public class Formula {
 	
 	//lookup
 	public string lookupReference;
+	public LookupType lookupType;
+	 //if a lookup returns multiple results
+	public FormulaMergeMode mergeMode;
+	public string[] equipmentSlots, equipmentCategories;
 	
 	//everything else
 	public Formula[] arguments; //x+y+z or x*y*z or x^y (y default 2) or y√x (y default 2)
@@ -41,10 +66,11 @@ public class Formula {
 		f.constantValue = c;
 		return f;
 	}
-	public static Formula Lookup(string n) {
+	public static Formula Lookup(string n, LookupType type) {
 		Formula f = new Formula();
 		f.formulaType = FormulaType.Lookup;
 		f.lookupReference = n;
+		f.lookupType = type;
 		return f;
 	}
 	
@@ -64,15 +90,10 @@ public class Formula {
 				result = constantValue;
 				break;
 			case FormulaType.Lookup: 
-				//HACK: don't provide the target if this is supposed to be a self lookup
-				if(scontext != null) {
-					result = Formulae.Lookup(lookupReference, scontext, null, econtext);
-				} else {
-					result = Formulae.Lookup(lookupReference, scontext, ccontext, econtext);
-				}
+				result = Formulae.Lookup(lookupReference, lookupType, scontext, ccontext, econtext, this);
 				break;
-			case FormulaType.TargetLookup: 
-				result = Formulae.Lookup(lookupReference, scontext, ccontext, econtext);
+			case FormulaType.Reserved_0:
+				Debug.LogError("reserved lookup for "+lookupReference);
 				break;
 			case FormulaType.Add: 
 				result = arguments[0].GetValue(scontext, ccontext, econtext);

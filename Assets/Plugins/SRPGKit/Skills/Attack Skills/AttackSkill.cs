@@ -76,8 +76,8 @@ public class AttackSkill : Skill {
 		if(targetEffects == null || targetEffects.Length == 0) {
 			StatEffect healthDamage = new StatEffect();
 			healthDamage.statName = "health";
-			healthDamage.effectType = StatEffect.EffectType.Augment;
-			healthDamage.value = Formula.Lookup("damage");
+			healthDamage.effectType = StatEffectType.Augment;
+			healthDamage.value = Formula.Lookup("damage", LookupType.ActorSkillParam);
 			targetEffects = new StatEffect[]{healthDamage};
 		}
 		
@@ -154,13 +154,7 @@ public class AttackSkill : Skill {
 				targets.Add(c);
 			}
 		}
-		foreach(Character c in targets) {
-			currentTarget = c;
-			foreach(StatEffect se in targetEffects) {
-				//TODO: associated equipment?
-				c.SetBaseStat(se.statName, se.ModifyStat(c.GetStat(se.statName), this, c, null));
-			}
-		}
+		ApplyEffectsTo(targetEffects, targets);
 		base.ApplySkill();
 	}
 	
