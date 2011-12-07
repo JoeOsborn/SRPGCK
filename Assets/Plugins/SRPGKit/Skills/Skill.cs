@@ -31,7 +31,8 @@ public class Skill : MonoBehaviour {
 	
 	//reaction
 	public bool reactionSkill=false;
-	public string[] reactionTypes;
+	public string[] reactionTypesApplied, reactionTypesApplier;
+	public StatChange[] reactionStatChangesApplied, reactionStatChangesApplier;
 	//tile validation strategy (line/range/cone/etc)
 	public ActionStrategy reactionStrategy;
 	public StatEffect[] reactionEffects;
@@ -74,12 +75,9 @@ public class Skill : MonoBehaviour {
 	}
 	
 	public virtual bool ReactionTypesMatch(StatEffectRecord se) {
-		string[] actionTypes = se.effect.reactableTypes;
-		return reactionTypes == null || 
-		  reactionTypes.Length == 0 || 
-		  actionTypes == null || 
-		  actionTypes.Length == 0 || 
-		  reactionTypes.Intersect(actionTypes).Count() > 0;
+		string[] reactionTypes = se.effect.target == StatEffectTarget.Applied ? reactionTypesApplied : reactionTypesApplier;
+		StatChange[] reactionStatChanges = se.effect.target == StatEffectTarget.Applied ? reactionStatChangesApplied : reactionStatChangesApplier;
+		return se.Matches(reactionStatChanges, reactionTypes);
 	}
 
 	public virtual bool ReactsAgainst(Skill s, StatEffectRecord se) {
@@ -95,11 +93,11 @@ public class Skill : MonoBehaviour {
 		//react against each effect
 		currentReactedSkill = s;
 		List<StatEffectRecord> fx = s.lastEffects;
+
 		foreach(StatEffectRecord se in fx) {
 			currentReactedEffect = se;
 			if(ReactsAgainst(s, se)) {
 				currentTarget = s.character;
-				//TODO: do stuff based on lastEffects?
 				float v = GetParam("reaction.chance");
 				if(Random.value < v) {
 					reactionStrategy.owner = this;
@@ -113,7 +111,7 @@ public class Skill : MonoBehaviour {
 					reactionStrategy.zRadiusUp = GetParam("reaction.radius.z.up");
 					reactionStrategy.zRadiusDown = GetParam("reaction.radius.z.down");
 					reactionStrategy.xyRadius = GetParam("reaction.radius.xy");
-
+					
 					PathNode[] reactionTiles = reactionStrategy.GetReactionTiles(currentTarget.TilePosition);
 					targets = new List<Character>();
 					foreach(PathNode pn in reactionTiles) {
@@ -151,6 +149,20 @@ public class Skill : MonoBehaviour {
 		return runtimeParameters[pname].GetValue(this, null);
 	}
 	
+	public void SetParam(string pname, float value) {
+		MakeParametersIfNecessary();
+		if(!HasParam(pname)) {
+			runtimeParameters[pname] = Formula.Constant(value);
+		} else {
+			Formula f = runtimeParameters[pname];
+			if(f.formulaType == FormulaType.Constant) {
+				f.constantValue = value;
+			} else {
+				Debug.LogError("Can't set value of non-constant param "+pname);
+			}
+		}
+	}
+	
 	public void AddParam(string pname, Formula f) {
 		MakeParametersIfNecessary();
 		runtimeParameters[pname] = f;
@@ -166,6 +178,15 @@ public class Skill : MonoBehaviour {
 		}
 		foreach(Character c in targs) {
 			currentTarget = c;
+			Vector3 ttp = c.TilePosition;
+			Vector3 ctp = character.TilePosition;
+			float distance = Vector3.Distance(ttp, ctp);
+			float angle = Mathf.Atan2(ttp.x-ctp.x, ttp.y-ctp.y);
+			SetParam("arg.distance", distance);
+			SetParam("arg.dx", Mathf.Abs(ttp.x-ctp.x));
+			SetParam("arg.dy", Mathf.Abs(ttp.y-ctp.y));
+			SetParam("arg.dz", Mathf.Abs(ttp.z-ctp.z));
+			SetParam("arg.xyAngle", angle);
 			foreach(StatEffect se in effects) {
 				StatEffectRecord effect=null;
 				switch(se.target) {

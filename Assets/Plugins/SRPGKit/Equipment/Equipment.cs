@@ -16,6 +16,8 @@ public class Equipment : MonoBehaviour {
 	public StatEffect[] passiveEffects;
 	public List<string> parameterNames;
 	public List<Formula> parameterFormulae;
+	
+	public StatusEffect[] statusEffectPrefabs;
 
 	Dictionary<string, Formula> runtimeParameters;
 	
@@ -59,6 +61,10 @@ public class Equipment : MonoBehaviour {
 		wielder = c;
 		equippedSlots = slots;
 		transform.parent = c.transform;
+		foreach(StatusEffect st in statusEffectPrefabs) {
+			StatusEffect se = Instantiate(st) as StatusEffect;
+			se.transform.parent = transform;
+		}
 	}
 	
 	public void Unequip() {

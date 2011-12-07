@@ -85,8 +85,14 @@ public class Character : MonoBehaviour {
 		} 
 		set {
 			transform.rotation = value;
+			SetBaseStat("facing", value.eulerAngles.y);
 			SendMessage("UseFacing", transform.rotation, SendMessageOptions.DontRequireReceiver);
 		}
+	}
+	public virtual float FacingZ { 
+		get {
+			return transform.rotation.eulerAngles.y;
+		} 
 	}
 	
 	
@@ -164,10 +170,26 @@ public class Character : MonoBehaviour {
 		//TODO: cache
 		return GetComponentsInChildren<Equipment>();
 	} }
+	public StatusEffect[] StatusEffects { get {
+		//TODO: cache
+		StatusEffect[] allEffects = GetComponentsInChildren<StatusEffect>();
+		return allEffects.Where(delegate(StatusEffect x) {
+			string replPath = x.effectType;
+			int replPri = x.priority;
+			return !allEffects.Any(y => 
+				y.effectType == replPath && 
+				y.replaces &&
+				y.priority > replPri);
+		}).ToArray();
+	} }
 	
 	public bool HasStat(string statName) {
 		MakeStatsIfNecessary();
 		return stats.ContainsKey(statName);
+	}
+
+	public bool HasStatusEffect(string statName) {
+		return StatusEffects.Any(se => se.effectType == statName);
 	}
 	
 	public float GetBaseStat(string statName) {
@@ -177,11 +199,15 @@ public class Character : MonoBehaviour {
 
 	public void SetBaseStat(string statName, float amt) {
 		MakeStatsIfNecessary();
-		Formula f = stats[statName];
-		if(f.formulaType == FormulaType.Constant) {
-			f.constantValue = amt;
+		if(!HasStat(statName)) {
+			stats[statName] = Formula.Constant(amt);
 		} else {
-			Debug.LogError("Can't set value of non-constant base stat "+statName);
+			Formula f = stats[statName];
+			if(f.formulaType == FormulaType.Constant) {
+				f.constantValue = amt;
+			} else {
+				Debug.LogError("Can't set value of non-constant base stat "+statName);
+			}
 		}
 	}
 
@@ -198,20 +224,23 @@ public class Character : MonoBehaviour {
 	public float GetStat(string statName) {
 		float stat = GetBaseStat(statName);
 		foreach(Equipment e in Equipment) {
-			if(e.passiveEffects.Length != 0) {
-				foreach(StatEffect se in e.passiveEffects) {
-					if(se.statName == statName) {
-						stat = se.ModifyStat(stat, null, this, e);
-					}
+			foreach(StatEffect se in e.passiveEffects) {
+				if(se.statName == statName) {
+					stat = se.ModifyStat(stat, null, this, e);
 				}
 			}
 		}
 		foreach(Skill s in Skills) {
-			if(s.passiveEffects.Length != 0) {
-				foreach(StatEffect se in s.passiveEffects) {
-					if(se.statName == statName) {
-						stat = se.ModifyStat(stat, s, this, null);
-					}
+			foreach(StatEffect se in s.passiveEffects) {
+				if(se.statName == statName) {
+					stat = se.ModifyStat(stat, s, this, null);
+				}
+			}
+		}
+		foreach(StatusEffect s in StatusEffects) {
+			foreach(StatEffect se in s.passiveEffects) {
+				if(se.statName == statName) {
+					stat = se.ModifyStat(stat, null, this, null);
 				}
 			}
 		}

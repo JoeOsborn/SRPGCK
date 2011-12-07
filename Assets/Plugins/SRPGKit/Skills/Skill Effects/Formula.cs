@@ -29,11 +29,18 @@ public enum FormulaType {
 	LessThan,
 	LessThanOrEqual,
 	//any number of arguments
-	Any
+	Any,
+	//2 arguments: if true, 0; else 1
+	IfLookupSuccessful,
+	//up to 6 arguments, of which any can be null (in which case this returns arg[5] or 0 if arg[5] is null)
+	//front, sides, back, left, right, default
+	BranchApplierSide,
+	BranchAppliedSide
 }
 
 public enum LookupType {
 	Undefined,
+	//lookupReference is the skill param/character stat
 	SkillParam,
 	ActorStat,
 	ActorEquipmentParam,
@@ -41,9 +48,15 @@ public enum LookupType {
 	TargetStat,
 	TargetEquipmentParam,
 	TargetSkillParam,
+	//lookupReference is the formula name
 	NamedFormula,
+	//lookupReference is the skill param
 	ReactedSkillParam,
-	ReactedEffectType
+	//lookupReference is the stat name
+	ReactedEffectType,
+	//lookupReference is the effect type
+	ActorStatusEffect,
+	TargetStatusEffect
 }
 
 public enum FormulaMergeMode {
@@ -226,7 +239,93 @@ public class Formula {
 			case FormulaType.Any:
 				result = arguments[Random.Range(0, arguments.Length)].GetValue(scontext, ccontext, econtext);
 				break;
+				//2 arguments: if true, 0; else 1
+			case FormulaType.IfLookupSuccessful:
+				bool lookupSuccessful = Formulae.CanLookup(lookupReference, lookupType, scontext, ccontext, econtext, this);
+				if(lookupSuccessful) {
+					result = arguments[0].GetValue(scontext, ccontext, econtext);
+				} else {
+					result = arguments[1].GetValue(scontext, ccontext, econtext);
+				}
+				break;
+			case FormulaType.BranchApplierSide:
+				result = FacingSwitch(StatEffectTarget.Applied, scontext, ccontext, econtext);
+				break;
+			case FormulaType.BranchAppliedSide:
+				result = FacingSwitch(StatEffectTarget.Applier, scontext, ccontext, econtext);
+				break;
 		}
 		return result;
-	}	
+	}
+	
+	enum CharacterPointing {
+		Front,
+		Back,
+		Left,
+		Right,
+		Away
+	};
+		
+	protected float FacingSwitch(StatEffectTarget target, Skill scontext, Character ccontext, Equipment econtext) {
+		Character applier = scontext.character;
+		Character applied = scontext.currentTarget;
+		CharacterPointing pointing = CharacterPointing.Front;
+		Character x = null, y = null;
+		if(target == StatEffectTarget.Applier) {
+			x = applier;
+			y = applied;
+		} else if(target == StatEffectTarget.Applied) {
+			x = applied;
+			y = applier;
+		}
+		Vector3 xp = x.TilePosition;
+		Vector3 yp = y.TilePosition;
+
+		//see if y is facing towards x at all
+		float yAngle = y.FacingZ;
+		//is theta(y,x) within 45 of yAngle?
+		if(Mathf.Abs(Vector2.Angle(new Vector2(yp.x, yp.y), new Vector2(xp.x, xp.y))-yAngle) < 45) {
+			//next, get the quadrant
+			//quadrant ~~ theta (target -> other)
+			float xyAngle = Mathf.Atan2(yp.x-xp.x, yp.y-xp.y)*Mathf.Rad2Deg + x.FacingZ;
+			while(xyAngle < 0) { xyAngle += 360; }
+			while(xyAngle >= 360) { xyAngle -= 360; }
+			if(xyAngle >= 45 && xyAngle < 135) {
+				pointing = CharacterPointing.Left;
+			} else if(xyAngle >= 135 && xyAngle < 225) {
+				pointing = CharacterPointing.Back;
+			} else if(xyAngle >= 225 && xyAngle < 315) {
+				pointing = CharacterPointing.Right;
+			} else {
+				pointing = CharacterPointing.Front;
+			}
+		} else {
+			pointing = CharacterPointing.Away;
+		}
+		
+		//order:
+		//front, left, right, back, away, sides, default
+		//must have null entries
+		if(arguments.Length != 7) {
+			Debug.Log("Bad facing switch in skill "+scontext.skillName);
+		}
+		if(pointing == CharacterPointing.Front && arguments[0] != null) {
+			return arguments[0].GetValue(scontext, ccontext, econtext);
+		} else if(pointing == CharacterPointing.Left && arguments[1] != null) {
+			return arguments[1].GetValue(scontext, ccontext, econtext);
+		} else if(pointing == CharacterPointing.Right && arguments[2] != null) {
+			return arguments[2].GetValue(scontext, ccontext, econtext);
+		} else if(pointing == CharacterPointing.Back && arguments[3] != null) {
+			return arguments[3].GetValue(scontext, ccontext, econtext);
+		} else if(pointing == CharacterPointing.Away && arguments[4] != null) {
+			return arguments[4].GetValue(scontext, ccontext, econtext);
+		} else if((pointing == CharacterPointing.Left || pointing == CharacterPointing.Right) && arguments[5] != null) {
+			return arguments[5].GetValue(scontext, ccontext, econtext);
+		} else if(arguments[6] != null) {
+			return arguments[6].GetValue(scontext, ccontext, econtext);
+		} else {
+			Debug.LogError("No valid branch for pointing "+pointing+" in skill "+scontext.skillName);
+			return -1;
+		}
+	}
 }

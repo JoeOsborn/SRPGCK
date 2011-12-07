@@ -367,7 +367,6 @@ public class MapEditor : Editor {
 		return f - Mathf.Floor(f);
 	}
 	
-	//FIXME: if a custom prop, don't permit this kind of tomfoolery
 	void AdjustIsoHeightAt(int idx, Map.Neighbors collidedFace, Vector3 wpos, int dh) {
 		Map m = (Map)target;
 		int ny = idx/(int)m.size.x;

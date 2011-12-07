@@ -82,6 +82,7 @@
      <Compile Include="Assets\Plugins\SRPGKit\Skills\Skill Effects\Formula.cs" />
      <Compile Include="Assets\Plugins\SRPGKit\Skills\Skill Effects\Formulae.cs" />
      <Compile Include="Assets\Plugins\SRPGKit\Skills\Skill Effects\StatEffect.cs" />
+     <Compile Include="Assets\Plugins\SRPGKit\Skills\Skill Effects\StatusEffect.cs" />
      <Compile Include="Assets\Plugins\SRPGKit\Skills\Skill.cs" />
      <Compile Include="Assets\Plugins\SRPGKit\Skills\Wait Skill\WaitIO.cs" />
      <Compile Include="Assets\Plugins\SRPGKit\Skills\Wait Skill\WaitSkill.cs" />

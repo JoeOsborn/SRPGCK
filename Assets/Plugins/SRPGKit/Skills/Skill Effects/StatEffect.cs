@@ -20,6 +20,11 @@ public enum StatChangeType {
 	Decrease,
 	NoChange
 }
+[System.Serializable]
+public struct StatChange {
+	public string statName;
+	public StatChangeType changeType;
+}
 
 [System.Serializable]
 public class StatEffect {
@@ -71,4 +76,11 @@ public class StatEffectRecord {
 		bool typesOK = reactableTypes == null || reactableTypes.Length == 0 || reactableTypes.All(t => effect.reactableTypes.Contains(t));
 		return statNameOK && changeOK && typesOK;
 	}
+	public bool Matches(StatChange[] changes, string[] reactableTypes) {
+		if(changes == null || changes.Length == 0) {
+			return Matches(null, StatChangeType.Any, reactableTypes);
+		}
+		return changes.Any(c => Matches(c.statName, c.changeType, reactableTypes));
+	}
 }
+

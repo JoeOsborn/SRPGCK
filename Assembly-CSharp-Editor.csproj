@@ -46,6 +46,7 @@
   <ItemGroup>
      <Compile Include="Assets\Editor\SRPGKit\EditorGUIExt.cs" />
      <Compile Include="Assets\Editor\SRPGKit\MapEditor.cs" />
+     <Compile Include="Assets\Editor\SRPGKit\StatusEffectEditor.cs" />
      <Compile Include="Assets\Editor\SpriteSystem\BillboardEditor.cs" />
      <Compile Include="Assets\Editor\SpriteSystem\SpriteEditor.cs" />
      <Compile Include="Assets\Editor\iTween\iTweenEventDataEditor.cs" />
