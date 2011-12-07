@@ -6,6 +6,9 @@ public class Equipment : MonoBehaviour {
 	
 	public string equipmentName;
 	public string[] equipmentSlots;
+	public int[] equippedSlots;
+
+	public string[] equipmentCategories;
 	
 	public StatEffect[] passiveEffects;
 	public List<string> parameterNames;
@@ -39,8 +42,9 @@ public class Equipment : MonoBehaviour {
 		return runtimeParameters[pname].GetValue(null, wielder, this);
 	}
 	
-	public void EquipOn(Character c) {
+	public void EquipOn(Character c, int[] slots) {
 		wielder = c;
+		equippedSlots = slots;
 		transform.parent = c.transform;
 	}
 	

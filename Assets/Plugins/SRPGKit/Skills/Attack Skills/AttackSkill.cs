@@ -40,6 +40,47 @@ public class AttackSkill : Skill {
 		skillName = "Attack";
 		skillGroup = "Act";
 		actionTypes = new string[]{"attack"};
+		if(!HasParam("range.z.up.min")) {
+			AddParam("range.z.up.min", Formula.Constant(0));
+		}
+		if(!HasParam("range.z.up.max")) {
+			AddParam("range.z.up.max", Formula.Constant(1));
+		}
+		if(!HasParam("range.z.down.min")) {
+			AddParam("range.z.down.min", Formula.Constant(0));
+		}
+		if(!HasParam("range.z.down.max")) {
+			AddParam("range.z.down.max", Formula.Constant(2));
+		}
+		if(!HasParam("range.xy.min")) {
+			AddParam("range.xy.min", Formula.Constant(1));
+		}
+		if(!HasParam("range.xy.max")) {
+			AddParam("range.xy.max", Formula.Constant(1));
+		}
+		
+		if(!HasParam("radius.z.up")) {
+			AddParam("radius.z.up", Formula.Constant(0));
+		}
+		if(!HasParam("radius.z.down")) {
+			AddParam("radius.z.down", Formula.Constant(0));
+		}
+		if(!HasParam("radius.xy")) {
+			AddParam("radius.xy", Formula.Constant(0));
+		}
+
+		if(!HasParam("damage")) {
+			AddParam("damage", Formula.Constant(0));
+		}
+		
+		if(targetEffects == null || targetEffects.Length == 0) {
+			StatEffect healthDamage = new StatEffect();
+			healthDamage.statName = "health";
+			healthDamage.effectType = StatEffect.EffectType.Augment;
+			healthDamage.value = Formula.Lookup("damage");
+			targetEffects = new StatEffect[]{healthDamage};
+		}
+		
 	}
 	public override void Cancel() {
 		if(!isActive) { return; }

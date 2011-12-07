@@ -63,6 +63,7 @@ public class ActionStrategy {
 			zRangeDownMin, zRangeDownMax, 
 			zRangeUpMin, zRangeUpMax,
 			false,
+			true,
 			PathNodeIsValidRange
 		);
 	}	
@@ -74,6 +75,7 @@ public class ActionStrategy {
 			0, zRadiusDown, 
 			0, zRadiusUp,
 			false,
+			true,
 			PathNodeIsValidRadius
 		);
 	}

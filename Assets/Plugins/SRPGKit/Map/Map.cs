@@ -983,13 +983,13 @@ public class Map : MonoBehaviour {
 		new Vector2( 0, 1)
 	};
 	
-	//maxDistance is distinct from move in that it's xyz distance
 	public PathNode[] PathsAround(
 		Vector3 tc, 
 		float minRadius, float maxRadius, 
 		float zDownMin, float zDownMax, 
 		float zUpMin, float zUpMax, 
-		bool shouldJump,
+		bool shouldJump, //could be true for bows? think about it
+		bool deltasAreAbsolute,
 		PathNodeIsValid isValid=null
 	) {
 /*		Color debugColor = new Color(UnityEngine.Random.value, UnityEngine.Random.value, UnityEngine.Random.value, 1);*/
@@ -1078,9 +1078,19 @@ public class Map : MonoBehaviour {
 				}
 			}
 		}
-		return nodes.Where(n => 
-			n.xyDistance >= minRadius && 
-			(n.signedDZ < 0 ? n.signedDZ <= -zDownMin : (n.signedDZ > 0 ? n.signedDZ >= zUpMin : true))).ToArray();
+		if(deltasAreAbsolute) {
+			return nodes.Where(delegate(PathNode n) {
+				int signedDZ = n.SignedDZFrom(tc);
+				return n.XYDistanceFrom(tc) >= minRadius && 
+				(signedDZ < 0 ? signedDZ <= -zDownMin : (signedDZ > 0 ? signedDZ >= zUpMin : true));
+			}).ToArray();
+		} else {
+			return nodes.Where(delegate(PathNode n) {
+				int signedDZ = n.signedDZ;
+				return n.xyDistance >= minRadius && 
+				(signedDZ < 0 ? signedDZ <= -zDownMin : (signedDZ > 0 ? signedDZ >= zUpMin : true));
+			}).ToArray();
+		}
 	}
 	public Neighbors EnteringSideFromXYDelta(float dx, float dy) {
 		if(dx > 0) { return Neighbors.FrontLeftIdx; }
@@ -1137,10 +1147,16 @@ public class PathNode {
 		get { return (int)Mathf.Abs(signedDZ); }
 	}
 	public int signedDZ {
-		get { return (int)(pos.z - (prev != null ? prev.pos.z : pos.z)); }
+		get { return SignedDZFrom(prev != null ? prev.pos : pos); }
 	}
 	public float xyDistance {
-		get { return (int)(Mathf.Abs(pos.x - (prev != null ? prev.pos.x : pos.x))+Mathf.Abs(pos.y - (prev != null ? prev.pos.y : pos.y))); }
+		get { return XYDistanceFrom(prev != null ? prev.pos : pos); }
+	}
+	public int SignedDZFrom(Vector3 prevPos) {
+		return (int)(pos.z - prevPos.z);
+	}
+	public float XYDistanceFrom(Vector3 prevPos) {
+		return (int)(Mathf.Abs(pos.x - prevPos.x)+Mathf.Abs(pos.y - prevPos.y));
 	}
 	public override bool Equals(object obj)
   {	

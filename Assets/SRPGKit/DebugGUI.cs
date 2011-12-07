@@ -115,7 +115,6 @@ public class DebugGUI : MonoBehaviour {
 				GUI.enabled = IsSkillEnabled(ctc, skill);
 				if(GUILayout.Button(skill.skillName)) {
 					skill.ActivateSkill();
-					break;
 				}
 				GUI.enabled = true;
 			} else {

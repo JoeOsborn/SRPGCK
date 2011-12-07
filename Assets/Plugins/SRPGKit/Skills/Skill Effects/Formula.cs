@@ -35,6 +35,19 @@ public class Formula {
 	//everything else
 	public Formula[] arguments; //x+y+z or x*y*z or x^y (y default 2) or y√x (y default 2)
 	
+	public static Formula Constant(float c) {
+		Formula f = new Formula();
+		f.formulaType = FormulaType.Constant;
+		f.constantValue = c;
+		return f;
+	}
+	public static Formula Lookup(string n) {
+		Formula f = new Formula();
+		f.formulaType = FormulaType.Lookup;
+		f.lookupReference = n;
+		return f;
+	}
+	
 	public float GetCharacterValue(Character ccontext) {
 		return GetValue(null, ccontext);
 	}

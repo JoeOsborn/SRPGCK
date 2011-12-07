@@ -19,6 +19,14 @@ public class GridMoveStrategy : MoveStrategy {
 	public virtual PathNode[] GetValidMoves() {
 		//for now, you get radius-3 around current tile
 		Vector3 tc = owner.character.TilePosition;
-		return owner.map.PathsAround(tc, 0, xyRange, 0, zDelta, 0, zDelta, true, PathNodeIsValid);
+		return owner.map.PathsAround(
+			tc, 
+			0, xyRange, 
+			0, zDelta, 
+			0, zDelta, 
+			true, 
+			false, 
+			PathNodeIsValid
+		);
 	}
 }

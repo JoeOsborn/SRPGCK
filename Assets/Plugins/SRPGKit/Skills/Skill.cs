@@ -10,6 +10,9 @@ public class Skill : MonoBehaviour {
 	public string skillName;
 	public string skillGroup="";
 	public int skillSorting = 0;
+
+	public string replacedSkill = "";
+	public int replacementPriority=0;
 		
 	public StatEffect[] passiveEffects;
 	
@@ -140,10 +143,26 @@ public class Skill : MonoBehaviour {
 		return runtimeParameters[pname].GetValue(this, currentTarget);
 	}
 	
+	public void AddParam(string pname, Formula f) {
+		MakeParametersIfNecessary();
+		runtimeParameters[pname] = f;
+		parameterNames = parameterNames.Concat(new string[]{pname}).ToList();
+		parameterFormulae = parameterFormulae.Concat(new Formula[]{f}).ToList();
+	}
+	
+	
 	public Vector3 transformOffset { get { 
 		return character.transformOffset; 
 	} }
-	public Character character { get { return GetComponent<Character>(); } }
+	public Character character { get { 
+		//TODO: cache
+		Character c = GetComponent<Character>(); 
+		if(c != null) { return c; }
+		if(transform.parent != null) {
+			return transform.parent.GetComponent<Character>();
+		}
+		return null;
+	} }
 	public Map map { get { return character.transform.parent.GetComponent<Map>(); } }
 	public Scheduler scheduler { get { return this.map.scheduler; } }
 	public Arbiter arbiter { get { return this.map.arbiter; } }

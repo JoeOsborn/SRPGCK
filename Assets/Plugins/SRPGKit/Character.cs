@@ -148,7 +148,15 @@ public class Character : MonoBehaviour {
 	
 	public Skill[] Skills { get {
 		//TODO: cache
-		return GetComponentsInChildren<Skill>();
+		//first off, replace any skills that have been replaced
+		Skill[] allSkills = GetComponentsInChildren<Skill>();
+		return allSkills.Where(delegate(Skill x) {
+			string replPath = x.skillGroup+"//"+x.skillName;
+			int replPri = x.replacementPriority;
+			return !allSkills.Any(y => 
+				y.replacedSkill == replPath && 
+				y.replacementPriority > replPri);
+		}).ToArray();
 	} }
 	public Equipment[] Equipment { get {
 		//TODO: cache
@@ -208,21 +216,53 @@ public class Character : MonoBehaviour {
 		return stat;
 	}
 	
-	public bool IsFull(string equipmentSlot) {
-		return 
-			equipmentSlots.Where(s => s == equipmentSlot).Count() <=
-			Equipment.Where(e => e.equipmentSlots.Contains(equipmentSlot)).Count();
+	public bool IsEquipmentSlotFull(int equipmentSlot) {
+		return Equipment.Any(e => e.equippedSlots.Contains(equipmentSlot));
 	}
 	
-	public void Equip(Equipment e) {
-		string[] slots = e.equipmentSlots;
-		foreach(string s in slots) {
-			while(IsFull(s)) {
-				var conflicting = Equipment.Where(eq => eq.equipmentSlots.Contains(s));
-				if(conflicting.Count() == 0) { break; }
-				conflicting.ElementAt(0).Unequip();
+	public void EmptyEquipmentSlot(int slot) {
+		if(IsEquipmentSlotFull(slot)) {
+			foreach(Equipment e in Equipment.Where(eq => eq.equippedSlots.Contains(slot))) {
+				e.Unequip();
+			}
+		}	
+	}
+	
+	public int GetEmptyEquipmentSlot(string slotType) {
+		int first = -1;
+		int firstEmpty = -1;
+		for(int i = 0; i < equipmentSlots.Length; i++) {
+			if(equipmentSlots[i] == slotType) {
+ 				if(!IsEquipmentSlotFull(i)) {
+					if(firstEmpty == -1) { firstEmpty = i; }
+				}
+				if(first == -1) { first = i; }
 			}
 		}
-		e.EquipOn(this);
+		if(firstEmpty != -1) {
+			return firstEmpty;
+		} else if(first != -1) {
+			EmptyEquipmentSlot(first);
+			return first;
+		} else {
+			return -1;
+		}
+	}
+	
+	public void Equip(Equipment e, int slot) {
+		string[] neededSlots = e.equipmentSlots;
+		//free up the desired slot
+		EmptyEquipmentSlot(slot);
+		List<int> usedSlots = new List<int>();
+		//free up other slots
+		foreach(string s in neededSlots) {
+			if(equipmentSlots[slot] == s && !usedSlots.Contains(slot)) {
+				usedSlots.Add(slot);
+			} else {
+				int foundSlot = GetEmptyEquipmentSlot(s);
+				usedSlots.Add(foundSlot);
+			}
+		}
+		e.EquipOn(this, usedSlots.ToArray());
 	}
 }
