@@ -104,6 +104,34 @@ public class Formulae : MonoBehaviour {
 				return -1;
 			case LookupType.NamedFormula:
 				return instance.LookupFormula(fname).GetValue(scontext, ccontext, econtext);
+			case LookupType.ReactedSkillParam:
+				if(scontext != null) {
+					return scontext.currentReactedSkill.GetParam(fname);
+				}
+				Debug.LogError("Cannot find reacted skill for "+fname);
+				return -1;
+			case LookupType.ReactedEffectType:
+				if(scontext != null) {
+					var results = scontext.currentReactedSkill.lastEffects.
+						Where(fx => fx.Matches(fname, f.reactedStatChange, f.reactableCategories)).
+						Select(fx => fx.value);
+					switch(f.mergeMode) {
+						case FormulaMergeMode.Sum:
+							return results.Sum();
+						case FormulaMergeMode.Mean:
+							return results.Average(x => x);
+						case FormulaMergeMode.Min:
+							return results.Min(x => x);
+						case FormulaMergeMode.Max:
+							return results.Max(x => x);
+						case FormulaMergeMode.First:
+							return results.First();
+						case FormulaMergeMode.Last:
+							return results.Last();
+					}
+				}
+				Debug.LogError("Cannot find reacted effects for "+fname);
+				return -1;
 		}
 		Debug.LogError("failed to look up "+type+" "+fname+" with context s:"+scontext+", c:"+ccontext+", e:"+econtext+" and formula "+f);
 		return -1;

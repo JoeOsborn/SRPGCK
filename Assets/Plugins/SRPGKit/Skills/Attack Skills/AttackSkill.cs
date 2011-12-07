@@ -5,8 +5,6 @@ public class AttackSkill : Skill {
 	//tile generation strategy (line/range/cone/etc)
 	public ActionStrategy strategy;
 	
-	public string[] actionTypes;
-
 	//io
 	public bool supportKeyboard = true;	
 	public bool supportMouse = true;
@@ -39,7 +37,6 @@ public class AttackSkill : Skill {
 		base.Reset();
 		skillName = "Attack";
 		skillGroup = "Act";
-		actionTypes = new string[]{"attack"};
 		if(!HasParam("range.z.up.min")) {
 			AddParam("range.z.up.min", Formula.Constant(0));
 		}
@@ -77,6 +74,7 @@ public class AttackSkill : Skill {
 			StatEffect healthDamage = new StatEffect();
 			healthDamage.statName = "health";
 			healthDamage.effectType = StatEffectType.Augment;
+			healthDamage.reactableTypes = new[]{"attack"};
 			healthDamage.value = Formula.Lookup("damage", LookupType.ActorSkillParam);
 			targetEffects = new StatEffect[]{healthDamage};
 		}

@@ -38,6 +38,8 @@ public class Skill : MonoBehaviour {
 
 	[HideInInspector]
 	public Skill currentReactedSkill = null;
+	[HideInInspector]
+	public StatEffectRecord currentReactedEffect = null;
 
 	[HideInInspector]
 	public List<StatEffectRecord> lastEffects;
@@ -71,9 +73,8 @@ public class Skill : MonoBehaviour {
 		DeactivateSkill();	
 	}
 	
-	public virtual bool ReactionTypesMatch(Skill s) {
-		if(!(s is AttackSkill)) { return false; }
-		string[] actionTypes = (s as AttackSkill).actionTypes;
+	public virtual bool ReactionTypesMatch(StatEffectRecord se) {
+		string[] actionTypes = se.effect.reactableTypes;
 		return reactionTypes == null || 
 		  reactionTypes.Length == 0 || 
 		  actionTypes == null || 
@@ -81,46 +82,53 @@ public class Skill : MonoBehaviour {
 		  reactionTypes.Intersect(actionTypes).Count() > 0;
 	}
 
-	public virtual bool ReactsAgainst(Skill s) {
+	public virtual bool ReactsAgainst(Skill s, StatEffectRecord se) {
 		return s != this && //don't react against your own application
 					 s.character != character && //don't react against your own character's skills
 			 		 s.currentTarget == character && //only react to skills used against our character
 					 reactionSkill && //only react if you're a reaction skill
 					 !s.reactionSkill && //don't react against reaction skills
-			 		 ReactionTypesMatch(s); //only react if masks match
+					 s is AttackSkill && //only react against targeted skills
+			 		 ReactionTypesMatch(se); //only react if masks match
 	}
 	protected virtual void SkillApplied(Skill s) {
-		if(ReactsAgainst(s)) {
-			currentReactedSkill = s;
-			currentTarget = s.character;			
-			//TODO: do stuff based on lastEffects?
-			float v = GetParam("reaction.chance");
-			if(Random.value < v) {
-				reactionStrategy.owner = this;
-				reactionStrategy.zRangeUpMin = GetParam("reaction.range.z.up.min");
-				reactionStrategy.zRangeUpMax = GetParam("reaction.range.z.up.max");
-				reactionStrategy.zRangeDownMin = GetParam("reaction.range.z.down.min");
-				reactionStrategy.zRangeDownMax = GetParam("reaction.range.z.down.max");
-				reactionStrategy.xyRangeMin = GetParam("reaction.range.xy.min");
-				reactionStrategy.xyRangeMax = GetParam("reaction.range.xy.max");
+		//react against each effect
+		currentReactedSkill = s;
+		List<StatEffectRecord> fx = s.lastEffects;
+		foreach(StatEffectRecord se in fx) {
+			currentReactedEffect = se;
+			if(ReactsAgainst(s, se)) {
+				currentTarget = s.character;
+				//TODO: do stuff based on lastEffects?
+				float v = GetParam("reaction.chance");
+				if(Random.value < v) {
+					reactionStrategy.owner = this;
+					reactionStrategy.zRangeUpMin = GetParam("reaction.range.z.up.min");
+					reactionStrategy.zRangeUpMax = GetParam("reaction.range.z.up.max");
+					reactionStrategy.zRangeDownMin = GetParam("reaction.range.z.down.min");
+					reactionStrategy.zRangeDownMax = GetParam("reaction.range.z.down.max");
+					reactionStrategy.xyRangeMin = GetParam("reaction.range.xy.min");
+					reactionStrategy.xyRangeMax = GetParam("reaction.range.xy.max");
 
-				reactionStrategy.zRadiusUp = GetParam("reaction.radius.z.up");
-				reactionStrategy.zRadiusDown = GetParam("reaction.radius.z.down");
-				reactionStrategy.xyRadius = GetParam("reaction.radius.xy");
-				
-				PathNode[] reactionTiles = reactionStrategy.GetReactionTiles(currentTarget.TilePosition);
-				targets = new List<Character>();
-				foreach(PathNode pn in reactionTiles) {
-					Character c = map.CharacterAt(pn.pos);
-					if(c != null) {
-						targets.Add(c);
+					reactionStrategy.zRadiusUp = GetParam("reaction.radius.z.up");
+					reactionStrategy.zRadiusDown = GetParam("reaction.radius.z.down");
+					reactionStrategy.xyRadius = GetParam("reaction.radius.xy");
+
+					PathNode[] reactionTiles = reactionStrategy.GetReactionTiles(currentTarget.TilePosition);
+					targets = new List<Character>();
+					foreach(PathNode pn in reactionTiles) {
+						Character c = map.CharacterAt(pn.pos);
+						if(c != null) {
+							targets.Add(c);
+						}
 					}
+					ApplyEffectsTo(reactionEffects, targets);
+					map.BroadcastMessage("SkillApplied", this, SendMessageOptions.DontRequireReceiver);
 				}
-				ApplyEffectsTo(reactionEffects, targets);
-				map.BroadcastMessage("SkillApplied", this, SendMessageOptions.DontRequireReceiver);
 			}
-			currentReactedSkill = null;
 		}
+		currentReactedSkill = null;
+		currentReactedEffect = null;
 	}
 	
 	void MakeParametersIfNecessary() {

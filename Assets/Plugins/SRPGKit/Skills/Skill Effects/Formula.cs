@@ -3,7 +3,7 @@ using UnityEngine;
 public enum FormulaType {
 	Constant,
 	Lookup, //variable, argument, formula, or stat
-	Reserved_0,
+	ReactedEffectValue,
 	//any number of arguments
 	Add,
 	Subtract,
@@ -19,7 +19,17 @@ public enum FormulaType {
 	RoundDown,
 	RoundUp,
 	Round,
-	AbsoluteValue
+	AbsoluteValue,
+	Negate,
+	//4 arguments: if 0 is comparison-type 1, 2; else 3
+	Equal,
+	NotEqual,
+	GreaterThan,
+	GreaterThanOrEqual,
+	LessThan,
+	LessThanOrEqual,
+	//any number of arguments
+	Any
 }
 
 public enum LookupType {
@@ -31,7 +41,9 @@ public enum LookupType {
 	TargetStat,
 	TargetEquipmentParam,
 	TargetSkillParam,
-	NamedFormula
+	NamedFormula,
+	ReactedSkillParam,
+	ReactedEffectType
 }
 
 public enum FormulaMergeMode {
@@ -55,7 +67,11 @@ public class Formula {
 	public LookupType lookupType;
 	 //if a lookup returns multiple results
 	public FormulaMergeMode mergeMode;
+	//eq
 	public string[] equipmentSlots, equipmentCategories;
+	//reacted skill effect lookup; could use lookupReference for stat name, or could leave it blank
+	public string[] reactableCategories;
+	public StatChangeType reactedStatChange;
 	
 	//everything else
 	public Formula[] arguments; //x+y+z or x*y*z or x^y (y default 2) or y√x (y default 2)
@@ -92,8 +108,8 @@ public class Formula {
 			case FormulaType.Lookup: 
 				result = Formulae.Lookup(lookupReference, lookupType, scontext, ccontext, econtext, this);
 				break;
-			case FormulaType.Reserved_0:
-				Debug.LogError("reserved lookup for "+lookupReference);
+			case FormulaType.ReactedEffectValue:
+				result = scontext.currentReactedEffect.value;
 				break;
 			case FormulaType.Add: 
 				result = arguments[0].GetValue(scontext, ccontext, econtext);
@@ -173,6 +189,42 @@ public class Formula {
 				break;
 			case FormulaType.AbsoluteValue: 
 				result = Mathf.Abs(arguments[0].GetValue(scontext, ccontext, econtext));
+				break;
+			case FormulaType.Negate:
+				result = -1 * arguments[0].GetValue(scontext, ccontext, econtext);
+				break;
+			case FormulaType.Equal:
+				result = 
+					arguments[0].GetValue(scontext, ccontext, econtext) == arguments[1].GetValue(scontext, ccontext, econtext) ?
+					 arguments[2].GetValue(scontext, ccontext, econtext) : arguments[3].GetValue(scontext, ccontext, econtext);
+				break;
+			case FormulaType.NotEqual:
+				result = 
+					arguments[0].GetValue(scontext, ccontext, econtext) != arguments[1].GetValue(scontext, ccontext, econtext) ?
+					 arguments[2].GetValue(scontext, ccontext, econtext) : arguments[3].GetValue(scontext, ccontext, econtext);
+				break;
+		  case FormulaType.GreaterThan:
+		  	result = 
+		  		arguments[0].GetValue(scontext, ccontext, econtext) > arguments[1].GetValue(scontext, ccontext, econtext) ?
+		  		 arguments[2].GetValue(scontext, ccontext, econtext) : arguments[3].GetValue(scontext, ccontext, econtext);
+		  	break;
+		  case FormulaType.GreaterThanOrEqual:
+		  	result = 
+		  		arguments[0].GetValue(scontext, ccontext, econtext) >= arguments[1].GetValue(scontext, ccontext, econtext) ?
+		  		 arguments[2].GetValue(scontext, ccontext, econtext) : arguments[3].GetValue(scontext, ccontext, econtext);
+		  	break;
+			case FormulaType.LessThan:
+				result = 
+					arguments[0].GetValue(scontext, ccontext, econtext) < arguments[1].GetValue(scontext, ccontext, econtext) ?
+					 arguments[2].GetValue(scontext, ccontext, econtext) : arguments[3].GetValue(scontext, ccontext, econtext);
+				break;
+			case FormulaType.LessThanOrEqual:
+				result = 
+					arguments[0].GetValue(scontext, ccontext, econtext) <= arguments[1].GetValue(scontext, ccontext, econtext) ?
+					 arguments[2].GetValue(scontext, ccontext, econtext) : arguments[3].GetValue(scontext, ccontext, econtext);
+				break;
+			case FormulaType.Any:
+				result = arguments[Random.Range(0, arguments.Length)].GetValue(scontext, ccontext, econtext);
 				break;
 		}
 		return result;
