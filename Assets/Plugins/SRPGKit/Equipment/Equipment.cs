@@ -16,9 +16,19 @@ public class Equipment : MonoBehaviour {
 
 	Dictionary<string, Formula> runtimeParameters;
 	
+	public void Start() {
+		for(int i = 0; i < equipmentSlots.Length; i++) {
+			equipmentSlots[i] = equipmentSlots[i].NormalizeName();
+		}
+		FindWielder();
+	}
+	
 	void FindWielder() {
-		if(wielder == null) {
+		if(wielder == null && transform.parent != null) {
 			wielder = transform.parent.GetComponent<Character>();
+			if(equippedSlots == null || equippedSlots.Length == 0) {
+				wielder.Equip(this);
+			}
 		}
 	}
 

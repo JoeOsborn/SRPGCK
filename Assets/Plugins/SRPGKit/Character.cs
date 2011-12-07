@@ -41,12 +41,14 @@ public class Character : MonoBehaviour {
 		return GetComponent<WaitSkill>();
 	} }
 	
-	void Start () {
-
+	void Awake () {
+		for(int i = 0; i < equipmentSlots.Length; i++) {
+			equipmentSlots[i] = equipmentSlots[i].NormalizeName();
+		}
 	}
 	
 	public virtual void Reset() {
-		equipmentSlots = new string[]{"left", "right", "head", "body", "accessory"};
+		equipmentSlots = new string[]{"hand", "hand", "head", "body", "accessory"};
 	}
 	
 	//can be modulated by charm, etc
@@ -228,10 +230,11 @@ public class Character : MonoBehaviour {
 		}	
 	}
 	
-	public int GetEmptyEquipmentSlot(string slotType) {
+	public int GetEmptyEquipmentSlot(string slotType, List<int> exceptSlots) {
 		int first = -1;
 		int firstEmpty = -1;
 		for(int i = 0; i < equipmentSlots.Length; i++) {
+			if(exceptSlots.Contains(i)) { continue; }
 			if(equipmentSlots[i] == slotType) {
  				if(!IsEquipmentSlotFull(i)) {
 					if(firstEmpty == -1) { firstEmpty = i; }
@@ -248,18 +251,20 @@ public class Character : MonoBehaviour {
 			return -1;
 		}
 	}
-	
-	public void Equip(Equipment e, int slot) {
+	public void Equip(Equipment e, int slot=-1) {
 		string[] neededSlots = e.equipmentSlots;
 		//free up the desired slot
-		EmptyEquipmentSlot(slot);
+		if(slot != -1) {
+			EmptyEquipmentSlot(slot);
+		}
 		List<int> usedSlots = new List<int>();
 		//free up other slots
+		//FIXME: 2h weapons unequip themselves! pass usedSlots into GetEmpty...
 		foreach(string s in neededSlots) {
-			if(equipmentSlots[slot] == s && !usedSlots.Contains(slot)) {
+			if(slot != -1 && equipmentSlots[slot] == s && !usedSlots.Contains(slot)) {
 				usedSlots.Add(slot);
 			} else {
-				int foundSlot = GetEmptyEquipmentSlot(s);
+				int foundSlot = GetEmptyEquipmentSlot(s, usedSlots);
 				usedSlots.Add(foundSlot);
 			}
 		}
