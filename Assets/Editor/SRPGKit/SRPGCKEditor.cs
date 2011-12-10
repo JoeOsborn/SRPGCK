@@ -10,9 +10,9 @@ public abstract class SRPGCKEditor : Editor {
 	
 	public string lastFocusedControl, newFocusedControl;
 	
-	void UpdateFormulae() {
+	protected virtual void UpdateFormulae() {
 		if(Formulae.GetInstance() == null) {
-			Debug.Log("Need a formulae object somewhere to store formulae!");
+			Debug.LogError("Need a formulae object somewhere to store formulae!");
 		} else {
 			formulaOptions = (new string[]{"Custom"}).Concat(Formulae.GetInstance().formulaNames).ToArray();
 		}

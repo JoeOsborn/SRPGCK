@@ -48,8 +48,8 @@ public class Formulae : MonoBehaviour {
 		runtimeFormulae.Remove(name);
 		int idx = formulaNames.IndexOf(name);
 		if(idx != -1) {
-			formulaNames = formulaNames.Except(new List<string>{name}).ToList();
-			formulae = formulae.Except(new List<Formula>{formulae[idx]}).ToList();
+			formulaNames.RemoveAt(idx);
+			formulae.RemoveAt(idx);
 		}
 	}
 	

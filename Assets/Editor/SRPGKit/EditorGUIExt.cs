@@ -134,13 +134,15 @@ public class EditorGUIExt
 		if(f == null) {
 			f = Formula.Constant(0);
 		}
-		if(f.formulaType == FormulaType.Lookup && 
-			 f.lookupType == LookupType.NamedFormula) {
-			selection = System.Array.IndexOf(formulaOptions, f.lookupReference);
-			lastSelection = selection;
+		if(formulaOptions != null) {
+			if(f.formulaType == FormulaType.Lookup && 
+				 f.lookupType == LookupType.NamedFormula) {
+				selection = System.Array.IndexOf(formulaOptions, f.lookupReference);
+				lastSelection = selection;
+			}
+			selection = EditorGUILayout.Popup("Formula:", selection, formulaOptions);
 		}
-		selection = EditorGUILayout.Popup("Formula:", selection, formulaOptions);
-		if(selection == 0) {
+		if(selection == 0 || formulaOptions == null) {
 			if(lastSelection != selection) {
 				f = Formula.Constant(0);
 			}
@@ -155,7 +157,7 @@ public class EditorGUIExt
 				FormulaCompiler.CompileInPlace(f);
 			}
 			EditorGUILayout.EndHorizontal();
-		} else if(lastSelection != selection) {
+		} else if(lastSelection != selection && formulaOptions != null) {
 			f = Formula.Lookup(formulaOptions[selection], LookupType.NamedFormula);
 		}
 		EditorGUILayout.EndVertical();

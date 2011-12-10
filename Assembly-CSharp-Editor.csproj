@@ -49,6 +49,7 @@
      <Compile Include="Assets\Editor\SRPGKit\EditorGUIExt.cs" />
      <Compile Include="Assets\Editor\SRPGKit\EquipmentEditor.cs" />
      <Compile Include="Assets\Editor\SRPGKit\FormulaCompiler.cs" />
+     <Compile Include="Assets\Editor\SRPGKit\FormulaeEditor.cs" />
      <Compile Include="Assets\Editor\SRPGKit\MapEditor.cs" />
      <Compile Include="Assets\Editor\SRPGKit\SRPGCKEditor.cs" />
      <Compile Include="Assets\Editor\SRPGKit\Sasa.Parsing\ParseException.cs" />
