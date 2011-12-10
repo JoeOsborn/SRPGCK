@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 
 [CustomEditor(typeof(WaitSkill))]
-//TODO: AttackSkillEditor and MoveSkillEditor.
 public class WaitSkillEditor : SRPGCKEditor {
 	protected WaitSkill ws;
   public override void OnEnable() {

@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 
 [CustomEditor(typeof(StandardPickTileMoveSkill))]
-//TODO: AttackSkillEditor and MoveSkillEditor.
 public class StandardPickTileMoveSkillEditor : SkillEditor {
 	protected StandardPickTileMoveSkill ms;
   public override void OnEnable() {

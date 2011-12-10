@@ -44,7 +44,7 @@
 	</Reference>
   </ItemGroup>
   <ItemGroup>
-     <Compile Include="Assets\Editor\SRPGKit\AttackSkillEditor.cs" />
+     <Compile Include="Assets\Editor\SRPGKit\ActionSkillEditor.cs" />
      <Compile Include="Assets\Editor\SRPGKit\CharacterEditor.cs" />
      <Compile Include="Assets\Editor\SRPGKit\EditorGUIExt.cs" />
      <Compile Include="Assets\Editor\SRPGKit\EquipmentEditor.cs" />

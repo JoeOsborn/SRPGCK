@@ -12,8 +12,8 @@ public class StandardPickTileMoveSkill : MoveSkill {
 	
 	//strategy
 	public ActionStrategy moveStrategy;
-	public float ZDelta { get { return GetParam("range.z", Formula.Lookup("jump", LookupType.ActorStat).GetValue(this, null, null)); } }
-	public float XYRange { get { return GetParam("range.xy", Formula.Lookup("move", LookupType.ActorStat).GetValue(this, null, null)); } }
+	public float ZDelta { get { return GetParam("range.z", character.GetStat("jump", 3)); } }
+	public float XYRange { get { return GetParam("range.xy", character.GetStat("move", 3)); } }
 	
 	//executor
 	[HideInInspector]

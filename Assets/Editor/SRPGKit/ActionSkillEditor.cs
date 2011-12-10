@@ -3,14 +3,14 @@ using UnityEditor;
 using System.Collections.Generic;
 using System.Linq;
 
-[CustomEditor(typeof(AttackSkill))]
-//TODO: AttackSkillEditor and MoveSkillEditor.
-public class AttackSkillEditor : SkillEditor {	
-	AttackSkill atk;
+[CustomEditor(typeof(ActionSkill))]
+//TODO: ActionSkillEditor and MoveSkillEditor.
+public class ActionSkillEditor : SkillEditor {	
+	ActionSkill atk;
   public override void OnEnable() {
 		base.OnEnable();
-		name = "AttackSkill";
-		atk = target as AttackSkill;
+		name = "ActionSkill";
+		atk = target as ActionSkill;
 	}
 	
 	public override void OnSRPGCKInspectorGUI () {

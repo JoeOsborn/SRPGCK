@@ -87,7 +87,7 @@ public class Skill : MonoBehaviour {
 			 		 s.currentTarget == character && //only react to skills used against our character
 					 reactionSkill && //only react if you're a reaction skill
 					 !s.reactionSkill && //don't react against reaction skills
-					 s is AttackSkill && //only react against targeted skills
+					 s is ActionSkill && //only react against targeted skills
 			 		 ReactionTypesMatch(se); //only react if masks match
 	}
 	protected virtual void SkillApplied(Skill s) {

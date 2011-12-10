@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 [CustomEditor(typeof(Skill))]
-//TODO: AttackSkillEditor and MoveSkillEditor.
+//TODO: ActionSkillEditor and MoveSkillEditor.
 public class SkillEditor : SRPGCKEditor {
 	bool showParameters=true;
 	bool showPassiveEffects=true;

@@ -52,6 +52,7 @@ public class Character : MonoBehaviour {
 	}
 	
 	public virtual void Reset() {
+		characterName = name;
 		equipmentSlots = new string[]{"hand", "hand", "head", "body", "accessory"};
 	}
 	
@@ -192,8 +193,14 @@ public class Character : MonoBehaviour {
 		return StatusEffects.Any(se => se.effectType == statName);
 	}
 	
-	public float GetBaseStat(string statName) {
+	public float GetBaseStat(string statName, float fallback=-1) {
 		MakeStatsIfNecessary();
+		if(!HasStat(statName)) {
+			if(fallback == -1) {
+				Debug.LogError("No fallback for missing stat "+statName);	
+			}
+			return fallback;
+		}
 		return runtimeStats[statName].GetCharacterValue(this);	
 	}
 
@@ -221,8 +228,8 @@ public class Character : MonoBehaviour {
 		}
 	}
 	
-	public float GetStat(string statName) {
-		float stat = GetBaseStat(statName);
+	public float GetStat(string statName, float fallback=-1) {
+		float stat = GetBaseStat(statName, fallback);
 /*		Debug.Log("base "+statName+":"+stat);*/
 		foreach(Equipment e in Equipment) {
 			foreach(StatEffect se in e.passiveEffects) {

@@ -1,7 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-public class AttackSkill : Skill {
+public class ActionSkill : Skill {
 	public StatEffectGroup[] targetEffects;
 	
 	//tile generation strategy (line/range/cone/etc)

@@ -153,7 +153,6 @@ public class DebugGUI : MonoBehaviour {
 			Map map = transform.parent.GetComponent<Map>();
 			StandardPickTileMoveSkill ms = ac.moveSkill as StandardPickTileMoveSkill;
 			MoveIO io = ms.moveIO;
-			//TODO:0:0: confirmation for action skills, e.g. AttackSkill
 			if(ms.isActive && io != null) {
 				if(io is PickTileMoveIO) {
 					PickTileMoveIO mio = io as PickTileMoveIO;
@@ -199,8 +198,8 @@ public class DebugGUI : MonoBehaviour {
 			}
 
 			foreach(Skill skill in ac.Skills) {
-				if(!skill.isPassive && skill.isActive && skill is AttackSkill) {
-					AttackSkill ask = skill as AttackSkill;
+				if(!skill.isPassive && skill.isActive && skill is ActionSkill) {
+					ActionSkill ask = skill as ActionSkill;
 					ActionIO aio = ask.io;
 					if(aio != null) {
 						if(a.IsLocalPlayer(ac.EffectiveTeamID)) {

@@ -219,6 +219,7 @@ public class EditorGUIExt
 
 	public static StatEffect[] StatEffectFoldout(string name, StatEffect[] effects, StatEffectContext ctx, string[] formulaOptions, string lastFocusedControl, ref bool foldout, bool pluralize=true) {
 		EditorGUILayout.BeginVertical();
+		if(effects == null) { effects = new StatEffect[0]; }
 		StatEffect[] newEffects = effects;
 		foldout = EditorGUILayout.Foldout(foldout, ""+effects.Length+" "+name+(!pluralize || effects.Length == 1 ? "" : "s"));
 		if(foldout) {
@@ -291,6 +292,7 @@ public class EditorGUIExt
 
 	public static List<Parameter> ParameterFoldout(string name, List<Parameter> parameters, string[] formulaOptions, string lastFocusedControl, ref bool foldout) {
 		EditorGUILayout.BeginVertical();
+		if(parameters == null) { parameters = new List<Parameter>(); }
 		List<Parameter> newParams = parameters;
 		foldout = EditorGUILayout.Foldout(foldout, ""+parameters.Count+" "+name+(parameters.Count == 1 ? "" : "s"));
 		if(foldout) {

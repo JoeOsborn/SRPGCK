@@ -4,7 +4,7 @@ using System.Collections.Generic;
 [System.Serializable]
 public class ActionIO : ITilePickerOwner {
 	[System.NonSerialized]
-	public AttackSkill owner;
+	public ActionSkill owner;
 	
 	[HideInInspector]
 	public bool isActive;
