@@ -69,8 +69,6 @@
      <Compile Include="Assets\Plugins\SRPGKit\Skills\Move Skills\MoveExecutor.cs" />
      <Compile Include="Assets\Plugins\SRPGKit\Skills\Move Skills\MoveIO.cs" />
      <Compile Include="Assets\Plugins\SRPGKit\Skills\Move Skills\MoveSkill.cs" />
-     <Compile Include="Assets\Plugins\SRPGKit\Skills\Move Skills\MoveStrategy.cs" />
-     <Compile Include="Assets\Plugins\SRPGKit\Skills\Move Skills\Movement-Grid\GridMoveStrategy.cs" />
      <Compile Include="Assets\Plugins\SRPGKit\Skills\Move Skills\Movement-Grid\MoveIO\ContinuousWithinTilesMoveIO.cs" />
      <Compile Include="Assets\Plugins\SRPGKit\Skills\Move Skills\Movement-Grid\MoveIO\PickTileMoveIO.cs" />
      <Compile Include="Assets\Plugins\SRPGKit\Skills\Move Skills\Movement-Radial\MoveIO\ContinuousMoveIO.cs" />
@@ -81,7 +79,9 @@
      <Compile Include="Assets\Plugins\SRPGKit\Skills\Move Skills\StandardPickTileMoveSkill.cs" />
      <Compile Include="Assets\Plugins\SRPGKit\Skills\Skill Effects\Formula.cs" />
      <Compile Include="Assets\Plugins\SRPGKit\Skills\Skill Effects\Formulae.cs" />
+     <Compile Include="Assets\Plugins\SRPGKit\Skills\Skill Effects\Parameter.cs" />
      <Compile Include="Assets\Plugins\SRPGKit\Skills\Skill Effects\StatEffect.cs" />
+     <Compile Include="Assets\Plugins\SRPGKit\Skills\Skill Effects\StatEffectGroup.cs" />
      <Compile Include="Assets\Plugins\SRPGKit\Skills\Skill Effects\StatusEffect.cs" />
      <Compile Include="Assets\Plugins\SRPGKit\Skills\Skill.cs" />
      <Compile Include="Assets\Plugins\SRPGKit\Skills\Wait Skill\WaitIO.cs" />

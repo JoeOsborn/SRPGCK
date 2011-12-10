@@ -2,6 +2,8 @@ using UnityEngine;
 using System.Collections.Generic;
 
 public class AttackSkill : Skill {
+	public StatEffectGroup[] targetEffects;
+	
 	//tile generation strategy (line/range/cone/etc)
 	public ActionStrategy strategy;
 	
@@ -37,6 +39,7 @@ public class AttackSkill : Skill {
 		base.Reset();
 		skillName = "Attack";
 		skillGroup = "Act";
+		isPassive = false;
 		if(!HasParam("range.z.up.min")) {
 			AddParam("range.z.up.min", Formula.Constant(0));
 		}
@@ -66,8 +69,8 @@ public class AttackSkill : Skill {
 			AddParam("radius.xy", Formula.Constant(0));
 		}
 
-		if(!HasParam("damage")) {
-			AddParam("damage", Formula.Constant(0));
+		if(!HasParam("hitType")) {
+			AddParam("hitType", Formula.Constant(0));
 		}
 		
 		if(targetEffects == null || targetEffects.Length == 0) {
@@ -76,7 +79,7 @@ public class AttackSkill : Skill {
 			healthDamage.effectType = StatEffectType.Augment;
 			healthDamage.reactableTypes = new[]{"attack"};
 			healthDamage.value = Formula.Lookup("damage", LookupType.ActorSkillParam);
-			targetEffects = new StatEffect[]{healthDamage};
+			targetEffects = new StatEffectGroup[]{new StatEffectGroup{effects=new StatEffect[]{healthDamage}}};
 		}
 		
 	}
@@ -97,16 +100,16 @@ public class AttackSkill : Skill {
 		io.requireConfirmation = requireConfirmation;
 		io.indicatorCycleLength = indicatorCycleLength;
 		
-		strategy.zRangeUpMin = GetParam("range.z.up.min");
-		strategy.zRangeUpMax = GetParam("range.z.up.max");
-		strategy.zRangeDownMin = GetParam("range.z.down.min");
-		strategy.zRangeDownMax = GetParam("range.z.down.max");
-		strategy.xyRangeMin = GetParam("range.xy.min");
-		strategy.xyRangeMax = GetParam("range.xy.max");
+		strategy.zRangeUpMin = GetParam("range.z.up.min", 0);
+		strategy.zRangeUpMax = GetParam("range.z.up.max", 1);
+		strategy.zRangeDownMin = GetParam("range.z.down.min", 0);
+		strategy.zRangeDownMax = GetParam("range.z.down.max", 2);
+		strategy.xyRangeMin = GetParam("range.xy.min", 1);
+		strategy.xyRangeMax = GetParam("range.xy.max", 1);
 
-		strategy.zRadiusUp = GetParam("radius.z.up");
-		strategy.zRadiusDown = GetParam("radius.z.down");
-		strategy.xyRadius = GetParam("radius.xy");
+		strategy.zRadiusUp = GetParam("radius.z.up", 0);
+		strategy.zRadiusDown = GetParam("radius.z.down", 0);
+		strategy.xyRadius = GetParam("radius.xy", 0);
 		
 		/*	
 		executor.owner = this;
@@ -144,16 +147,21 @@ public class AttackSkill : Skill {
 	
 	public override void ApplySkill() {
 		//TODO: support reaction abilities and support abilities that depend on the attacking ability
-		//find any units within target tiles
-		targets = new List<Character>();
-		foreach(PathNode pn in io.targetTiles) {
-			Character c = map.CharacterAt(pn.pos);
-			if(c != null) {
-				targets.Add(c);
-			}
+		int hitType = (int)GetParam("hitType", 0);
+		currentHitType = hitType;
+		if(targetEffects.Length == 0) {
+			Debug.LogError("No effects in attack skill "+skillName+"!");
 		}
-		ApplyEffectsTo(targetEffects, targets);
+		if(targetEffects[hitType].Length > 0) {
+			targets = new List<Character>();
+			foreach(PathNode pn in io.targetTiles) {
+				Character c = map.CharacterAt(pn.pos);
+				if(c != null) {
+					targets.Add(c);
+				}
+			}
+			ApplyEffectsTo(targetEffects[hitType].effects, targets);
+		}
 		base.ApplySkill();
 	}
-	
 }

@@ -4,30 +4,31 @@ using System.Linq;
 
 [System.Serializable]
 public class Skill : MonoBehaviour {
-	public bool isPassive=false;
 	[HideInInspector]
 	public bool isActive=false;
 	public string skillName;
 	public string skillGroup="";
 	public int skillSorting = 0;
 
+	public bool replacesSkill=false;
 	public string replacedSkill = "";
 	public int replacementPriority=0;
 		
+	public bool isPassive=true;
+
 	public StatEffect[] passiveEffects;
 	
-	public List<string> parameterNames;
-	public List<Formula> parameterFormulae;
+	public List<Parameter> parameters;
 
-	Dictionary<string, Formula> runtimeParameters;
-	
-	public StatEffect[] targetEffects;
+	protected Dictionary<string, Formula> runtimeParameters;
 	
 	//only relevant to targeted skills, sadly
 	[HideInInspector]
 	public List<Character> targets;
 	[HideInInspector]
 	public Character currentTarget;
+	[HideInInspector]
+	public int currentHitType;
 	
 	//reaction
 	public bool reactionSkill=false;
@@ -35,7 +36,7 @@ public class Skill : MonoBehaviour {
 	public StatChange[] reactionStatChangesApplied, reactionStatChangesApplier;
 	//tile validation strategy (line/range/cone/etc)
 	public ActionStrategy reactionStrategy;
-	public StatEffect[] reactionEffects;
+	public StatEffectGroup[] reactionEffects;
 
 	[HideInInspector]
 	public Skill currentReactedSkill = null;
@@ -96,21 +97,23 @@ public class Skill : MonoBehaviour {
 
 		foreach(StatEffectRecord se in fx) {
 			currentReactedEffect = se;
+			//TODO: should reactions get rolled up somehow so the skill doesn't get applied multiple times?
 			if(ReactsAgainst(s, se)) {
 				currentTarget = s.character;
-				float v = GetParam("reaction.chance");
-				if(Random.value < v) {
+				int hitType = (int)GetParam("reaction.hitType", 0);
+				currentHitType = hitType;
+				if(reactionEffects[hitType].Length > 0) {
 					reactionStrategy.owner = this;
-					reactionStrategy.zRangeUpMin = GetParam("reaction.range.z.up.min");
-					reactionStrategy.zRangeUpMax = GetParam("reaction.range.z.up.max");
-					reactionStrategy.zRangeDownMin = GetParam("reaction.range.z.down.min");
-					reactionStrategy.zRangeDownMax = GetParam("reaction.range.z.down.max");
-					reactionStrategy.xyRangeMin = GetParam("reaction.range.xy.min");
-					reactionStrategy.xyRangeMax = GetParam("reaction.range.xy.max");
+					reactionStrategy.zRangeUpMin = GetParam("reaction.range.z.up.min", 0);
+					reactionStrategy.zRangeUpMax = GetParam("reaction.range.z.up.max", 1);
+					reactionStrategy.zRangeDownMin = GetParam("reaction.range.z.down.min", 0);
+					reactionStrategy.zRangeDownMax = GetParam("reaction.range.z.down.max", 2);
+					reactionStrategy.xyRangeMin = GetParam("reaction.range.xy.min", 1);
+					reactionStrategy.xyRangeMax = GetParam("reaction.range.xy.max", 1);
 
-					reactionStrategy.zRadiusUp = GetParam("reaction.radius.z.up");
-					reactionStrategy.zRadiusDown = GetParam("reaction.radius.z.down");
-					reactionStrategy.xyRadius = GetParam("reaction.radius.xy");
+					reactionStrategy.zRadiusUp = GetParam("reaction.radius.z.up", 0);
+					reactionStrategy.zRadiusDown = GetParam("reaction.radius.z.down", 0);
+					reactionStrategy.xyRadius = GetParam("reaction.radius.xy", 0);
 					
 					PathNode[] reactionTiles = reactionStrategy.GetReactionTiles(currentTarget.TilePosition);
 					targets = new List<Character>();
@@ -120,9 +123,9 @@ public class Skill : MonoBehaviour {
 							targets.Add(c);
 						}
 					}
-					ApplyEffectsTo(reactionEffects, targets);
-					map.BroadcastMessage("SkillApplied", this, SendMessageOptions.DontRequireReceiver);
+					ApplyEffectsTo(reactionEffects[hitType].effects, targets);
 				}
+				map.BroadcastMessage("SkillApplied", this, SendMessageOptions.DontRequireReceiver);
 			}
 		}
 		currentReactedSkill = null;
@@ -132,8 +135,8 @@ public class Skill : MonoBehaviour {
 	void MakeParametersIfNecessary() {
 		if(runtimeParameters == null) {
 			runtimeParameters = new Dictionary<string, Formula>();
-			for(int i = 0; i < parameterNames.Count; i++) {
-				runtimeParameters.Add(parameterNames[i].NormalizeName(), parameterFormulae[i]);
+			for(int i = 0; i < parameters.Count; i++) {
+				runtimeParameters.Add(parameters[i].Name.NormalizeName(), parameters[i].Formula);
 			}
 		}
 	}
@@ -143,9 +146,16 @@ public class Skill : MonoBehaviour {
 		return runtimeParameters.ContainsKey(pname);
 	}
 	
-	public float GetParam(string pname) {
+	public float GetParam(string pname, float fallback=float.NaN) {
 		MakeParametersIfNecessary();
 		//TODO: let all other equipment and skills modulate this param?
+		if(!HasParam(pname)) { 
+			if(float.IsNaN(fallback)) {
+				Debug.LogError("No fallback for missing param "+pname);
+			}
+/*			Debug.Log("using fallback "+fallback+" for "+pname);*/
+			return fallback; 
+		}
 		return runtimeParameters[pname].GetValue(this, null);
 	}
 	
@@ -166,8 +176,7 @@ public class Skill : MonoBehaviour {
 	public void AddParam(string pname, Formula f) {
 		MakeParametersIfNecessary();
 		runtimeParameters[pname] = f;
-		parameterNames = parameterNames.Concat(new string[]{pname}).ToList();
-		parameterFormulae = parameterFormulae.Concat(new Formula[]{f}).ToList();
+		parameters = parameters.Concat(new Parameter[]{new Parameter(pname, f)}).ToList();
 	}
 	
 	protected virtual void ApplyEffectsTo(StatEffect[] effects, List<Character> targs) {

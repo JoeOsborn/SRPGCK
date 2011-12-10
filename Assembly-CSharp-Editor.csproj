@@ -44,9 +44,20 @@
 	</Reference>
   </ItemGroup>
   <ItemGroup>
+     <Compile Include="Assets\Editor\SRPGKit\AttackSkillEditor.cs" />
+     <Compile Include="Assets\Editor\SRPGKit\CharacterEditor.cs" />
      <Compile Include="Assets\Editor\SRPGKit\EditorGUIExt.cs" />
+     <Compile Include="Assets\Editor\SRPGKit\EquipmentEditor.cs" />
+     <Compile Include="Assets\Editor\SRPGKit\FormulaCompiler.cs" />
      <Compile Include="Assets\Editor\SRPGKit\MapEditor.cs" />
+     <Compile Include="Assets\Editor\SRPGKit\SRPGCKEditor.cs" />
+     <Compile Include="Assets\Editor\SRPGKit\Sasa.Parsing\ParseException.cs" />
+     <Compile Include="Assets\Editor\SRPGKit\Sasa.Parsing\Pratt\PrattParser.cs" />
+     <Compile Include="Assets\Editor\SRPGKit\SemanticException.cs" />
+     <Compile Include="Assets\Editor\SRPGKit\SkillEditor.cs" />
+     <Compile Include="Assets\Editor\SRPGKit\StandardPickTileMoveSkillEditor.cs" />
      <Compile Include="Assets\Editor\SRPGKit\StatusEffectEditor.cs" />
+     <Compile Include="Assets\Editor\SRPGKit\WaitSkillEditor.cs" />
      <Compile Include="Assets\Editor\SpriteSystem\BillboardEditor.cs" />
      <Compile Include="Assets\Editor\SpriteSystem\SpriteEditor.cs" />
      <Compile Include="Assets\Editor\iTween\iTweenEventDataEditor.cs" />

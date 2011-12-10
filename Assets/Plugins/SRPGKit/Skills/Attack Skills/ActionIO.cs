@@ -28,7 +28,7 @@ public class ActionIO : ITilePickerOwner {
 	public float indicatorCycleLength=1.0f;
 	
 	//pick
-	
+	[SerializeField]
 	TilePicker tilePicker;
 	
 	public PathNode[] targetTiles;
@@ -41,6 +41,7 @@ public class ActionIO : ITilePickerOwner {
 	}
 	
 	public virtual void Update () {
+		tilePicker.owner = this;
 		if(owner.character == null || !owner.character.isActive) { return; }
 		if(!isActive) { return; }
 		if(!owner.arbiter.IsLocalPlayer(owner.character.EffectiveTeamID)) {

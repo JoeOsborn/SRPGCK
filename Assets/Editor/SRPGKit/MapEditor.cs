@@ -20,27 +20,27 @@ class TileBounds {
 [CustomEditor(typeof(Map))]
 
 public class MapEditor : Editor {
-	enum EditMode {
+	public enum EditMode {
 		AddRemove=0,
 		Reshape=1,
 		Paint=2
 	};
-	bool draggingInMap=false;
-	static int editZ=0;
-	static bool showDimensions=true;
-	static bool editModeChanged=true;
-	static EditMode editMode=EditMode.AddRemove;
-	Vector2 lastSize=Vector2.zero;
-	float lastSideLength=0, lastH=0;
-	Vector3 lastPos=Vector3.zero;
+	public bool draggingInMap=false;
+	public int editZ=0;
+	public bool showDimensions=true;
+	public bool editModeChanged=true;
+	public EditMode editMode=EditMode.AddRemove;
+	public Vector2 lastSize=Vector2.zero;
+	public float lastSideLength=0, lastH=0;
+	public Vector3 lastPos=Vector3.zero;
 	
-	static Vector2 specScrollPos = Vector2.zero;
-	static Texture2D specPlaceholderTexture=null;
-	static int specSelectedSpec=0;
+	public Vector2 specScrollPos = Vector2.zero;
+	public Texture2D specPlaceholderTexture=null;
+	public int specSelectedSpec=0;
 	
-	static bool makeInvisibleTiles=false;
-	static float[] sideInsets={0,0,0,0,0,0};
-	static float[] cornerInsets={0,0,0,0};
+	public bool makeInvisibleTiles=false;
+	public float[] sideInsets={0,0,0,0,0,0};
+	public float[] cornerInsets={0,0,0,0};
 	
 	List<TileBounds> tiles=new List<TileBounds>();
 	

@@ -22,6 +22,10 @@ public class Scheduler : MonoBehaviour {
 		characters.Remove(c);
 	}
 	
+	public bool ContainsCharacter(Character c) {
+		return characters.Contains(c);
+	}
+	
 	public virtual void SkillApplied(Skill s) {
 		
 	}

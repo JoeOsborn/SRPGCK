@@ -119,6 +119,7 @@ public class CTScheduler : Scheduler {
 				CTCharacter ctc = c.GetComponent<CTCharacter>();
 				float maxCT = ctc.MaxCT;
 				float speed = ctc.Speed;
+/*				Debug.Log("Tick up by "+speed);*/
 				ctc.CT = Mathf.Min(ctc.CT+speed, maxCT);
 			}
 		}

@@ -6,6 +6,8 @@ using System.Linq;
 public class ActionStrategy {
 	public bool canCrossWalls=true;
 	public bool canEffectCrossWalls=true;
+	public bool canCrossEnemies=true;
+	public bool canEffectCrossEnemies=true;
 
 	[System.NonSerialized]
 	[HideInInspector]
@@ -36,6 +38,9 @@ public class ActionStrategy {
 	public virtual PathDecision PathNodeIsValidRange(Vector3 start, PathNode pn, Character c) {
 		float dz = pn.position.z - start.z;
 		//TODO: replace with some type of collision check?
+		if(c != null && !canCrossEnemies) {
+			if(c.EffectiveTeamID != owner.character.EffectiveTeamID) { return PathDecision.Invalid; }			
+		}
 		if(canCrossWalls && (dz == 0 ? 
 			(zRangeDownMin > 0 && zRangeUpMin != 0) : 
 			(dz < 0 ? (dz > -zRangeDownMin || dz <= -zRangeDownMax) : 
@@ -49,10 +54,26 @@ public class ActionStrategy {
 		float dz = pn.position.z - start.z;
 		float absDZ = Mathf.Abs(dz);
 		//TODO: replace with some type of collision check?
+		if(c != null && !canEffectCrossEnemies) {
+			if(c.EffectiveTeamID != owner.character.EffectiveTeamID) { return PathDecision.Invalid; }			
+		}
 		if(canEffectCrossWalls && (dz < 0 ? (absDZ > zRadiusUp) : (dz > 0 ? absDZ > zRadiusDown : false))) {
 			return PathDecision.PassOnly;
 		}
 		return PathDecision.Normal;
+	}
+	
+	public virtual PathNode[] GetValidMoves() {
+		Vector3 tc = owner.character.TilePosition;
+		return owner.map.PathsAround(
+			tc, 
+			xyRangeMin, xyRangeMax, 
+			zRangeDownMin, zRangeDownMax, 
+			zRangeUpMin, zRangeUpMax, 
+			true, 
+			false, 
+			PathNodeIsValidRange
+		);
 	}
 	
 	public virtual PathNode[] GetValidActions() {

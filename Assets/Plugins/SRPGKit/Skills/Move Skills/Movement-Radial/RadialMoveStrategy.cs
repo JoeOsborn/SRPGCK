@@ -2,12 +2,13 @@ using UnityEngine;
 using System.Collections.Generic;
 
 [System.Serializable]
-public class RadialMoveStrategy : MoveStrategy {
+public class RadialMoveStrategy : ActionStrategy {
+	//TODO: FIX ME!!
 	public float GetMoveRadius() {
-		return xyRange;
+		return xyRangeMax;
 		//scheduler.limiter / SchedulerTurnMoveAPCost
 	}
 	public float GetJumpHeight() {
-		return zDelta;
+		return zRangeUpMax;
 	}
 }

@@ -27,8 +27,9 @@ public class CTCharacter : MonoBehaviour {
 			FindCharacter();
 			float delta = value-this.CT;
 			character.SetBaseStat("ct", value);
+			float speed = character.GetStat("speed");
 			foreach(StatusEffect se in character.StatusEffects) {
-				se.Tick(delta);
+				se.Tick(delta*(se.ticksInLocalTime ? speed : 1));
 			}
 		}
 	}

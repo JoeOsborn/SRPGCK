@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Linq;
 
 public enum FormulaType {
 	Constant,
@@ -11,6 +12,9 @@ public enum FormulaType {
 	Divide,
 	Exponent,
 	Root,
+	Mean,
+	Min,
+	Max,
 	//must be 2 arguments
 	RandomRange,
 	//must be 3 arguments
@@ -21,25 +25,29 @@ public enum FormulaType {
 	Round,
 	AbsoluteValue,
 	Negate,
-	//4 arguments: if 0 is comparison-type 1, 2; else 3
+	//2 arguments
 	Equal,
 	NotEqual,
 	GreaterThan,
 	GreaterThanOrEqual,
 	LessThan,
 	LessThanOrEqual,
+	BranchIfNotZero,
 	//any number of arguments
 	Any,
 	//2 arguments: if true, 0; else 1
-	IfLookupSuccessful,
-	//up to 6 arguments, of which any can be null (in which case this returns arg[5] or 0 if arg[5] is null)
-	//front, sides, back, left, right, default
+	LookupSuccessful,
+	//up to 8 arguments, of which any can be null (in which case this returns last arg or fails if last arg is null)
+	//front, left, right, back, away, sides, towards, default
 	BranchApplierSide,
-	BranchAppliedSide
+	BranchAppliedSide,
+	//even number of arguments: cases, then formulae
+	BranchPDF,
+	Undefined
 }
 
 public enum LookupType {
-	Undefined,
+	Auto,
 	//lookupReference is the skill param/character stat
 	SkillParam,
 	ActorStat,
@@ -52,9 +60,10 @@ public enum LookupType {
 	NamedFormula,
 	//lookupReference is the skill param
 	ReactedSkillParam,
-	//lookupReference is the stat name
+	//lookupReference is unused
 	ReactedEffectType,
-	//lookupReference is the effect type
+	//TODO: AppliedEffectType?
+	//lookupReference is the status effect type
 	ActorStatusEffect,
 	TargetStatusEffect
 }
@@ -68,8 +77,18 @@ public enum FormulaMergeMode {
 	Sum
 }
 
+public interface IFormulaElement {
+	
+}
+
 [System.Serializable]
-public class Formula {
+public class Formula : IFormulaElement {
+	//only used in editor:
+	public string text="", name="";
+	public string compilationError="";
+	
+	//normal vars from here on
+
 	public FormulaType formulaType;
 	
 	//constant
@@ -82,12 +101,29 @@ public class Formula {
 	public FormulaMergeMode mergeMode;
 	//eq
 	public string[] equipmentSlots, equipmentCategories;
-	//reacted skill effect lookup; could use lookupReference for stat name, or could leave it blank
-	public string[] reactableCategories;
-	public StatChangeType reactedStatChange;
+	//effect lookup (e.g. "this reaction skill recovers MP equal to the amount used by the attacker")
+	public string[] searchReactedStatNames; //we ignore lookupRef in this case
+	public StatChangeType[] searchReactedStatChanges;
+	public string[] searchReactedEffectCategories;
 	
 	//everything else
 	public Formula[] arguments; //x+y+z or x*y*z or x^y (y default 2) or y√x (y default 2)
+	
+	public void CopyFrom(Formula f) {
+/*		Debug.Log("copy from "+f);*/
+		if(f == null) { return; }
+		formulaType = f.formulaType;
+		constantValue = f.constantValue;
+		lookupReference = f.lookupReference;
+		lookupType = f.lookupType;
+		mergeMode = f.mergeMode;
+		equipmentSlots = f.equipmentSlots;
+		equipmentCategories = f.equipmentCategories;
+		searchReactedStatNames = f.searchReactedStatNames;
+		searchReactedStatChanges = f.searchReactedStatChanges;
+		searchReactedEffectCategories = f.searchReactedEffectCategories;
+		arguments = f.arguments;
+	}
 	
 	public static Formula Constant(float c) {
 		Formula f = new Formula();
@@ -95,7 +131,7 @@ public class Formula {
 		f.constantValue = c;
 		return f;
 	}
-	public static Formula Lookup(string n, LookupType type) {
+	public static Formula Lookup(string n, LookupType type=LookupType.Auto) {
 		Formula f = new Formula();
 		f.formulaType = FormulaType.Lookup;
 		f.lookupReference = n;
@@ -104,24 +140,32 @@ public class Formula {
 	}
 	
 	public float GetCharacterValue(Character ccontext) {
-		return GetValue(null, ccontext);
+		return GetValue(null, ccontext, null);
 	}
 	
 	bool firstTime = true;
 	public float GetValue(Skill scontext=null, Character ccontext=null, Equipment econtext=null) {
 		if(firstTime) {
-			lookupReference = lookupReference.NormalizeName();
+			lookupReference = lookupReference == null ? "" : lookupReference.NormalizeName();
 			firstTime = false;
 		}
 		float result=-1;
 		switch(formulaType) {
-			case FormulaType.Constant: 
+			case FormulaType.Constant:
 				result = constantValue;
 				break;
 			case FormulaType.Lookup: 
 				result = Formulae.Lookup(lookupReference, lookupType, scontext, ccontext, econtext, this);
 				break;
 			case FormulaType.ReactedEffectValue:
+				if(scontext == null) {
+					Debug.LogError("No skill context.");
+					return -1;
+				}
+				if(scontext.currentReactedEffect == null) {
+					Debug.LogError("Skill context is reacting to no particular effect.");
+					return -1;
+				}
 				result = scontext.currentReactedEffect.value;
 				break;
 			case FormulaType.Add: 
@@ -168,6 +212,15 @@ public class Formula {
 			  	}
 				}
 				break;
+			case FormulaType.Mean: 
+				result = arguments.Sum(a => a.GetValue(scontext, ccontext, econtext)) / arguments.Count();
+				break;
+			case FormulaType.Min: 
+				result = arguments.Min(a => a.GetValue(scontext, ccontext, econtext));
+				break;
+			case FormulaType.Max: 
+				result = arguments.Max(a => a.GetValue(scontext, ccontext, econtext));
+				break;
 			case FormulaType.RandomRange: {
 				float low=0, high=1;
 				if(arguments.Length >= 1) {
@@ -207,52 +260,55 @@ public class Formula {
 				result = -1 * arguments[0].GetValue(scontext, ccontext, econtext);
 				break;
 			case FormulaType.Equal:
-				result = 
-					arguments[0].GetValue(scontext, ccontext, econtext) == arguments[1].GetValue(scontext, ccontext, econtext) ?
-					 arguments[2].GetValue(scontext, ccontext, econtext) : arguments[3].GetValue(scontext, ccontext, econtext);
+				result = arguments[0].GetValue(scontext, ccontext, econtext) == arguments[1].GetValue(scontext, ccontext, econtext) ? 1 : 0;
 				break;
 			case FormulaType.NotEqual:
-				result = 
-					arguments[0].GetValue(scontext, ccontext, econtext) != arguments[1].GetValue(scontext, ccontext, econtext) ?
-					 arguments[2].GetValue(scontext, ccontext, econtext) : arguments[3].GetValue(scontext, ccontext, econtext);
+				result = arguments[0].GetValue(scontext, ccontext, econtext) != arguments[1].GetValue(scontext, ccontext, econtext) ? 1 : 0;
 				break;
 		  case FormulaType.GreaterThan:
-		  	result = 
-		  		arguments[0].GetValue(scontext, ccontext, econtext) > arguments[1].GetValue(scontext, ccontext, econtext) ?
-		  		 arguments[2].GetValue(scontext, ccontext, econtext) : arguments[3].GetValue(scontext, ccontext, econtext);
+				result = arguments[0].GetValue(scontext, ccontext, econtext) > arguments[1].GetValue(scontext, ccontext, econtext) ? 1 : 0;
 		  	break;
 		  case FormulaType.GreaterThanOrEqual:
-		  	result = 
-		  		arguments[0].GetValue(scontext, ccontext, econtext) >= arguments[1].GetValue(scontext, ccontext, econtext) ?
-		  		 arguments[2].GetValue(scontext, ccontext, econtext) : arguments[3].GetValue(scontext, ccontext, econtext);
+				result = arguments[0].GetValue(scontext, ccontext, econtext) >= arguments[1].GetValue(scontext, ccontext, econtext) ? 1 : 0;
 		  	break;
 			case FormulaType.LessThan:
-				result = 
-					arguments[0].GetValue(scontext, ccontext, econtext) < arguments[1].GetValue(scontext, ccontext, econtext) ?
-					 arguments[2].GetValue(scontext, ccontext, econtext) : arguments[3].GetValue(scontext, ccontext, econtext);
+				result = arguments[0].GetValue(scontext, ccontext, econtext) < arguments[1].GetValue(scontext, ccontext, econtext) ? 1 : 0;
 				break;
 			case FormulaType.LessThanOrEqual:
-				result = 
-					arguments[0].GetValue(scontext, ccontext, econtext) <= arguments[1].GetValue(scontext, ccontext, econtext) ?
-					 arguments[2].GetValue(scontext, ccontext, econtext) : arguments[3].GetValue(scontext, ccontext, econtext);
+				result = arguments[0].GetValue(scontext, ccontext, econtext) <= arguments[1].GetValue(scontext, ccontext, econtext) ? 1 : 0;
 				break;
 			case FormulaType.Any:
 				result = arguments[Random.Range(0, arguments.Length)].GetValue(scontext, ccontext, econtext);
 				break;
-				//2 arguments: if true, 0; else 1
-			case FormulaType.IfLookupSuccessful:
-				bool lookupSuccessful = Formulae.CanLookup(lookupReference, lookupType, scontext, ccontext, econtext, this);
-				if(lookupSuccessful) {
-					result = arguments[0].GetValue(scontext, ccontext, econtext);
-				} else {
-					result = arguments[1].GetValue(scontext, ccontext, econtext);
-				}
+			case FormulaType.LookupSuccessful:
+				result = Formulae.CanLookup(lookupReference, lookupType, scontext, ccontext, econtext, this) ? 1 : 0;
+				break;
+			case FormulaType.BranchIfNotZero:
+				result = arguments[0].GetValue(scontext, ccontext, econtext) != 0 ?
+				 	arguments[1].GetValue(scontext, ccontext, econtext) : 
+					arguments[2].GetValue(scontext, ccontext, econtext);
 				break;
 			case FormulaType.BranchApplierSide:
 				result = FacingSwitch(StatEffectTarget.Applied, scontext, ccontext, econtext);
 				break;
 			case FormulaType.BranchAppliedSide:
 				result = FacingSwitch(StatEffectTarget.Applier, scontext, ccontext, econtext);
+				break;
+			case FormulaType.BranchPDF: 
+				result = -1;
+				float rval = Random.value;
+				float val = 0;
+				int halfLen = arguments.Length/2;
+				for(int i = 0; i < halfLen; i++) {
+					val += arguments[i].GetValue(scontext, ccontext, econtext);
+					if(val >= rval) {
+						result = arguments[i+halfLen].GetValue(scontext, ccontext, econtext);
+						break;
+					}
+				}
+				if(result == -1) {
+					Debug.LogError("PDF adds up to less than 1");
+				}
 				break;
 		}
 		return result;
@@ -263,10 +319,15 @@ public class Formula {
 		Back,
 		Left,
 		Right,
-		Away
+		Away,
+		Towards
 	};
 		
 	protected float FacingSwitch(StatEffectTarget target, Skill scontext, Character ccontext, Equipment econtext) {
+		if(scontext == null) { 
+			Debug.LogError("Relative facing not available for non-attack/reaction skill effects."); 
+			return -1;
+		}
 		Character applier = scontext.character;
 		Character applied = scontext.currentTarget;
 		CharacterPointing pointing = CharacterPointing.Front;
@@ -304,25 +365,35 @@ public class Formula {
 		}
 		
 		//order:
-		//front, left, right, back, away, sides, default
+		//front, left, right, back, away, sides, towards, default
 		//must have null entries
-		if(arguments.Length != 7) {
+		if(arguments.Length != 8) {
 			Debug.Log("Bad facing switch in skill "+scontext.skillName);
 		}
 		if(pointing == CharacterPointing.Front && arguments[0] != null) {
+			//front
 			return arguments[0].GetValue(scontext, ccontext, econtext);
 		} else if(pointing == CharacterPointing.Left && arguments[1] != null) {
+			//left
 			return arguments[1].GetValue(scontext, ccontext, econtext);
 		} else if(pointing == CharacterPointing.Right && arguments[2] != null) {
+			//right
 			return arguments[2].GetValue(scontext, ccontext, econtext);
 		} else if(pointing == CharacterPointing.Back && arguments[3] != null) {
+			//back
 			return arguments[3].GetValue(scontext, ccontext, econtext);
 		} else if(pointing == CharacterPointing.Away && arguments[4] != null) {
+			//away
 			return arguments[4].GetValue(scontext, ccontext, econtext);
 		} else if((pointing == CharacterPointing.Left || pointing == CharacterPointing.Right) && arguments[5] != null) {
+			//sides
 			return arguments[5].GetValue(scontext, ccontext, econtext);
-		} else if(arguments[6] != null) {
+		} else if((pointing != CharacterPointing.Away) && arguments[6] != null) {
+			//towards
 			return arguments[6].GetValue(scontext, ccontext, econtext);
+		} else if(arguments[7] != null) {
+			//default
+			return arguments[7].GetValue(scontext, ccontext, econtext);
 		} else {
 			Debug.LogError("No valid branch for pointing "+pointing+" in skill "+scontext.skillName);
 			return -1;

@@ -28,6 +28,7 @@ public class PickTileMoveIO : MoveIO, ITilePickerOwner {
 	
 	override public void Update () {
 		base.Update();
+		tilePicker.owner = this;
 		if(owner.character == null || !owner.character.isActive) { return; }
 		if(!isActive) { return; }
 		if(!owner.arbiter.IsLocalPlayer(owner.character.EffectiveTeamID)) {
@@ -58,8 +59,7 @@ public class PickTileMoveIO : MoveIO, ITilePickerOwner {
 		base.PresentMoves();
 		tilePicker.requireConfirmation = requireConfirmation;
 		tilePicker.map = owner.map;
-		GridMoveStrategy ms = owner.Strategy as GridMoveStrategy;
-		PathNode[] destinations = ms.GetValidMoves();
+		PathNode[] destinations = owner.Strategy.GetValidMoves();
 		MoveExecutor me = owner.Executor;
 		Vector3 charPos = owner.map.InverseTransformPointWorld(me.position);
 		overlay = owner.map.PresentGridOverlay(

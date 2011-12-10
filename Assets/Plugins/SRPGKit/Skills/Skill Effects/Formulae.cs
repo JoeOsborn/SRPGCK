@@ -2,8 +2,10 @@ using UnityEngine;
 using System.Linq;
 using System.Collections.Generic;
 
+[ExecuteInEditMode]
 public class Formulae : MonoBehaviour {
 	[HideInInspector]
+	[System.NonSerialized]
 	public static Formulae instance;
 	
 	public List<string> formulaNames;
@@ -20,10 +22,42 @@ public class Formulae : MonoBehaviour {
 		}
 	}
 	
-	public void Awake() {
-		if(instance != null) { Destroy(this); }
-		else { instance = this; }
+	public static Formulae GetInstance() {
+		if(instance == null) {
+			object[] fs = FindObjectsOfType(typeof(Formulae));
+			if(fs.Length > 0) {
+				instance = fs[0] as Formulae;
+			}
+		}
+		return instance;
 	}
+	
+	public void AddFormula(Formula f, string name) {
+		MakeFormulaeIfNecessary();
+		runtimeFormulae.Add(name, f);
+		int idx = formulaNames.IndexOf(name);
+		if(idx != -1) {
+			formulae[idx] = f;
+		} else {
+			formulaNames.Add(name);
+			formulae.Add(f);
+		}
+	}
+	public void RemoveFormula(string name) {
+		MakeFormulaeIfNecessary();
+		runtimeFormulae.Remove(name);
+		int idx = formulaNames.IndexOf(name);
+		if(idx != -1) {
+			formulaNames = formulaNames.Except(new List<string>{name}).ToList();
+			formulae = formulae.Except(new List<Formula>{formulae[idx]}).ToList();
+		}
+	}
+	
+	public void Awake() {
+		instance = this;
+/*		if(instance != null) { Destroy(this); }
+		else { instance = this; }
+*/	}
 	
 	protected static float LookupEquipmentParamOn(
 		string fname, LookupType type, 
@@ -76,8 +110,10 @@ public class Formulae : MonoBehaviour {
 	) {
 		if(instance == null) { return false; }
 		switch(type) {
-			case LookupType.Undefined:
-				return false;
+			case LookupType.Auto:
+				return (econtext != null && econtext.HasParam(fname)) || 
+							 (scontext != null && scontext.HasParam(fname)) || 
+							 (ccontext != null && ccontext.HasStat(fname));
 			case LookupType.SkillParam:
 				return scontext.HasParam(fname);
 			case LookupType.ActorStat:
@@ -128,8 +164,9 @@ public class Formulae : MonoBehaviour {
 				return false;
 			case LookupType.ReactedEffectType:
 				if(scontext != null) {
+					string[] fnames = f.searchReactedStatNames;
 					return scontext.currentReactedSkill.lastEffects.
-						Where(fx => fx.Matches(fname, f.reactedStatChange, f.reactableCategories)).
+						Where(fx => fx.Matches(fnames, f.searchReactedStatChanges, f.searchReactedEffectCategories)).
 						Count() > 0;
 				}
 				return false;
@@ -143,11 +180,11 @@ public class Formulae : MonoBehaviour {
 	) {
 		if(instance == null) { return -1; }
 		switch(type) {
-			case LookupType.Undefined:
-				Debug.LogError("Undefined lookup type for "+fname+". This will never work!");
-				return -1;
+			case LookupType.Auto:
+				return (econtext != null ? econtext.GetParam(fname) :
+						 	 (scontext != null ? scontext.GetParam(fname) :
+						   (ccontext != null ? ccontext.GetStat(fname) : -1)));
 			case LookupType.SkillParam:
-			//TODO: look up skill by slot, name, type?
 				return scontext.GetParam(fname);
 			case LookupType.ActorStat:
 				if(scontext != null) { return scontext.character.GetStat(fname); }
@@ -170,6 +207,7 @@ public class Formulae : MonoBehaviour {
 				Debug.LogError("lookup semantics not defined for own status effect "+fname);
 				return -1;
 			case LookupType.ActorSkillParam:
+				//TODO: look up skill by slot, name, type?
 				if(scontext != null) { return scontext.GetParam(fname); }
 				Debug.LogError("Cannot find skill param "+fname);
 				return -1;
@@ -194,6 +232,10 @@ public class Formulae : MonoBehaviour {
 				Debug.LogError("Cannot find target skill param "+fname);
 				return -1;
 			case LookupType.NamedFormula:
+				if(!instance.HasFormula(fname)) { 
+					Debug.LogError("Missing formula "+fname);
+					return -1; 
+				}
 				return instance.LookupFormula(fname).GetValue(scontext, ccontext, econtext);
 			case LookupType.ReactedSkillParam:
 				if(scontext != null) {
@@ -203,8 +245,10 @@ public class Formulae : MonoBehaviour {
 				return -1;
 			case LookupType.ReactedEffectType:
 				if(scontext != null) {
+					//ignore lookupRef
+					string[] fnames = f.searchReactedStatNames;
 					var results = scontext.currentReactedSkill.lastEffects.
-						Where(fx => fx.Matches(fname, f.reactedStatChange, f.reactableCategories)).
+						Where(fx => fx.Matches(fnames, f.searchReactedStatChanges, f.searchReactedEffectCategories)).
 						Select(fx => fx.value);
 					switch(f.mergeMode) {
 						case FormulaMergeMode.Sum:
@@ -220,8 +264,11 @@ public class Formulae : MonoBehaviour {
 						case FormulaMergeMode.Last:
 							return results.Last();
 					}
+				} else {
+					Debug.LogError("Skill effect lookups require a skill context.");
+					return -1;
 				}
-				Debug.LogError("Cannot find reacted effects for "+fname);
+				Debug.LogError("Cannot find reacted effects for "+f);
 				return -1;
 		}
 		Debug.LogError("failed to look up "+type+" "+fname+" with context s:"+scontext+", c:"+ccontext+", e:"+econtext+" and formula "+f);
@@ -229,12 +276,14 @@ public class Formulae : MonoBehaviour {
 	}
 
 	public bool HasFormula(string fname) {
+		if(fname == null) { return false; }
 		MakeFormulaeIfNecessary();
 		return runtimeFormulae.ContainsKey(fname);
 	}
 	
 	public Formula LookupFormula(string fname) {
 		MakeFormulaeIfNecessary();
+		if(!HasFormula(fname)) { return null; }
 		return runtimeFormulae[fname];
 	}
 }

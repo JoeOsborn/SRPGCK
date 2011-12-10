@@ -11,9 +11,9 @@ public class StandardPickTileMoveSkill : MoveSkill {
 	public float indicatorCycleLength=1.0f;
 	
 	//strategy
-	public GridMoveStrategy moveStrategy;
-	public float ZDelta { get { return GetParam("range.z"); } }
-	public float XYRange { get { return GetParam("range.xy"); } }
+	public ActionStrategy moveStrategy;
+	public float ZDelta { get { return GetParam("range.z", Formula.Lookup("jump", LookupType.ActorStat).GetValue(this, null, null)); } }
+	public float XYRange { get { return GetParam("range.xy", Formula.Lookup("move", LookupType.ActorStat).GetValue(this, null, null)); } }
 	
 	//executor
 	[HideInInspector]
@@ -26,7 +26,7 @@ public class StandardPickTileMoveSkill : MoveSkill {
 	public override MoveIO IO { get {
 		return moveIO;
 	} }
-	public override MoveStrategy Strategy { get {
+	public override ActionStrategy Strategy { get {
 		return moveStrategy;
 	} }
 	public override MoveExecutor Executor { get {
@@ -37,7 +37,7 @@ public class StandardPickTileMoveSkill : MoveSkill {
 		base.Start();
 		moveIO = new PickTileMoveIO();
 		if(moveStrategy == null) {
-			moveStrategy = new GridMoveStrategy();
+			moveStrategy = new ActionStrategy();
 		}
 		moveExecutor = new MoveExecutor();
 		moveIO.owner = this;
@@ -58,8 +58,12 @@ public class StandardPickTileMoveSkill : MoveSkill {
 		moveIO.requireConfirmation = requireConfirmation;
 		moveIO.indicatorCycleLength = indicatorCycleLength;
 		
-		moveStrategy.zDelta = ZDelta;
-		moveStrategy.xyRange = XYRange;
+		moveStrategy.zRangeDownMin = 0;
+		moveStrategy.zRangeDownMax = ZDelta;
+		moveStrategy.zRangeUpMin = 0;
+		moveStrategy.zRangeUpMax = ZDelta;
+		moveStrategy.xyRangeMin = 0;
+		moveStrategy.xyRangeMax = XYRange;
 		
 		moveExecutor.animateTemporaryMovement = animateTemporaryMovement;
 		moveExecutor.XYSpeed = XYSpeed;

@@ -14,8 +14,8 @@ public class Equipment : MonoBehaviour {
 	public string[] equipmentCategories;
 	
 	public StatEffect[] passiveEffects;
-	public List<string> parameterNames;
-	public List<Formula> parameterFormulae;
+
+	public List<Parameter> parameters;
 	
 	public StatusEffect[] statusEffectPrefabs;
 
@@ -40,8 +40,8 @@ public class Equipment : MonoBehaviour {
 	void MakeParametersIfNecessary() {
 		if(runtimeParameters == null) {
 			runtimeParameters = new Dictionary<string, Formula>();
-			for(int i = 0; i < parameterNames.Count; i++) {
-				runtimeParameters.Add(parameterNames[i].NormalizeName(), parameterFormulae[i]);
+			for(int i = 0; i < parameters.Count; i++) {
+				runtimeParameters.Add(parameters[i].Name.NormalizeName(), parameters[i].Formula);
 			}
 		}
 	}
@@ -54,7 +54,7 @@ public class Equipment : MonoBehaviour {
 	public float GetParam(string pname) {
 		MakeParametersIfNecessary();
 		FindWielder();
-		return runtimeParameters[pname].GetValue(null, wielder, this);
+		return runtimeParameters[pname].GetValue(null, null, this);
 	}
 	
 	public void EquipOn(Character c, int[] slots) {

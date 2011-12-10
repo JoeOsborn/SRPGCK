@@ -3,7 +3,7 @@ using UnityEngine;
 [System.Serializable]
 public abstract class MoveSkill : Skill {
 	public abstract MoveIO IO { get; }
-	public abstract MoveStrategy Strategy { get; }
+	public abstract ActionStrategy Strategy { get; }
 	public abstract MoveExecutor Executor { get; }
 
 	public override void Start() {

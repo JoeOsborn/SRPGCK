@@ -3,26 +3,26 @@ using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 
-public class Character : MonoBehaviour {	
-	[System.NonSerialized]
-	public Map map=null;
+public class Character : MonoBehaviour {		
+	//TODO: cache
+	public Map map { get { return transform.parent == null ? null : transform.parent.GetComponent<Map>(); } }
 
 	//I believe this is a stored property here in character, 
 	//not merely a query to scheduler for whether active==this 
 	//(what if you can have multiple active dudes?)
+	[HideInInspector]
 	public bool isActive=false;
-
-	public int teamID;
 	
+	public string characterName;
+	public int teamID;
 	public Vector3 transformOffset = new Vector3(0, 5, 0);
 	
-	[HideInInspector]
-	public Dictionary<string, Formula> stats;
-
-	public List<string> statNames;
-	public List<Formula> statValues;
+	public List<Parameter> stats;
 	
 	public string[] equipmentSlots;
+
+	[HideInInspector]
+	public Dictionary<string, Formula> runtimeStats;
 	
 	//skills are monobehaviors (though I wish I could make them components)
 	//that are added/configured normally. skill instances can have a "path" that
@@ -40,6 +40,10 @@ public class Character : MonoBehaviour {
 	public WaitSkill waitSkill { get { 
 		return GetComponent<WaitSkill>();
 	} }
+	
+	public override string ToString() {
+		return characterName;
+	}
 	
 	void Awake () {
 		for(int i = 0; i < equipmentSlots.Length; i++) {
@@ -98,16 +102,11 @@ public class Character : MonoBehaviour {
 	
 	void Update () {
 		if(map == null) {
-			if(this.transform.parent != null) {
-				map = this.transform.parent.GetComponent<Map>();
-				if(map != null && map.scheduler != null) {
-					map.scheduler.AddCharacter(this);
-				}
-			}
-			if(map == null) { 
-				Debug.Log("Characters must be children of Map objects!");
-				return; 
-			}
+			Debug.Log("Characters must be children of Map objects!");
+			return; 
+		}
+		if(!map.scheduler.ContainsCharacter(this)) {
+			map.scheduler.AddCharacter(this);
 		}
 		//Five things are going on here:
 		//we're ACTIVATING/DEACTIVATING
@@ -117,25 +116,25 @@ public class Character : MonoBehaviour {
 		//and, eventually, we'll be MOVING in an animated way
 		//ideally, we will move as many of these as possible out of the Character script.
 		//ACTIVATING/DEACTIVATING should live in a "Scheduler" GameObject and script (though deactivation requests may be sent by other scripts to the scheduler)
-		//CALCULATING should live in a MoveStrategy script on the Character gameobject
+		//CALCULATING should live in an ActionStrategy script on the Character gameobject
 		//DISPLAYING should live in a MoveFeedback script on the Character gameobject
 		//REQUESTING should live in a MoveInput script on the Character gameobject
 		//MOVING should live in a MoveExecutor script on the Character gameobject
 		//continuous movement (e.g. via keyboard) could be a MoveInput with a trivial Executor (pos=dest) and a collision-detecting strategy and any type of MoveFeedback
 		//  if it's timed continuous movement, the Scheduler might halt the move by its own prerogative.
 
-		//MoveStrategy concerns the rules regarding "If I am character X in state Y at position Z, what tiles T[] can I reach?"
+		//ActionStrategy concerns the rules regarding "If I am character X in state Y at position Z, what tiles T[] can I reach?"
 		//  It also validates the move and returns a success status, for use in the MoveExecutor (consider FFT's "Teleport", which may fail)
 		//MoveIO concerns the rules and processes and state that display:
-			//"Reachable Tiles" T[], provided by MoveStrategy
+			//"Reachable Tiles" T[], provided by ActionStrategy
 			//"Candidate Tiles" Tc[], optionally requested by MoveInput
 			//"Decided Tiles" Td[], optionally requested by MoveExecutor. May or may not hide T[] and/or Tc[].
 		//MoveIO also interprets player input (by mouse/keyboard/etc), optionally requests the temporary display of Tc[] during the decision-making process, and once finished requests that the MoveExecutor perform the actual move.
-		//MoveExecutor optionally sets Td[] on the MoveFeedback while performing the actual move (pursuant to MoveStrategy's success flag). 
+		//MoveExecutor optionally sets Td[] on the MoveFeedback while performing the actual move (pursuant to ActionStrategy's success flag). 
 		//  MoveExecutors may be reversible.
 		//  This is where the character's Unity transform is manipulated and the map is updated to reflect the character's new position.
 		
-		//For example, an FFT character would have a MoveStrategy that did a flood-fill on the map with Move and Jump calculations (or, if they had Fly or Teleport, other MoveStrategies), a MoveIO script using an Overlay and an update loop that's click-based, and a MoveExecutor that animates from pos to dest, taking jumps and so on into account -- all this wrapped in a CT-based scheduler.
+		//For example, an FFT character would have a ActionStrategy that did a flood-fill on the map with Move and Jump calculations (or, if they had Fly or Teleport, other MoveStrategies), a MoveIO script using an Overlay and an update loop that's click-based, and a MoveExecutor that animates from pos to dest, taking jumps and so on into account -- all this wrapped in a CT-based scheduler.
 		//Valkyria Chronicles would use a phase-based scheduler with user-decided turns based on resource expenditure (rather than just "use all units"), a movement strategy that offers a circular radius around the player, movement feedback that shows that radius (or shows, in lighter tint, the terrain reachable before the player's action points expire; with a darker tint, the unreachable terrain), MoveInput that works off of keyboard, mouse, or controller, and a MoveExecutor that merely updates the character's position and lets the map know about it.
 		//This system is opt-in. Valkyria movement could work simply with a Scheduler and a custom script that moves the character according to keyboard input while it's active, updating the map (if any) as needed.
 	}	
@@ -146,10 +145,10 @@ public class Character : MonoBehaviour {
 	}
 	
 	void MakeStatsIfNecessary() {
-		if(stats == null) {
-			stats = new Dictionary<string, Formula>();
-			for(int i = 0; i < statNames.Count; i++) {
-				stats.Add(statNames[i].NormalizeName(), statValues[i]);
+		if(runtimeStats == null) {
+			runtimeStats = new Dictionary<string, Formula>();
+			for(int i = 0; i < stats.Count; i++) {
+				runtimeStats.Add(stats[i].Name, stats[i].Formula);
 			}
 		}
 	}
@@ -162,6 +161,7 @@ public class Character : MonoBehaviour {
 			string replPath = x.skillGroup+"//"+x.skillName;
 			int replPri = x.replacementPriority;
 			return !allSkills.Any(y => 
+				y.replacesSkill &&
 				y.replacedSkill == replPath && 
 				y.replacementPriority > replPri);
 		}).ToArray();
@@ -185,7 +185,7 @@ public class Character : MonoBehaviour {
 	
 	public bool HasStat(string statName) {
 		MakeStatsIfNecessary();
-		return stats.ContainsKey(statName);
+		return runtimeStats.ContainsKey(statName);
 	}
 
 	public bool HasStatusEffect(string statName) {
@@ -194,15 +194,15 @@ public class Character : MonoBehaviour {
 	
 	public float GetBaseStat(string statName) {
 		MakeStatsIfNecessary();
-		return stats[statName].GetCharacterValue(this);	
+		return runtimeStats[statName].GetCharacterValue(this);	
 	}
 
 	public void SetBaseStat(string statName, float amt) {
 		MakeStatsIfNecessary();
 		if(!HasStat(statName)) {
-			stats[statName] = Formula.Constant(amt);
+			runtimeStats[statName] = Formula.Constant(amt);
 		} else {
-			Formula f = stats[statName];
+			Formula f = runtimeStats[statName];
 			if(f.formulaType == FormulaType.Constant) {
 				f.constantValue = amt;
 			} else {
@@ -213,7 +213,7 @@ public class Character : MonoBehaviour {
 
 	public void AdjustBaseStat(string statName, float amt) {
 		MakeStatsIfNecessary();
-		Formula f = stats[statName];
+		Formula f = runtimeStats[statName];
 		if(f.formulaType == FormulaType.Constant) {
 			f.constantValue += amt;
 		} else {
@@ -223,27 +223,33 @@ public class Character : MonoBehaviour {
 	
 	public float GetStat(string statName) {
 		float stat = GetBaseStat(statName);
+/*		Debug.Log("base "+statName+":"+stat);*/
 		foreach(Equipment e in Equipment) {
 			foreach(StatEffect se in e.passiveEffects) {
 				if(se.statName == statName) {
-					stat = se.ModifyStat(stat, null, this, e);
+					stat = se.ModifyStat(stat, null, null, e);
+/*					Debug.Log("equip modify to "+stat);*/
 				}
 			}
 		}
 		foreach(Skill s in Skills) {
 			foreach(StatEffect se in s.passiveEffects) {
 				if(se.statName == statName) {
-					stat = se.ModifyStat(stat, s, this, null);
+					stat = se.ModifyStat(stat, s, null, null);
+/*					Debug.Log("skill modify to "+stat);*/
 				}
 			}
 		}
 		foreach(StatusEffect s in StatusEffects) {
 			foreach(StatEffect se in s.passiveEffects) {
 				if(se.statName == statName) {
+					//todo: pass status effect as context
 					stat = se.ModifyStat(stat, null, this, null);
+/*					Debug.Log("status modify to "+stat);*/
 				}
 			}
 		}
+//		Debug.Log("final "+statName+":"+stat);
 		return stat;
 	}
 	

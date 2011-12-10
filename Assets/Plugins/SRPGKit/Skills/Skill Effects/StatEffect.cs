@@ -2,6 +2,11 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 
+public enum StatEffectContext {
+	Normal,
+	Action
+};
+
 public enum StatEffectTarget {
 	Applier,
 	Applied
@@ -24,6 +29,10 @@ public enum StatChangeType {
 public struct StatChange {
 	public string statName;
 	public StatChangeType changeType;
+	public StatChange(string stat, StatChangeType change) {
+		statName = stat;
+		changeType = change;
+	}
 }
 
 [System.Serializable]
@@ -52,6 +61,9 @@ public class StatEffect {
 		StatEffectRecord ignore;
 		return ModifyStat(stat, scontext, ccontext, econtext, out ignore);
 	}
+	
+	//editor only
+	public bool editorShowsReactableTypes=true;
 }
 
 [System.Serializable]
@@ -63,18 +75,23 @@ public class StatEffectRecord {
 		value = v;
 	}
 	
-	public bool Matches(string statName, StatChangeType change, string[] reactableTypes) {
-		bool statNameOK = statName == null || statName == "" || statName == effect.statName;
-		bool changeOK = false;
-		switch(change) {
-			case StatChangeType.Any: changeOK = true; break;
-			case StatChangeType.NoChange: changeOK = value == 0; break;
-			case StatChangeType.Change: changeOK = value != 0; break;
-			case StatChangeType.Increase: changeOK = value > 0; break;
-			case StatChangeType.Decrease: changeOK = value < 0; break;
-		}
+	public bool Matches(string[] statNames, StatChangeType[] changes, string[] reactableTypes) {
+		bool statNameOK = statNames == null || statNames.Length == 0 || statNames.Contains(effect.statName);
+		bool changeOK = changes == null || changes.Length == 0 || changes.Any(delegate(StatChangeType c) {
+			switch(c) {
+				case StatChangeType.Any: return true;
+				case StatChangeType.NoChange: return value == 0;
+				case StatChangeType.Change: return value != 0;
+				case StatChangeType.Increase: return value > 0;
+				case StatChangeType.Decrease: return value < 0;
+			}
+			return false;
+		});
 		bool typesOK = reactableTypes == null || reactableTypes.Length == 0 || reactableTypes.All(t => effect.reactableTypes.Contains(t));
 		return statNameOK && changeOK && typesOK;
+	}
+	public bool Matches(string statName, StatChangeType change, string[] reactableTypes) {
+		return Matches(new string[]{statName}, new StatChangeType[]{change}, reactableTypes);
 	}
 	public bool Matches(StatChange[] changes, string[] reactableTypes) {
 		if(changes == null || changes.Length == 0) {

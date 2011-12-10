@@ -82,7 +82,7 @@ public class ContinuousWithinTilesMoveIO : MoveIO {
 	}
 		
 	override public void PresentMoves() {
-		PathNode[] destinations = (owner.Strategy as GridMoveStrategy).GetValidMoves();
+		PathNode[] destinations = owner.Strategy.GetValidMoves();
 		overlay = owner.map.PresentGridOverlay(
 			owner.skillName, owner.character.gameObject.GetInstanceID(), 
 			new Color(0.2f, 0.3f, 0.9f, 0.7f),
