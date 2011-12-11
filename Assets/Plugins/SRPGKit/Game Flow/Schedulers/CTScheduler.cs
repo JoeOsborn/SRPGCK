@@ -117,10 +117,8 @@ public class CTScheduler : Scheduler {
 			//and tick up CT on everybody by their effective speed
 			foreach(Character c in characters) {
 				CTCharacter ctc = c.GetComponent<CTCharacter>();
-				float maxCT = ctc.MaxCT;
-				float speed = ctc.Speed;
 /*				Debug.Log("Tick up by "+speed);*/
-				ctc.CT = Mathf.Min(ctc.CT+speed, maxCT);
+				ctc.Tick();
 			}
 		}
 		//otherwise, do nothing

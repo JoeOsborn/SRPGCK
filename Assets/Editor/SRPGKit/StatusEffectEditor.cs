@@ -22,7 +22,7 @@ public class StatusEffectEditor : SRPGCKEditor {
 		GUILayout.BeginHorizontal();
 		se.usesDuration = EditorGUILayout.Toggle("Time-Limited", se.usesDuration);
 		if(se.usesDuration) {
-			se.ticksInLocalTime = EditorGUILayout.Toggle("Ticks with Speed", se.ticksInLocalTime);
+			se.ticksInLocalTime = EditorGUILayout.Toggle("Uses Char. Spd", se.ticksInLocalTime);
 			GUILayout.EndHorizontal();
 			GUILayout.BeginHorizontal();
 			se.tickDuration = (float)EditorGUILayout.IntField((se.ticksInLocalTime ? "CT" : "Global") + " Ticks", (int)se.tickDuration);

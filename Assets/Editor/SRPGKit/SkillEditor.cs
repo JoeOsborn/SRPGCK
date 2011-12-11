@@ -30,9 +30,6 @@ public class SkillEditor : SRPGCKEditor {
 			s.replacedSkill = EditorGUILayout.TextField("Skill", s.replacedSkill).NormalizeName();
 			s.replacementPriority = EditorGUILayout.IntField("Priority", s.replacementPriority);
 		}
-		EditorGUILayout.Space();
-
-		s.isPassive = EditorGUILayout.Toggle("Passive Skill", s.isPassive);
 		
 		EditorGUILayout.Space();
 		//parameters LATER: group parameters by used component (e.g. reaction. params near reaction)
@@ -42,7 +39,7 @@ public class SkillEditor : SRPGCKEditor {
 		s.passiveEffects = EditorGUIExt.StatEffectFoldout("Passive Effect", s.passiveEffects, StatEffectContext.Normal, formulaOptions, lastFocusedControl, ref showPassiveEffects);
 	
 		EditorGUILayout.Space();
-		s.reactionSkill = EditorGUILayout.Toggle("Is Reaction Skill", s.reactionSkill);
+		s.reactionSkill = EditorGUILayout.Toggle("Reaction Skill", s.reactionSkill);
 		if(s.reactionSkill) {
 			GUILayout.Label("Reaction Triggers");
 			EditorGUILayout.BeginHorizontal(GUILayout.Width(Screen.width-32));

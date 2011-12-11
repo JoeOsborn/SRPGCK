@@ -242,7 +242,7 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 			f.lookupType = LookupType.TargetStat;
 			return f;
 		});
-		LookupOn("skill", (parser) => {
+		LookupOn("skill", (parser) => { //TODO: let this search on the name/path to the skill
 			Formula f = new Formula();
 			f.formulaType = FormulaType.Lookup;
 			f.lookupType = LookupType.SkillParam;
@@ -460,6 +460,9 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 					if(ife is Formula) {
 						cases.Add(ife as Formula);
 					} else if(ife is Identifier && ((ife as Identifier).Name) == "default") {
+						if(defaultFormula != null) {
+							throw new SemanticException("Switch may not have more than one default response");
+						}
 						expectingDefaultFormula = true;
 					}
 					if(parser.Token.Id != ":") {

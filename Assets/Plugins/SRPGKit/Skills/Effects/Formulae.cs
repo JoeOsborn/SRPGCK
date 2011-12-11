@@ -96,7 +96,7 @@ public class Formulae : MonoBehaviour {
 		if(ccontext != null) {
 			var equips = ccontext.Equipment.Where(eq => 
 				eq.Matches(f.equipmentSlots, f.equipmentCategories) &&
-				eq.HasParam(fname)
+				(fname == null || eq.HasParam(fname))
 			);
 			return equips.Count() > 0;
 		}

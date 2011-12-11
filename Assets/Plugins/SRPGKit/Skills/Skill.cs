@@ -192,10 +192,12 @@ public class Skill : MonoBehaviour {
 			float distance = Vector3.Distance(ttp, ctp);
 			float angle = Mathf.Atan2(ttp.x-ctp.x, ttp.y-ctp.y);
 			SetParam("arg.distance", distance);
+			SetParam("arg.mdistance", Mathf.Abs(ttp.x-ctp.x)+Mathf.Abs(ttp.y-ctp.y)+Mathf.Abs(ttp.z-ctp.z));
+			SetParam("arg.mdistance.xy", Mathf.Abs(ttp.x-ctp.x)+Mathf.Abs(ttp.y-ctp.y));
 			SetParam("arg.dx", Mathf.Abs(ttp.x-ctp.x));
 			SetParam("arg.dy", Mathf.Abs(ttp.y-ctp.y));
 			SetParam("arg.dz", Mathf.Abs(ttp.z-ctp.z));
-			SetParam("arg.xyAngle", angle);
+			SetParam("arg.angle.xy", angle);
 			foreach(StatEffect se in effects) {
 				StatEffectRecord effect=null;
 				switch(se.target) {

@@ -25,12 +25,7 @@ public class CTCharacter : MonoBehaviour {
 		}
 		set {
 			FindCharacter();
-			float delta = value-this.CT;
 			character.SetBaseStat("ct", value);
-			float speed = character.GetStat("speed");
-			foreach(StatusEffect se in character.StatusEffects) {
-				se.Tick(delta*(se.ticksInLocalTime ? speed : 1));
-			}
 		}
 	}
 	virtual public float Speed {
@@ -60,6 +55,16 @@ public class CTCharacter : MonoBehaviour {
 		set {
 			_hasActed = value;
 		}
+	}
+	
+	virtual public void Tick() {
+		if(CT < MaxCT) {
+			float speed = character.GetStat("speed");
+			character.SetBaseStat("ct", Mathf.Min(CT+speed, MaxCT));
+			foreach(StatusEffect se in character.StatusEffects) {
+				se.Tick(se.ticksInLocalTime ? speed : 1);
+			}
+		}	
 	}
 	
 	virtual public float PerActivationCTCost {
