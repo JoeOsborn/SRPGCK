@@ -817,7 +817,6 @@ public class Map : MonoBehaviour {
 		go.transform.parent = this.transform;
 		GridOverlay ov = go.AddComponent<GridOverlay>();
 		ov.destinations = destinations;
-		ov.positions = CoalesceTiles(destinations);
 		ov.color = color;
 		ov.selectedColor = selectedColor;
 		ov.category = category;
@@ -833,7 +832,6 @@ public class Map : MonoBehaviour {
 		GameObject go = new GameObject();
 		go.transform.parent = this.transform;
 		RadialOverlay ov = go.AddComponent<RadialOverlay>();
-		//Q: Is it proper to convert these into world coordinates here? should we expect tile coords instead? hrm hrm
 		ov.type = RadialOverlayType.Sphere;
 		ov.origin = TransformPointWorld(origin);
 		ov.tileRadius = radius;
@@ -855,7 +853,6 @@ public class Map : MonoBehaviour {
 		GameObject go = new GameObject();
 		go.transform.parent = this.transform;
 		RadialOverlay ov = go.AddComponent<RadialOverlay>();
-		//Q: Is it proper to convert these into world coordinates here? should we expect tile coords instead? hrm hrm
 		ov.type = RadialOverlayType.Cylinder;
 		ov.origin = TransformPointWorld(origin);
 		ov.radius = radius*sideLength;
@@ -1134,9 +1131,9 @@ public enum PathDecision {
 
 [System.Serializable]
 public class PathNode {
-	public Vector3 pos;
+	public Vector3 pos=Vector3.zero;
 	public PathNode prev=null;
-	public float distance;
+	public float distance=0;
 	public bool canStop=true;
 	public bool isLeap=false;
 	public PathNode(Vector3 ps, PathNode pr, float dist) {
@@ -1158,22 +1155,16 @@ public class PathNode {
 	public float XYDistanceFrom(Vector3 prevPos) {
 		return (int)(Mathf.Abs(pos.x - prevPos.x)+Mathf.Abs(pos.y - prevPos.y));
 	}
-	public override bool Equals(object obj)
-  {	
-    if (obj is PathNode)
-    {
+	public override bool Equals(object obj) {	
+    if(obj is PathNode) {
       return this.Equals((PathNode)obj);
     }
     return false;
   }
-
-  public bool Equals(PathNode p)
-  {
+  public bool Equals(PathNode p) {
     return p != null && pos == p.pos;
   }
-
-  public override int GetHashCode()
-  {
+  public override int GetHashCode() {
     return pos.GetHashCode();
   }
 };

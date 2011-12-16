@@ -3,6 +3,16 @@ using System.Collections;
 
 [System.Serializable]
 public class MoveIO {
+	public bool supportKeyboard = true;
+	public bool supportMouse = true;
+	
+	public bool requireConfirmation = true;
+
+	public bool lockToGrid = false;
+	public bool performTemporaryMoves = false;
+
+	public float indicatorCycleLength=1.0f;
+
 	[System.NonSerialized]
 	public MoveSkill owner;
 	

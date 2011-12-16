@@ -153,13 +153,7 @@ public class ActionSkill : Skill {
 			Debug.LogError("No effects in attack skill "+skillName+"!");
 		}
 		if(targetEffects[hitType].Length > 0) {
-			targets = new List<Character>();
-			foreach(PathNode pn in io.targetTiles) {
-				Character c = map.CharacterAt(pn.pos);
-				if(c != null) {
-					targets.Add(c);
-				}
-			}
+			targets = strategy.CharactersForTargetedTiles(io.targetTiles);
 			ApplyEffectsTo(targetEffects[hitType].effects, targets);
 		}
 		base.ApplySkill();

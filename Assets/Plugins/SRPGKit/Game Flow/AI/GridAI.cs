@@ -1,7 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-public class GridAI : MonoBehaviour {
+public class GridAI : AI {
 	public void Start () {
 	
 	}

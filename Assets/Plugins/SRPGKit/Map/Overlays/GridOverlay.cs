@@ -10,7 +10,7 @@ public class GridOverlay : Overlay {
 	
 	public Vector4[] selectedPoints;
 	
-	Texture2D indicatorTex;
+	Texture2D indicatorTex, overlayTex;
 	
 	Color32[] blank;
 	
@@ -21,10 +21,19 @@ public class GridOverlay : Overlay {
 	}
 	public void SetSelectedPoints(Vector4[] points) {
 		selectedPoints = points;
-		if(map == null || selectedColor == Color.clear) { return; }
+		if(map == null || selectedColor == Color.clear || selectedHighlightMaterial == null) { return; }
 		selectedHighlightMaterial.SetTexture("_Boxes", BoundsTextureFor(indicatorTex, selectedPoints));
 	}
+	public void UpdateDestinations(PathNode[] dests) {
+		FindMap();
+		destinations = dests;
+		positions = map.CoalesceTiles(destinations);
+		overlayTex = BoundsTextureFor(overlayTex, positions);
+		shadeMaterial.SetTexture("_Boxes", overlayTex);	
+		SetSelectedPoints(selectedPoints);
+	}
 	protected Texture2D BoundsTextureFor(Texture2D inTex, Vector4[] points) {
+		if(points == null) { points = new Vector4[0]; }
 		int mw = Mathf.NextPowerOfTwo((int)map.size.x);
 		int mh = Mathf.NextPowerOfTwo((int)map.size.y);
 		Texture2D boxTex = (inTex != null && inTex.width == mw && inTex.height == mh) ? 
@@ -80,8 +89,7 @@ public class GridOverlay : Overlay {
 			shadeMaterial.SetVector("_MapTileSize", new Vector4(map.sideLength, map.tileHeight, map.sideLength, 1));
 			shadeMaterial.SetVector("_MapSizeInTiles", new Vector4(mw, 64, mh, 1));
 			shadeMaterial.SetColor("_Color", color);
-			Texture2D boxTex = BoundsTextureFor(null, positions);
-			shadeMaterial.SetTexture("_Boxes", boxTex);
+			UpdateDestinations(destinations);
 		}
 		if(selectedColor != Color.clear) {
 			Shader highlightShader = Shader.Find("Custom/GridOverlayClip");
@@ -100,12 +108,7 @@ public class GridOverlay : Overlay {
 		mr.materials = new Material[]{ shadeMaterial, selectedHighlightMaterial };
 	}
 	
-
-	public bool ContainsPosition(Vector3 hitSpot) {
-		return PositionAt(hitSpot) != null;
-	}
-
-	public PathNode PositionAt(Vector3 hitSpot) {
+	override public PathNode PositionAt(Vector3 hitSpot) {
 		const float ZEpsilon = 0.0015f;
 		foreach(Vector4 p in positions) {
 			if(p.x == Mathf.Floor(hitSpot.x) &&

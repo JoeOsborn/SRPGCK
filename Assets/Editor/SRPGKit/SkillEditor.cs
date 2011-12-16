@@ -30,6 +30,9 @@ public class SkillEditor : SRPGCKEditor {
 			s.replacedSkill = EditorGUILayout.TextField("Skill", s.replacedSkill).NormalizeName();
 			s.replacementPriority = EditorGUILayout.IntField("Priority", s.replacementPriority);
 		}
+
+		s.deactivatesOnApplication = EditorGUILayout.Toggle("Deactivates After Use", s.deactivatesOnApplication);
+
 		
 		EditorGUILayout.Space();
 		//parameters LATER: group parameters by used component (e.g. reaction. params near reaction)

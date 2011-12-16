@@ -3,10 +3,6 @@ using System.Collections.Generic;
 
 [System.Serializable]
 public class PickTileMoveIO : MoveIO, ITilePickerOwner {
-	public bool supportKeyboard = true;
-	public bool supportMouse = true;
-	
-	public bool requireConfirmation = true;
 	public bool RequireConfirmation { get { return requireConfirmation; } }
 	
 	public bool AwaitingConfirmation {
@@ -15,7 +11,6 @@ public class PickTileMoveIO : MoveIO, ITilePickerOwner {
 	}
 	
 	public GridOverlay overlay;
-	public float indicatorCycleLength=1.0f;
 	
 	[SerializeField]
 	TilePicker tilePicker;

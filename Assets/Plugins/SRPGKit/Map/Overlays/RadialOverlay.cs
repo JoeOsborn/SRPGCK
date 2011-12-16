@@ -42,6 +42,13 @@ public class RadialOverlay : Overlay {
 		}
 	}
 	
+	public void UpdateOriginAndRadius(Vector3 pos, float rad) {
+		origin = pos;
+		radius = rad;
+		shadeMaterial.SetVector("_Origin", new Vector4(origin.x, origin.y, origin.z, 1));
+		shadeMaterial.SetFloat("_Radius", radius);		
+	}
+	
 	override protected void CreateShadeMaterial () {
 		if(color == Color.clear) {
 			return;
@@ -59,8 +66,7 @@ public class RadialOverlay : Overlay {
 		}
 		if(shader == null) { return; }
 		shadeMaterial = new Material(shader);
-		shadeMaterial.SetVector("_Origin", new Vector4(origin.x, origin.y, origin.z, 1));
-		shadeMaterial.SetFloat("_Radius", radius);
+		UpdateOriginAndRadius(origin, radius);
 		if(type == RadialOverlayType.Sphere) {
 			shadeMaterial.SetFloat("_Invert", invert ? 1 : 0);
 		} else if(type == RadialOverlayType.Cylinder) { 
@@ -77,25 +83,10 @@ public class RadialOverlay : Overlay {
 		}
 	}
 	
-	
-
-	public bool ContainsPosition(Vector3 hitSpot) {
-		return PositionAt(hitSpot) != null;
-	}
-
-	public PathNode PositionAt(Vector3 hitSpot, bool useOnlyXYDistance=false) {
+	override public PathNode PositionAt(Vector3 hitSpot) {
+		FindMap();
 		//TODO: reachable?
 		//FIXME: don't use origin as-is, transform it first
-		if(map == null) {
-			if(this.transform.parent != null) {
-				map = this.transform.parent.GetComponent<Map>();
-			}
-			if(map == null) { 
-				Debug.Log("Overlay must be child of a map");
-				return null;
-			}
-		}
-		
 		Vector3 tileOrigin = map.InverseTransformPointWorld(origin);
 		float distance = Vector3.Distance(hitSpot, tileOrigin);
 		if(distance > tileRadius) {

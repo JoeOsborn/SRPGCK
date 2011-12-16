@@ -151,8 +151,8 @@ public class DebugGUI : MonoBehaviour {
 		Character ac = s.activeCharacter;
 		if(ac != null) {
 			Map map = transform.parent.GetComponent<Map>();
-			StandardPickTileMoveSkill ms = ac.moveSkill as StandardPickTileMoveSkill;
-			MoveIO io = ms.moveIO;
+			MoveSkill ms = ac.moveSkill;
+			MoveIO io = ms.IO;
 			if(ms.isActive && io != null) {
 				if(io is PickTileMoveIO) {
 					PickTileMoveIO mio = io as PickTileMoveIO;
@@ -221,8 +221,8 @@ public class DebugGUI : MonoBehaviour {
 				}
 			}
 			WaitSkill ws = ac.waitSkill as WaitSkill;
-			WaitIO wio = ws.io;
-			if(ws.isActive && wio != null) {
+			if(ws != null && ws.isActive && ws.io != null) {
+				WaitIO wio = ws.io;
 				if(a.IsLocalPlayer(ac.EffectiveTeamID)) {
 					if(wio.RequireConfirmation && 
 						 wio.AwaitingConfirmation) {

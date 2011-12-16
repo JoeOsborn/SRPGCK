@@ -15,6 +15,8 @@ public class Skill : MonoBehaviour {
 	public int replacementPriority=0;
 		
 	public bool isPassive=true;
+	
+	public bool deactivatesOnApplication=true;
 
 	public StatEffect[] passiveEffects;
 	
@@ -57,6 +59,7 @@ public class Skill : MonoBehaviour {
 	public virtual void DeactivateSkill() {
 		if(isPassive) { return; }
 		isActive = false;
+		map.BroadcastMessage("SkillDeactivated", this, SendMessageOptions.DontRequireReceiver);
 		targets = null;
 		currentTarget = null;
 	}
@@ -72,7 +75,9 @@ public class Skill : MonoBehaviour {
 	}
 	public virtual void ApplySkill() {
 		map.BroadcastMessage("SkillApplied", this, SendMessageOptions.DontRequireReceiver);
-		DeactivateSkill();	
+		if(deactivatesOnApplication) {
+			DeactivateSkill();
+		}
 	}
 	
 	public virtual bool ReactionTypesMatch(StatEffectRecord se) {
@@ -116,13 +121,7 @@ public class Skill : MonoBehaviour {
 					reactionStrategy.xyRadius = GetParam("reaction.radius.xy", 0);
 					
 					PathNode[] reactionTiles = reactionStrategy.GetReactionTiles(currentTarget.TilePosition);
-					targets = new List<Character>();
-					foreach(PathNode pn in reactionTiles) {
-						Character c = map.CharacterAt(pn.pos);
-						if(c != null) {
-							targets.Add(c);
-						}
-					}
+					targets = reactionStrategy.CharactersForTargetedTiles(reactionTiles);
 					ApplyEffectsTo(reactionEffects[hitType].effects, targets);
 				}
 				map.BroadcastMessage("SkillApplied", this, SendMessageOptions.DontRequireReceiver);

@@ -3,6 +3,8 @@ using System.Collections.Generic;
 
 [System.Serializable]
 public class MoveExecutor {
+	public bool lockToGrid=true;
+	
 	[System.NonSerialized]
 	public MoveSkill owner;
 	
@@ -52,16 +54,14 @@ public class MoveExecutor {
 		animNodes.Clear();
 		PathNode cur = pn;
 		do {
+			if(animNodes.Contains(cur)) { Debug.LogError("infinite node loop"); break; }
 			animNodes.Add(cur);
 			cur = cur.prev;
-		} while(cur != null && animNodes.Count < 50);
-		if(animNodes.Count >= 50) {
-			Debug.Log("too many nodes!");
-		}
+		} while(cur != null);
 		pathIndex = animNodes.Count-1;
 		if(animNodes.Count > 1) {
-			currentMoveType = MoveTypeForMove(pn.pos, animNodes[pathIndex-1].pos);
-			owner.character.Facing = FacingForMove(pn.pos, animNodes[pathIndex-1].pos);
+			currentMoveType = MoveTypeForMove(animNodes[pathIndex-1].pos, animNodes[pathIndex].pos);
+			owner.character.Facing = FacingForMove(animNodes[pathIndex-1].pos, animNodes[pathIndex].pos);
 		} else {
 			currentMoveType = MoveType.None;
 		}
@@ -159,9 +159,11 @@ public class MoveExecutor {
 	
 	virtual public void Activate() {
 		Vector3 startPos = owner.character.TilePosition;
-		startPos.x = Mathf.Round(startPos.x);
-		startPos.y = Mathf.Round(startPos.y);
-		startPos.z = Mathf.Round(startPos.z);
+		if(lockToGrid) {
+			startPos.x = Mathf.Round(startPos.x);
+			startPos.y = Mathf.Round(startPos.y);
+			startPos.z = Mathf.Round(startPos.z);
+		}
 		destNode = new PathNode(startPos, null, 0);
 		position = destination;
 		temporaryDestNode = destNode;

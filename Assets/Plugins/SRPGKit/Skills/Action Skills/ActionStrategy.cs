@@ -38,11 +38,12 @@ public class ActionStrategy {
 	public virtual PathDecision PathNodeIsValidRange(Vector3 start, PathNode pn, Character c) {
 		float dz = pn.position.z - start.z;
 		//TODO: replace with some type of collision check?
-		if(c != null && !canCrossEnemies) {
-			if(c.EffectiveTeamID != owner.character.EffectiveTeamID) { return PathDecision.Invalid; }			
+		if(c != null && c != owner.character) {
+			if(c.EffectiveTeamID != owner.character.EffectiveTeamID) { return canCrossEnemies ? PathDecision.PassOnly : PathDecision.Invalid; }
+			else { return PathDecision.PassOnly; }
 		}
 		if(canCrossWalls && (dz == 0 ? 
-			(zRangeDownMin > 0 && zRangeUpMin != 0) : 
+			(zRangeDownMin != 0 && zRangeUpMin != 0) : 
 			(dz < 0 ? (dz > -zRangeDownMin || dz <= -zRangeDownMax) : 
 								(dz < zRangeUpMin || dz >= zRangeUpMax)))) {
 			return PathDecision.PassOnly;
@@ -64,14 +65,20 @@ public class ActionStrategy {
 	}
 	
 	public virtual PathNode[] GetValidMoves() {
-		Vector3 tc = owner.character.TilePosition;
-		return owner.map.PathsAround(
-			tc, 
+		return GetValidMoves(
+			owner.character.TilePosition, 
 			xyRangeMin, xyRangeMax, 
 			zRangeDownMin, zRangeDownMax, 
-			zRangeUpMin, zRangeUpMax, 
-			true, 
-			false, 
+			zRangeUpMin, zRangeUpMax
+		);
+	}
+	public virtual PathNode[] GetValidMoves(Vector3 tc, float xyrmn, float xyrmx, float zrdmn, float zrdmx, float zrumn, float zrumx) {
+		return owner.map.PathsAround(
+			tc, 
+			xyrmn, xyrmx,
+			zrdmn, zrdmx, 
+			zrumn, zrumx, 
+			true, false, 
 			PathNodeIsValidRange
 		);
 	}
@@ -108,5 +115,16 @@ public class ActionStrategy {
 			return GetTargetedTiles(attackerTC);
 		}
 		return new PathNode[]{};
+	}
+	
+	public virtual List<Character> CharactersForTargetedTiles(PathNode[] tiles) {
+		List<Character> targets = new List<Character>();
+		foreach(PathNode pn in tiles) {
+			Character c = owner.map.CharacterAt(pn.pos);
+			if(c != null) {
+				targets.Add(c);
+			}
+		}
+		return targets;
 	}
 }

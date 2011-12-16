@@ -1,7 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-public class Overlay : MonoBehaviour {
+public abstract class Overlay : MonoBehaviour {
 	public string category;
 	public int identifier;
 	public Color color = Color.clear;
@@ -22,16 +22,19 @@ public class Overlay : MonoBehaviour {
 		Destroy(this.renderer);
 	}
 	
-	virtual public void Update() {
+	protected void FindMap() {
 		if(map == null) {
 			if(this.transform.parent != null) {
 				map = this.transform.parent.GetComponent<Map>();
 			}
 			if(map == null) { 
-				Debug.Log("Overlay must be child of a map");
-				return; 
+				Debug.LogError("Overlay must be child of a map");
 			}
-		}
+		}	
+	}
+	
+	virtual public void Update() {
+		FindMap();
 		if(shadeMaterial == null) {
 			CreateShadeMaterial();
 		}
@@ -51,4 +54,10 @@ public class Overlay : MonoBehaviour {
 		MeshRenderer mr = this.gameObject.AddComponent<MeshRenderer>();
 		mr.material = shadeMaterial;
 	}
+	
+	virtual public bool ContainsPosition(Vector3 hitSpot) {
+		return PositionAt(hitSpot) != null;
+	}
+
+	public abstract PathNode PositionAt(Vector3 hitSpot);
 }
