@@ -77,11 +77,9 @@
      <Compile Include="Assets\Plugins\SRPGKit\Skills\Effects\StatusEffect.cs" />
      <Compile Include="Assets\Plugins\SRPGKit\Skills\Move Skills\MoveExecutor.cs" />
      <Compile Include="Assets\Plugins\SRPGKit\Skills\Move Skills\MoveSkill.cs" />
-     <Compile Include="Assets\Plugins\SRPGKit\Skills\Move Skills\Movement-Grid\StandardPickTileMoveSkill.cs" />
-     <Compile Include="Assets\Plugins\SRPGKit\Skills\Move Skills\Movement-Radial\PathDrawingMoveSkill.cs" />
-     <Compile Include="Assets\Plugins\SRPGKit\Skills\Move Skills\Movement-Radial\RadialMoveStrategy.cs" />
      <Compile Include="Assets\Plugins\SRPGKit\Skills\Move Skills\ProxyMoveExecutor.cs" />
      <Compile Include="Assets\Plugins\SRPGKit\Skills\Move Skills\ProxyMoveSkill.cs" />
+     <Compile Include="Assets\Plugins\SRPGKit\Skills\Move Skills\StandardMoveSkill.cs" />
      <Compile Include="Assets\Plugins\SRPGKit\Skills\Skill.cs" />
      <Compile Include="Assets\Plugins\SRPGKit\Skills\Wait Skill\WaitSkill.cs" />
      <Compile Include="Assets\Plugins\SRPGKit\Utilities\StringCleanup.cs" />

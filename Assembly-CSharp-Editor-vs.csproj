@@ -56,7 +56,7 @@
      <Compile Include="Assets\Editor\SRPGKit\Sasa.Parsing\Pratt\PrattParser.cs" />
      <Compile Include="Assets\Editor\SRPGKit\SemanticException.cs" />
      <Compile Include="Assets\Editor\SRPGKit\SkillEditor.cs" />
-     <Compile Include="Assets\Editor\SRPGKit\StandardPickTileMoveSkillEditor.cs" />
+     <Compile Include="Assets\Editor\SRPGKit\StandardMoveSkillEditor.cs" />
      <Compile Include="Assets\Editor\SRPGKit\StatusEffectEditor.cs" />
      <Compile Include="Assets\Editor\SRPGKit\WaitSkillEditor.cs" />
      <Compile Include="Assets\Editor\SpriteSystem\BillboardEditor.cs" />

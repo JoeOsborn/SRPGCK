@@ -7,7 +7,7 @@ public enum WaypointMode {
 	UpToXYRange
 };
 
-public class PathDrawingMoveSkill : MoveSkill {
+public class StandardMoveSkill : MoveSkill {
 	public float moveSpeed=10.0f;
 	
 	public bool drawPath=true;
@@ -16,20 +16,24 @@ public class PathDrawingMoveSkill : MoveSkill {
 	public Color highlightColor = new Color(0.5f, 0.5f, 0.5f, 1.0f);
 	public Material pathMaterial;
 
-	[SerializeField]
-	Vector3 moveDest=Vector3.zero;
+	public Vector3 moveDest=Vector3.zero;
+	[HideInInspector]
 	[SerializeField]
 	Vector3 initialPosition=Vector3.zero;
 	
+	[HideInInspector]
 	[SerializeField]
 	int nodeCount=0;
 
+	[HideInInspector]
 	[SerializeField]
 	PathNode endOfPath;
+	[HideInInspector]
 	[SerializeField]
 	List<PathNode> waypoints;
 	
 	public CharacterController probePrefab;
+	[HideInInspector]
 	[SerializeField]
 	CharacterController probe;
 	[HideInInspector]
@@ -43,15 +47,13 @@ public class PathDrawingMoveSkill : MoveSkill {
 	float lastIndicatorKeyboardMove=0;
 	float indicatorKeyboardMoveThreshold=0.3f;
 
+	public Overlay overlay;
 	//if !lockToGrid
 	public RadialOverlayType overlayType = RadialOverlayType.Sphere;
-	[SerializeField]
-	Overlay overlay;
-	//TODO: expose to editor
 	public bool drawOverlayRim = false;
 	public bool drawOverlayVolume = false;
-	//TODO: support for grid-locking
-	public bool invertOverlay = true; //draw an overlay on the map's exterior
+	//TODO: support for inverting grid-locked overlay
+	public bool invertOverlay = false;
 	
 	[HideInInspector]
 	public float xyRangeSoFar=0;

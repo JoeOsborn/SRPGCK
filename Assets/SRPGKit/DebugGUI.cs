@@ -152,7 +152,7 @@ public class DebugGUI : MonoBehaviour {
 		if(ac != null) {
 			Map map = transform.parent.GetComponent<Map>();
 			MoveSkill ms = ac.moveSkill;
-			StandardPickTileMoveSkill sptms = ms as StandardPickTileMoveSkill;
+			StandardMoveSkill sptms = ms as StandardMoveSkill;
 			if(ms.isActive && sptms != null) {
 				if(a.IsLocalPlayer(ac.EffectiveTeamID)) {
 					MoveExecutor me = ms.Executor;
@@ -162,7 +162,7 @@ public class DebugGUI : MonoBehaviour {
 							bool yesButton=false, noButton=false;
 							OnGUIConfirmation("Move here?", out yesButton, out noButton);
 							if(yesButton) {
-								PathNode pn = sptms.overlay.PositionAt(sptms.IndicatorPosition);
+								PathNode pn = sptms.overlay.PositionAt(sptms.moveDest);
 					      ms.PerformMoveToPathNode(pn);
 					      ms.AwaitingConfirmation = false;
 							}

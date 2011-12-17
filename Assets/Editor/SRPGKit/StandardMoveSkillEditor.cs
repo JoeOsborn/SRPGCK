@@ -3,13 +3,13 @@ using UnityEditor;
 using System.Collections.Generic;
 using System.Linq;
 
-[CustomEditor(typeof(StandardPickTileMoveSkill))]
-public class StandardPickTileMoveSkillEditor : SkillEditor {
-	protected StandardPickTileMoveSkill ms;
+//TODO: uncomment once we expose all the functionality we need. [CustomEditor(typeof(StandardMoveSkill))]
+public class StandardMoveSkillEditor : SkillEditor {
+	protected StandardMoveSkill ms;
   public override void OnEnable() {
 		base.OnEnable();
-		name = "StandardPickTileMoveSkill";
-		ms = target as StandardPickTileMoveSkill;
+		name = "StandardMoveSkill";
+		ms = target as StandardMoveSkill;
 	}
 	
 	public override void OnSRPGCKInspectorGUI () {
@@ -24,6 +24,8 @@ public class StandardPickTileMoveSkillEditor : SkillEditor {
 		//strategy
 		ms.moveStrategy = EditorGUIExt.StrategyGUI(ms.moveStrategy, false);
 		EditorGUILayout.Space();
+		
+		//TODO: put in path drawing stuff!
 		
 		GUILayout.Label("Move IO");
 		ms.supportKeyboard = EditorGUILayout.Toggle("Support Keyboard", ms.supportKeyboard);
