@@ -23,7 +23,6 @@ public class ContinuousAI : AI {
 			if(c.moveSkill.Executor.IsMoving) { return; }
 			if(!c.GetComponent<CTCharacter>().HasMoved) {
 				c.moveSkill.ActivateSkill();
-				PickTileMoveIO mio = c.moveSkill.IO as PickTileMoveIO;
 				if(mio != null && mio.overlay != null) {
 					PathNode[] dests = mio.overlay.destinations;
 					if(dests.Length == 0) {

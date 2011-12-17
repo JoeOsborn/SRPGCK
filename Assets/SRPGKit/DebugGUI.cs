@@ -152,26 +152,23 @@ public class DebugGUI : MonoBehaviour {
 		if(ac != null) {
 			Map map = transform.parent.GetComponent<Map>();
 			MoveSkill ms = ac.moveSkill;
-			MoveIO io = ms.IO;
-			if(ms.isActive && io != null) {
-				if(io is PickTileMoveIO) {
-					PickTileMoveIO mio = io as PickTileMoveIO;
-					if(mio.isActive && a.IsLocalPlayer(ac.EffectiveTeamID)) {
-			  		MoveExecutor me = ms.Executor;
-						if(!me.IsMoving) {
-							if(mio.RequireConfirmation && 
-								 mio.AwaitingConfirmation) {
-								bool yesButton=false, noButton=false;
-								OnGUIConfirmation("Move here?", out yesButton, out noButton);
-								if(yesButton) {
-									PathNode pn = mio.overlay.PositionAt(mio.IndicatorPosition);
-					      	ms.PerformMoveToPathNode(pn);
-					      	mio.AwaitingConfirmation = false;
-								}
-								if(noButton) {
-					      	mio.AwaitingConfirmation = false;
-					      	ms.TemporaryMove(map.InverseTransformPointWorld(me.position));
-								}
+			StandardPickTileMoveSkill sptms = ms as StandardPickTileMoveSkill;
+			if(ms.isActive && sptms != null) {
+				if(a.IsLocalPlayer(ac.EffectiveTeamID)) {
+					MoveExecutor me = ms.Executor;
+					if(!me.IsMoving) {
+						if(ms.RequireConfirmation && 
+							 ms.AwaitingConfirmation) {
+							bool yesButton=false, noButton=false;
+							OnGUIConfirmation("Move here?", out yesButton, out noButton);
+							if(yesButton) {
+								PathNode pn = sptms.overlay.PositionAt(sptms.IndicatorPosition);
+					      ms.PerformMoveToPathNode(pn);
+					      ms.AwaitingConfirmation = false;
+							}
+							if(noButton) {
+					      ms.AwaitingConfirmation = false;
+					      ms.TemporaryMove(map.InverseTransformPointWorld(me.position));
 							} 
 						} else {	
 							showCancelButton = false;
@@ -200,40 +197,36 @@ public class DebugGUI : MonoBehaviour {
 			foreach(Skill skill in ac.Skills) {
 				if(!skill.isPassive && skill.isActive && skill is ActionSkill) {
 					ActionSkill ask = skill as ActionSkill;
-					ActionIO aio = ask.io;
-					if(aio != null) {
-						if(a.IsLocalPlayer(ac.EffectiveTeamID)) {
-							if(aio.RequireConfirmation && 
-								 aio.AwaitingConfirmation) {
-								bool yesButton=false, noButton=false;
-								OnGUIConfirmation("Confirm?", out yesButton, out noButton);
-								if(yesButton) {
-					  	  	aio.AwaitingConfirmation = false;
-									ask.ApplySkill();
-								}
-								if(noButton) {
-					      	aio.AwaitingConfirmation = false;
-								}
+					if(a.IsLocalPlayer(ac.EffectiveTeamID)) {
+						if(ask.RequireConfirmation && 
+							 ask.AwaitingConfirmation) {
+							bool yesButton=false, noButton=false;
+							OnGUIConfirmation("Confirm?", out yesButton, out noButton);
+							if(yesButton) {
+					  	ask.AwaitingConfirmation = false;
+								ask.ApplySkill();
 							}
-							showAnySchedulerButtons = false;
+							if(noButton) {
+					  	ask.AwaitingConfirmation = false;
+							}
 						}
+						showAnySchedulerButtons = false;
 					}			
 				}
 			}
 			WaitSkill ws = ac.waitSkill as WaitSkill;
-			if(ws != null && ws.isActive && ws.io != null) {
-				WaitIO wio = ws.io;
+			if(ws != null && ws.isActive) {
 				if(a.IsLocalPlayer(ac.EffectiveTeamID)) {
-					if(wio.RequireConfirmation && 
-						 wio.AwaitingConfirmation) {
+					if(ws.RequireConfirmation && 
+						 ws.AwaitingConfirmation) {
 						bool yesButton=false, noButton=false;
 						OnGUIConfirmation("Wait here?", out yesButton, out noButton);
 						if(yesButton) {
-			  	  	wio.AwaitingConfirmation = false;
+			  	  	ws.AwaitingConfirmation = false;
 							ws.FinishWaitPick();
 						}
 						if(noButton) {
-			      	wio.AwaitingConfirmation = false;
+			      	ws.AwaitingConfirmation = false;
 						}
 					} else {
 					  if(s is CTScheduler) {

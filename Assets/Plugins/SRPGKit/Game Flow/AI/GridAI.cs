@@ -26,9 +26,9 @@ public class GridAI : AI {
 		if(c.moveSkill.Executor.IsMoving) { return; }
 		if(!c.GetComponent<CTCharacter>().HasMoved) {
 			c.moveSkill.ActivateSkill();
-			PickTileMoveIO mio = c.moveSkill.IO as PickTileMoveIO;
-			if(mio != null && mio.overlay != null) {
-				PathNode[] dests = mio.overlay.destinations;
+			StandardPickTileMoveSkill sptms = c.moveSkill as StandardPickTileMoveSkill;
+			if(sptms.overlay != null) {
+				PathNode[] dests = sptms.overlay.destinations;
 				if(dests.Length == 0) {
 					c.moveSkill.Cancel();
 					c.waitSkill.ActivateSkill();

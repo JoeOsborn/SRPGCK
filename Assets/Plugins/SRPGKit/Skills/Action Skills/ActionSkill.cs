@@ -1,7 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-public class ActionSkill : Skill {
+public class ActionSkill : Skill, ITilePickerOwner {
 	public StatEffectGroup[] targetEffects;
 	
 	//tile generation strategy (line/range/cone/etc)
@@ -11,12 +11,30 @@ public class ActionSkill : Skill {
 	public bool supportKeyboard = true;	
 	public bool supportMouse = true;
 	public bool requireConfirmation = true;
+	public bool awaitingConfirmation = false;
 	public float indicatorCycleLength=1.0f;
-
-	//target selection IO (range/radius/line/self/all enemies/etc, some of which is subclass responsibility)
-		//which tiles (and which should be previewed) will be provided by the tile generation strategy
-	[HideInInspector]
-	public ActionIO io;
+	public MoveExecutor Executor { get { return null; } }
+	
+	//grid
+	public GridOverlay overlay;
+	
+	//pick
+	[SerializeField]
+	TilePicker tilePicker;
+	
+	public Map Map { get { return map; } }
+	public GridOverlay Overlay { get { return overlay; } }
+	public bool SupportKeyboard { get { return supportKeyboard; } }
+	public bool SupportMouse { get { return supportMouse; } }
+	
+	public bool RequireConfirmation { get { return requireConfirmation; } }
+	public bool AwaitingConfirmation { 
+		get { return awaitingConfirmation; }
+		set { awaitingConfirmation = value; }
+  	}
+	public float IndicatorCycleLength { get { return indicatorCycleLength; } }
+	
+	public PathNode[] targetTiles;
 		
 	//effect parameters (elements, w/ev)
 	//effect
@@ -27,8 +45,6 @@ public class ActionSkill : Skill {
 	
 	public override void Start() {
 		base.Start();
-		io = new ActionIO();
-		io.owner = this;
 		strategy.owner = this;
 		/*
 		executor = new MoveExecutor();
@@ -91,14 +107,10 @@ public class ActionSkill : Skill {
 	
 	public override void ActivateSkill() {
 		if(isActive) { return; }
+		tilePicker = new TilePicker();
+		tilePicker.owner = this;
 		base.ActivateSkill();
-		io.owner = this;
 		strategy.owner = this;
-		
-		io.supportKeyboard = supportKeyboard;
-		io.supportMouse = supportMouse;
-		io.requireConfirmation = requireConfirmation;
-		io.indicatorCycleLength = indicatorCycleLength;
 		
 		strategy.zRangeUpMin = GetParam("range.z.up.min", 0);
 		strategy.zRangeUpMax = GetParam("range.z.up.max", 1);
@@ -123,24 +135,31 @@ public class ActionSkill : Skill {
 		executor.Activate();
 		*/	
 		
-		io.Activate();
 		strategy.Activate();
 		
-		io.PresentMoves();
+		PresentMoves();
 	}	
 	public override void DeactivateSkill() {
 		if(!isActive) { return; }
-		io.Deactivate();
 		strategy.Deactivate();
 		//executor.Deactivate();
+		overlay = null;
+		if(map.IsShowingOverlay(skillName, character.gameObject.GetInstanceID())) {
+			map.RemoveOverlay(skillName, character.gameObject.GetInstanceID());
+		}	
 		base.DeactivateSkill();
 	}
 	public override void Update() {
 		base.Update();
 		if(!isActive) { return; }
-		io.owner = this;
 		strategy.owner = this;
-		io.Update();
+		tilePicker.owner = this;
+		if(character == null || !character.isActive) { return; }
+		if(!arbiter.IsLocalPlayer(character.EffectiveTeamID)) {
+			return;
+		}
+		if(GUIUtility.hotControl != 0) { return; }
+		tilePicker.Update();
 		strategy.Update();
 		//executor.Update();	
 	}
@@ -153,9 +172,57 @@ public class ActionSkill : Skill {
 			Debug.LogError("No effects in attack skill "+skillName+"!");
 		}
 		if(targetEffects[hitType].Length > 0) {
-			targets = strategy.CharactersForTargetedTiles(io.targetTiles);
+			targets = strategy.CharactersForTargetedTiles(targetTiles);
 			ApplyEffectsTo(targetEffects[hitType].effects, targets);
 		}
 		base.ApplySkill();
 	}
+	
+	public void CancelPick(TilePicker tp) {
+		Cancel();
+	}
+	
+	public Vector3 IndicatorPosition {
+		get { return tilePicker.IndicatorPosition; }
+	}
+	
+	virtual public void PresentMoves() {
+		PathNode[] destinations = strategy.GetValidActions();
+/*		MoveExecutor me = executor;*/
+		Vector3 charPos = character.TilePosition;
+		overlay = map.PresentGridOverlay(
+			skillName, character.gameObject.GetInstanceID(), 
+			new Color(0.6f, 0.3f, 0.2f, 0.7f),
+			new Color(0.9f, 0.6f, 0.4f, 0.85f),
+			destinations
+		);
+		awaitingConfirmation = false;
+		tilePicker.FocusOnPoint(charPos);
+	}
+
+	public void TentativePick(TilePicker tp, Vector3 p) {
+		targetTiles = strategy.GetTargetedTiles(p);
+		overlay.SetSelectedPoints(map.CoalesceTiles(targetTiles));
+		//TODO: show preview indicator until cancelled
+	}	
+	
+	public void TentativePick(TilePicker tp, PathNode pn) {
+		targetTiles = strategy.GetTargetedTiles(pn.pos);
+		overlay.SetSelectedPoints(map.CoalesceTiles(targetTiles));
+		//TODO: show preview indicator until cancelled
+	}
+	
+	public void CancelEffectPreview() {
+
+	}
+	
+	public void Pick(TilePicker tp, Vector3 p) {
+		targetTiles = strategy.GetTargetedTiles(p);
+		ApplySkill();
+	}
+	
+	public void Pick(TilePicker tp, PathNode pn) {
+		targetTiles = strategy.GetTargetedTiles(pn.pos);
+		ApplySkill();
+	}	
 }

@@ -67,7 +67,6 @@
      <Compile Include="Assets\Plugins\SRPGKit\Map\Overlays\Overlay.cs" />
      <Compile Include="Assets\Plugins\SRPGKit\Map\Overlays\RadialOverlay.cs" />
      <Compile Include="Assets\Plugins\SRPGKit\Map\Prop.cs" />
-     <Compile Include="Assets\Plugins\SRPGKit\Skills\Action Skills\ActionIO.cs" />
      <Compile Include="Assets\Plugins\SRPGKit\Skills\Action Skills\ActionSkill.cs" />
      <Compile Include="Assets\Plugins\SRPGKit\Skills\Action Skills\ActionStrategy.cs" />
      <Compile Include="Assets\Plugins\SRPGKit\Skills\Effects\Formula.cs" />
@@ -77,17 +76,13 @@
      <Compile Include="Assets\Plugins\SRPGKit\Skills\Effects\StatEffectGroup.cs" />
      <Compile Include="Assets\Plugins\SRPGKit\Skills\Effects\StatusEffect.cs" />
      <Compile Include="Assets\Plugins\SRPGKit\Skills\Move Skills\MoveExecutor.cs" />
-     <Compile Include="Assets\Plugins\SRPGKit\Skills\Move Skills\MoveIO.cs" />
      <Compile Include="Assets\Plugins\SRPGKit\Skills\Move Skills\MoveSkill.cs" />
-     <Compile Include="Assets\Plugins\SRPGKit\Skills\Move Skills\Movement-Grid\MoveIO\PickTileMoveIO.cs" />
      <Compile Include="Assets\Plugins\SRPGKit\Skills\Move Skills\Movement-Grid\StandardPickTileMoveSkill.cs" />
-     <Compile Include="Assets\Plugins\SRPGKit\Skills\Move Skills\Movement-Radial\MoveIO\DrawPathMoveIO.cs" />
      <Compile Include="Assets\Plugins\SRPGKit\Skills\Move Skills\Movement-Radial\PathDrawingMoveSkill.cs" />
      <Compile Include="Assets\Plugins\SRPGKit\Skills\Move Skills\Movement-Radial\RadialMoveStrategy.cs" />
      <Compile Include="Assets\Plugins\SRPGKit\Skills\Move Skills\ProxyMoveExecutor.cs" />
-     <Compile Include="Assets\Plugins\SRPGKit\Skills\Move Skills\ProxyMoveIO.cs" />
+     <Compile Include="Assets\Plugins\SRPGKit\Skills\Move Skills\ProxyMoveSkill.cs" />
      <Compile Include="Assets\Plugins\SRPGKit\Skills\Skill.cs" />
-     <Compile Include="Assets\Plugins\SRPGKit\Skills\Wait Skill\WaitIO.cs" />
      <Compile Include="Assets\Plugins\SRPGKit\Skills\Wait Skill\WaitSkill.cs" />
      <Compile Include="Assets\Plugins\SRPGKit\Utilities\StringCleanup.cs" />
      <Compile Include="Assets\Plugins\SRPGKit\Utilities\TilePicker.cs" />

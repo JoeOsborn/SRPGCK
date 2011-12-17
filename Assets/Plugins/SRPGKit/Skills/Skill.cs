@@ -230,5 +230,4 @@ public class Skill : MonoBehaviour {
 	public Map map { get { return character.transform.parent.GetComponent<Map>(); } }
 	public Scheduler scheduler { get { return this.map.scheduler; } }
 	public Arbiter arbiter { get { return this.map.arbiter; } }
-	
 }

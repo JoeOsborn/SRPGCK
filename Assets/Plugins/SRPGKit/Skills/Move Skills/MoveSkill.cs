@@ -1,14 +1,25 @@
 using UnityEngine;
 
 [System.Serializable]
-public abstract class MoveSkill : Skill {
+public class MoveSkill : Skill {
 	public bool lockToGrid=true;
 	
-	public abstract MoveIO IO { get; }
 	public bool supportKeyboard = true;	
 	public bool supportMouse = true;
-	public bool requireConfirmation = false;
 	public float indicatorCycleLength=1.0f;
+	public bool requireConfirmation = false;
+	[HideInInspector]
+	public bool awaitingConfirmation = false;
+	
+	public bool RequireConfirmation { 
+		get { return requireConfirmation; } 
+		set { requireConfirmation = value; }
+	}
+	
+	public bool AwaitingConfirmation {
+		get { return awaitingConfirmation; }
+		set { awaitingConfirmation = value; }
+	}
 	
 	public ActionStrategy Strategy { get { return moveStrategy; } }
 	public MoveExecutor Executor { get { return moveExecutor; } }
@@ -27,15 +38,9 @@ public abstract class MoveSkill : Skill {
 	public float ZSpeedUp = 15;
 	public float ZSpeedDown = 20;
 	
-	protected abstract void MakeIO();
-	
 	public override void Start() {
 		base.Start();
 		isPassive = false;
-		MakeIO();
-		IO.lockToGrid = lockToGrid;
-		IO.owner = this;
-		IO.performTemporaryMoves = performTemporaryMoves;
 		if(moveStrategy == null) {
 			moveStrategy = new ActionStrategy();
 		}
@@ -47,16 +52,6 @@ public abstract class MoveSkill : Skill {
 	
 	public override void ActivateSkill() {
 		base.ActivateSkill();
-		if(IO == null) {
-			MakeIO();
-		}
-		IO.owner = this;
-		IO.supportKeyboard = supportKeyboard;
-		IO.supportMouse = supportMouse;
-		IO.requireConfirmation = requireConfirmation;
-		IO.indicatorCycleLength = indicatorCycleLength;
-		IO.performTemporaryMoves = performTemporaryMoves;
-		IO.lockToGrid = lockToGrid;
 
 		Strategy.owner = this;
 		Strategy.zRangeDownMin = 0;
@@ -75,13 +70,15 @@ public abstract class MoveSkill : Skill {
 		Strategy.Activate();
 		Executor.Activate();
 
-		IO.Activate();		
-		IO.PresentMoves();
+		PresentMoves();
 	}	
+	
+	protected virtual void PresentMoves() {
+		
+	}
 
 	public override void DeactivateSkill() {
 		if(!isActive) { return; }
-		IO.Deactivate();
 		Strategy.Deactivate();
 		Executor.Deactivate();
 		base.DeactivateSkill();
@@ -90,10 +87,8 @@ public abstract class MoveSkill : Skill {
 	public override void Update() {
 		base.Update();
 		if(!isActive) { return; }
-		IO.owner = this;
 		Strategy.owner = this;
 		Executor.owner = this;
-		IO.Update();
 		Strategy.Update();
 		Executor.Update();	
 	}
