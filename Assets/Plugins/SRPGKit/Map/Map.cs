@@ -1149,6 +1149,20 @@ public class PathNode {
 	public float xyDistance {
 		get { return XYDistanceFrom(prev != null ? prev.pos : pos); }
 	}
+	public float xyDistanceFromStart {
+		get { 
+			float dist=0; 
+			PathNode s = this;
+			while(s.prev != null) {
+				dist += Vector2.Distance(
+					new Vector2(s.pos.x, s.pos.y),
+					new Vector2(s.prev.pos.x, s.prev.pos.y)
+				);
+				s = s.prev;
+			}
+			return dist;
+		}
+	}
 	public int SignedDZFrom(Vector3 prevPos) {
 		return (int)(pos.z - prevPos.z);
 	}

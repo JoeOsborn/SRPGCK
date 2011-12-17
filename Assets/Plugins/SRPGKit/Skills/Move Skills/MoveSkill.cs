@@ -23,7 +23,7 @@ public class MoveSkill : Skill {
 	
 	public ActionStrategy Strategy { get { return moveStrategy; } }
 	public MoveExecutor Executor { get { return moveExecutor; } }
-
+	
 	//strategy
 	public ActionStrategy moveStrategy;
 	public float ZDelta { get { return GetParam("range.z", character.GetStat("jump", 3)); } }

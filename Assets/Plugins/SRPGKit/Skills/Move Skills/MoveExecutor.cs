@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
 
 [System.Serializable]
 public class MoveExecutor {
@@ -54,7 +55,10 @@ public class MoveExecutor {
 		animNodes.Clear();
 		PathNode cur = pn;
 		do {
-			if(animNodes.Contains(cur)) { Debug.LogError("infinite node loop"); break; }
+			if(animNodes.Any(p => Object.ReferenceEquals(p,cur))) { 
+				Debug.LogError("infinite node loop"); 
+				break; 
+			}
 			animNodes.Add(cur);
 			cur = cur.prev;
 		} while(cur != null);
