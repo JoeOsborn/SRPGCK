@@ -14,7 +14,7 @@ public class Skill : MonoBehaviour {
 	public string replacedSkill = "";
 	public int replacementPriority=0;
 		
-	public bool isPassive=true;
+	virtual public bool isPassive { get { return true; } }
 	
 	public bool deactivatesOnApplication=true;
 

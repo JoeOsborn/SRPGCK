@@ -4,6 +4,8 @@ using UnityEngine;
 public class MoveSkill : Skill {
 	public bool lockToGrid=true;
 	
+	override public bool isPassive { get { return false; } }
+	
 	public bool supportKeyboard = true;	
 	public bool supportMouse = true;
 	public float indicatorCycleLength=1.0f;
@@ -40,7 +42,6 @@ public class MoveSkill : Skill {
 	
 	public override void Start() {
 		base.Start();
-		isPassive = false;
 		if(moveStrategy == null) {
 			moveStrategy = new ActionStrategy();
 		}

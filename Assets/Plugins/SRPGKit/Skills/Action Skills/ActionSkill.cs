@@ -3,6 +3,8 @@ using System.Collections.Generic;
 
 public class ActionSkill : Skill, ITilePickerOwner {
 	public StatEffectGroup[] targetEffects;
+
+	override public bool isPassive { get { return false; } }
 	
 	//tile generation strategy (line/range/cone/etc)
 	public ActionStrategy strategy;
@@ -55,7 +57,6 @@ public class ActionSkill : Skill, ITilePickerOwner {
 		base.Reset();
 		skillName = "Attack";
 		skillGroup = "Act";
-		isPassive = false;
 		if(!HasParam("range.z.up.min")) {
 			AddParam("range.z.up.min", Formula.Constant(0));
 		}

@@ -8,6 +8,8 @@ public class WaitSkill : Skill {
 	public bool requireConfirmation = true;
 	public bool awaitingConfirmation = false;
 	
+	override public bool isPassive { get { return false; } }
+	
 	public bool RequireConfirmation {
 		get { return requireConfirmation; } 
 		set { requireConfirmation = value; }
