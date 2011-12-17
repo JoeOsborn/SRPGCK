@@ -86,39 +86,11 @@ public class RadialOverlay : Overlay {
 	override public PathNode PositionAt(Vector3 hitSpot) {
 		FindMap();
 		//TODO: reachable?
-		//FIXME: don't use origin as-is, transform it first
 		Vector3 tileOrigin = map.InverseTransformPointWorld(origin);
 		float distance = Vector3.Distance(hitSpot, tileOrigin);
 		if(distance > tileRadius) {
 			return null;
 		}
 		return new PathNode(hitSpot, null, distance);
-	}
-
-	public bool Raycast(Ray r, out Vector3 hitSpot) {
-		MeshCollider mc = GetComponent<MeshCollider>();
-		hitSpot = Vector3.zero;
-		if(mc == null) { return false; }
-		RaycastHit hit;
-		if(mc.Raycast(r, out hit, 1000)) {
-			//make sure the normal here is upwards
-			Debug.Log("NORM:"+hit.normal+", DOT:"+Vector3.Dot(hit.normal, Vector3.up));
-			if(Vector3.Dot(hit.normal, Vector3.up) > 0.3) {
-				Debug.Log("pt: "+hit.point);
-				hitSpot = map.InverseTransformPointWorld(new Vector3(
-					hit.point.x, 
-					hit.point.y, 
-					hit.point.z
-				));
-			//	Debug.Log("PRE HIT: "+hitSpot);
-		//		int realZ = map.NearestZLevel((int)hitSpot.x, (int)hitSpot.y, (int)hitSpot.z);
-	//			float dz = realZ - hitSpot.z;
-//				hitSpot.z += dz;
-				//reduce x and y according to bump in z... maybe do another InverseTransformPointWorld?
-				Debug.Log("HIT: "+hitSpot);
-			}
-			return true;
-		}
-		return false;
 	}
 }

@@ -78,34 +78,18 @@ public class PickTileMoveIO : MoveIO, ITilePickerOwner {
 	}
 
 	public void TentativePick(TilePicker tp, Vector3 p) {
-		TemporaryMove(p);
+		owner.TemporaryMove(p);
 	}	
 	
 	public void TentativePick(TilePicker tp, PathNode pn) {
-		TemporaryMoveToPathNode(pn);
+		owner.TemporaryMoveToPathNode(pn);
 	}
 	
 	public void Pick(TilePicker tp, Vector3 p) {
-		PerformMove(p);	
+		owner.PerformMove(p);	
 	}
 	
 	public void Pick(TilePicker tp, PathNode pn) {
-		PerformMoveToPathNode(pn);	
-	}
-	
-	public override void TemporaryMoveToPathNode(PathNode pn) {
-		FocusOnPoint(pn.pos);
-		base.TemporaryMoveToPathNode(pn);
-	}
-
-	public override void IncrementalMoveToPathNode(PathNode pn) {
-		FocusOnPoint(pn.pos);
-		base.IncrementalMoveToPathNode(pn);
-	}
-	
-	public override void PerformMoveToPathNode(PathNode pn) {
-		FocusOnPoint(pn.pos);
-		base.PerformMoveToPathNode(pn);
+		owner.PerformMoveToPathNode(pn);	
 	}	
-	
 }

@@ -22,6 +22,7 @@ public class GridOverlay : Overlay {
 	public void SetSelectedPoints(Vector4[] points) {
 		selectedPoints = points;
 		if(map == null || selectedColor == Color.clear || selectedHighlightMaterial == null) { return; }
+/*		Debug.Log("set sel ct "+points.Length);*/
 		selectedHighlightMaterial.SetTexture("_Boxes", BoundsTextureFor(indicatorTex, selectedPoints));
 	}
 	public void UpdateDestinations(PathNode[] dests) {
@@ -30,7 +31,7 @@ public class GridOverlay : Overlay {
 		positions = map.CoalesceTiles(destinations);
 		overlayTex = BoundsTextureFor(overlayTex, positions);
 		shadeMaterial.SetTexture("_Boxes", overlayTex);	
-		SetSelectedPoints(selectedPoints);
+		//SetSelectedPoints(selectedPoints);
 	}
 	protected Texture2D BoundsTextureFor(Texture2D inTex, Vector4[] points) {
 		if(points == null) { points = new Vector4[0]; }
@@ -57,14 +58,18 @@ public class GridOverlay : Overlay {
 			if(col.a == 0 && col.r == 0) {
 				col.a = minZ;
 				col.r = maxZ;
+/*				Debug.Log("set ar pt "+p+":"+minZ+"--"+maxZ);*/
 			} else if(col.a <= minZ && col.r >= maxZ) {
 				//skip
+/*				Debug.Log("A skip pt "+p);*/
 			} else {
 				if(col.g == 0 && col.b == 0) {
 					col.g = minZ;
 					col.b = maxZ;
+/*					Debug.Log("set gb pt "+p+":"+minZ+"--"+maxZ);*/
 				} else if(col.g <= minZ && col.b >= maxZ) {
 					//skip
+/*					Debug.Log("B skip pt "+p);*/
 				} else {
 					Debug.Log("min:"+minZ+", max:"+maxZ+" not in "+col.a+".."+col.r+" nor "+col.g+".."+col.b+".");
 					Debug.Log("Only two discontinuous ranges are supported for overlays at present.");
@@ -126,25 +131,5 @@ public class GridOverlay : Overlay {
 			}
 		}
 		return null;	
-	}
-
-	public bool Raycast(Ray r, out Vector3 hitSpot) {
-		MeshCollider mc = GetComponent<MeshCollider>();
-		hitSpot = Vector3.zero;
-		if(mc == null) { return false; }
-		RaycastHit hit;
-		if(mc.Raycast(r, out hit, 1000)) {
-			//make sure the normal here is upwards
-/*			Debug.Log("NORM:"+hit.normal+", DOT:"+Vector3.Dot(hit.normal, Vector3.up));*/
-			if(Vector3.Dot(hit.normal, Vector3.up) > 0.3) {
-				hitSpot = map.InverseTransformPointWorld(new Vector3(
-					hit.point.x, 
-					hit.point.y, 
-					hit.point.z
-				));
-			}
-			return true;
-		}
-		return false;
 	}
 }

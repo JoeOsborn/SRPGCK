@@ -7,6 +7,8 @@ public class DrawPathMoveIO : MoveIO {
 	public float moveSpeed=10.0f;
 	
 	public Color overlayColor = new Color(0.3f, 0.3f, 0.3f, 0.7f);
+	public Color highlightColor = new Color(0.5f, 0.5f, 0.5f, 1.0f);
+	public Material pathMaterial;
 
 	[SerializeField]
 	Vector3 moveDest=Vector3.zero;
@@ -55,7 +57,7 @@ public class DrawPathMoveIO : MoveIO {
 				overlay = owner.map.PresentGridOverlay(
 					owner.skillName, owner.character.gameObject.GetInstanceID(), 
 					overlayColor,
-					overlayColor,
+					highlightColor,
 					destinations
 				);
 			}
@@ -70,28 +72,28 @@ public class DrawPathMoveIO : MoveIO {
 			} else {
 				if(overlayType == RadialOverlayType.Sphere) {
 					overlay = owner.map.PresentSphereOverlay(
-								owner.skillName, owner.character.gameObject.GetInstanceID(), 
-								overlayColor,
-								charPos,
-								owner.Strategy.xyRangeMax - xyRangeSoFar,
-								drawOverlayRim,
-								drawOverlayVolume,
-								invertOverlay
-							);
+						owner.skillName, owner.character.gameObject.GetInstanceID(), 
+						overlayColor,
+						charPos,
+						owner.Strategy.xyRangeMax - xyRangeSoFar,
+						drawOverlayRim,
+						drawOverlayVolume,
+						invertOverlay
+					);
 				} else if(overlayType == RadialOverlayType.Cylinder) {
 					overlay = owner.map.PresentCylinderOverlay(
-								owner.skillName, owner.character.gameObject.GetInstanceID(), 
-								overlayColor,
-								charPos,
-								owner.Strategy.xyRangeMax - xyRangeSoFar,
-								owner.Strategy.zRangeDownMax,
-								drawOverlayRim,
-								drawOverlayVolume,
-								invertOverlay
-							);
-				}	
+						owner.skillName, owner.character.gameObject.GetInstanceID(), 
+						overlayColor,
+						charPos,
+						owner.Strategy.xyRangeMax - xyRangeSoFar,
+						owner.Strategy.zRangeDownMax,
+						drawOverlayRim,
+						drawOverlayVolume,
+						invertOverlay
+					);
+				}
 			}
-		}	
+		}
 	}
 	
 	override public void Activate() {
@@ -101,6 +103,7 @@ public class DrawPathMoveIO : MoveIO {
 		xyRangeSoFar = 0;
 		nodeCount = 0;
 		endOfPath = null;
+		awaitingConfirmation=false;
 	}
 	
 	override public void Deactivate() {
@@ -109,6 +112,11 @@ public class DrawPathMoveIO : MoveIO {
 		endOfPath = null;
 		xyRangeSoFar = 0;
 		nodeCount = 0;
+		awaitingConfirmation=false;
+		if(owner.map.IsShowingOverlay(owner.skillName, owner.character.gameObject.GetInstanceID())) {
+			owner.map.RemoveOverlay(owner.skillName, owner.character.gameObject.GetInstanceID());
+		}	
+		overlay = null;
 	}
 	
 	override public void Update () {
@@ -118,23 +126,27 @@ public class DrawPathMoveIO : MoveIO {
 		if(!owner.arbiter.IsLocalPlayer(owner.character.EffectiveTeamID)) {
 			return;
 		}
+		
 /*		if(supportMouse && Input.GetMouseButton(0)) {
 			Ray r = Camera.main.ScreenPointToRay(Input.mousePosition);
 			Vector3 hitSpot;
 			bool inside = overlay.Raycast(r, out hitSpot);
 			if(inside && overlay.ContainsPosition(hitSpot)) {
 				moveDest = hitSpot;
-				IncrementalMove(moveDest);
+				//move the probe here
+				owner.IncrementalMove(moveDest);
 				if(Input.GetMouseButtonDown(0)) {
 					if(Time.time-firstClickTime > doubleClickThreshold) {
 						firstClickTime = Time.time;
 					} else  {
 						firstClickTime = -1;
-						PerformMove(moveDest);
+						owner.PerformMove(moveDest);
 					}
 				}
 			}
-		}*/
+		}
+		*/
+		
 		float h = Input.GetAxis("Horizontal");
 		float v = Input.GetAxis("Vertical");
 		if(supportKeyboard && (h != 0 || v != 0)) {
@@ -187,7 +199,26 @@ public class DrawPathMoveIO : MoveIO {
 			}
 		}
 		if(supportKeyboard && Input.GetButtonDown("Confirm")) {
-			PerformMoveToPathNode(endOfPath);
+			if(requireConfirmation && !awaitingConfirmation) {
+				awaitingConfirmation = true;
+				if(performTemporaryMoves) {
+					owner.TemporaryMoveToPathNode(endOfPath);
+				}
+			} else {
+				awaitingConfirmation = false;
+				owner.PerformMoveToPathNode(endOfPath);
+			}
+		}
+		if(supportKeyboard && Input.GetButtonDown("Cancel")) {
+			if(requireConfirmation && awaitingConfirmation) {
+				awaitingConfirmation = false;
+				if(performTemporaryMoves) {
+					owner.TemporaryMove(owner.Executor.position);
+				}
+				ResetPosition();
+			} else {
+				owner.Cancel();
+			}
 		}
 	}
 	
@@ -195,16 +226,12 @@ public class DrawPathMoveIO : MoveIO {
 		float thisDistance = Vector3.Distance(newDest, moveDest);
 		if(lockToGrid) {
 			thisDistance = (int)thisDistance;
-			Vector4[] selPts = (overlay as GridOverlay).selectedPoints ?? new Vector4[0];
-			(overlay as GridOverlay).SetSelectedPoints(selPts.Concat(
-				new Vector4[]{new Vector4(newDest.x, newDest.y, newDest.z, 1)}
-			).ToArray());
 		}
 		moveDest = newDest;
 		xyRangeSoFar += thisDistance;
 		endOfPath = new PathNode(moveDest, endOfPath, xyRangeSoFar);
 		if(performTemporaryMoves) {
-			TemporaryMoveToPathNode(endOfPath);
+			owner.TemporaryMoveToPathNode(endOfPath);
 		}
 		//add a line to this point
 		nodeCount += 1;
@@ -212,6 +239,12 @@ public class DrawPathMoveIO : MoveIO {
 		lines.SetPosition(nodeCount, owner.map.TransformPointWorld(moveDest));
 		//update the overlay
 		UpdateOverlay();
+		if(lockToGrid) {
+			Vector4[] selPts = (overlay as GridOverlay).selectedPoints ?? new Vector4[0];
+			(overlay as GridOverlay).SetSelectedPoints(selPts.Concat(
+				new Vector4[]{new Vector4(newDest.x, newDest.y, newDest.z, 1)}
+			).ToArray());
+		}
 	}
 	
 	public void UnwindPath(int nodes=1) {
@@ -227,7 +260,7 @@ public class DrawPathMoveIO : MoveIO {
 			endOfPath = endOfPath.prev;
 			moveDest = endOfPath.pos;
 			if(performTemporaryMoves) {
-				TemporaryMoveToPathNode(endOfPath);
+				owner.TemporaryMoveToPathNode(endOfPath);
 			}
 			//add a line to this point
 			nodeCount -= 1;
@@ -242,9 +275,16 @@ public class DrawPathMoveIO : MoveIO {
 	override public void PresentMoves() {
 		base.PresentMoves();
 		moveDest = owner.character.TilePosition;
-		probe = Object.Instantiate(probePrefab, owner.map.TransformPointWorld(moveDest), Quaternion.identity) as CharacterController;
+		probe = Object.Instantiate(probePrefab, Vector3.zero, Quaternion.identity) as CharacterController;
 		probe.transform.parent = owner.map.transform;
 		Physics.IgnoreCollision(probe.collider, owner.character.collider);
+		lines = probe.gameObject.AddComponent<LineRenderer>();
+		lines.materials = new Material[]{pathMaterial};
+		lines.useWorldSpace = true;
+		ResetPosition();
+	}
+	
+	protected void ResetPosition() {
 		Vector3 tp = owner.character.TilePosition;
 		if(lockToGrid) {
 			tp.x = (int)Mathf.Round(tp.x);
@@ -253,18 +293,11 @@ public class DrawPathMoveIO : MoveIO {
 		}
 		probe.transform.position = owner.map.TransformPointWorld(tp);
 		endOfPath = new PathNode(tp, null, 0);
-		lines = probe.gameObject.AddComponent<LineRenderer>();
-		lines.useWorldSpace = true;
 		lines.SetVertexCount(1);
 		lines.SetPosition(0, probe.transform.position);
 		UpdateOverlay();
-	}
-	
-	override protected void FinishMove() {
-		overlay = null;
-		if(owner.map.IsShowingOverlay(owner.skillName, owner.character.gameObject.GetInstanceID())) {
-			owner.map.RemoveOverlay(owner.skillName, owner.character.gameObject.GetInstanceID());
-		}	
-		base.FinishMove();
-	}
+		if(lockToGrid) {
+			(overlay as GridOverlay).SetSelectedPoints(new Vector4[0]);
+		}
+	}	
 }

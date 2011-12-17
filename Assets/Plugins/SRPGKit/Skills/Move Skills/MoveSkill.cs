@@ -7,7 +7,7 @@ public abstract class MoveSkill : Skill {
 	public abstract MoveIO IO { get; }
 	public bool supportKeyboard = true;	
 	public bool supportMouse = true;
-	public bool requireConfirmation = true;
+	public bool requireConfirmation = false;
 	public float indicatorCycleLength=1.0f;
 	
 	public ActionStrategy Strategy { get { return moveStrategy; } }
@@ -16,7 +16,7 @@ public abstract class MoveSkill : Skill {
 	//strategy
 	public ActionStrategy moveStrategy;
 	public float ZDelta { get { return GetParam("range.z", character.GetStat("jump", 3)); } }
-	public float XYRange { get { return GetParam("range.xy", character.GetStat("move", 3)); } }
+	public float XYRange { get { return GetParam("range.xy", character.GetStat("move", 5)); } }
 	
 	//executor
 	[HideInInspector]
@@ -107,5 +107,51 @@ public abstract class MoveSkill : Skill {
 		if(!isActive) { return; }
 		Executor.Cancel();
 		base.Cancel();
+	}
+	
+	public virtual void TemporaryMove(Vector3 tc) {
+		TemporaryMoveToPathNode(new PathNode(tc, null, 0));
+	}
+
+	public virtual void IncrementalMove(Vector3 tc) {
+		IncrementalMoveToPathNode(new PathNode(tc, null, 0));
+	}
+	
+	public virtual void PerformMove(Vector3 tc) {
+		PerformMoveToPathNode(new PathNode(tc, null, 0));
+	}
+	
+	public virtual void TemporaryMoveToPathNode(PathNode pn) {
+		MoveExecutor me = Executor;
+		me.TemporaryMoveTo(pn, delegate(Vector3 src, PathNode endNode, bool finishedNicely) {
+			scheduler.CharacterMovedTemporary(
+				character, 
+				map.InverseTransformPointWorld(src), 
+				map.InverseTransformPointWorld(endNode.pos)
+			);
+		});
+	}
+
+	public virtual void IncrementalMoveToPathNode(PathNode pn) {
+		MoveExecutor me = Executor;
+		me.IncrementalMoveTo(pn, delegate(Vector3 src, PathNode endNode, bool finishedNicely) {
+			scheduler.CharacterMovedIncremental(
+				character, 
+				map.InverseTransformPointWorld(src), 
+				map.InverseTransformPointWorld(endNode.pos)
+			);
+		});
+	}
+	
+	public virtual void PerformMoveToPathNode(PathNode pn) {
+		MoveExecutor me = Executor;
+		me.MoveTo(pn, delegate(Vector3 src, PathNode endNode, bool finishedNicely) {
+			scheduler.CharacterMoved(
+				character, 
+				map.InverseTransformPointWorld(src), 
+				map.InverseTransformPointWorld(endNode.pos)
+			);
+			ApplySkill();
+		});
 	}
 }

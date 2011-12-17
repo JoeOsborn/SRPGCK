@@ -43,7 +43,7 @@ public class GridAI : AI {
 					c.waitSkill.WaitInDirection(dir);
 					c.waitSkill.FinishWaitPick();
 				} else {
-					mio.PerformMoveToPathNode(dests[(int)Mathf.Floor(Random.Range(0, dests.Length))]);
+					c.moveSkill.PerformMoveToPathNode(dests[(int)Mathf.Floor(Random.Range(0, dests.Length))]);
 				}
 			}
 		} else {

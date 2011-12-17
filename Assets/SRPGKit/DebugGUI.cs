@@ -165,12 +165,12 @@ public class DebugGUI : MonoBehaviour {
 								OnGUIConfirmation("Move here?", out yesButton, out noButton);
 								if(yesButton) {
 									PathNode pn = mio.overlay.PositionAt(mio.IndicatorPosition);
-					      	mio.PerformMoveToPathNode(pn);
+					      	ms.PerformMoveToPathNode(pn);
 					      	mio.AwaitingConfirmation = false;
 								}
 								if(noButton) {
 					      	mio.AwaitingConfirmation = false;
-					      	mio.TemporaryMove(map.InverseTransformPointWorld(me.position));
+					      	ms.TemporaryMove(map.InverseTransformPointWorld(me.position));
 								}
 							} 
 						} else {	
@@ -189,7 +189,7 @@ public class DebugGUI : MonoBehaviour {
 							96, 24
 						));
 						if(GUILayout.Button("End Move")) {
-							mio.PerformMove(mio.moveDest);
+							ms.PerformMove(mio.moveDest);
 						}
 						GUILayout.EndArea();
 						showAnySchedulerButtons = false;

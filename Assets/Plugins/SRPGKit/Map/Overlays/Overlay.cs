@@ -60,4 +60,22 @@ public abstract class Overlay : MonoBehaviour {
 	}
 
 	public abstract PathNode PositionAt(Vector3 hitSpot);
+
+	public bool Raycast(Ray r, out Vector3 hitSpot) {
+		MeshCollider mc = GetComponent<MeshCollider>();
+		hitSpot = Vector3.zero;
+		if(mc == null) { return false; }
+		RaycastHit hit;
+		if(mc.Raycast(r, out hit, 1000)) {
+			if(Vector3.Dot(hit.normal, Vector3.up) > 0.3) {
+				hitSpot = map.InverseTransformPointWorld(new Vector3(
+					hit.point.x, 
+					hit.point.y, 
+					hit.point.z
+				));
+			}
+			return true;
+		}
+		return false;
+	}
 }

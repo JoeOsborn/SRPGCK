@@ -22,7 +22,7 @@ public class ProxyMoveIO : MoveIO {
 		if(!isActive) { return; }
 		if(lastPosition != owner.character.transform.position) {
 			lastPosition = owner.character.transform.position;
-			IncrementalMove(owner.character.transform.position);
+			owner.IncrementalMove(owner.character.transform.position);
 		}
 	}
 	

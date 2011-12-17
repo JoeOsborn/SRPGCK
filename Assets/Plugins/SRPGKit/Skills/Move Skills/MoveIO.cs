@@ -7,6 +7,7 @@ public class MoveIO {
 	public bool supportMouse = true;
 	
 	public bool requireConfirmation = true;
+	public bool awaitingConfirmation=false;
 
 	public bool lockToGrid = false;
 	public bool performTemporaryMoves = false;
@@ -31,58 +32,8 @@ public class MoveIO {
 
 	}
 	
-	protected virtual void FinishMove() {
-		owner.ApplySkill();
-	}
-	
 	public virtual void Deactivate() {
 		isActive = false;
 	}
 		
-	public virtual void TemporaryMove(Vector3 tc) {
-		TemporaryMoveToPathNode(new PathNode(tc, null, 0));
-	}
-
-	public virtual void IncrementalMove(Vector3 tc) {
-		IncrementalMoveToPathNode(new PathNode(tc, null, 0));
-	}
-	
-	public virtual void PerformMove(Vector3 tc) {
-		PerformMoveToPathNode(new PathNode(tc, null, 0));
-	}
-	
-	public virtual void TemporaryMoveToPathNode(PathNode pn) {
-		MoveExecutor me = owner.Executor;
-		me.TemporaryMoveTo(pn, delegate(Vector3 src, PathNode endNode, bool finishedNicely) {
-			owner.scheduler.CharacterMovedTemporary(
-				owner.character, 
-				owner.map.InverseTransformPointWorld(src), 
-				owner.map.InverseTransformPointWorld(endNode.pos)
-			);
-		});
-	}
-
-	public virtual void IncrementalMoveToPathNode(PathNode pn) {
-		MoveExecutor me = owner.Executor;
-		me.IncrementalMoveTo(pn, delegate(Vector3 src, PathNode endNode, bool finishedNicely) {
-			owner.scheduler.CharacterMovedIncremental(
-				owner.character, 
-				owner.map.InverseTransformPointWorld(src), 
-				owner.map.InverseTransformPointWorld(endNode.pos)
-			);
-		});
-	}
-	
-	public virtual void PerformMoveToPathNode(PathNode pn) {
-		MoveExecutor me = owner.Executor;
-		me.MoveTo(pn, delegate(Vector3 src, PathNode endNode, bool finishedNicely) {
-			owner.scheduler.CharacterMoved(
-				owner.character, 
-				owner.map.InverseTransformPointWorld(src), 
-				owner.map.InverseTransformPointWorld(endNode.pos)
-			);
-			FinishMove();
-		});
-	}	
-	
 }
