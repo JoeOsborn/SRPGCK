@@ -61,9 +61,10 @@ public class StandardMoveSkill : MoveSkill {
 	protected GridOverlay _GridOverlay { get { return overlay as GridOverlay; } }	
 	protected RadialOverlay _RadialOverlay { get { return overlay as RadialOverlay; } }	
 	
-	public WaypointMode waypointMode=WaypointMode.Count;
-	public int requiredWaypoints=1;
 	public bool waypointsAreIncremental=true;
+
+	public bool immediatelyFollowDrawnPath=false;
+	public bool canCancelMovement=true;
 	
 	protected void UpdateOverlay() {
 		if(lockToGrid) {
@@ -144,7 +145,7 @@ public class StandardMoveSkill : MoveSkill {
 	}
 	
 	protected bool DestIsBacktrack(Vector3 newDest) {
-		return drawPath && (
+		return !immediatelyFollowDrawnPath && drawPath && (
 		(endOfPath != null && endOfPath.prev != null && newDest == endOfPath.prev.pos) ||
 		(!waypointsAreIncremental && waypoints.Count > 0 &&
 			(((endOfPath.prev == null) && 
@@ -162,6 +163,52 @@ public class StandardMoveSkill : MoveSkill {
 		if(!isActive) { return; }
 		if(!arbiter.IsLocalPlayer(character.EffectiveTeamID)) {
 			return;
+		}
+
+		//mouse to...
+		if(supportMouse) {
+			if(Input.GetMouseButton(0)) {
+				Ray r = Camera.main.ScreenPointToRay(Input.mousePosition);
+				Vector3 hitSpot;
+				bool inside = overlay.Raycast(r, out hitSpot);
+				PathNode pn = overlay.PositionAt(hitSpot);
+				if(inside && pn != null) {
+					hitSpot = lockToGrid ? pn.pos : hitSpot;
+//					if(drawPath && dragging) {
+						//draw path: drag
+						//unwind drawn path: drag backwards
+//					}
+					
+					if(!drawPath) {
+						UpdatePath(hitSpot);
+					} else {
+						Vector3 srcPos = endOfPath.pos;
+						//add positions from pn back to current pos
+						List<Vector3> pts = new List<Vector3>();
+						while(pn != null && pn.pos != srcPos) {
+							pts.Add(pn.pos);
+							pn = pn.prev;
+						}
+						for(int i = 0; i < pts.Count; i++) {
+							UpdatePath(pts[i]);
+						}
+					}
+					if(Input.GetMouseButtonDown(0)) {
+						if(Time.time-firstClickTime > doubleClickThreshold) {
+							firstClickTime = Time.time;
+						} else {
+							firstClickTime = -1;
+							if(!waypointsAreIncremental && !immediatelyFollowDrawnPath &&
+									waypoints.Count > 0 && 
+									waypoints[waypoints.Count-1].pos == hitSpot) {
+								UnwindToLastWaypoint();
+							} else {
+								ConfirmWaypoint();
+							}
+						}
+					}
+				}
+			}
 		}
 		
 /*		if(supportMouse && Input.GetMouseButton(0)) {
@@ -181,8 +228,8 @@ public class StandardMoveSkill : MoveSkill {
 					}
 				}
 			}
-		}
-		*/
+		}*/
+		
 		
 		float h = Input.GetAxis("Horizontal");
 		float v = Input.GetAxis("Vertical");
@@ -204,7 +251,6 @@ public class StandardMoveSkill : MoveSkill {
 						} else {
 							PathNode pn = overlay.PositionAt(newDest);
 							if(pn != null && pn.canStop) {
-								probe.transform.position = map.TransformPointWorld(newDest);
 								UpdatePath(newDest);
 							}
 						}
@@ -248,26 +294,29 @@ public class StandardMoveSkill : MoveSkill {
 			}
 		}
 		if(supportKeyboard && Input.GetButtonDown("Cancel")) {
-			if(requireConfirmation && awaitingConfirmation) {
-				awaitingConfirmation = false;
-				if(performTemporaryMoves) {
-					TemporaryMove(Executor.position);
+			if(canCancelMovement) {
+				if(requireConfirmation && awaitingConfirmation) {
+					awaitingConfirmation = false;
+					if(performTemporaryMoves) {
+						TemporaryMove(Executor.position);
+					}
+					ResetPosition();
+				} else if(waypoints.Count > 0 && !waypointsAreIncremental && !immediatelyFollowDrawnPath) {
+					UnwindToLastWaypoint();
+				} else if(endOfPath == null || endOfPath.prev == null) {
+					Cancel();
+				} else {
+					ResetPosition();
 				}
-				ResetPosition();
-			} else if(waypoints.Count > 0 && !waypointsAreIncremental) {
-				UnwindToLastWaypoint();
 			} else {
-				Cancel();
+				PerformMoveToPathNode(endOfPath);
 			}
 		}
 	}
 	
 	protected bool AnyRemainingWaypoints { get {
-		switch(waypointMode) {
-			case WaypointMode.Count: return waypoints == null || (requiredWaypoints-1) > waypoints.Count;
-			case WaypointMode.UpToXYRange: return xyRangeSoFar < XYRange;
-		}
-		return false;
+		if(immediatelyFollowDrawnPath) { return false; }
+		return ((xyRangeSoFar + newNodeThreshold) < XYRange);
 	} }
 	
 	protected void ConfirmWaypoint() {
@@ -300,9 +349,14 @@ public class StandardMoveSkill : MoveSkill {
 					Debug.LogError("caught infinite node loop");
 				} 
 			}
+			if(immediatelyFollowDrawnPath) {
+				endOfPath = new PathNode(moveDest, null, 0);
+			}
 			PerformMoveToPathNode(endOfPath);			
 		} else {
-			if(waypointsAreIncremental) {
+			if(immediatelyFollowDrawnPath) {
+				IncrementalMoveToPathNode(new PathNode(endOfPath.pos, null, 0));
+			} else if(waypointsAreIncremental) {
 				IncrementalMoveToPathNode(endOfPath);
 			} else {
 				TemporaryMoveToPathNode(endOfPath);
@@ -332,6 +386,9 @@ public class StandardMoveSkill : MoveSkill {
 				TemporaryMoveToPathNode(endOfPath);
 			}
 		}
+		if(immediatelyFollowDrawnPath) {
+			IncrementalMove(newDest);
+		}
 		if(drawPath) {
 			//update the overlay
 			UpdateOverlay();
@@ -348,6 +405,7 @@ public class StandardMoveSkill : MoveSkill {
 				);
 			}
 		}
+		probe.transform.position = map.TransformPointWorld(moveDest);
 	}
 	
 	public void UnwindToLastWaypoint() {
@@ -362,7 +420,8 @@ public class StandardMoveSkill : MoveSkill {
 	}
 	
 	protected bool CanUnwindPath { get { 
-		return endOfPath.prev != null || (!waypointsAreIncremental && waypoints.Count > 0);
+		return !immediatelyFollowDrawnPath && 
+		(endOfPath.prev != null || (!waypointsAreIncremental && waypoints.Count > 0));
 	} }
 	public void UnwindPath(int nodes=1) {
 		for(int i = 0; i < nodes && CanUnwindPath; i++) {
@@ -447,7 +506,7 @@ public class StandardMoveSkill : MoveSkill {
 	}
 	
 	protected void ResetPosition() {
-		if(waypoints.Count > 0 && !waypointsAreIncremental) {
+		if(waypoints.Count > 0 && !waypointsAreIncremental && !immediatelyFollowDrawnPath) {
 			UnwindToLastWaypoint();
 		} else {
 			Vector3 tp = initialPosition;
@@ -457,6 +516,8 @@ public class StandardMoveSkill : MoveSkill {
 				tp.z = map.NearestZLevel((int)tp.x, (int)tp.y, (int)Mathf.Round(tp.z));
 			}
 			probe.transform.position = map.TransformPointWorld(tp);
+			moveDest = initialPosition;
+			xyRangeSoFar = 0;
 			if(drawPath) {
 				endOfPath = new PathNode(tp, null, 0);
 				lines.SetVertexCount(1);

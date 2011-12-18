@@ -12,6 +12,8 @@ public class MoveSkill : Skill {
 	public bool requireConfirmation = false;
 	[HideInInspector]
 	public bool awaitingConfirmation = false;
+	protected float firstClickTime = -1;
+	protected float doubleClickThreshold = 0.3f;
 	
 	public bool RequireConfirmation { 
 		get { return requireConfirmation; } 
@@ -131,10 +133,11 @@ public class MoveSkill : Skill {
 	public virtual void IncrementalMoveToPathNode(PathNode pn) {
 		MoveExecutor me = Executor;
 		me.IncrementalMoveTo(pn, delegate(Vector3 src, PathNode endNode, bool finishedNicely) {
+/*			Debug.Log("moved from "+src);*/
 			scheduler.CharacterMovedIncremental(
 				character, 
-				map.InverseTransformPointWorld(src), 
-				map.InverseTransformPointWorld(endNode.pos)
+				src, 
+				endNode.pos
 			);
 		});
 	}

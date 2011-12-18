@@ -78,7 +78,7 @@ public class MoveExecutor {
 		if(!animateTemporaryMovement) {
 			temporaryPosition = temporaryDestination;
 			transformPosition = temporaryPosition;
-			moveCallback(moveOrigin, temporaryDestNode, true);
+			moveCallback(owner.map.InverseTransformPointWorld(moveOrigin), temporaryDestNode, true);
 			moveCallback = null;
 			ClearPath();
 		} else {
@@ -204,7 +204,7 @@ public class MoveExecutor {
 					}
 				  temporaryPosition = temporaryDestination;
 			  	if(moveCallback != null) {
-			  		moveCallback(moveOrigin, temporaryDestNode, true);
+			  		moveCallback(owner.map.InverseTransformPointWorld(moveOrigin), temporaryDestNode, true);
 			  		moveCallback = null;
 			  	}
 					ClearPath();
@@ -276,7 +276,7 @@ public class MoveExecutor {
 			Debug.Log("failsafe");
 			transformPosition = position;
 			if(moveCallback != null) {
-				moveCallback(moveOrigin, temporaryDestNode, false);
+				moveCallback(owner.map.InverseTransformPointWorld(moveOrigin), temporaryDestNode, false);
 				moveCallback = null;
 			}
 			ClearPath();

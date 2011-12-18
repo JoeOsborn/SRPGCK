@@ -102,7 +102,7 @@ public class TeamRoundsPointsScheduler : Scheduler {
 	
 	override public void CharacterMoved(Character c, Vector3 from, Vector3 to) {
 		//FIXME: should get path nodes instead of an instantaneous vector, since we don't really want straight-line distance
-		Debug.Log("moved to "+to);
+/*		Debug.Log("moved to "+to);*/
 		RoundPointsCharacter ppc = c.GetComponent<RoundPointsCharacter>();
 		if(limitMode == TurnLimitMode.AP) {
 			float moveAPCost = ppc.PerUnitMovementAPCost;
@@ -112,7 +112,7 @@ public class TeamRoundsPointsScheduler : Scheduler {
 			} else {
 				distance = Vector3.Distance(to, from);
 			}
-			Debug.Log("Distance: "+distance);
+/*			Debug.Log("Distance: "+distance);*/
 			DecreaseAP(moveAPCost * distance);
 			Debug.Log("new AP: "+ppc.Limiter);
 		}
@@ -142,7 +142,7 @@ public class TeamRoundsPointsScheduler : Scheduler {
 				EndRound();
 			}
 		}
-		if(activeCharacter) {
+		if(activeCharacter != null) {
 			RoundPointsCharacter ppc = activeCharacter.GetComponent<RoundPointsCharacter>();
 			if(limitMode == TurnLimitMode.Time) {
 				ppc.Limiter -= Time.deltaTime;
