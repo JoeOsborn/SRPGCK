@@ -22,7 +22,7 @@ public class StandardMoveSkillEditor : SkillEditor {
 		EditorGUI.indentLevel++;
 		EditorGUILayout.Space();
 		//strategy
-		ms.moveStrategy = EditorGUIExt.StrategyGUI(ms.moveStrategy, false);
+		ms.strategy = EditorGUIExt.StrategyGUI(ms.strategy, false);
 		EditorGUILayout.Space();
 		
 		//TODO: put in path drawing stuff!

@@ -13,7 +13,7 @@ public interface ITilePickerOwner {
 	bool RequireConfirmation { get; }
 	bool AwaitingConfirmation { get; set; }
 	float IndicatorCycleLength { get; }
-	GridOverlay Overlay { get; }
+	Overlay Overlay { get; }
 	MoveExecutor Executor { get; }
 }
 
@@ -137,7 +137,7 @@ public class TilePicker {
 		if(owner.Overlay != null) {
 			MapTile t = owner.Map.TileAt((int)indicatorXY.x, (int)indicatorXY.y, (int)indicatorZ);
 			if(t != null) {
-				owner.Overlay.SetSelectedPoints(new Vector4[]{new Vector4((int)indicatorXY.x, (int)indicatorXY.y, t.z, t.maxZ)});
+				(owner.Overlay as GridOverlay).SetSelectedPoints(new Vector4[]{new Vector4((int)indicatorXY.x, (int)indicatorXY.y, t.z, t.maxZ)});
 			}
 		}	
 	}

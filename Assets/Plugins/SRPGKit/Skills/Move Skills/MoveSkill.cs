@@ -1,35 +1,10 @@
 using UnityEngine;
 
 [System.Serializable]
-public class MoveSkill : Skill {
-	public bool lockToGrid=true;
-	
-	override public bool isPassive { get { return false; } }
-	
-	public bool supportKeyboard = true;	
-	public bool supportMouse = true;
-	public float indicatorCycleLength=1.0f;
-	public bool requireConfirmation = false;
-	[HideInInspector]
-	public bool awaitingConfirmation = false;
-	protected float firstClickTime = -1;
-	protected float doubleClickThreshold = 0.3f;
-	
-	public bool RequireConfirmation { 
-		get { return requireConfirmation; } 
-		set { requireConfirmation = value; }
-	}
-	
-	public bool AwaitingConfirmation {
-		get { return awaitingConfirmation; }
-		set { awaitingConfirmation = value; }
-	}
-	
-	public ActionStrategy Strategy { get { return moveStrategy; } }
-	public MoveExecutor Executor { get { return moveExecutor; } }
+public class MoveSkill : ActionSkill {
+	override public MoveExecutor Executor { get { return moveExecutor; } }
 	
 	//strategy
-	public ActionStrategy moveStrategy;
 	public float ZDelta { get { return GetParam("range.z", character.GetStat("jump", 3)); } }
 	public float XYRange { get { return GetParam("range.xy", character.GetStat("move", 5)); } }
 	
@@ -44,63 +19,60 @@ public class MoveSkill : Skill {
 	
 	public override void Start() {
 		base.Start();
-		if(moveStrategy == null) {
-			moveStrategy = new ActionStrategy();
-		}
 		moveExecutor = new MoveExecutor();
 		Executor.lockToGrid = lockToGrid;
-		Strategy.owner = this;
 		Executor.owner = this;
 	}
 	
-	public override void ActivateSkill() {
-		base.ActivateSkill();
-
-		Strategy.owner = this;
+	protected override void SetupStrategy() {
+		//N.B.: don't use superclass implementation
 		Strategy.zRangeDownMin = 0;
 		Strategy.zRangeDownMax = ZDelta;
 		Strategy.zRangeUpMin = 0;
 		Strategy.zRangeUpMax = ZDelta;
 		Strategy.xyRangeMin = 0;
 		Strategy.xyRangeMax = XYRange;
+	}
+
+	public override void ResetSkill() {
+		skillName = "Move";
+		skillGroup = "";
+		skillSorting=-1;
+	}
+	public override void ResetActionSkill() {
+		overlayColor = new Color(0.3f, 0.3f, 0.3f, 0.7f);
+		highlightColor = new Color(0.5f, 0.5f, 0.5f, 1.0f);	
+	}
 	
+	public override void ActivateSkill() {
 		Executor.owner = this;	
 		Executor.lockToGrid = lockToGrid;
 		Executor.animateTemporaryMovement = animateTemporaryMovement;
 		Executor.XYSpeed = XYSpeed;
 		Executor.ZSpeedUp = ZSpeedUp;
 		Executor.ZSpeedDown = ZSpeedDown;	
-		Strategy.Activate();
 		Executor.Activate();
 
-		PresentMoves();
+		base.ActivateSkill();
 	}	
 	
-	protected virtual void PresentMoves() {
-		
+	protected override PathNode[] GetValidActionTiles() {
+		return strategy.GetValidMoves();
 	}
 
 	public override void DeactivateSkill() {
 		if(!isActive) { return; }
-		Strategy.Deactivate();
 		Executor.Deactivate();
 		base.DeactivateSkill();
 	}
 	
 	public override void Update() {
-		base.Update();
 		if(!isActive) { return; }
-		Strategy.owner = this;
 		Executor.owner = this;
-		Strategy.Update();
+		base.Update();
 		Executor.Update();	
 	}
 
-	public override void Reset() {
-		base.Reset();
-		skillName = "Move";
-		skillSorting = -1;
-	}
 	public override void Cancel() {
 		if(!isActive) { return; }
 		Executor.Cancel();

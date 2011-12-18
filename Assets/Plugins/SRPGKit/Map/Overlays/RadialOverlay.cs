@@ -45,8 +45,10 @@ public class RadialOverlay : Overlay {
 	public void UpdateOriginAndRadius(Vector3 pos, float rad) {
 		origin = pos;
 		radius = rad;
-		shadeMaterial.SetVector("_Origin", new Vector4(origin.x, origin.y, origin.z, 1));
-		shadeMaterial.SetFloat("_Radius", radius);		
+		if(shadeMaterial != null) {
+			shadeMaterial.SetVector("_Origin", new Vector4(origin.x, origin.y, origin.z, 1));
+			shadeMaterial.SetFloat("_Radius", radius);		
+		}
 	}
 	
 	override protected void CreateShadeMaterial () {

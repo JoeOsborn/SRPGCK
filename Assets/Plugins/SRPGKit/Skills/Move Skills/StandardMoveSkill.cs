@@ -3,13 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 
 public class StandardMoveSkill : MoveSkill {
-	public float moveSpeed=10.0f;
-	
 	public bool drawPath=true;
 	public bool useOnlyOneWaypoint=false;
 	
-	public Color overlayColor = new Color(0.3f, 0.3f, 0.3f, 0.7f);
-	public Color highlightColor = new Color(0.5f, 0.5f, 0.5f, 1.0f);
 	public Material pathMaterial;
 
 	public Vector3 moveDest=Vector3.zero;
@@ -27,102 +23,93 @@ public class StandardMoveSkill : MoveSkill {
 	[HideInInspector]
 	[SerializeField]
 	List<PathNode> waypoints;
-	
-	public CharacterController probePrefab;
-	[HideInInspector]
-	[SerializeField]
-	CharacterController probe;
 	[HideInInspector]
 	public LineRenderer lines;
 	
+	//for path-drawing
 	public float newNodeThreshold=0.05f;
-	
 	public float NewNodeThreshold { get { return lockToGrid ? 1 : newNodeThreshold; } }
-	
-	//if lockToGrid
-	float lastIndicatorKeyboardMove=0;
-	float indicatorKeyboardMoveThreshold=0.3f;
-
-	public Overlay overlay;
-	//if !lockToGrid
-	public RadialOverlayType overlayType = RadialOverlayType.Sphere;
-	public bool drawOverlayRim = false;
-	public bool drawOverlayVolume = false;
-	//TODO: support for inverting grid-locked overlay
-	public bool invertOverlay = false;
 	
 	[HideInInspector]
 	public float xyRangeSoFar=0;
-	
-	protected GridOverlay _GridOverlay { get { return overlay as GridOverlay; } }	
-	protected RadialOverlay _RadialOverlay { get { return overlay as RadialOverlay; } }	
 	
 	public bool waypointsAreIncremental=true;
 
 	public bool immediatelyFollowDrawnPath=false;
 	public bool canCancelMovement=true;
 	
-	protected void UpdateOverlay() {
+	protected override PathNode[] GetValidActionTiles() {
+		if(!lockToGrid) { return null; }
+		return Strategy.GetValidMoves(
+			moveDest, 
+			0, Strategy.xyRangeMax-xyRangeSoFar, 
+			0, Strategy.zRangeDownMax, 
+			0, Strategy.zRangeUpMax
+		);
+	}
+	
+	//for some reason, putting UpdateParameters inside of CreateOverlay -- even with
+	//checks to see if the overlay already existed -- caused horrible unity crashers.
+	
+	protected void UpdateOverlayParameters() {
+		if(overlay == null) { return; }
 		if(lockToGrid) {
-			PathNode[] destinations = Strategy.GetValidMoves(
-				moveDest, 
-				0, Strategy.xyRangeMax-xyRangeSoFar, 
-				0, Strategy.zRangeDownMax, 
-				0, Strategy.zRangeUpMax
-			);
-			if(overlay != null) {
-				_GridOverlay.UpdateDestinations(destinations);
-			} else {
-				overlay = map.PresentGridOverlay(
-					skillName, character.gameObject.GetInstanceID(), 
-					overlayColor,
-					highlightColor,
-					destinations
-				);
-			}
+			_GridOverlay.UpdateDestinations(GetValidActionTiles());
 		} else {
 			Vector3 charPos = moveDest;
-			if(overlay != null) {
-				_RadialOverlay.tileRadius = (Strategy.xyRangeMax - xyRangeSoFar);
-				_RadialOverlay.UpdateOriginAndRadius(
-					map.TransformPointWorld(charPos), 
-					(Strategy.xyRangeMax - xyRangeSoFar)*map.sideLength
+			_RadialOverlay.tileRadius = (Strategy.xyRangeMax - xyRangeSoFar);
+			_RadialOverlay.UpdateOriginAndRadius(
+				map.TransformPointWorld(charPos), 
+				(Strategy.xyRangeMax - xyRangeSoFar)*map.sideLength
+			);
+		}
+	}
+	
+	protected override void CreateOverlay() {
+		if(overlay != null) { return; }
+		//N.B.: do not call base implementation atm
+		if(lockToGrid) {
+			PathNode[] destinations = GetValidActionTiles();
+			overlay = map.PresentGridOverlay(
+				skillName, character.gameObject.GetInstanceID(), 
+				overlayColor,
+				highlightColor,
+				destinations
+			);
+		} else {
+			Vector3 charPos = moveDest;
+			if(overlayType == RadialOverlayType.Sphere) {
+				overlay = map.PresentSphereOverlay(
+					skillName, character.gameObject.GetInstanceID(), 
+					overlayColor,
+					charPos,
+					Strategy.xyRangeMax - xyRangeSoFar,
+					drawOverlayRim,
+					drawOverlayVolume,
+					invertOverlay
 				);
-			} else {
-				if(overlayType == RadialOverlayType.Sphere) {
-					overlay = map.PresentSphereOverlay(
-						skillName, character.gameObject.GetInstanceID(), 
-						overlayColor,
-						charPos,
-						Strategy.xyRangeMax - xyRangeSoFar,
-						drawOverlayRim,
-						drawOverlayVolume,
-						invertOverlay
-					);
-				} else if(overlayType == RadialOverlayType.Cylinder) {
-					overlay = map.PresentCylinderOverlay(
-						skillName, character.gameObject.GetInstanceID(), 
-						overlayColor,
-						charPos,
-						Strategy.xyRangeMax - xyRangeSoFar,
-						Strategy.zRangeDownMax,
-						drawOverlayRim,
-						drawOverlayVolume,
-						invertOverlay
-					);
-				}
+			} else if(overlayType == RadialOverlayType.Cylinder) {
+				overlay = map.PresentCylinderOverlay(
+					skillName, character.gameObject.GetInstanceID(), 
+					overlayColor,
+					charPos,
+					Strategy.xyRangeMax - xyRangeSoFar,
+					Strategy.zRangeDownMax,
+					drawOverlayRim,
+					drawOverlayVolume,
+					invertOverlay
+				);
 			}
 		}
 	}
 	
 	override public void ActivateSkill() {
+		targetingMode = TargetingMode.Custom;
 		moveDest = character.TilePosition;
 		initialPosition = moveDest;
 		xyRangeSoFar = 0;
-		xyRangeSoFar = 0;
 		nodeCount = 0;
 		endOfPath = null;
-		awaitingConfirmation=false;
 		base.ActivateSkill();
 	}
 	
@@ -134,10 +121,11 @@ public class StandardMoveSkill : MoveSkill {
 		xyRangeSoFar = 0;
 		nodeCount = 0;
 		awaitingConfirmation=false;
-		if(map.IsShowingOverlay(skillName, character.gameObject.GetInstanceID())) {
-			map.RemoveOverlay(skillName, character.gameObject.GetInstanceID());
-		}	
-		overlay = null;
+	}
+	
+	public override void ResetActionSkill() {
+		base.ResetActionSkill();
+		targetingMode = TargetingMode.Custom;
 	}
 	
 	protected bool DestIsBacktrack(Vector3 newDest) {
@@ -152,16 +140,10 @@ public class StandardMoveSkill : MoveSkill {
 			newDest == waypoints[waypoints.Count-1].prev.pos)
 			)));
 	}
-	
-	override public void Update () {
-		base.Update();
-		if(character == null || !character.isActive) { return; }
-		if(!isActive) { return; }
-		if(!arbiter.IsLocalPlayer(character.EffectiveTeamID)) {
-			return;
-		}
 
-		//mouse to...
+	protected override void ActivateTargetCustom() {
+	}
+	protected override void UpdateTargetCustom() {
 		if(supportMouse) {
 			if(Input.GetMouseButton(0)) {
 				Ray r = Camera.main.ScreenPointToRay(Input.mousePosition);
@@ -213,27 +195,6 @@ public class StandardMoveSkill : MoveSkill {
 				}
 			}
 		}
-		
-/*		if(supportMouse && Input.GetMouseButton(0)) {
-			Ray r = Camera.main.ScreenPointToRay(Input.mousePosition);
-			Vector3 hitSpot;
-			bool inside = overlay.Raycast(r, out hitSpot);
-			if(inside && overlay.ContainsPosition(hitSpot)) {
-				moveDest = hitSpot;
-				//move the probe here
-				IncrementalMove(moveDest);
-				if(Input.GetMouseButtonDown(0)) {
-					if(Time.time-firstClickTime > doubleClickThreshold) {
-						firstClickTime = Time.time;
-					} else  {
-						firstClickTime = -1;
-						PerformMove(moveDest);
-					}
-				}
-			}
-		}*/
-		
-		
 		float h = Input.GetAxis("Horizontal");
 		float v = Input.GetAxis("Vertical");
 		if(supportKeyboard && (h != 0 || v != 0)) {
@@ -269,7 +230,7 @@ public class StandardMoveSkill : MoveSkill {
 				
 				//try to move the probe
 				Vector3 lastProbePos = probe.transform.position;
-				probe.SimpleMove(offset*moveSpeed);
+				probe.SimpleMove(offset*keyboardMoveSpeed);
 				
 				Vector3 newDest = map.InverseTransformPointWorld(probe.transform.position);
 				PathNode pn = overlay.PositionAt(newDest);
@@ -280,9 +241,13 @@ public class StandardMoveSkill : MoveSkill {
 							lines.SetPosition(nodeCount, probe.transform.position);
 						}
 						UpdatePath(newDest);
+					} else {
+						probe.transform.position = lastProbePos;
 					}
 				} else {
-					probe.transform.position = lastProbePos;
+					if(drawPath && pn != null && pn.canStop) {
+						lines.SetPosition(nodeCount, probe.transform.position);
+					}
 				}
 			}
 		}
@@ -296,24 +261,28 @@ public class StandardMoveSkill : MoveSkill {
 				ConfirmWaypoint();
 			}
 		}
-		if(supportKeyboard && Input.GetButtonDown("Cancel")) {
-			if(canCancelMovement) {
-				if(requireConfirmation && awaitingConfirmation) {
-					awaitingConfirmation = false;
-					if(performTemporaryMoves) {
-						TemporaryMove(Executor.position);
-					}
-					ResetPosition();
-				} else if(waypoints.Count > 0 && !waypointsAreIncremental && !immediatelyFollowDrawnPath) {
-					UnwindToLastWaypoint();
-				} else if(endOfPath == null || endOfPath.prev == null) {
-					Cancel();
-				} else {
-					ResetPosition();
+	}
+	protected override void PresentMovesCustom() {
+	}
+	protected override void DeactivateTargetCustom() {
+	}
+	protected override void CancelTargetCustom() {
+		if(canCancelMovement) {
+			if(requireConfirmation && awaitingConfirmation) {
+				awaitingConfirmation = false;
+				if(performTemporaryMoves) {
+					TemporaryMove(Executor.position);
 				}
+				ResetPosition();
+			} else if(waypoints.Count > 0 && !waypointsAreIncremental && !immediatelyFollowDrawnPath) {
+				UnwindToLastWaypoint();
+			} else if(endOfPath == null || endOfPath.prev == null) {
+				Cancel();
 			} else {
-				PerformMoveToPathNode(endOfPath);
+				ResetPosition();
 			}
+		} else {
+			PerformMoveToPathNode(endOfPath);
 		}
 	}
 	
@@ -367,7 +336,7 @@ public class StandardMoveSkill : MoveSkill {
 			}
 			waypoints.Add(endOfPath);
 			endOfPath = new PathNode(endOfPath.pos, null, xyRangeSoFar);
-			UpdateOverlay();
+			UpdateOverlayParameters();
 		}
 	}
 	
@@ -395,7 +364,7 @@ public class StandardMoveSkill : MoveSkill {
 		}
 		if(drawPath) {
 			//update the overlay
-			UpdateOverlay();
+			UpdateOverlayParameters();
 			if(lockToGrid) {
 				Vector4[] selPts = _GridOverlay.selectedPoints ?? new Vector4[0];
 				_GridOverlay.SetSelectedPoints(selPts.Concat(
@@ -491,11 +460,10 @@ public class StandardMoveSkill : MoveSkill {
 			}
 		}
 		//update the overlay
-		UpdateOverlay();	
+		UpdateOverlayParameters();	
 	}
 	
-	override protected void PresentMoves() {
-		base.PresentMoves();
+	override public void PresentMoves() {
 		initialPosition = character.TilePosition;
 		moveDest = initialPosition;
 		probe = Object.Instantiate(probePrefab, Vector3.zero, Quaternion.identity) as CharacterController;
@@ -508,6 +476,7 @@ public class StandardMoveSkill : MoveSkill {
 			lines.useWorldSpace = true;
 		}
 		ResetPosition();
+		base.PresentMoves();
 	}
 	
 	protected void ResetPosition() {
@@ -530,8 +499,8 @@ public class StandardMoveSkill : MoveSkill {
 			} else {
 				endOfPath = null;
 			}
-			UpdateOverlay();
-			if(lockToGrid) {
+			UpdateOverlayParameters();
+			if(overlay != null && lockToGrid) {
 				_GridOverlay.SetSelectedPoints(new Vector4[0]);
 			}
 		}

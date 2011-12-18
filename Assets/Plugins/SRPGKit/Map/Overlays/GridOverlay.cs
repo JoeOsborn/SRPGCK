@@ -21,7 +21,7 @@ public class GridOverlay : Overlay {
 	}
 	public void SetSelectedPoints(Vector4[] points) {
 		selectedPoints = points;
-		if(map == null || selectedColor == Color.clear || selectedHighlightMaterial == null) { return; }
+		if(map == null || selectedHighlightMaterial == null) { return; }
 /*		Debug.Log("set sel ct "+points.Length);*/
 		selectedHighlightMaterial.SetTexture("_Boxes", BoundsTextureFor(indicatorTex, selectedPoints));
 	}
@@ -87,7 +87,7 @@ public class GridOverlay : Overlay {
 		if(blank == null || blank.Length != mw * mh) {
 			blank = new Color32[(int)mw*(int)mh];
 		}
-		if(color != Color.clear) {
+/*		if(color != Color.clear) {*/
 			Shader shader = Shader.Find("Custom/GridOverlayClip");
 			shadeMaterial = new Material(shader);
 			shadeMaterial.SetVector("_MapWorldOrigin", new Vector4(map.transform.position.x, map.transform.position.y, map.transform.position.z, 1) + new Vector4(-map.sideLength/2.0f,0.01f,-map.sideLength/2.0f,0));
@@ -95,9 +95,9 @@ public class GridOverlay : Overlay {
 			shadeMaterial.SetVector("_MapSizeInTiles", new Vector4(mw, 64, mh, 1));
 			shadeMaterial.SetColor("_Color", color);
 			UpdateDestinations(destinations);
-		}
+/*		}
 		if(selectedColor != Color.clear) {
-			Shader highlightShader = Shader.Find("Custom/GridOverlayClip");
+*/			Shader highlightShader = Shader.Find("Custom/GridOverlayClip");
 			selectedHighlightMaterial = new Material(highlightShader);
 			selectedHighlightMaterial.SetVector("_MapWorldOrigin", new Vector4(map.transform.position.x, map.transform.position.y, map.transform.position.z, 1) + new Vector4(-map.sideLength/2.0f,0.01f,-map.sideLength/2.0f,0));
 			selectedHighlightMaterial.SetVector("_MapTileSize", new Vector4(map.sideLength, map.tileHeight, map.sideLength, 1));
@@ -105,7 +105,7 @@ public class GridOverlay : Overlay {
 			selectedHighlightMaterial.SetColor("_Color", selectedColor);
 			indicatorTex = BoundsTextureFor(indicatorTex, selectedPoints);
 			selectedHighlightMaterial.SetTexture("_Boxes", indicatorTex);
-		}
+/*		}*/
 	}
 	
 	override protected void AddShadeMaterial() {
@@ -115,6 +115,7 @@ public class GridOverlay : Overlay {
 	
 	override public PathNode PositionAt(Vector3 hitSpot) {
 		const float ZEpsilon = 0.0015f;
+		if(positions == null) { return null; }
 		foreach(Vector4 p in positions) {
 			if(p.x == Mathf.Floor(hitSpot.x) &&
 			   p.y == Mathf.Floor(hitSpot.y)) {

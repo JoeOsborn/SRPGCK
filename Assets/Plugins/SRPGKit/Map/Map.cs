@@ -812,6 +812,11 @@ public class Map : MonoBehaviour {
 		if(overlays == null) { overlays = new Dictionary<string, Dictionary<int, Overlay>>(); }
 		if(!overlays.ContainsKey(category)) {
 			overlays[category] = new Dictionary<int, Overlay>();
+		} else if(overlays[category].ContainsKey(id)) {
+			Overlay existing = overlays[category][id];
+			if(existing is GridOverlay) { return existing as GridOverlay; }
+			Debug.LogError("Expected grid overlay, but got "+existing+" for cat "+category+" and id "+id);
+			return null;
 		}
 		GameObject go = new GameObject();
 		go.transform.parent = this.transform;
@@ -828,6 +833,11 @@ public class Map : MonoBehaviour {
 		if(overlays == null) { overlays = new Dictionary<string, Dictionary<int, Overlay>>(); }
 		if(!overlays.ContainsKey(category)) {
 			overlays[category] = new Dictionary<int, Overlay>();
+		} else if(overlays[category].ContainsKey(id)) {
+			Overlay existing = overlays[category][id];
+			if(existing is RadialOverlay) { return existing as RadialOverlay; }
+			Debug.LogError("Expected radial overlay, but got "+existing+" for cat "+category+" and id "+id);
+			return null;
 		}
 		GameObject go = new GameObject();
 		go.transform.parent = this.transform;
@@ -849,6 +859,11 @@ public class Map : MonoBehaviour {
 		if(overlays == null) { overlays = new Dictionary<string, Dictionary<int, Overlay>>(); }
 		if(!overlays.ContainsKey(category)) {
 			overlays[category] = new Dictionary<int, Overlay>();
+		} else if(overlays[category].ContainsKey(id)) {
+			Overlay existing = overlays[category][id];
+			if(existing is RadialOverlay) { return existing as RadialOverlay; }
+			Debug.LogError("Expected radial overlay, but got "+existing+" for cat "+category+" and id "+id);
+			return null;
 		}
 		GameObject go = new GameObject();
 		go.transform.parent = this.transform;

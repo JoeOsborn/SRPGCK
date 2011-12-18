@@ -3,9 +3,6 @@ using System.Collections;
 
 [System.Serializable]
 public class WaitSkill : ActionSkill {
-	float firstClickTime = -1;
-	float doubleClickThreshold = 0.3f;
-
 	[HideInInspector]
  	[System.NonSerialized]
 	public Transform instantiatedWaitArrows;
@@ -21,16 +18,12 @@ public class WaitSkill : ActionSkill {
 	
 	public GameObject waitArrows;
 	
-	public override void Reset() {
-		base.Reset();
-		skillName = "Wait";
-		skillSorting = 100000;
+	public override void ResetActionSkill() {
 		if(waitArrows == null) {
 			waitArrows = Resources.LoadAssetAtPath("Assets/SRPGKit/Prefabs/Wait Arrows.prefab", typeof(GameObject)) as GameObject;
 		}
-		targetColor = Color.clear;
+		overlayColor = Color.clear;
 		highlightColor = Color.clear;
-		targetingMode = TargetingMode.Cardinal;
 		SetParam("range.xy.min", 0);
 		SetParam("range.xy.max", 0);
 		SetParam("range.z.up.min", 0);
@@ -40,6 +33,7 @@ public class WaitSkill : ActionSkill {
 		SetParam("radius.xy", 0);
 		SetParam("radius.z.up", 0);
 		SetParam("radius.z.down", 0);
+		targetingMode = TargetingMode.Cardinal;
 		StatEffect facingEffect = new StatEffect();
 		facingEffect.effectType = StatEffectType.ChangeFacing;
 		facingEffect.target = StatEffectTarget.Applier;
@@ -52,6 +46,11 @@ public class WaitSkill : ActionSkill {
 				facingEffect, endTurnEffect
 			}}
 		};
+	}
+	
+	public override void ResetSkill() {
+		skillName = "Wait";
+		skillSorting = 100000;
 	}
 	
 	public override void ActivateSkill() {
@@ -73,11 +72,10 @@ public class WaitSkill : ActionSkill {
 		instantiatedWaitArrows = null;
 		base.DeactivateSkill();
 	}
-	public override void Update() {
-		base.Update();
+	protected override void UpdateTarget() {
+		base.UpdateTarget();
 		if(!isActive) { return; }
 		//look for clicks on our four arrows
-		//look for arrow key presses
 		if(supportMouse && Input.GetMouseButton(0) && (!awaitingConfirmation || !requireConfirmation)) {
 			Ray r = Camera.main.ScreenPointToRay(Input.mousePosition);
 			RaycastHit hitInfo;
@@ -141,6 +139,7 @@ public class WaitSkill : ActionSkill {
 	}
 	
 	protected Transform currentArrowTransform { get {
+		if(instantiatedWaitArrows == null) { return null; }
 		switch(currentArrow) {
 			case Arrow.XP: return instantiatedWaitArrows.Find("XP");
 			case Arrow.YP: return instantiatedWaitArrows.Find("YP");

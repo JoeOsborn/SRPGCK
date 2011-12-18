@@ -7,12 +7,25 @@ public enum TargetingMode {
 	Cardinal, //one of four angles
 	Radial, //any Quaternion
 	SelectRegion, //one of a number of regions
-	Path //a specific path
+	Path, //a specific path
 	//path?
 	//waypoints?
+	Custom
 };
 
 public class ActionSkill : Skill, ITilePickerOwner {
+	public float keyboardMoveSpeed=10.0f;
+
+	public bool lockToGrid=true;
+
+	//if lockToGrid
+	protected float lastIndicatorKeyboardMove=0;
+	protected float indicatorKeyboardMoveThreshold=0.3f;
+
+	//TODO: support for inverting grid-locked overlay
+	public bool invertOverlay = false;
+	
+		
 	public StatEffectGroup[] targetEffects;
 
 	override public bool isPassive { get { return false; } }
@@ -21,15 +34,16 @@ public class ActionSkill : Skill, ITilePickerOwner {
 	public TargetingMode targetingMode = TargetingMode.Pick;
 	
 	//TODO: expose in editor
-	public Color targetColor = new Color(0.6f, 0.3f, 0.2f, 0.7f);
+	public Color overlayColor = new Color(0.6f, 0.3f, 0.2f, 0.7f);
 	public Color highlightColor = new Color(0.9f, 0.6f, 0.4f, 0.85f);
-	
+		
 	//cardinal/radial targeting mode
 	[HideInInspector]
 	public Quaternion initialFacing;
 	
 	//tile generation strategy (line/range/cone/etc)
 	public ActionStrategy strategy;
+	public ActionStrategy Strategy { get { return strategy; } }
 	
 	//io
 	public bool supportKeyboard = true;	
@@ -37,17 +51,26 @@ public class ActionSkill : Skill, ITilePickerOwner {
 	public bool requireConfirmation = true;
 	public bool awaitingConfirmation = false;
 	public float indicatorCycleLength=1.0f;
-	public MoveExecutor Executor { get { return null; } }
+	virtual public MoveExecutor Executor { get { return null; } }
 	
 	//grid
-	public GridOverlay overlay;
+	public Overlay overlay;
+	public Overlay Overlay { get { return overlay; } }
+	protected GridOverlay _GridOverlay { get { return overlay as GridOverlay; } }	
+	protected RadialOverlay _RadialOverlay { get { return overlay as RadialOverlay; } }	
+	
+	public RadialOverlayType overlayType = RadialOverlayType.Sphere;
+	public bool drawOverlayRim = false;
+	public bool drawOverlayVolume = false;
 	
 	//pick
 	[SerializeField]
-	TilePicker tilePicker;
+	protected TilePicker tilePicker;
+	
+	protected float firstClickTime = -1;
+	protected float doubleClickThreshold = 0.3f;
 	
 	public Map Map { get { return map; } }
-	public GridOverlay Overlay { get { return overlay; } }
 	public bool SupportKeyboard { get { return supportKeyboard; } }
 	public bool SupportMouse { get { return supportMouse; } }
 	
@@ -59,26 +82,30 @@ public class ActionSkill : Skill, ITilePickerOwner {
 	public float IndicatorCycleLength { get { return indicatorCycleLength; } }
 	
 	public PathNode[] targetTiles;
-		
-	//effect parameters (elements, w/ev)
-	//effect
-	//animated action (executor?)
-
-	//knockback (executor on defender? move executor tie-in?)
-	//target reaction skills and support skills
+	
+	public CharacterController probePrefab;
+	[HideInInspector]
+	[SerializeField]
+	protected CharacterController probe;
 	
 	public override void Start() {
 		base.Start();
+		if(strategy == null) {
+			strategy = new ActionStrategy();
+		}
 		strategy.owner = this;
 		/*
 		executor = new MoveExecutor();
 		executor.owner = this;
 		*/
 	}
-	public override void Reset() {
-		base.Reset();
+	public override void ResetSkill() {
 		skillName = "Attack";
 		skillGroup = "Act";
+	}
+	public virtual void ResetActionSkill() {
+		overlayColor = new Color(0.6f, 0.3f, 0.2f, 0.7f);
+		highlightColor = new Color(0.9f, 0.6f, 0.4f, 0.85f);
 		if(!HasParam("range.z.up.min")) {
 			AddParam("range.z.up.min", Formula.Constant(0));
 		}
@@ -120,7 +147,10 @@ public class ActionSkill : Skill, ITilePickerOwner {
 			healthDamage.value = Formula.Lookup("damage", LookupType.ActorSkillParam);
 			targetEffects = new StatEffectGroup[]{new StatEffectGroup{effects=new StatEffect[]{healthDamage}}};
 		}
-		
+	}
+	public override void Reset() {
+		base.Reset();
+		ResetActionSkill();
 	}
 	public override void Cancel() {
 		if(!isActive) { return; }
@@ -139,6 +169,8 @@ public class ActionSkill : Skill, ITilePickerOwner {
 	
 	public override void ActivateSkill() {
 		if(isActive) { return; }
+		base.ActivateSkill();
+		awaitingConfirmation=false;
 		initialFacing = character.Facing;
 		switch(targetingMode) {
 			case TargetingMode.Self:
@@ -154,10 +186,19 @@ public class ActionSkill : Skill, ITilePickerOwner {
 				break;
 			case TargetingMode.Path: //??
 				break;
+			case TargetingMode.Custom:
+				ActivateTargetCustom();
+				break;
 		}
-		base.ActivateSkill();
 		strategy.owner = this;
 		
+		SetupStrategy();
+		
+		strategy.Activate();
+		
+		PresentMoves();
+	}	
+	protected virtual void SetupStrategy() {
 		strategy.zRangeUpMin = GetParam("range.z.up.min", 0);
 		strategy.zRangeUpMax = GetParam("range.z.up.max", 1);
 		strategy.zRangeDownMin = GetParam("range.z.down.min", 0);
@@ -168,11 +209,7 @@ public class ActionSkill : Skill, ITilePickerOwner {
 		strategy.zRadiusUp = GetParam("radius.z.up", 0);
 		strategy.zRadiusDown = GetParam("radius.z.down", 0);
 		strategy.xyRadius = GetParam("radius.xy", 0);
-		
-		strategy.Activate();
-		
-		PresentMoves();
-	}	
+	}
 	public override void DeactivateSkill() {
 		if(!isActive) { return; }
 		strategy.Deactivate();
@@ -180,6 +217,9 @@ public class ActionSkill : Skill, ITilePickerOwner {
 		if(map.IsShowingOverlay(skillName, character.gameObject.GetInstanceID())) {
 			map.RemoveOverlay(skillName, character.gameObject.GetInstanceID());
 		}	
+		if(targetingMode == TargetingMode.Custom) {
+			DeactivateTargetCustom();
+		}
 		base.DeactivateSkill();
 	}
 	public override void Update() {
@@ -191,6 +231,12 @@ public class ActionSkill : Skill, ITilePickerOwner {
 			return;
 		}
 		if(GUIUtility.hotControl != 0) { return; }
+	  UpdateTarget();
+	  UpdateCancel();
+		strategy.Update();
+	}
+	
+	protected virtual void UpdateTarget() {
 	  float h = Input.GetAxis("Horizontal");
 	  float v = Input.GetAxis("Vertical");
 		switch(targetingMode) {
@@ -239,30 +285,39 @@ public class ActionSkill : Skill, ITilePickerOwner {
 			case TargetingMode.Path:
 				//update path (see move skill)
 				break;
+			case TargetingMode.Custom:
+				UpdateTargetCustom();
+				break;
 		}
+	}
+	
+	protected virtual void UpdateCancel() {
 	  if(targetingMode != TargetingMode.Pick &&
 			 supportKeyboard && 
 			 Input.GetButtonDown("Cancel")) {
-	  	if(awaitingConfirmation && requireConfirmation) {
-	  		awaitingConfirmation = false;
-				targetTiles = new PathNode[0];
-				overlay.SetSelectedPoints(new Vector4[0]);
-	  	} else {
-	  		//Back out of skill!
-	  		Cancel();
-	  	}
+		  if(targetingMode == TargetingMode.Custom) {
+				CancelTargetCustom();
+			} else {
+				if(awaitingConfirmation && requireConfirmation) {
+	  			awaitingConfirmation = false;
+					targetTiles = new PathNode[0];
+					_GridOverlay.SetSelectedPoints(new Vector4[0]);
+	  		} else {
+	  			//Back out of skill!
+	  			Cancel();
+	  		}
+			}
 	  }
-		strategy.Update();
-		//executor.Update();	
 	}
 	
 	public override void ApplySkill() {
 		int hitType = (int)GetParam("hitType", 0);
 		currentHitType = hitType;
-		if(targetEffects.Length == 0) {
+/*		if(targetEffects.Length == 0) {
 			Debug.LogError("No effects in attack skill "+skillName+"!");
 		}
-		if(targetEffects[hitType].Length > 0) {
+*/
+		if(targetEffects.Length > 0 && targetEffects[hitType].Length > 0) {
 			targets = strategy.CharactersForTargetedTiles(targetTiles);
 			ApplyEffectsTo(targetEffects[hitType].effects, targets);
 		}
@@ -273,15 +328,25 @@ public class ActionSkill : Skill, ITilePickerOwner {
 		Cancel();
 	}
 	
+	virtual protected PathNode[] GetValidActionTiles() {
+		return strategy.GetValidActions();
+	}
+	
+	virtual protected void CreateOverlay() {
+		//TODO: switch overlay based on lockToGrid arg
+		if(overlay == null) {
+			PathNode[] destinations = GetValidActionTiles();
+			overlay = map.PresentGridOverlay(
+				skillName, character.gameObject.GetInstanceID(), 
+				overlayColor,
+				highlightColor,
+				destinations
+			);
+		}
+	}
+	
 	virtual public void PresentMoves() {
-		PathNode[] destinations = strategy.GetValidActions();
-		Vector3 charPos = character.TilePosition;
-		overlay = map.PresentGridOverlay(
-			skillName, character.gameObject.GetInstanceID(), 
-			targetColor,
-			highlightColor,
-			destinations
-		);
+		CreateOverlay();
 		awaitingConfirmation = false;
 		switch(targetingMode) {
 			case TargetingMode.Self:
@@ -292,7 +357,7 @@ public class ActionSkill : Skill, ITilePickerOwner {
 				}
 				break;
 			case TargetingMode.Pick:
-				tilePicker.FocusOnPoint(charPos);
+				tilePicker.FocusOnPoint(character.TilePosition);
 				break;
 			case TargetingMode.Cardinal://??
 			case TargetingMode.Radial://??
@@ -301,18 +366,32 @@ public class ActionSkill : Skill, ITilePickerOwner {
 			case TargetingMode.Path:
 			//draw path
 				break;
+			case TargetingMode.Custom:
+				PresentMovesCustom();
+				break;
 		}
+	}
+	
+	protected virtual void ActivateTargetCustom() {
+	}
+	protected virtual void UpdateTargetCustom() {
+	}
+	protected virtual void PresentMovesCustom() {
+	}
+	protected virtual void DeactivateTargetCustom() {
+	}
+	protected virtual void CancelTargetCustom() {
 	}
 
 	public void TentativePick(TilePicker tp, Vector3 p) {
 		targetTiles = strategy.GetTargetedTiles(p);
-		overlay.SetSelectedPoints(map.CoalesceTiles(targetTiles));
+		_GridOverlay.SetSelectedPoints(map.CoalesceTiles(targetTiles));
 		//TODO: show preview indicator until cancelled
 	}	
 	
 	public void TentativePick(TilePicker tp, PathNode pn) {
 		targetTiles = strategy.GetTargetedTiles(pn.pos);
-		overlay.SetSelectedPoints(map.CoalesceTiles(targetTiles));
+		_GridOverlay.SetSelectedPoints(map.CoalesceTiles(targetTiles));
 		//TODO: show preview indicator until cancelled
 	}
 	
@@ -332,7 +411,7 @@ public class ActionSkill : Skill, ITilePickerOwner {
 	
 	public void TentativePickFacing(Quaternion f) {
 		targetTiles = strategy.GetTargetedTiles(f);
-		overlay.SetSelectedPoints(map.CoalesceTiles(targetTiles));
+		_GridOverlay.SetSelectedPoints(map.CoalesceTiles(targetTiles));
 		//TODO: show preview indicator until cancelled
 	}
 	public void PickFacing(Quaternion f) {

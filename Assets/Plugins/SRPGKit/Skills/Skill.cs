@@ -54,7 +54,9 @@ public class Skill : MonoBehaviour {
 	public virtual void ActivateSkill() {
 		if(isPassive) { return; }
 		isActive = true;
-		reactionStrategy.owner = this;	
+		if(reactionStrategy != null) {
+			reactionStrategy.owner = this;	
+		}
 	}
 	public virtual void DeactivateSkill() {
 		if(isPassive) { return; }
@@ -69,9 +71,12 @@ public class Skill : MonoBehaviour {
 	public virtual void Cancel() {
 		if(isPassive) { return; }
 		DeactivateSkill();
-	}	
+	}
+	public virtual void ResetSkill() {
+		
+	}
 	public virtual void Reset() {
-
+		ResetSkill();
 	}
 	public virtual void ApplySkill() {
 		map.BroadcastMessage("SkillApplied", this, SendMessageOptions.DontRequireReceiver);
