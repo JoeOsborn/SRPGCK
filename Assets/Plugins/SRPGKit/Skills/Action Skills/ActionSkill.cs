@@ -6,7 +6,8 @@ public enum TargetingMode {
 	Pick, //one of a number of tiles
 	Cardinal, //one of four angles
 	Radial, //any Quaternion
-	SelectLine //one of a number of lines
+	SelectRegion, //one of a number of regions
+	Path //a specific path
 	//path?
 	//waypoints?
 };
@@ -139,11 +140,20 @@ public class ActionSkill : Skill, ITilePickerOwner {
 	public override void ActivateSkill() {
 		if(isActive) { return; }
 		initialFacing = character.Facing;
-		if(targetingMode == TargetingMode.Pick) {
-			tilePicker = new TilePicker();
-			tilePicker.owner = this;
-		} else {
-			//TODO: radial and cardinal
+		switch(targetingMode) {
+			case TargetingMode.Self:
+				//??
+				break;
+			case TargetingMode.Pick:
+				tilePicker = new TilePicker();
+				tilePicker.owner = this;
+				break;
+			case TargetingMode.Cardinal://??
+			case TargetingMode.Radial://??
+			case TargetingMode.SelectRegion://??
+				break;
+			case TargetingMode.Path: //??
+				break;
 		}
 		base.ActivateSkill();
 		strategy.owner = this;
@@ -181,44 +191,67 @@ public class ActionSkill : Skill, ITilePickerOwner {
 			return;
 		}
 		if(GUIUtility.hotControl != 0) { return; }
-		if(targetingMode == TargetingMode.Pick) {
-			tilePicker.owner = this;
-			tilePicker.Update();
-		} else {
-			//TODO: radial and cardinal
-			float h = Input.GetAxis("Horizontal");
-			float v = Input.GetAxis("Vertical");
-			if(supportKeyboard && 
-				(h != 0 || v != 0) && 
-			  (!awaitingConfirmation || !requireConfirmation)) {
-				Vector2 d = map.TransformKeyboardAxes(h, v);
-				if(targetingMode == TargetingMode.Cardinal) {
-					if(d.x != 0 && d.y != 0) {
-						if(Mathf.Abs(d.x) > Mathf.Abs(d.y)) { d.x = Mathf.Sign(d.x); d.y = 0; }
-						else { d.x = 0; d.y = Mathf.Sign(d.y); }
+	  float h = Input.GetAxis("Horizontal");
+	  float v = Input.GetAxis("Vertical");
+		switch(targetingMode) {
+			case TargetingMode.Self:
+				if(supportKeyboard && Input.GetButtonDown("Confirm")) {
+					if(awaitingConfirmation || !requireConfirmation) {
+	  				awaitingConfirmation = false;
+						Pick(null, character.TilePosition);
+					} else {
+						TentativePick(null, character.TilePosition);
+						awaitingConfirmation = true;
 					}
 				}
-				FaceDirection(Mathf.Atan2(d.y, d.x)*Mathf.Rad2Deg);
-			}
-			if(supportKeyboard && 
-				 Input.GetButtonDown("Confirm")) {
-				if(awaitingConfirmation || !requireConfirmation) {
-	  	  	awaitingConfirmation = false;
-					PickFacing(character.Facing);
-				} else if(requireConfirmation) {
-					TentativePickFacing(character.Facing);
-					awaitingConfirmation = true;
-				}
-			}
-			if(supportKeyboard && Input.GetButtonDown("Cancel")) {
-				if(awaitingConfirmation && requireConfirmation) {
-					awaitingConfirmation = false;
-				} else {
-					//Back out of move phase!
-					Cancel();
-				}
-			}
+				break;
+			case TargetingMode.Pick:
+				tilePicker.owner = this;
+				tilePicker.Update();
+				break;
+			case TargetingMode.Cardinal:
+			case TargetingMode.Radial:
+			  if(supportKeyboard && (h != 0 || v != 0) && 
+			    (!awaitingConfirmation || !requireConfirmation)) {
+			  	Vector2 d = map.TransformKeyboardAxes(h, v);
+			  	if(targetingMode == TargetingMode.Cardinal) {
+			  		if(d.x != 0 && d.y != 0) {
+			  			if(Mathf.Abs(d.x) > Mathf.Abs(d.y)) { d.x = Mathf.Sign(d.x); d.y = 0; }
+			  			else { d.x = 0; d.y = Mathf.Sign(d.y); }
+			  		}
+			  	}
+			  	FaceDirection(Mathf.Atan2(d.y, d.x)*Mathf.Rad2Deg);
+			  }
+			  if(supportKeyboard && 
+			  	 Input.GetButtonDown("Confirm")) {
+			  	if(awaitingConfirmation || !requireConfirmation) {
+	  	    	awaitingConfirmation = false;
+			  		PickFacing(character.Facing);
+			  	} else if(requireConfirmation) {
+			  		TentativePickFacing(character.Facing);
+			  		awaitingConfirmation = true;
+			  	}
+			  }
+				break;
+			case TargetingMode.SelectRegion:
+				//change selected region
+				break;
+			case TargetingMode.Path:
+				//update path (see move skill)
+				break;
 		}
+	  if(targetingMode != TargetingMode.Pick &&
+			 supportKeyboard && 
+			 Input.GetButtonDown("Cancel")) {
+	  	if(awaitingConfirmation && requireConfirmation) {
+	  		awaitingConfirmation = false;
+				targetTiles = new PathNode[0];
+				overlay.SetSelectedPoints(new Vector4[0]);
+	  	} else {
+	  		//Back out of skill!
+	  		Cancel();
+	  	}
+	  }
 		strategy.Update();
 		//executor.Update();	
 	}
@@ -250,10 +283,24 @@ public class ActionSkill : Skill, ITilePickerOwner {
 			destinations
 		);
 		awaitingConfirmation = false;
-		if(targetingMode == TargetingMode.Pick) {		
-			tilePicker.FocusOnPoint(charPos);
-		} else {
-			//TODO: radial and cardinal
+		switch(targetingMode) {
+			case TargetingMode.Self:
+				if(requireConfirmation) {
+					TentativePick(null, character.TilePosition);
+				} else {
+					Pick(null, character.TilePosition);
+				}
+				break;
+			case TargetingMode.Pick:
+				tilePicker.FocusOnPoint(charPos);
+				break;
+			case TargetingMode.Cardinal://??
+			case TargetingMode.Radial://??
+			case TargetingMode.SelectRegion://??
+				break;
+			case TargetingMode.Path:
+			//draw path
+				break;
 		}
 	}
 
