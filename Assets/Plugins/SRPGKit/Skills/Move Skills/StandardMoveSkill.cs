@@ -2,15 +2,11 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 
-public enum WaypointMode {
-	Count,
-	UpToXYRange
-};
-
 public class StandardMoveSkill : MoveSkill {
 	public float moveSpeed=10.0f;
 	
 	public bool drawPath=true;
+	public bool useOnlyOneWaypoint=false;
 	
 	public Color overlayColor = new Color(0.3f, 0.3f, 0.3f, 0.7f);
 	public Color highlightColor = new Color(0.5f, 0.5f, 0.5f, 1.0f);
@@ -172,14 +168,19 @@ public class StandardMoveSkill : MoveSkill {
 				Vector3 hitSpot;
 				bool inside = overlay.Raycast(r, out hitSpot);
 				PathNode pn = overlay.PositionAt(hitSpot);
-				if(inside && pn != null) {
-					hitSpot = lockToGrid ? pn.pos : hitSpot;
+				if(lockToGrid) {
+					hitSpot.x = Mathf.Floor(hitSpot.x+0.5f);
+					hitSpot.y = Mathf.Floor(hitSpot.y+0.5f);
+					hitSpot.z = Mathf.Floor(hitSpot.z+0.5f);
+				}
+				if(inside && (!(drawPath || immediatelyFollowDrawnPath) || pn != null)) {
+					//TODO: better drag controls
 //					if(drawPath && dragging) {
 						//draw path: drag
 						//unwind drawn path: drag backwards
 //					}
 					
-					if(!drawPath) {
+					if(!(drawPath || immediatelyFollowDrawnPath)) {
 						UpdatePath(hitSpot);
 					} else {
 						Vector3 srcPos = endOfPath.pos;
@@ -203,7 +204,9 @@ public class StandardMoveSkill : MoveSkill {
 									waypoints[waypoints.Count-1].pos == hitSpot) {
 								UnwindToLastWaypoint();
 							} else {
-								ConfirmWaypoint();
+								if(overlay.ContainsPosition(hitSpot)) {
+									ConfirmWaypoint();
+								}
 							}
 						}
 					}
@@ -250,7 +253,7 @@ public class StandardMoveSkill : MoveSkill {
 							UnwindPath();
 						} else {
 							PathNode pn = overlay.PositionAt(newDest);
-							if(pn != null && pn.canStop) {
+							if(!(drawPath || immediatelyFollowDrawnPath) || (pn != null && pn.canStop)) {
 								UpdatePath(newDest);
 							}
 						}
@@ -270,12 +273,12 @@ public class StandardMoveSkill : MoveSkill {
 				
 				Vector3 newDest = map.InverseTransformPointWorld(probe.transform.position);
 				PathNode pn = overlay.PositionAt(newDest);
-				if(pn != null && pn.canStop) {
-					if(drawPath) {
-						lines.SetPosition(nodeCount, probe.transform.position);
-					}
-					float thisDistance = Vector3.Distance(newDest, moveDest);
-					if(thisDistance >= NewNodeThreshold) {
+				float thisDistance = Vector3.Distance(newDest, moveDest);
+				if(thisDistance >= NewNodeThreshold) {
+					if(!(drawPath || immediatelyFollowDrawnPath) || (pn != null && pn.canStop)) {
+						if(drawPath) {
+							lines.SetPosition(nodeCount, probe.transform.position);
+						}
 						UpdatePath(newDest);
 					}
 				} else {
@@ -314,8 +317,9 @@ public class StandardMoveSkill : MoveSkill {
 		}
 	}
 	
-	protected bool AnyRemainingWaypoints { get {
+	protected bool PermitsNewWaypoints { get {
 		if(immediatelyFollowDrawnPath) { return false; }
+		if(useOnlyOneWaypoint) { return false; }
 		return ((xyRangeSoFar + newNodeThreshold) < XYRange);
 	} }
 	
@@ -328,7 +332,7 @@ public class StandardMoveSkill : MoveSkill {
 			TemporaryMoveToPathNode(endOfPath);
 		}
 		awaitingConfirmation = false;
-		if(!AnyRemainingWaypoints) {
+		if(!PermitsNewWaypoints) {
 			if(!waypointsAreIncremental) {
 				PathNode p = endOfPath;
 				int tries = 0;
@@ -492,7 +496,8 @@ public class StandardMoveSkill : MoveSkill {
 	
 	override protected void PresentMoves() {
 		base.PresentMoves();
-		moveDest = character.TilePosition;
+		initialPosition = character.TilePosition;
+		moveDest = initialPosition;
 		probe = Object.Instantiate(probePrefab, Vector3.zero, Quaternion.identity) as CharacterController;
 		probe.transform.parent = map.transform;
 		Physics.IgnoreCollision(probe.collider, character.collider);
@@ -512,7 +517,7 @@ public class StandardMoveSkill : MoveSkill {
 			Vector3 tp = initialPosition;
 			if(lockToGrid) {
 				tp.x = (int)Mathf.Round(tp.x);
-				tp.x = (int)Mathf.Round(tp.y);
+				tp.y = (int)Mathf.Round(tp.y);
 				tp.z = map.NearestZLevel((int)tp.x, (int)tp.y, (int)Mathf.Round(tp.z));
 			}
 			probe.transform.position = map.TransformPointWorld(tp);

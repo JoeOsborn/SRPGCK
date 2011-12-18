@@ -94,7 +94,6 @@ public class StatEffect {
 				break;
 			case StatEffectType.EndTurn:
 				effect = new StatEffectRecord(this, 0);
-				Debug.Log("please end!");
 				skill.scheduler.Deactivate(actualTarget, this);
 				break;
 		}
