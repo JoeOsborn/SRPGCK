@@ -16,7 +16,12 @@ public class ActionSkill : Skill, ITilePickerOwner {
 
 	override public bool isPassive { get { return false; } }
 	
+	//TODO: expose in editor
 	public TargetingMode targetingMode = TargetingMode.Pick;
+	
+	//TODO: expose in editor
+	public Color targetColor = new Color(0.6f, 0.3f, 0.2f, 0.7f);
+	public Color highlightColor = new Color(0.9f, 0.6f, 0.4f, 0.85f);
 	
 	//cardinal/radial targeting mode
 	[HideInInspector]
@@ -240,8 +245,8 @@ public class ActionSkill : Skill, ITilePickerOwner {
 		Vector3 charPos = character.TilePosition;
 		overlay = map.PresentGridOverlay(
 			skillName, character.gameObject.GetInstanceID(), 
-			new Color(0.6f, 0.3f, 0.2f, 0.7f),
-			new Color(0.9f, 0.6f, 0.4f, 0.85f),
+			targetColor,
+			highlightColor,
 			destinations
 		);
 		awaitingConfirmation = false;

@@ -28,6 +28,8 @@ public class WaitSkill : ActionSkill {
 		if(waitArrows == null) {
 			waitArrows = Resources.LoadAssetAtPath("Assets/SRPGKit/Prefabs/Wait Arrows.prefab", typeof(GameObject)) as GameObject;
 		}
+		targetColor = Color.clear;
+		highlightColor = Color.clear;
 		targetingMode = TargetingMode.Cardinal;
 		SetParam("range.xy.min", 0);
 		SetParam("range.xy.max", 0);
