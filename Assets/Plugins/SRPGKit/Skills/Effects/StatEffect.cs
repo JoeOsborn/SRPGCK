@@ -15,7 +15,11 @@ public enum StatEffectTarget {
 public enum StatEffectType {
 	Augment,
 	Multiply,
-	Replace
+	Replace,
+	
+	ChangeFacing,
+	
+	EndTurn
 };
 
 public enum StatChangeType {
@@ -60,6 +64,41 @@ public class StatEffect {
 	public float ModifyStat(float stat, Skill scontext, Character ccontext, Equipment econtext) {
 		StatEffectRecord ignore;
 		return ModifyStat(stat, scontext, ccontext, econtext, out ignore);
+	}
+	
+	public StatEffectRecord Apply(Skill skill, Character character, Character targ) {
+		StatEffectRecord effect=null;
+		Character actualTarget=null;
+		switch(target) {
+			case StatEffectTarget.Applier:
+				actualTarget = character;
+				break;
+			case StatEffectTarget.Applied:
+				actualTarget = targ;
+				break;
+		}
+		switch(effectType) {
+			case StatEffectType.Augment:
+			case StatEffectType.Multiply:
+			case StatEffectType.Replace:
+				actualTarget.SetBaseStat(
+					statName, 
+					ModifyStat(actualTarget.GetStat(statName), skill, null, null, out effect)
+				);
+				Debug.Log("hit "+actualTarget+", new "+statName+" "+actualTarget.GetStat(statName));
+				break;
+			case StatEffectType.ChangeFacing:
+				float angle = value.GetValue(skill, targ, null);
+				actualTarget.Facing = Quaternion.Euler(0, angle, 0);
+				effect = new StatEffectRecord(this, angle);
+				break;
+			case StatEffectType.EndTurn:
+				effect = new StatEffectRecord(this, 0);
+				Debug.Log("please end!");
+				skill.scheduler.Deactivate(actualTarget, this);
+				break;
+		}
+		return effect;
 	}
 	
 	//editor only

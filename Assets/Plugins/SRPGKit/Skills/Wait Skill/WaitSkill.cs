@@ -2,23 +2,10 @@ using UnityEngine;
 using System.Collections;
 
 [System.Serializable]
-public class WaitSkill : Skill {
-	public bool supportKeyboard = true;
-	public bool supportMouse = true;
-	public bool requireConfirmation = true;
-	public bool awaitingConfirmation = false;
-	
-	override public bool isPassive { get { return false; } }
-	
-	public bool RequireConfirmation {
-		get { return requireConfirmation; } 
-		set { requireConfirmation = value; }
-	}
-	public bool AwaitingConfirmation { 
-		get { return awaitingConfirmation; } 
-		set { awaitingConfirmation = value; }
-	}
-	
+public class WaitSkill : ActionSkill {
+	float firstClickTime = -1;
+	float doubleClickThreshold = 0.3f;
+
 	[HideInInspector]
  	[System.NonSerialized]
 	public Transform instantiatedWaitArrows;
@@ -34,28 +21,40 @@ public class WaitSkill : Skill {
 	
 	public GameObject waitArrows;
 	
-	[HideInInspector]
-	public Quaternion initialFacing;
-
-	float firstClickTime = -1;
-	float doubleClickThreshold = 0.3f;
-	
 	public override void Reset() {
 		base.Reset();
 		skillName = "Wait";
 		skillSorting = 100000;
-		waitArrows = Resources.LoadAssetAtPath("Assets/SRPGKit/Prefabs/Wait Arrows.prefab", typeof(GameObject)) as GameObject;
-	}
-	
-	public virtual void CancelWaitPick() {
-		Cancel();
+		if(waitArrows == null) {
+			waitArrows = Resources.LoadAssetAtPath("Assets/SRPGKit/Prefabs/Wait Arrows.prefab", typeof(GameObject)) as GameObject;
+		}
+		targetingMode = TargetingMode.Cardinal;
+		SetParam("range.xy.min", 0);
+		SetParam("range.xy.max", 0);
+		SetParam("range.z.up.min", 0);
+		SetParam("range.z.up.max", 0);
+		SetParam("range.z.down.min", 0);
+		SetParam("range.z.down.max", 0);
+		SetParam("radius.xy", 0);
+		SetParam("radius.z.up", 0);
+		SetParam("radius.z.down", 0);
+		StatEffect facingEffect = new StatEffect();
+		facingEffect.effectType = StatEffectType.ChangeFacing;
+		facingEffect.target = StatEffectTarget.Applier;
+		facingEffect.value = Formula.Lookup("arg.angle.xy");
+		StatEffect endTurnEffect = new StatEffect();
+		endTurnEffect.effectType = StatEffectType.EndTurn;
+		endTurnEffect.target = StatEffectTarget.Applier;
+		targetEffects = new StatEffectGroup[]{
+			new StatEffectGroup{effects=new StatEffect[]{
+				facingEffect, endTurnEffect
+			}}
+		};
 	}
 	
 	public override void ActivateSkill() {
 		if(isActive) { return; }
 		base.ActivateSkill();
-		initialFacing = character.Facing;
-		awaitingConfirmation = false;
 		instantiatedWaitArrows = (Object.Instantiate(waitArrows) as GameObject).transform;
 		instantiatedWaitArrows.parent = map.transform;
 		instantiatedWaitArrows.position = character.transform.position;
@@ -105,7 +104,7 @@ public class WaitSkill : Skill {
 						if(!requireConfirmation) {
 				    	WaitAtArrow(hitArrowValue);
 							awaitingConfirmation = false;
-							FinishWaitPick();
+							ApplySkill();
 						} else {
 				    	WaitAtArrow(hitArrowValue);
 							awaitingConfirmation = true;
@@ -118,59 +117,8 @@ public class WaitSkill : Skill {
 				}
 			}
 		}
-		float h = Input.GetAxis("Horizontal");
-		float v = Input.GetAxis("Vertical");
-		if(supportKeyboard && 
-			(h != 0 || v != 0) && 
-		  (!awaitingConfirmation || !requireConfirmation)) {
-			Vector2 d = map.TransformKeyboardAxes(h, v);
-			if(d.x != 0 && d.y != 0) {
-				if(Mathf.Abs(d.x) > Mathf.Abs(d.y)) { d.x = Mathf.Sign(d.x); d.y = 0; }
-				else { d.x = 0; d.y = Mathf.Sign(d.y); }
-			}
-			if(d.x > 0) {
-				WaitAtArrow(Arrow.XP);
-			} else if(d.x < 0) {
-				WaitAtArrow(Arrow.XN);
-			} else if(d.y > 0) {
-				WaitAtArrow(Arrow.YP);
-			} else if(d.y < 0) {
-				WaitAtArrow(Arrow.YN);
-			}
-		}
-		if(supportKeyboard && 
-			 Input.GetButtonDown("Confirm")) {
-			if(awaitingConfirmation || !requireConfirmation) {
-				WaitAtArrow(currentArrow);
-  	  	awaitingConfirmation = false;
-				FinishWaitPick();
-			} else if(requireConfirmation) {
-				WaitAtArrow(currentArrow);
-				awaitingConfirmation = true;
-			}
-		}
-		if(supportKeyboard && Input.GetButtonDown("Cancel")) {
-			if(awaitingConfirmation && requireConfirmation) {
-				awaitingConfirmation = false;
-			} else {
-				//Back out of move phase!
-				CancelWaitPick();
-			}
-		}
+		WaitAtArrow(ArrowForFacing(character.Facing));
 	}
-	public override void Cancel() {
-		//switch to idle animation
-		if(!isActive) { return; }
-		WaitInDirection(initialFacing);
-		base.Cancel();
-	}
-	public virtual void WaitInDirection(Quaternion dir) {
-		character.Facing = dir;
-	}
-	public virtual void FinishWaitPick() {
-		ApplySkill();
-	}
-	
 	public Arrow ArrowForFacing(Quaternion q) {
 		const float TAU = 360;
 		float mapY = map.transform.eulerAngles.y;
@@ -213,7 +161,7 @@ public class WaitSkill : Skill {
 			case Arrow.YN: dir = Quaternion.Euler(0, 3*TAU/4, 0); break;
 			default: Debug.LogError("Not my arrow!"); return;
 		}
-		WaitInDirection(dir);
+		FaceDirection(dir);
 	}
 	
 	void MoveToLayer(Transform root, int layer) {

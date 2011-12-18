@@ -1,10 +1,26 @@
 using UnityEngine;
 using System.Collections.Generic;
 
+public enum TargetingMode {
+	Self, //self only	//TODO: not clear if "self" is really a target mode, since it's easy to imagine both self-cardinal and arbitrary-tile-cardinal
+	Pick, //one of a number of tiles
+	Cardinal, //one of four angles
+	Radial, //any Quaternion
+	SelectLine //one of a number of lines
+	//path?
+	//waypoints?
+};
+
 public class ActionSkill : Skill, ITilePickerOwner {
 	public StatEffectGroup[] targetEffects;
 
 	override public bool isPassive { get { return false; } }
+	
+	public TargetingMode targetingMode = TargetingMode.Pick;
+	
+	//cardinal/radial targeting mode
+	[HideInInspector]
+	public Quaternion initialFacing;
 	
 	//tile generation strategy (line/range/cone/etc)
 	public ActionStrategy strategy;
@@ -102,14 +118,28 @@ public class ActionSkill : Skill, ITilePickerOwner {
 	}
 	public override void Cancel() {
 		if(!isActive) { return; }
+		FaceDirection(initialFacing);
 		//executor.Cancel();
 		base.Cancel();
 	}
 	
+	public virtual void FaceDirection(float ang) {
+		character.Facing = Quaternion.Euler(0, ang, 0);
+	}
+	public virtual void FaceDirection(Quaternion dir) {
+		character.Facing = dir;
+	}
+	
+	
 	public override void ActivateSkill() {
 		if(isActive) { return; }
-		tilePicker = new TilePicker();
-		tilePicker.owner = this;
+		initialFacing = character.Facing;
+		if(targetingMode == TargetingMode.Pick) {
+			tilePicker = new TilePicker();
+			tilePicker.owner = this;
+		} else {
+			//TODO: radial and cardinal
+		}
 		base.ActivateSkill();
 		strategy.owner = this;
 		
@@ -124,18 +154,6 @@ public class ActionSkill : Skill, ITilePickerOwner {
 		strategy.zRadiusDown = GetParam("radius.z.down", 0);
 		strategy.xyRadius = GetParam("radius.xy", 0);
 		
-		/*	
-		executor.owner = this;
-		
-		executor.transformOffset = transformOffset;
-		executor.animateTemporaryMovement = animateTemporaryMovement;
-		executor.XYSpeed = XYSpeed;
-		executor.ZSpeedUp = ZSpeedUp;
-		executor.ZSpeedDown = ZSpeedDown;
-    
-		executor.Activate();
-		*/	
-		
 		strategy.Activate();
 		
 		PresentMoves();
@@ -143,7 +161,6 @@ public class ActionSkill : Skill, ITilePickerOwner {
 	public override void DeactivateSkill() {
 		if(!isActive) { return; }
 		strategy.Deactivate();
-		//executor.Deactivate();
 		overlay = null;
 		if(map.IsShowingOverlay(skillName, character.gameObject.GetInstanceID())) {
 			map.RemoveOverlay(skillName, character.gameObject.GetInstanceID());
@@ -154,19 +171,54 @@ public class ActionSkill : Skill, ITilePickerOwner {
 		base.Update();
 		if(!isActive) { return; }
 		strategy.owner = this;
-		tilePicker.owner = this;
 		if(character == null || !character.isActive) { return; }
 		if(!arbiter.IsLocalPlayer(character.EffectiveTeamID)) {
 			return;
 		}
 		if(GUIUtility.hotControl != 0) { return; }
-		tilePicker.Update();
+		if(targetingMode == TargetingMode.Pick) {
+			tilePicker.owner = this;
+			tilePicker.Update();
+		} else {
+			//TODO: radial and cardinal
+			float h = Input.GetAxis("Horizontal");
+			float v = Input.GetAxis("Vertical");
+			if(supportKeyboard && 
+				(h != 0 || v != 0) && 
+			  (!awaitingConfirmation || !requireConfirmation)) {
+				Vector2 d = map.TransformKeyboardAxes(h, v);
+				if(targetingMode == TargetingMode.Cardinal) {
+					if(d.x != 0 && d.y != 0) {
+						if(Mathf.Abs(d.x) > Mathf.Abs(d.y)) { d.x = Mathf.Sign(d.x); d.y = 0; }
+						else { d.x = 0; d.y = Mathf.Sign(d.y); }
+					}
+				}
+				FaceDirection(Mathf.Atan2(d.y, d.x)*Mathf.Rad2Deg);
+			}
+			if(supportKeyboard && 
+				 Input.GetButtonDown("Confirm")) {
+				if(awaitingConfirmation || !requireConfirmation) {
+	  	  	awaitingConfirmation = false;
+					PickFacing(character.Facing);
+				} else if(requireConfirmation) {
+					TentativePickFacing(character.Facing);
+					awaitingConfirmation = true;
+				}
+			}
+			if(supportKeyboard && Input.GetButtonDown("Cancel")) {
+				if(awaitingConfirmation && requireConfirmation) {
+					awaitingConfirmation = false;
+				} else {
+					//Back out of move phase!
+					Cancel();
+				}
+			}
+		}
 		strategy.Update();
 		//executor.Update();	
 	}
 	
 	public override void ApplySkill() {
-		//TODO: support reaction abilities and support abilities that depend on the attacking ability
 		int hitType = (int)GetParam("hitType", 0);
 		currentHitType = hitType;
 		if(targetEffects.Length == 0) {
@@ -183,13 +235,8 @@ public class ActionSkill : Skill, ITilePickerOwner {
 		Cancel();
 	}
 	
-	public Vector3 IndicatorPosition {
-		get { return tilePicker.IndicatorPosition; }
-	}
-	
 	virtual public void PresentMoves() {
 		PathNode[] destinations = strategy.GetValidActions();
-/*		MoveExecutor me = executor;*/
 		Vector3 charPos = character.TilePosition;
 		overlay = map.PresentGridOverlay(
 			skillName, character.gameObject.GetInstanceID(), 
@@ -198,7 +245,11 @@ public class ActionSkill : Skill, ITilePickerOwner {
 			destinations
 		);
 		awaitingConfirmation = false;
-		tilePicker.FocusOnPoint(charPos);
+		if(targetingMode == TargetingMode.Pick) {		
+			tilePicker.FocusOnPoint(charPos);
+		} else {
+			//TODO: radial and cardinal
+		}
 	}
 
 	public void TentativePick(TilePicker tp, Vector3 p) {
@@ -226,4 +277,20 @@ public class ActionSkill : Skill, ITilePickerOwner {
 		targetTiles = strategy.GetTargetedTiles(pn.pos);
 		ApplySkill();
 	}	
+	
+	public void TentativePickFacing(Quaternion f) {
+		targetTiles = strategy.GetTargetedTiles(f);
+		overlay.SetSelectedPoints(map.CoalesceTiles(targetTiles));
+		//TODO: show preview indicator until cancelled
+	}
+	public void PickFacing(Quaternion f) {
+		targetTiles = strategy.GetTargetedTiles(f);
+		ApplySkill();
+	}
+	public void TentativePickFacing(float angle) {
+		TentativePickFacing(Quaternion.Euler(0, angle, 0));
+	}
+	public void PickFacing(float angle) {
+		PickFacing(Quaternion.Euler(0, angle, 0));
+	}
 }

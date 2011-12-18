@@ -223,7 +223,7 @@ public class DebugGUI : MonoBehaviour {
 						OnGUIConfirmation("Wait here?", out yesButton, out noButton);
 						if(yesButton) {
 			  	  	ws.AwaitingConfirmation = false;
-							ws.FinishWaitPick();
+							ws.ApplySkill();
 						}
 						if(noButton) {
 			      	ws.AwaitingConfirmation = false;

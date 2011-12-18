@@ -141,10 +141,6 @@ public class TilePicker {
 			}
 		}	
 	}
-	public Vector3 IndicatorPosition {
-		get { return new Vector3(indicatorXY.x, indicatorXY.y, indicatorZ); }
-	}	
-	
 	public void FocusOnPoint(Vector3 pos) {
 		cycleIndicatorZ = false;
 		indicatorXY = new Vector2(Mathf.Floor(pos.x), Mathf.Floor(pos.y));

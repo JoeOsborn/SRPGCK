@@ -68,8 +68,6 @@ public class CTScheduler : Scheduler {
 					ctc.CT = Mathf.Max(ctc.CT-cost, 0);
 				}
 				ctc.HasMoved = true;		
-			} else if(s is WaitSkill) {
-				Deactivate(s.character);
 			} else {
 				float cost = ctc.PerActionCTCost;
 				if(coalesceCTDecrements) {

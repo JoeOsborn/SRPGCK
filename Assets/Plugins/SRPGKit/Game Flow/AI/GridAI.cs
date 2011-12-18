@@ -40,8 +40,7 @@ public class GridAI : AI {
 						case 2: dir = Quaternion.Euler(0, 2*TAU/4, 0); break;
 						case 3: dir = Quaternion.Euler(0, 3*TAU/4, 0); break;
 					}
-					c.waitSkill.WaitInDirection(dir);
-					c.waitSkill.FinishWaitPick();
+					c.waitSkill.PickFacing(dir);
 				} else {
 					c.moveSkill.PerformMoveToPathNode(dests[(int)Mathf.Floor(Random.Range(0, dests.Length))]);
 				}
@@ -56,8 +55,7 @@ public class GridAI : AI {
 				case 2: dir = Quaternion.Euler(0, 2*TAU/4, 0); break;
 				case 3: dir = Quaternion.Euler(0, 3*TAU/4, 0); break;
 			}
-			c.waitSkill.WaitInDirection(dir);
-			c.waitSkill.FinishWaitPick();
+			c.waitSkill.PickFacing(dir);
 		}
 	}
 }

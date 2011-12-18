@@ -96,6 +96,11 @@ public class ActionStrategy {
 		);
 	}	
 	
+	public virtual PathNode[] GetTargetedTiles(Quaternion q) {
+		//pfeh, who knows? figure out regions first
+		return GetTargetedTiles(owner.character.TilePosition);
+	}
+	
 	public virtual PathNode[] GetTargetedTiles(Vector3 targetTC) {
 		return owner.map.PathsAround(
 			targetTC, 

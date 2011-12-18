@@ -189,7 +189,9 @@ public class Skill : MonoBehaviour {
 			Vector3 ttp = c.TilePosition;
 			Vector3 ctp = character.TilePosition;
 			float distance = Vector3.Distance(ttp, ctp);
-			float angle = Mathf.Atan2(ttp.x-ctp.x, ttp.y-ctp.y);
+			float angle = currentTarget == character ? 
+				character.Facing.eulerAngles.y : 
+				Mathf.Atan2(ttp.x-ctp.x, ttp.y-ctp.y);
 			SetParam("arg.distance", distance);
 			SetParam("arg.mdistance", Mathf.Abs(ttp.x-ctp.x)+Mathf.Abs(ttp.y-ctp.y)+Mathf.Abs(ttp.z-ctp.z));
 			SetParam("arg.mdistance.xy", Mathf.Abs(ttp.x-ctp.x)+Mathf.Abs(ttp.y-ctp.y));
@@ -198,18 +200,7 @@ public class Skill : MonoBehaviour {
 			SetParam("arg.dz", Mathf.Abs(ttp.z-ctp.z));
 			SetParam("arg.angle.xy", angle);
 			foreach(StatEffect se in effects) {
-				StatEffectRecord effect=null;
-				switch(se.target) {
-					case StatEffectTarget.Applier:
-						character.SetBaseStat(se.statName, se.ModifyStat(character.GetStat(se.statName), this, null, null, out effect));
-						Debug.Log("hit character, new "+se.statName+" "+character.GetStat(se.statName));
-						break;
-					case StatEffectTarget.Applied:
-						c.SetBaseStat(se.statName, se.ModifyStat(c.GetStat(se.statName), this, null, null, out effect));
-						Debug.Log("hit "+currentTarget+", new "+se.statName+" "+currentTarget.GetStat(se.statName));
-						break;
-				}
-				lastEffects.Add(effect);
+				lastEffects.Add(se.Apply(this, character, currentTarget));
 			}
 		}	
 	}

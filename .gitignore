@@ -20,4 +20,10 @@ Library/expandedItems
 Library/guidmapper
 Library/metadata/
 Library/previews/
-Assets/.DS_Store
+Assets/.DS_StoreAssembly-CSharp-Editor-vs.csproj
+Assembly-CSharp-Editor.csproj
+Assembly-CSharp-firstpass-vs.csproj
+Assembly-CSharp-firstpass.csproj
+Assembly-CSharp-vs.csproj
+Assembly-CSharp.csproj
+Assembly-CSharp-Editor-vs.csproj
