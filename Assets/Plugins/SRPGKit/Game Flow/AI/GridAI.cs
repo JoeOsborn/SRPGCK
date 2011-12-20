@@ -26,7 +26,7 @@ public class GridAI : AI {
 		if(c.moveSkill.Executor.IsMoving) { return; }
 		if(!c.GetComponent<CTCharacter>().HasMoved) {
 			c.moveSkill.ActivateSkill();
-			StandardMoveSkill sptms = c.moveSkill as StandardMoveSkill;
+			MoveSkill sptms = c.moveSkill as MoveSkill;
 			if(sptms.overlay != null) {
 				PathNode[] dests = (sptms.overlay as GridOverlay).destinations;
 				if(dests.Length == 0) {

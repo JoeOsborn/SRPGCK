@@ -3,13 +3,13 @@ using UnityEditor;
 using System.Collections.Generic;
 using System.Linq;
 
-//TODO: uncomment once we expose all the functionality we need. [CustomEditor(typeof(StandardMoveSkill))]
-public class StandardMoveSkillEditor : SkillEditor {
-	protected StandardMoveSkill ms;
+//TODO: uncomment once we expose all the functionality we need. [CustomEditor(typeof(MoveSkill))]
+public class MoveSkillEditor : SkillEditor {
+	protected MoveSkill ms;
   public override void OnEnable() {
 		base.OnEnable();
-		name = "StandardMoveSkill";
-		ms = target as StandardMoveSkill;
+		name = "MoveSkill";
+		ms = target as MoveSkill;
 	}
 	
 	public override void OnSRPGCKInspectorGUI () {

@@ -1,22 +1,23 @@
 using UnityEngine;
 
+//TODO: merge move targeting up into action
+
 [System.Serializable]
 public class MoveSkill : ActionSkill {
 	override public MoveExecutor Executor { get { return moveExecutor; } }
 	
 	//strategy
 	public float ZDelta { get { return GetParam("range.z", character.GetStat("jump", 3)); } }
-	public float XYRange { get { return GetParam("range.xy", character.GetStat("move", 5)); } }
-	
+	override public float XYRange { get { return GetParam("range.xy", character.GetStat("move", 5)); } }
 	//executor
 	[HideInInspector]
 	public MoveExecutor moveExecutor;
-	public bool performTemporaryMoves = false;
 	public bool animateTemporaryMovement=false;
 	public float XYSpeed = 12;
 	public float ZSpeedUp = 15;
 	public float ZSpeedDown = 20;
 	
+		
 	public override void Start() {
 		base.Start();
 		moveExecutor = new MoveExecutor();
@@ -39,33 +40,7 @@ public class MoveSkill : ActionSkill {
 		skillGroup = "";
 		skillSorting=-1;
 	}
-	public override void ResetActionSkill() {
-		overlayColor = new Color(0.3f, 0.3f, 0.3f, 0.7f);
-		highlightColor = new Color(0.5f, 0.5f, 0.5f, 1.0f);	
-	}
-	
-	public override void ActivateSkill() {
-		Executor.owner = this;	
-		Executor.lockToGrid = lockToGrid;
-		Executor.animateTemporaryMovement = animateTemporaryMovement;
-		Executor.XYSpeed = XYSpeed;
-		Executor.ZSpeedUp = ZSpeedUp;
-		Executor.ZSpeedDown = ZSpeedDown;	
-		Executor.Activate();
-
-		base.ActivateSkill();
-	}	
-	
-	protected override PathNode[] GetValidActionTiles() {
-		return strategy.GetValidMoves();
-	}
-
-	public override void DeactivateSkill() {
-		if(!isActive) { return; }
-		Executor.Deactivate();
-		base.DeactivateSkill();
-	}
-	
+		
 	public override void Update() {
 		if(!isActive) { return; }
 		Executor.owner = this;
@@ -124,5 +99,62 @@ public class MoveSkill : ActionSkill {
 			);
 			ApplySkill();
 		});
+	}
+	
+	protected override PathNode[] GetValidActionTiles() {
+		if(!lockToGrid) { return null; }
+		return Strategy.GetValidMoves(
+			selectedTile, 
+			0, Strategy.xyRangeMax-xyRangeSoFar, 
+			0, Strategy.zRangeDownMax, 
+			0, Strategy.zRangeUpMax
+		);
+	}
+	
+	//N.B. for some reason, putting UpdateParameters inside of CreateOverlay -- even with
+	//checks to see if the overlay already existed -- caused horrible unity crashers.
+	
+	override public void ActivateSkill() {
+		Executor.owner = this;	
+		Executor.lockToGrid = lockToGrid;
+		Executor.animateTemporaryMovement = animateTemporaryMovement;
+		Executor.XYSpeed = XYSpeed;
+		Executor.ZSpeedUp = ZSpeedUp;
+		Executor.ZSpeedDown = ZSpeedDown;	
+		Executor.Activate();
+
+		base.ActivateSkill();
+	}
+	
+	override public void DeactivateSkill() {
+		if(!isActive) { return; }
+		Executor.Deactivate();
+		base.DeactivateSkill();
+	}
+	
+	public override void ResetActionSkill() {
+		overlayColor = new Color(0.3f, 0.3f, 0.3f, 0.7f);
+		highlightColor = new Color(0.5f, 0.5f, 0.5f, 1.0f);	
+		targetingMode = TargetingMode.Custom;
+	}
+	
+	protected override void ActivateTargetCustom() {
+	
+	}
+	
+	protected override void UpdateTargetCustom() {
+
+	}
+		
+	override protected void TemporaryExecutePathTo(PathNode p) {
+		TemporaryMoveToPathNode(p);
+	}
+	
+	override protected void IncrementalExecutePathTo(PathNode p) {
+		IncrementalExecutePathTo(p);
+	}
+	
+	override protected void ExecutePathTo(PathNode p) {
+		PerformMoveToPathNode(p);
 	}
 }

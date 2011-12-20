@@ -3,11 +3,11 @@ using UnityEditor;
 using System.Collections.Generic;
 using System.Linq;
 
-[CustomEditor(typeof(ActionSkill))]
+//[CustomEditor(typeof(ActionSkill))]
 //TODO: ActionSkillEditor and MoveSkillEditor.
 public class ActionSkillEditor : SkillEditor {	
 	ActionSkill atk;
-  public override void OnEnable() {
+ 	public override void OnEnable() {
 		base.OnEnable();
 		name = "ActionSkill";
 		atk = target as ActionSkill;

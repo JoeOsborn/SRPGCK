@@ -33,6 +33,8 @@ public abstract class Overlay : MonoBehaviour {
 		}	
 	}
 	
+	public bool IsReady { get { return shadeMaterial != null && renderer != null; } }
+	
 	virtual public void Update() {
 		FindMap();
 		if(shadeMaterial == null) {

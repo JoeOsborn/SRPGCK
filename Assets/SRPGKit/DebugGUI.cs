@@ -152,8 +152,7 @@ public class DebugGUI : MonoBehaviour {
 		if(ac != null) {
 			Map map = transform.parent.GetComponent<Map>();
 			MoveSkill ms = ac.moveSkill;
-			StandardMoveSkill sptms = ms as StandardMoveSkill;
-			if(ms.isActive && sptms != null) {
+			if(ms.isActive && ms != null) {
 				if(a.IsLocalPlayer(ac.EffectiveTeamID)) {
 					MoveExecutor me = ms.Executor;
 					if(!me.IsMoving) {
@@ -162,7 +161,7 @@ public class DebugGUI : MonoBehaviour {
 							bool yesButton=false, noButton=false;
 							OnGUIConfirmation("Move here?", out yesButton, out noButton);
 							if(yesButton) {
-								PathNode pn = sptms.overlay.PositionAt(sptms.moveDest);
+								PathNode pn = ms.overlay.PositionAt(ms.selectedTile);
 					      ms.PerformMoveToPathNode(pn);
 					      ms.AwaitingConfirmation = false;
 							}
@@ -195,7 +194,7 @@ public class DebugGUI : MonoBehaviour {
 			}
 
 			foreach(Skill skill in ac.Skills) {
-				if(!skill.isPassive && skill.isActive && skill is ActionSkill) {
+				if(!skill.isPassive && skill.isActive && skill is ActionSkill && !(skill is MoveSkill || skill is WaitSkill)) {
 					ActionSkill ask = skill as ActionSkill;
 					if(a.IsLocalPlayer(ac.EffectiveTeamID)) {
 						if(ask.RequireConfirmation && 
