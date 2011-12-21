@@ -6,8 +6,8 @@ using System.Linq;
 public enum TargetingMode {
 	Self, //self only	//TODO: not clear if "self" is really a target mode, since it's easy to imagine both self-cardinal and arbitrary-tile-cardinal
 	Pick, //one of a number of tiles
-	Cardinal, //one of four angles
-	Radial, //any Quaternion
+	Cardinal, //one of four angles, usually applied to a cone or line targeting region inside of a sphere
+	Radial, //any Quaternion—usually applied to a cone or a line targeting region inside of a sphere
 	SelectRegion, //one of a number of regions
 	Path, //a specific path
 	Custom
@@ -218,8 +218,8 @@ public class ActionSkill : Skill {
 				//??
 				break;
 			case TargetingMode.Pick:
-			case TargetingMode.Path: //??
-				
+			case TargetingMode.Path: 
+				//??
 				break;
 			case TargetingMode.Cardinal://??
 			case TargetingMode.Radial://??
@@ -301,10 +301,10 @@ public class ActionSkill : Skill {
 				}
 				if(inside && (!(ShouldDrawPath || immediatelyExecuteDrawnPath) || pn != null)) {
 					//TODO: better drag controls
-//					if(ShouldDrawPath && dragging) {
+//				if(ShouldDrawPath && dragging) {
 						//draw path: drag
 						//unwind drawn path: drag backwards
-//					}
+//				}
 					
 					if((!awaitingConfirmation || !requireConfirmation)) {
 						if(!(ShouldDrawPath || immediatelyExecuteDrawnPath)) {
@@ -454,6 +454,33 @@ public class ActionSkill : Skill {
 			  	}
 			  	FaceDirection(Mathf.Atan2(d.y, d.x)*Mathf.Rad2Deg);
 			  }
+				if(supportMouse && 
+					Input.GetMouseButton(0)) {
+					if(!awaitingConfirmation || !requireConfirmation) {
+						Vector2 d = Input.mousePosition - character.TilePosition;
+				  	if(targetingMode == TargetingMode.Cardinal) {
+				  		if(d.x != 0 && d.y != 0) {
+				  			if(Mathf.Abs(d.x) > Mathf.Abs(d.y)) { d.x = Mathf.Sign(d.x); d.y = 0; }
+				  			else { d.x = 0; d.y = Mathf.Sign(d.y); }
+				  		}
+				  	}
+						FaceDirection(Mathf.Atan2(d.y, d.x)*Mathf.Rad2Deg);
+					}
+					if(Input.GetMouseButtonDown(0)) {
+						if(Time.time-firstClickTime > doubleClickThreshold) {
+							firstClickTime = Time.time;
+						} else {
+							firstClickTime = -1;
+							if(awaitingConfirmation) {
+								PickFacing(character.Facing);
+								awaitingConfirmation = false;
+							} else {
+								TentativePickFacing(character.Facing);
+								awaitingConfirmation = true;
+							}
+						}
+					}
+				}
 			  if(supportKeyboard && 
 			  	 Input.GetButtonDown("Confirm")) {
 			  	if(awaitingConfirmation || !requireConfirmation) {
@@ -466,7 +493,9 @@ public class ActionSkill : Skill {
 			  }
 				break;
 			case TargetingMode.SelectRegion:
-				//change selected region
+				//TODO: change selected region
+				//keyboard: cycle
+				//mouse: pick
 				break;
 			case TargetingMode.Pick:
 			case TargetingMode.Path:
