@@ -51,8 +51,12 @@ public class ActionSkill : Skill {
 	public bool supportMouse = true;
 	public bool requireConfirmation = true;
 	public bool awaitingConfirmation = false;
+	
 	public float indicatorCycleLength=1.0f;
 	virtual public MoveExecutor Executor { get { return null; } }
+
+	bool cycleIndicatorZ = false;
+	float indicatorCycleT=0;
 	
 	//grid
 	public Overlay overlay;
@@ -286,6 +290,9 @@ public class ActionSkill : Skill {
 	protected virtual void UpdatePickOrPath() {
 		if(supportMouse) {
 			if(Input.GetMouseButton(0)) {
+				if(targetingMode == TargetingMode.Pick) {
+					cycleIndicatorZ = false;
+				}
 				Ray r = Camera.main.ScreenPointToRay(Input.mousePosition);
 				Vector3 hitSpot;
 				if(overlay == null) { return; }
@@ -343,6 +350,10 @@ public class ActionSkill : Skill {
 		if(supportKeyboard && 
 			(h != 0 || v != 0) && 
 		  (!awaitingConfirmation || !requireConfirmation)) {
+			if(targetingMode == TargetingMode.Pick) {
+				cycleIndicatorZ = true;
+				indicatorCycleT = 0;
+			}
 			if(lockToGrid) {
 			  if((Time.time-lastIndicatorKeyboardMove) > indicatorKeyboardMoveThreshold) {
 					Vector2 d = map.TransformKeyboardAxes(h, v);
@@ -396,6 +407,17 @@ public class ActionSkill : Skill {
 				}
 			}
 		}
+		if(targetingMode == TargetingMode.Pick &&
+			 cycleIndicatorZ && 
+			 (!awaitingConfirmation || !requireConfirmation)) {
+			indicatorCycleT += Time.deltaTime;
+			if(indicatorCycleT >= indicatorCycleLength) {
+				indicatorCycleT -= indicatorCycleLength;
+				Vector3 newSel = selectedTile;
+				newSel.z = map.NextZLevel((int)newSel.x, (int)newSel.y, (int)newSel.z, true);
+				RegisterPathPoint(newSel);
+			}
+		}
 		if(supportKeyboard && Input.GetButtonDown("Confirm")) {
 			if(requireConfirmation && !awaitingConfirmation) {
 				awaitingConfirmation = true;
@@ -416,9 +438,9 @@ public class ActionSkill : Skill {
 				if(supportKeyboard && Input.GetButtonDown("Confirm")) {
 					if(awaitingConfirmation || !requireConfirmation) {
 	  				awaitingConfirmation = false;
-						Pick(null, character.TilePosition);
+						Pick(character.TilePosition);
 					} else {
-						TentativePick(null, character.TilePosition);
+						TentativePick(character.TilePosition);
 						awaitingConfirmation = true;
 					}
 				}
@@ -517,7 +539,7 @@ public class ActionSkill : Skill {
 		base.ApplySkill();
 	}
 	
-	public void CancelPick(TilePicker tp) {
+	public void CancelPick() {
 		Cancel();
 	}
 	
@@ -580,13 +602,13 @@ public class ActionSkill : Skill {
 		switch(targetingMode) {
 			case TargetingMode.Self:
 				if(requireConfirmation) {
-					TentativePick(null, character.TilePosition);
+					TentativePick(character.TilePosition);
 				} else {
-					Pick(null, character.TilePosition);
+					Pick(character.TilePosition);
 				}
 				break;
 			case TargetingMode.Pick:
-//				tilePicker.FocusOnPoint(character.TilePosition);
+				cycleIndicatorZ = false;
 				break;
 			case TargetingMode.Cardinal://??
 			case TargetingMode.Radial://??
@@ -616,14 +638,14 @@ public class ActionSkill : Skill {
 	protected virtual void CancelTargetCustom() {
 	}
 
-	public void TentativePick(TilePicker tp, Vector3 p) {
+	public void TentativePick(Vector3 p) {
 		selectedTile = p;
 		targetTiles = strategy.GetTargetedTiles(p);
 		_GridOverlay.SetSelectedPoints(map.CoalesceTiles(targetTiles));
 		//TODO: show preview indicator until cancelled
 	}	
 	
-	public void TentativePick(TilePicker tp, PathNode pn) {
+	public void TentativePick(PathNode pn) {
 		selectedTile = pn.pos;
 		targetTiles = strategy.GetTargetedTiles(pn.pos);
 		_GridOverlay.SetSelectedPoints(map.CoalesceTiles(targetTiles));
@@ -634,13 +656,13 @@ public class ActionSkill : Skill {
 
 	}
 	
-	public void Pick(TilePicker tp, Vector3 p) {
+	public void Pick(Vector3 p) {
 		selectedTile = p;
 		targetTiles = strategy.GetTargetedTiles(p);
 		ApplySkill();
 	}
 	
-	public void Pick(TilePicker tp, PathNode pn) {
+	public void Pick(PathNode pn) {
 		selectedTile = pn.pos;
 		targetTiles = strategy.GetTargetedTiles(pn.pos);
 		ApplySkill();
@@ -842,14 +864,14 @@ public class ActionSkill : Skill {
 	}
 	virtual protected void TemporaryExecutePathTo(PathNode p) {
 		//pick? face? dunno?
-		TentativePick(null, p);
+		TentativePick(p);
 	}
 	
 	virtual protected void IncrementalExecutePathTo(PathNode pn) {
-		TentativePick(null, pn); //??
+		TentativePick(pn); //??
 	}
 	virtual protected void ExecutePathTo(PathNode pn) {
-		Pick(null, pn);
+		Pick(pn);
 	}
 	
 	protected void UpdateOverlayParameters() {
@@ -920,7 +942,9 @@ public class ActionSkill : Skill {
 				);
 			}
 		}
-		probe.transform.position = map.TransformPointWorld(selectedTile);
+		if(probe != null) {
+			probe.transform.position = map.TransformPointWorld(selectedTile);
+		}
 	}
 	
 }
