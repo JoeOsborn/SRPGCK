@@ -119,10 +119,10 @@ public class WaitSkill : ActionSkill {
 		}
 		WaitAtArrow(ArrowForFacing(character.Facing));
 	}
-	public Arrow ArrowForFacing(Quaternion q) {
+	public Arrow ArrowForFacing(float f) {
 		const float TAU = 360;
 		float mapY = map.transform.eulerAngles.y;
-		float localY = q.eulerAngles.y - mapY;
+		float localY = (f - mapY);
 		while(localY >= TAU) { localY -= TAU; }
 		while(localY < 0) { localY += TAU; }
 		if(localY < TAU/8 || localY >= 7*TAU/8) {
@@ -154,12 +154,12 @@ public class WaitSkill : ActionSkill {
 		currentArrowTransform.localScale = new Vector3(1,1,1);
 		currentArrow = ArrowForFacing(character.Facing);
 		currentArrowTransform.localScale = new Vector3(1.5f, 1.5f, 1.5f);
-		Quaternion dir;
+		float dir;
 		switch(a) {
-			case Arrow.XP: dir = Quaternion.Euler(0, 0*TAU/4, 0); break;
-			case Arrow.YP: dir = Quaternion.Euler(0, 1*TAU/4, 0); break;
-			case Arrow.XN: dir = Quaternion.Euler(0, 2*TAU/4, 0); break;
-			case Arrow.YN: dir = Quaternion.Euler(0, 3*TAU/4, 0); break;
+			case Arrow.XP: dir = 0*TAU/4; break;
+			case Arrow.YP: dir = 1*TAU/4; break;
+			case Arrow.XN: dir = 2*TAU/4; break;
+			case Arrow.YN: dir = 3*TAU/4; break;
 			default: Debug.LogError("Not my arrow!"); return;
 		}
 		FaceDirection(dir);

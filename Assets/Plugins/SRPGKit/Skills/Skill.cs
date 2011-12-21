@@ -195,7 +195,7 @@ public class Skill : MonoBehaviour {
 			Vector3 ctp = character.TilePosition;
 			float distance = Vector3.Distance(ttp, ctp);
 			float angle = currentTarget == character ? 
-				character.Facing.eulerAngles.y : 
+				character.Facing : 
 				Mathf.Atan2(ttp.x-ctp.x, ttp.y-ctp.y);
 			SetParam("arg.distance", distance);
 			SetParam("arg.mdistance", Mathf.Abs(ttp.x-ctp.x)+Mathf.Abs(ttp.y-ctp.y)+Mathf.Abs(ttp.z-ctp.z));

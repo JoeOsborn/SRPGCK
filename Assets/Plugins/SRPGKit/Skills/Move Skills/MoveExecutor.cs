@@ -157,8 +157,8 @@ public class MoveExecutor {
 		return MoveType.None;
 	}
 	
-	public Quaternion FacingForMove(Vector3 to, Vector3 from) {
-		return Quaternion.LookRotation(to-from);
+	public float FacingForMove(Vector3 to, Vector3 from) {
+		return Mathf.Atan2(to.y-from.y, to.x-from.x)*Mathf.Rad2Deg;
 	}
 	
 	virtual public void Activate() {

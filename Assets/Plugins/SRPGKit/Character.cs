@@ -84,20 +84,17 @@ public class Character : MonoBehaviour {
 		}
 	}
 	
-	public virtual Quaternion Facing { 
+	public virtual float Facing { 
 		get {
-			return transform.rotation;
+			//subtract from 360 to make it counter-clockwise starting at x+
+			return 360-transform.rotation.eulerAngles.y;
 		} 
 		set {
-			transform.rotation = value;
-			SetBaseStat("facing", value.eulerAngles.y);
-			SendMessage("UseFacing", transform.rotation, SendMessageOptions.DontRequireReceiver);
+			//subtract from 360 to make it clockwise starting at x+
+			transform.rotation = Quaternion.Euler(0, 360-value, 0);
+			SetBaseStat("facing", value);
+			SendMessage("UseFacing", value, SendMessageOptions.DontRequireReceiver);
 		}
-	}
-	public virtual float FacingZ { 
-		get {
-			return transform.rotation.eulerAngles.y;
-		} 
 	}
 	
 	

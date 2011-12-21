@@ -40,7 +40,7 @@ public class ActionSkill : Skill {
 		
 	//cardinal/radial targeting mode
 	[HideInInspector]
-	public Quaternion initialFacing;
+	public float initialFacing;
 	
 	//tile generation strategy (line/range/cone/etc)
 	public ActionStrategy strategy;
@@ -200,12 +200,8 @@ public class ActionSkill : Skill {
 	}
 	
 	public virtual void FaceDirection(float ang) {
-		character.Facing = Quaternion.Euler(0, ang, 0);
+		character.Facing = ang;
 	}
-	public virtual void FaceDirection(Quaternion dir) {
-		character.Facing = dir;
-	}
-	
 	
 	public override void ActivateSkill() {
 		if(isActive) { return; }
@@ -667,7 +663,7 @@ public class ActionSkill : Skill {
 		targetTiles = strategy.GetTargetedTiles(pn.pos);
 		ApplySkill();
 	}	
-	
+	//targeting facings, unlike character facings (for now at least!), may be arbitrary quaternions
 	public void TentativePickFacing(Quaternion f) {
 		targetTiles = strategy.GetTargetedTiles(f);
 		_GridOverlay.SetSelectedPoints(map.CoalesceTiles(targetTiles));

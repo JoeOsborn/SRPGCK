@@ -89,7 +89,7 @@ public class StatEffect {
 				break;
 			case StatEffectType.ChangeFacing:
 				float angle = value.GetValue(skill, targ, null);
-				actualTarget.Facing = Quaternion.Euler(0, angle, 0);
+				actualTarget.Facing = angle;
 				effect = new StatEffectRecord(this, angle);
 				break;
 			case StatEffectType.EndTurn:

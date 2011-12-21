@@ -343,12 +343,12 @@ public class Formula : IFormulaElement {
 		Vector3 yp = y.TilePosition;
 
 		//see if y is facing towards x at all
-		float yAngle = y.FacingZ;
+		float yAngle = y.Facing;
 		//is theta(y,x) within 45 of yAngle?
 		if(Mathf.Abs(Vector2.Angle(new Vector2(yp.x, yp.y), new Vector2(xp.x, xp.y))-yAngle) < 45) {
 			//next, get the quadrant
 			//quadrant ~~ theta (target -> other)
-			float xyAngle = Mathf.Atan2(yp.x-xp.x, yp.y-xp.y)*Mathf.Rad2Deg + x.FacingZ;
+			float xyAngle = Mathf.Atan2(yp.x-xp.x, yp.y-xp.y)*Mathf.Rad2Deg + x.Facing;
 			while(xyAngle < 0) { xyAngle += 360; }
 			while(xyAngle >= 360) { xyAngle -= 360; }
 			if(xyAngle >= 45 && xyAngle < 135) {
