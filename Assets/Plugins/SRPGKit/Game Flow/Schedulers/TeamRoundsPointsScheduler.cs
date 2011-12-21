@@ -81,10 +81,10 @@ public class TeamRoundsPointsScheduler : Scheduler {
 		float downscaleFactor = ppc.TurnDiminishScale;
 		ppc.Limiter *= Mathf.Pow(downscaleFactor, uses);
 		if(limitMode == TurnLimitMode.AP) {
-			//???: Is it okay for the scheduler to determine the move strategy's max range?
+			//???: Is it okay for the scheduler to determine the move region's max range?
 			//???: What about characters' intrinsic stats and so on?
-	  	ActionStrategy ms = c.moveSkill.Strategy;
-			ms.xyRangeMax = GetMaximumTraversalDistance(c);
+			Region ms = c.moveSkill.targetRegion;
+			ms.radiusMaxF = Formula.Constant(GetMaximumTraversalDistance(c));
 		}
 	 	//FIXME: can we do something here for time-based traversal distance limitation?
 		//???: What about characters' intrinsic movement stats and so on?
@@ -118,9 +118,9 @@ public class TeamRoundsPointsScheduler : Scheduler {
 		}
 	}
 	
-	//NEXT: maybe this is best phrased as a call from the scheduler to the ActionStrategy letting it know
-	//some relevant information? Or else a call from the ActionStrategy to the scheduler -- either way,
-	//the ActionStrategy must be AP-savvy in order to get the correct paths.
+	//NEXT: maybe this is best phrased as a call from the scheduler to the Region letting it know
+	//some relevant information? Or else a call from the Region to the scheduler -- either way,
+	//the Region must be AP-savvy in order to get the correct paths.
 	public float GetMaximumTraversalDistance(Character c=null) {
 		//FIXME: only right for AP-limited scheduler
 		if(c == null) { c = activeCharacter; }

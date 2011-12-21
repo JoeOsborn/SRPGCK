@@ -36,8 +36,8 @@ public class Skill : MonoBehaviour {
 	public bool reactionSkill=false;
 	public string[] reactionTypesApplied, reactionTypesApplier;
 	public StatChange[] reactionStatChangesApplied, reactionStatChangesApplier;
-	//tile validation strategy (line/range/cone/etc)
-	public ActionStrategy reactionStrategy;
+	//tile validation region (line/range/cone/etc)
+	public Region reactionTargetRegion, reactionEffectRegion;
 	public StatEffectGroup[] reactionEffects;
 
 	[HideInInspector]
@@ -49,13 +49,21 @@ public class Skill : MonoBehaviour {
 	public List<StatEffectRecord> lastEffects;
 
 	public virtual void Start() {
-		reactionStrategy.owner = this;	
+		if(reactionTargetRegion!=null) {
+			reactionTargetRegion.owner = this;
+		}
+		if(reactionEffectRegion!=null) {
+			reactionEffectRegion.owner = this;
+		}
 	}
 	public virtual void ActivateSkill() {
 		if(isPassive) { return; }
 		isActive = true;
-		if(reactionStrategy != null) {
-			reactionStrategy.owner = this;	
+		if(reactionTargetRegion != null) {
+			reactionTargetRegion.owner = this;	
+		}
+		if(reactionEffectRegion != null) {
+			reactionEffectRegion.owner = this;	
 		}
 	}
 	public virtual void DeactivateSkill() {
@@ -66,7 +74,12 @@ public class Skill : MonoBehaviour {
 		currentTarget = null;
 	}
 	public virtual void Update() {
-		reactionStrategy.owner = this;	
+		if(reactionTargetRegion != null) {
+			reactionTargetRegion.owner = this;	
+		}
+		if(reactionEffectRegion != null) {
+			reactionEffectRegion.owner = this;	
+		}
 	}
 	public virtual void Cancel() {
 		if(isPassive) { return; }
@@ -84,7 +97,7 @@ public class Skill : MonoBehaviour {
 			DeactivateSkill();
 		}
 	}
-	
+
 	public virtual bool ReactionTypesMatch(StatEffectRecord se) {
 		string[] reactionTypes = se.effect.target == StatEffectTarget.Applied ? reactionTypesApplied : reactionTypesApplier;
 		StatChange[] reactionStatChanges = se.effect.target == StatEffectTarget.Applied ? reactionStatChangesApplied : reactionStatChangesApplier;
@@ -93,12 +106,12 @@ public class Skill : MonoBehaviour {
 
 	public virtual bool ReactsAgainst(Skill s, StatEffectRecord se) {
 		return s != this && //don't react against your own application
-					 s.character != character && //don't react against your own character's skills
-			 		 s.currentTarget == character && //only react to skills used against our character
-					 reactionSkill && //only react if you're a reaction skill
-					 !s.reactionSkill && //don't react against reaction skills
-					 s is ActionSkill && //only react against targeted skills
-			 		 ReactionTypesMatch(se); //only react if masks match
+			s.character != character && //don't react against your own character's skills
+			s.currentTarget == character && //only react to skills used against our character
+			reactionSkill && //only react if you're a reaction skill
+			!s.reactionSkill && //don't react against reaction skills
+			s is ActionSkill && //only react against targeted skills
+			ReactionTypesMatch(se); //only react if masks match
 	}
 	protected virtual void SkillApplied(Skill s) {
 		//react against each effect
@@ -113,21 +126,16 @@ public class Skill : MonoBehaviour {
 				int hitType = (int)GetParam("reaction.hitType", 0);
 				currentHitType = hitType;
 				if(reactionEffects[hitType].Length > 0) {
-					reactionStrategy.owner = this;
-					reactionStrategy.zRangeUpMin = GetParam("reaction.range.z.up.min", 0);
-					reactionStrategy.zRangeUpMax = GetParam("reaction.range.z.up.max", 1);
-					reactionStrategy.zRangeDownMin = GetParam("reaction.range.z.down.min", 0);
-					reactionStrategy.zRangeDownMax = GetParam("reaction.range.z.down.max", 2);
-					reactionStrategy.xyRangeMin = GetParam("reaction.range.xy.min", 1);
-					reactionStrategy.xyRangeMax = GetParam("reaction.range.xy.max", 1);
-
-					reactionStrategy.zRadiusUp = GetParam("reaction.radius.z.up", 0);
-					reactionStrategy.zRadiusDown = GetParam("reaction.radius.z.down", 0);
-					reactionStrategy.xyRadius = GetParam("reaction.radius.xy", 0);
-					
-					PathNode[] reactionTiles = reactionStrategy.GetReactionTiles(currentTarget.TilePosition);
-					targets = reactionStrategy.CharactersForTargetedTiles(reactionTiles);
-					ApplyEffectsTo(reactionEffects[hitType].effects, targets);
+					reactionTargetRegion.owner = this;
+					reactionEffectRegion.owner = this;
+					PathNode[] reactionTiles = reactionTargetRegion.GetValidTiles();
+					reactionTiles = reactionTargetRegion.ActualTilesForTargetedTiles(reactionTiles);
+					List<Character> tentativeTargets = reactionTargetRegion.CharactersForTargetedTiles(reactionTiles);
+					if(tentativeTargets.Contains(s.character)) {
+						reactionTiles = reactionEffectRegion.GetValidTiles(currentTarget.TilePosition);
+						targets = reactionEffectRegion.CharactersForTargetedTiles(reactionTiles);
+						ApplyEffectsTo(reactionEffects[hitType].effects, targets);
+					}
 				}
 				map.BroadcastMessage("SkillApplied", this, SendMessageOptions.DontRequireReceiver);
 			}
@@ -135,7 +143,7 @@ public class Skill : MonoBehaviour {
 		currentReactedSkill = null;
 		currentReactedEffect = null;
 	}
-	
+
 	void MakeParametersIfNecessary() {
 		if(runtimeParameters == null) {
 			runtimeParameters = new Dictionary<string, Formula>();
@@ -210,6 +218,21 @@ public class Skill : MonoBehaviour {
 		}	
 	}
 	
+	public static Vector2 TransformKeyboardAxes(float h, float v, bool switchXY=true) {
+		//use the camera and the map's own rotation
+		Transform cam = Camera.main.transform;
+		//h*right+v*forward
+		Vector3 xp = cam.TransformDirection(new Vector3(1, 0, 0));
+		xp.y = 0;
+		xp = xp.normalized;
+		Vector3 yp = new Vector3(-xp.z, 0, xp.x);
+		Vector3 result = h*xp + v*yp;
+		if(switchXY) {
+			return new Vector2(-result.z, result.x);
+		} else {
+			return new Vector2(result.x, result.z);
+		}
+	}
 	
 	public Vector3 transformOffset { get { 
 		return character.transformOffset; 

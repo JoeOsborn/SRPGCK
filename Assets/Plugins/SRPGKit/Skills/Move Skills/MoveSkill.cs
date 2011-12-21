@@ -6,9 +6,6 @@ using UnityEngine;
 public class MoveSkill : ActionSkill {
 	override public MoveExecutor Executor { get { return moveExecutor; } }
 	
-	//strategy
-	public float ZDelta { get { return GetParam("range.z", character.GetStat("jump", 3)); } }
-	override public float XYRange { get { return GetParam("range.xy", character.GetStat("move", 5)); } }
 	//executor
 	[HideInInspector]
 	public MoveExecutor moveExecutor;
@@ -25,20 +22,14 @@ public class MoveSkill : ActionSkill {
 		Executor.owner = this;
 	}
 	
-	protected override void SetupStrategy() {
-		//N.B.: don't use superclass implementation
-		Strategy.zRangeDownMin = 0;
-		Strategy.zRangeDownMax = ZDelta;
-		Strategy.zRangeUpMin = 0;
-		Strategy.zRangeUpMax = ZDelta;
-		Strategy.xyRangeMin = 0;
-		Strategy.xyRangeMax = XYRange;
-	}
-
 	public override void ResetSkill() {
 		skillName = "Move";
 		skillGroup = "";
 		skillSorting=-1;
+		effectRegion = new Region();
+		effectRegion.IsEffectRegion = true;
+		effectRegion.radiusMinF = Formula.Constant(0);
+		effectRegion.radiusMaxF = Formula.Constant(0);
 	}
 		
 	public override void Update() {
@@ -103,11 +94,12 @@ public class MoveSkill : ActionSkill {
 	
 	protected override PathNode[] GetValidActionTiles() {
 		if(!lockToGrid) { return null; }
-		return Strategy.GetValidMoves(
-			selectedTile, 
-			0, Strategy.xyRangeMax-xyRangeSoFar, 
-			0, Strategy.zRangeDownMax, 
-			0, Strategy.zRangeUpMax
+		return targetRegion.GetValidTiles(
+			selectedTile, Quaternion.Euler(0, character.Facing, 0),
+			targetRegion.radiusMin, targetRegion.radiusMax-radiusSoFar, 
+			targetRegion.zDownMin, targetRegion.zDownMax, 
+			targetRegion.zUpMin, targetRegion.zUpMax,
+			targetRegion.interveningSpaceType
 		);
 	}
 	

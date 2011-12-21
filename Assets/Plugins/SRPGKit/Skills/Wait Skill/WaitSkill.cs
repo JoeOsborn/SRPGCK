@@ -24,15 +24,6 @@ public class WaitSkill : ActionSkill {
 		}
 		overlayColor = Color.clear;
 		highlightColor = Color.clear;
-		SetParam("range.xy.min", 0);
-		SetParam("range.xy.max", 0);
-		SetParam("range.z.up.min", 0);
-		SetParam("range.z.up.max", 0);
-		SetParam("range.z.down.min", 0);
-		SetParam("range.z.down.max", 0);
-		SetParam("radius.xy", 0);
-		SetParam("radius.z.up", 0);
-		SetParam("radius.z.down", 0);
 		targetingMode = TargetingMode.Cardinal;
 		StatEffect facingEffect = new StatEffect();
 		facingEffect.effectType = StatEffectType.ChangeFacing;

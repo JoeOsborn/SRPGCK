@@ -53,9 +53,10 @@ public class SkillEditor : SRPGCKEditor {
 			s.reactionTypesApplier = EditorGUIExt.ArrayFoldout("Effect Type (Attacker)", s.reactionTypesApplier, ref showReactionTypesApplier, false, halfWidth-16, "attack");
 			s.reactionTypesApplied = EditorGUIExt.ArrayFoldout("Effect Type (Defender)", s.reactionTypesApplied, ref showReactionTypesApplied, false, halfWidth-16, "attack");
 			EditorGUILayout.EndHorizontal();
-			//reaction strategy
+			//reaction region
 			//reaction effects
-			s.reactionStrategy = EditorGUIExt.StrategyGUI(s.reactionStrategy);
+			s.reactionTargetRegion = EditorGUIExt.RegionGUI(s.reactionTargetRegion);
+			s.reactionEffectRegion = EditorGUIExt.RegionGUI(s.reactionEffectRegion);
 			s.reactionEffects = EditorGUIExt.StatEffectGroupsGUI("Effect Group", s.reactionEffects, StatEffectContext.Action, formulaOptions, lastFocusedControl);
 			EditorGUILayout.Space();
 			if(s.reactionEffects != null && s.reactionEffects.Length > 1) {

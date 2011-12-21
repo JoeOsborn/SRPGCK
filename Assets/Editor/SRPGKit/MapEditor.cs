@@ -152,25 +152,25 @@ public class MapEditor : Editor {
 			makeInvisibleTiles = EditorGUILayout.Toggle("Invisible", makeInvisibleTiles);
 			GUILayout.Label("Side Insets");
 			EditorGUILayout.BeginHorizontal();
-			sideInsets[(int)Map.Neighbors.FrontLeftIdx ] = Mathf.Clamp(EditorGUILayout.FloatField("-X", sideInsets[(int)Map.Neighbors.FrontLeftIdx  ]), 0, 1.0f-sideInsets[(int)Map.Neighbors.BackRightIdx ]);
-			sideInsets[(int)Map.Neighbors.BackRightIdx ] = Mathf.Clamp(EditorGUILayout.FloatField("+X", sideInsets[(int)Map.Neighbors.BackRightIdx  ]), 0, 1.0f-sideInsets[(int)Map.Neighbors.FrontLeftIdx ]);
+			sideInsets[(int)Neighbors.FrontLeftIdx ] = Mathf.Clamp(EditorGUILayout.FloatField("-X", sideInsets[(int)Neighbors.FrontLeftIdx  ]), 0, 1.0f-sideInsets[(int)Neighbors.BackRightIdx ]);
+			sideInsets[(int)Neighbors.BackRightIdx ] = Mathf.Clamp(EditorGUILayout.FloatField("+X", sideInsets[(int)Neighbors.BackRightIdx  ]), 0, 1.0f-sideInsets[(int)Neighbors.FrontLeftIdx ]);
 			EditorGUILayout.EndHorizontal();
 			EditorGUILayout.BeginHorizontal();
-			sideInsets[(int)Map.Neighbors.FrontRightIdx] = Mathf.Clamp(EditorGUILayout.FloatField("-Y", sideInsets[(int)Map.Neighbors.FrontRightIdx ]), 0, 1.0f-sideInsets[(int)Map.Neighbors.BackLeftIdx  ]);
-			sideInsets[(int)Map.Neighbors.BackLeftIdx  ] = Mathf.Clamp(EditorGUILayout.FloatField("+Y", sideInsets[(int)Map.Neighbors.BackLeftIdx   ]), 0, 1.0f-sideInsets[(int)Map.Neighbors.FrontRightIdx]);
+			sideInsets[(int)Neighbors.FrontRightIdx] = Mathf.Clamp(EditorGUILayout.FloatField("-Y", sideInsets[(int)Neighbors.FrontRightIdx ]), 0, 1.0f-sideInsets[(int)Neighbors.BackLeftIdx  ]);
+			sideInsets[(int)Neighbors.BackLeftIdx  ] = Mathf.Clamp(EditorGUILayout.FloatField("+Y", sideInsets[(int)Neighbors.BackLeftIdx   ]), 0, 1.0f-sideInsets[(int)Neighbors.FrontRightIdx]);
 			EditorGUILayout.EndHorizontal();
 			EditorGUILayout.BeginHorizontal();
-			sideInsets[(int)Map.Neighbors.BottomIdx    ] = Mathf.Clamp(EditorGUILayout.FloatField("-Z", sideInsets[(int)Map.Neighbors.BottomIdx     ]), 0, 1.0f-sideInsets[(int)Map.Neighbors.TopIdx       ]);
-			sideInsets[(int)Map.Neighbors.TopIdx       ] = Mathf.Clamp(EditorGUILayout.FloatField("+Z", sideInsets[(int)Map.Neighbors.TopIdx        ]), 0, 1.0f-sideInsets[(int)Map.Neighbors.BottomIdx    ]);
+			sideInsets[(int)Neighbors.BottomIdx    ] = Mathf.Clamp(EditorGUILayout.FloatField("-Z", sideInsets[(int)Neighbors.BottomIdx     ]), 0, 1.0f-sideInsets[(int)Neighbors.TopIdx       ]);
+			sideInsets[(int)Neighbors.TopIdx       ] = Mathf.Clamp(EditorGUILayout.FloatField("+Z", sideInsets[(int)Neighbors.TopIdx        ]), 0, 1.0f-sideInsets[(int)Neighbors.BottomIdx    ]);
 			EditorGUILayout.EndHorizontal();
 			GUILayout.Label("Corner Insets (not yet implemented)");
 			EditorGUILayout.BeginHorizontal();
-			cornerInsets[(int)Map.Corners.Front] = Mathf.Clamp(EditorGUILayout.FloatField(" 0" , cornerInsets[(int)Map.Corners.Front]), 0, 1.0f);
-			cornerInsets[(int)Map.Corners.Right] = Mathf.Clamp(EditorGUILayout.FloatField("+X" , cornerInsets[(int)Map.Corners.Right]), 0, 1.0f);
+			cornerInsets[(int)Corners.Front] = Mathf.Clamp(EditorGUILayout.FloatField(" 0" , cornerInsets[(int)Corners.Front]), 0, 1.0f);
+			cornerInsets[(int)Corners.Right] = Mathf.Clamp(EditorGUILayout.FloatField("+X" , cornerInsets[(int)Corners.Right]), 0, 1.0f);
 			EditorGUILayout.EndHorizontal();
 			EditorGUILayout.BeginHorizontal();
-			cornerInsets[(int)Map.Corners.Left ] = Mathf.Clamp(EditorGUILayout.FloatField("+Y" , cornerInsets[(int)Map.Corners.Left ]), 0, 1.0f);
-			cornerInsets[(int)Map.Corners.Back ] = Mathf.Clamp(EditorGUILayout.FloatField("+XY", cornerInsets[(int)Map.Corners.Back ]), 0, 1.0f);
+			cornerInsets[(int)Corners.Left ] = Mathf.Clamp(EditorGUILayout.FloatField("+Y" , cornerInsets[(int)Corners.Left ]), 0, 1.0f);
+			cornerInsets[(int)Corners.Back ] = Mathf.Clamp(EditorGUILayout.FloatField("+XY", cornerInsets[(int)Corners.Back ]), 0, 1.0f);
 			EditorGUILayout.EndHorizontal();
 		} else if(editMode == EditMode.Paint) {
 			EditorGUILayout.Separator();
@@ -292,17 +292,17 @@ public class MapEditor : Editor {
 		int nz = editZ;
 		m.SetTileInvisible(nx, ny, nz, makeInvisibleTiles);
 		
-		m.InsetSidesOfTile(nx, ny, nz, sideInsets[(int)Map.Neighbors.FrontRightIdx], Map.Neighbors.FrontRight); 
-		m.InsetSidesOfTile(nx, ny, nz, sideInsets[(int)Map.Neighbors.FrontLeftIdx ], Map.Neighbors.FrontLeft ); 
-		m.InsetSidesOfTile(nx, ny, nz, sideInsets[(int)Map.Neighbors.BackRightIdx ], Map.Neighbors.BackRight ); 
-		m.InsetSidesOfTile(nx, ny, nz, sideInsets[(int)Map.Neighbors.BackLeftIdx  ], Map.Neighbors.BackLeft  ); 
-		m.InsetSidesOfTile(nx, ny, nz, sideInsets[(int)Map.Neighbors.BottomIdx    ], Map.Neighbors.Bottom    ); 
-		m.InsetSidesOfTile(nx, ny, nz, sideInsets[(int)Map.Neighbors.TopIdx       ], Map.Neighbors.Top       ); 
+		m.InsetSidesOfTile(nx, ny, nz, sideInsets[(int)Neighbors.FrontRightIdx], Neighbors.FrontRight); 
+		m.InsetSidesOfTile(nx, ny, nz, sideInsets[(int)Neighbors.FrontLeftIdx ], Neighbors.FrontLeft ); 
+		m.InsetSidesOfTile(nx, ny, nz, sideInsets[(int)Neighbors.BackRightIdx ], Neighbors.BackRight ); 
+		m.InsetSidesOfTile(nx, ny, nz, sideInsets[(int)Neighbors.BackLeftIdx  ], Neighbors.BackLeft  ); 
+		m.InsetSidesOfTile(nx, ny, nz, sideInsets[(int)Neighbors.BottomIdx    ], Neighbors.Bottom    ); 
+		m.InsetSidesOfTile(nx, ny, nz, sideInsets[(int)Neighbors.TopIdx       ], Neighbors.Top       ); 
 
-		m.InsetCornerOfTile(nx, ny, nz, cornerInsets[(int)Map.Corners.Left ], Map.Corners.Left ); 
-		m.InsetCornerOfTile(nx, ny, nz, cornerInsets[(int)Map.Corners.Front], Map.Corners.Front); 
-		m.InsetCornerOfTile(nx, ny, nz, cornerInsets[(int)Map.Corners.Right], Map.Corners.Right); 
-		m.InsetCornerOfTile(nx, ny, nz, cornerInsets[(int)Map.Corners.Back ], Map.Corners.Back ); 
+		m.InsetCornerOfTile(nx, ny, nz, cornerInsets[(int)Corners.Left ], Corners.Left ); 
+		m.InsetCornerOfTile(nx, ny, nz, cornerInsets[(int)Corners.Front], Corners.Front); 
+		m.InsetCornerOfTile(nx, ny, nz, cornerInsets[(int)Corners.Right], Corners.Right); 
+		m.InsetCornerOfTile(nx, ny, nz, cornerInsets[(int)Corners.Back ], Corners.Back ); 
 	}
 	
 	void StampOffsetsAt(int idx) {
@@ -320,11 +320,11 @@ public class MapEditor : Editor {
 		m.SetTileInvisible(nx, ny, nz, false);
 		
 		RegisterUndo("Clear Insets");
-		m.InsetSidesOfTile(nx, ny, nz, 0, Map.Neighbors.All); 
-		m.InsetCornerOfTile(nx, ny, nz, 0, Map.Corners.Left ); 
-		m.InsetCornerOfTile(nx, ny, nz, 0, Map.Corners.Front); 
-		m.InsetCornerOfTile(nx, ny, nz, 0, Map.Corners.Right); 
-		m.InsetCornerOfTile(nx, ny, nz, 0, Map.Corners.Back ); 
+		m.InsetSidesOfTile(nx, ny, nz, 0, Neighbors.All); 
+		m.InsetCornerOfTile(nx, ny, nz, 0, Corners.Left ); 
+		m.InsetCornerOfTile(nx, ny, nz, 0, Corners.Front); 
+		m.InsetCornerOfTile(nx, ny, nz, 0, Corners.Right); 
+		m.InsetCornerOfTile(nx, ny, nz, 0, Corners.Back ); 
 		EditorUtility.SetDirty(target);
 	}
 	
@@ -353,7 +353,7 @@ public class MapEditor : Editor {
 		EditorUtility.SetDirty(target);
 	}
 	
-	void SetTileSpecAt(int idx, Map.Neighbors collidedFace) {
+	void SetTileSpecAt(int idx, Neighbors collidedFace) {
 		Map m = (Map)target;
 		int ny = idx/(int)m.size.x;
 		int nx = idx-(ny*(int)m.size.x);
@@ -367,7 +367,7 @@ public class MapEditor : Editor {
 		return f - Mathf.Floor(f);
 	}
 	
-	void AdjustIsoHeightAt(int idx, Map.Neighbors collidedFace, Vector3 wpos, int dh) {
+	void AdjustIsoHeightAt(int idx, Neighbors collidedFace, Vector3 wpos, int dh) {
 		Map m = (Map)target;
 		int ny = idx/(int)m.size.x;
 		int nx = idx-(ny*(int)m.size.x);
@@ -375,7 +375,7 @@ public class MapEditor : Editor {
 		MapTile t = m.TileAt(nx,ny,nz);
 		if(t==null) { return; }
 		Vector3 tpos = m.InverseTransformPointWorld(wpos);
-		Map.Neighbors side = Map.Neighbors.None;
+		Neighbors side = Neighbors.None;
 		//get the fractional part of each coord
 /*		Debug.Log("adjust height at "+nx+","+ny+","+nz+", tpos "+tpos+", wpos "+wpos);*/
 		tpos.x = modf(tpos.x);
@@ -383,24 +383,24 @@ public class MapEditor : Editor {
 	  //tpos.z = modf(tpos.z);
 		bool top = tpos.z > t.z + (t.maxHeight-t.z)/2;
 /*		Debug.Log("tpos frac "+tpos.x+", "+tpos.y+", "+tpos.z);*/
-		if((collidedFace & Map.Neighbors.FrontLeft) != 0) {
-			side = Map.Neighbors.FrontLeft;
-		} else if((collidedFace & Map.Neighbors.FrontRight) != 0) {
-			side = Map.Neighbors.FrontRight;
-		} else if((collidedFace & Map.Neighbors.BackRight) != 0) {
-			side = Map.Neighbors.BackRight;
-		} else if((collidedFace & Map.Neighbors.BackLeft) != 0) {
-			side = Map.Neighbors.BackLeft;
+		if((collidedFace & Neighbors.FrontLeft) != 0) {
+			side = Neighbors.FrontLeft;
+		} else if((collidedFace & Neighbors.FrontRight) != 0) {
+			side = Neighbors.FrontRight;
+		} else if((collidedFace & Neighbors.BackRight) != 0) {
+			side = Neighbors.BackRight;
+		} else if((collidedFace & Neighbors.BackLeft) != 0) {
+			side = Neighbors.BackLeft;
 		} else { //top or bottom
-			top = (collidedFace & Map.Neighbors.Top) != 0;
+			top = (collidedFace & Neighbors.Top) != 0;
 			if(tpos.x < 0.3 && tpos.y < 0.75 && tpos.y > 0.25) {
-				side = Map.Neighbors.FrontLeft;
+				side = Neighbors.FrontLeft;
 			} else if(tpos.x > 0.3 && tpos.y < 0.75 && tpos.y > 0.25) {
-				side = Map.Neighbors.BackRight;
+				side = Neighbors.BackRight;
 			} else if(tpos.y < 0.3 && tpos.x < 0.75 && tpos.x > 0.25) {
-				side = Map.Neighbors.FrontRight;
+				side = Neighbors.FrontRight;
 			} else if(tpos.y > 0.3 && tpos.x < 0.75 && tpos.x > 0.25) {
-				side = Map.Neighbors.BackLeft;
+				side = Neighbors.BackLeft;
 			}
 		}
 		RegisterUndo("Adjust Tile Height");
@@ -413,22 +413,22 @@ public class MapEditor : Editor {
 		return Mathf.Abs(a-b) < roughEps;
 	}
 	
-	Map.Neighbors CollidedFaceAt(Vector3 cp, TileBounds b) {
+	Neighbors CollidedFaceAt(Vector3 cp, TileBounds b) {
 		Vector3 collisionPoint = cp - b.center;				
 		Vector3 sz = b.size;
-		Map.Neighbors collidedFace = Map.Neighbors.None;
+		Neighbors collidedFace = Neighbors.None;
 		if(Roughly(collisionPoint.x, sz.x/2)) {
-			collidedFace = Map.Neighbors.BackRight;
+			collidedFace = Neighbors.BackRight;
 		} else if(Roughly(collisionPoint.x, -sz.x/2)) {
-			collidedFace = Map.Neighbors.FrontLeft;
+			collidedFace = Neighbors.FrontLeft;
 		} else if(Roughly(collisionPoint.z, sz.z/2)) {
-			collidedFace = Map.Neighbors.BackLeft;					
+			collidedFace = Neighbors.BackLeft;					
 		} else if(Roughly(collisionPoint.z, -sz.z/2)) {
-			collidedFace = Map.Neighbors.FrontRight;
+			collidedFace = Neighbors.FrontRight;
 		} else if(collisionPoint.y < 0) {
-			collidedFace = Map.Neighbors.Bottom;
+			collidedFace = Neighbors.Bottom;
 		} else {
-			collidedFace = Map.Neighbors.Top;
+			collidedFace = Neighbors.Top;
 		}
 		return collidedFace;
 	}
@@ -460,7 +460,7 @@ public class MapEditor : Editor {
 		int closestIdx = -1;
 		float closestDistance = Mathf.Infinity;
 		Vector3 collisionPoint = Vector3.zero;
-		Map.Neighbors collidedFace = Map.Neighbors.None;
+		Neighbors collidedFace = Neighbors.None;
 		bool dimsChanged = 
 			sz != lastSize || 
 	   	s != lastSideLength || 
@@ -566,7 +566,7 @@ public class MapEditor : Editor {
 					e.Use();
 				}
 			} else if(editMode == EditMode.Paint) {
-				if(collidedFace != Map.Neighbors.None) {
+				if(collidedFace != Neighbors.None) {
 					SetTileSpecAt(closestIdx, collidedFace);
 					draggingInMap = true;
 					e.Use();
@@ -599,14 +599,14 @@ public class MapEditor : Editor {
   }
 
 	public static void DrawWireBounds(Vector3 center, Vector3 size, Color lineColor) {
-		DrawWireBounds(center, size, lineColor, Map.Neighbors.All);
+		DrawWireBounds(center, size, lineColor, Neighbors.All);
 	}
 	
-	public static void DrawWireBounds(Vector3 center, Vector3 size, Color lineColor, Map.Neighbors sides) {
+	public static void DrawWireBounds(Vector3 center, Vector3 size, Color lineColor, Neighbors sides) {
 		float bh = size.y-0.2f;
 		float bs = size.x-0.2f;
 		Vector3 here = center + new Vector3(-bs/2+0.1f, -bh/2+0.1f, -bs/2+0.1f);
-		if((sides & Map.Neighbors.FrontLeft) != 0) {
+		if((sides & Neighbors.FrontLeft) != 0) {
 			Vector3[] frontLeft = new Vector3[]{
 				here+new Vector3(0,0,bs),
 				here+new Vector3(0,bh,bs),
@@ -615,7 +615,7 @@ public class MapEditor : Editor {
 			};
 			Handles.DrawSolidRectangleWithOutline(frontLeft, Color.clear, lineColor);
 		}
-		if((sides & Map.Neighbors.FrontRight) != 0) {
+		if((sides & Neighbors.FrontRight) != 0) {
 			Vector3[] frontRight = new Vector3[]{
 				here+new Vector3(0,0,0),
 				here+new Vector3(bs,0,0),
@@ -624,7 +624,7 @@ public class MapEditor : Editor {
 			};
 			Handles.DrawSolidRectangleWithOutline(frontRight, Color.clear, lineColor);
 		}
-		if((sides & Map.Neighbors.Top) != 0) {
+		if((sides & Neighbors.Top) != 0) {
 			Vector3[] top = new Vector3[]{
 				here+new Vector3(bs,bh,0),
 				here+new Vector3(bs,bh,bs),
@@ -633,7 +633,7 @@ public class MapEditor : Editor {
 			};
 			Handles.DrawSolidRectangleWithOutline(top, Color.clear, lineColor);
 		}
-		if((sides & Map.Neighbors.Bottom) != 0) {
+		if((sides & Neighbors.Bottom) != 0) {
 			Vector3[] bottom = new Vector3[]{
 				here+new Vector3(bs,0,0),
 				here+new Vector3(bs,0,bs),
@@ -642,7 +642,7 @@ public class MapEditor : Editor {
 			};
 			Handles.DrawSolidRectangleWithOutline(bottom, Color.clear, lineColor);
 		}
-		if((sides & Map.Neighbors.BackLeft) != 0) {
+		if((sides & Neighbors.BackLeft) != 0) {
 			Vector3[] backLeft = new Vector3[]{
 				here+new Vector3(0,0,bs),
 				here+new Vector3(bs,0,bs),
@@ -651,7 +651,7 @@ public class MapEditor : Editor {
 			};
 			Handles.DrawSolidRectangleWithOutline(backLeft, Color.clear, lineColor);
 		}
-		if((sides & Map.Neighbors.BackRight) != 0) {
+		if((sides & Neighbors.BackRight) != 0) {
 			Vector3[] backRight = new Vector3[]{
 				here+new Vector3(bs,bh,bs),
 				here+new Vector3(bs,0,bs),

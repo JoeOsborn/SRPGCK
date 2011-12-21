@@ -405,20 +405,15 @@ public class EditorGUIExt
 		return newArray;
 	}
 	
-	public static ActionStrategy StrategyGUI(ActionStrategy strat, bool showEffect=true) {
-		ActionStrategy newStrat = strat;
+	public static Region RegionGUI(Region reg, bool showEffect=true) {
+		Region newReg = reg;
 		GUILayout.BeginHorizontal();
-		newStrat.canCrossWalls = !EditorGUILayout.Toggle("Walls Block Targeting", !strat.canCrossWalls);
-		if(showEffect) {
-			newStrat.canEffectCrossWalls = !EditorGUILayout.Toggle("Walls Block Effect", !strat.canEffectCrossWalls);
-		}
+		newReg.canCrossWalls = !EditorGUILayout.Toggle("Walls Block Region", !reg.canCrossWalls);
 		GUILayout.EndHorizontal();
 		GUILayout.BeginHorizontal();
-		newStrat.canCrossEnemies = !EditorGUILayout.Toggle("Enemies Block Targeting", !strat.canCrossEnemies);
-		if(showEffect) {
-			newStrat.canEffectCrossEnemies = !EditorGUILayout.Toggle("Enemies Block Effect", !strat.canEffectCrossEnemies);
-		}
+		newReg.canCrossEnemies = !EditorGUILayout.Toggle("Enemies Block Region", !reg.canCrossEnemies);
 		GUILayout.EndHorizontal();
-		return newStrat;
+		//TODO: formulae and region type and pathable!
+		return newReg;
 	}
 }

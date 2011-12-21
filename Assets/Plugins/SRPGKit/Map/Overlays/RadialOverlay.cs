@@ -7,7 +7,6 @@ public enum RadialOverlayType {
 };
 
 public class RadialOverlay : Overlay {
-	
 	//TODO: clip by walls -- reachability mask? but what about the outer volume?
 	
 	public RadialOverlayType type=RadialOverlayType.Sphere;

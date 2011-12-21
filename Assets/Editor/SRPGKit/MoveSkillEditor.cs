@@ -6,7 +6,8 @@ using System.Linq;
 //TODO: uncomment once we expose all the functionality we need. [CustomEditor(typeof(MoveSkill))]
 public class MoveSkillEditor : SkillEditor {
 	protected MoveSkill ms;
-  public override void OnEnable() {
+	
+	public override void OnEnable() {
 		base.OnEnable();
 		name = "MoveSkill";
 		ms = target as MoveSkill;
@@ -21,8 +22,9 @@ public class MoveSkillEditor : SkillEditor {
 		GUILayout.Label("Movement");
 		EditorGUI.indentLevel++;
 		EditorGUILayout.Space();
-		//strategy
-		ms.strategy = EditorGUIExt.StrategyGUI(ms.strategy, false);
+		//region
+		ms.targetRegion = EditorGUIExt.RegionGUI(ms.targetRegion, false);
+		//TODO: effect region on single-tile-only?
 		EditorGUILayout.Space();
 		
 		//TODO: put in path drawing stuff!

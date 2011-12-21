@@ -28,7 +28,8 @@ public class ActionSkillEditor : SkillEditor {
 		
 		GUILayout.Label("Attack");
 		EditorGUI.indentLevel++;
-		atk.strategy = EditorGUIExt.StrategyGUI(atk.strategy);
+		atk.targetRegion = EditorGUIExt.RegionGUI(atk.targetRegion);
+		atk.effectRegion = EditorGUIExt.RegionGUI(atk.effectRegion);
 		atk.targetEffects = EditorGUIExt.StatEffectGroupsGUI("Attack Effect Group", atk.targetEffects, StatEffectContext.Action, formulaOptions, lastFocusedControl);
 		EditorGUI.indentLevel--;
 		EditorGUILayout.Space();

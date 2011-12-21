@@ -4,39 +4,192 @@ using System;
 using System.Linq;
 using UnityEditor;
 
+//  [FlagsAttribute] 
+public enum Neighbors {
+	FrontLeftIdx =0,
+	FrontRightIdx=1,
+	BackRightIdx =2,
+	BackLeftIdx  =3,
+	BottomIdx    =4,
+	TopIdx       =5,
+	
+	FrontLeft =1<<3, //-x
+	FrontRight=1<<4, //-y
+	BackRight =1<<5, //+x
+	BackLeft  =1<<6, //+y
+	Bottom    =1<<7, //-z
+	Top       =1<<8, //+z
+	
+	Sides     =FrontLeft|FrontRight|BackRight|BackLeft,
+	All       =Sides|Bottom|Top,
+	Any       =All,
+	None      =0
+};
+
+public enum Corners {
+	Left  =0, //+ y
+	Front =1, //+0
+	Right =2, //+x
+	Back  =3  //+xy
+};
+
 [System.Serializable]
 public class Map : MonoBehaviour {
-//  [FlagsAttribute] 
-	public enum Neighbors {
-		FrontLeftIdx =0,
-		FrontRightIdx=1,
-		BackRightIdx =2,
-		BackLeftIdx  =3,
-		BottomIdx    =4,
-		TopIdx       =5,
-		
-		FrontLeft =1<<3, //-x
-		FrontRight=1<<4, //-y
-		BackRight =1<<5, //+x
-		BackLeft  =1<<6, //+y
-		Bottom    =1<<7, //-z
-		Top       =1<<8, //+z
-		
-		Sides     =FrontLeft|FrontRight|BackRight|BackLeft,
-		All       =Sides|Bottom|Top,
-		Any       =All,
-		None      =0
-	};
-
-	public enum Corners {
-		Left  =0, //+ y
-		Front =1, //+0
-		Right =2, //+x
-		Back  =3  //+xy
-	};
-	
 	public bool usesBottomFace=true;
 	
+	[SerializeField]
+	MapColumn[] stacks;
+
+	[SerializeField]
+	List<TileSpec> tileSpecs=new List<TileSpec>();
+	
+	[SerializeField]
+	Texture2D mainAtlas;
+	
+	[SerializeField]
+	Rect[] tileRects;
+	
+	//Note: dictionaries can't be serialized, so we'll lose overlays on deserialize
+	Dictionary<string, Dictionary<int, Overlay>> overlays;
+	
+#region Calculated and lazy properties
+  //TODO: cache these two
+  public Scheduler scheduler {
+  	get { 
+  		return GetComponentInChildren<Scheduler>();
+  	}
+  }
+  	
+  public Arbiter arbiter {
+  	get { 
+  		return GetComponentInChildren<Arbiter>();
+  	}
+  }
+	
+	public int TileSpecCount {
+		get { return tileSpecs.Count; }
+	}
+	
+	[SerializeField]
+	Vector2 _size = new Vector2(10,10);
+	public Vector2 size {
+		get {
+			return _size;
+		}
+		set {
+			if(value == _size) { return; }
+			Vector2 oldSize = _size;
+			_size = value;
+			ResetStacks(oldSize);
+		}
+	}
+	
+	[SerializeField]
+	float _sideLength = 10;
+	public float sideLength {
+		get {
+			return _sideLength;
+		}
+		set {
+			if(value == _sideLength) { return; }
+			_sideLength = value;
+			RemakeMesh();
+		}
+	}
+	
+	[SerializeField]
+	float _tileHeight = 10;
+	public float tileHeight {
+		get {
+			return _tileHeight;
+		}
+		set {
+			if(value == _tileHeight) { return; }
+			_tileHeight = value;
+			RemakeMesh();
+		}
+	}
+	
+#endregion
+#region Monobehaviour stuff
+void Start() {
+	if(this.stacks == null) {
+		ResetStacks(Vector2.zero);
+	}
+}
+void Awake() {
+	MeshRenderer mr = GetComponent<MeshRenderer>();
+	if(mr != null && mr.materials.Length >= 2) {
+		if(Application.isPlaying) {
+			mr.materials[1].color = Color.clear;
+		}
+	}
+}
+#endregion
+#region Tilespec and texture-building
+	
+	public void AddTileSpec(Texture2D tex) {
+		TileSpec spec = new TileSpec();
+		spec.texture = tex;
+		tileSpecs.Add(spec);
+		RemakeTexture();
+	}
+	
+	public void RemoveTileSpecAt(int i) {
+		for(int mi = 0; mi < stacks.Length; mi++) {
+			MapColumn tl = stacks[mi];
+			if(tl == null) { continue; }
+			for(int ti = 0; ti < tl.Count; i++) {
+				MapTile t = tl.At(ti);
+				if(!MapTileIsNull(t)) {
+					t.AdjustTileSpecsAfterRemoving(i);
+				}
+			}
+		}
+		tileSpecs.RemoveAt(i);
+		RemakeTexture();
+	}
+	
+	public TileSpec TileSpecAt(int i) {
+		return tileSpecs[i];
+	}
+	
+	public void UpdateTileSpecAt(int i, Texture2D tex) {
+		tileSpecs[i].texture = tex;
+		RemakeTexture();
+	}
+	
+	public void SetTileSpecOnTileAt(int spec, int x, int y, int z, Neighbors sides) {
+		MapTile t = TileAt(x,y,z);
+		if(!MapTileIsNull(t)) {
+			t.SetTileSpecOnSides(spec, sides);
+		}
+		RemakeMesh();
+	}
+	
+	void RemakeTexture() {
+		Texture2D[] textures = new Texture2D[tileSpecs.Count];
+		for(int i = 0; i < tileSpecs.Count; i++) {
+			if(tileSpecs[i].texture == null) {
+				textures[i] = new Texture2D(1, 1);
+			} else {
+				textures[i] = tileSpecs[i].texture;	
+			}
+		}
+		if(mainAtlas == null) { mainAtlas=new Texture2D(1024, 1024); }
+		tileRects = mainAtlas.PackTextures(textures, 0);
+		if(!Application.isPlaying) {
+			mainAtlas.Compress(true);
+//			EditorUtility.CompressTexture(mainAtlas, TextureFormat.DXT5);
+		} else {
+			mainAtlas.Compress(true);
+		}
+		RemakeMesh();
+	}
+	
+#endregion
+
+#region Tile queries and updates
 	Neighbors NeighborsOfTile(int x, int y, int z) {
 		//look to four side edges
 		//look above
@@ -74,118 +227,34 @@ public class Map : MonoBehaviour {
 		return mask;
 	}
 	
-	[SerializeField]
-	MapColumn[] stacks;
-
-	[SerializeField]
-	List<TileSpec> tileSpecs=new List<TileSpec>();
-	
-	[SerializeField]
-	Texture2D mainAtlas;
-	
-	[SerializeField]
-	Rect[] tileRects;
-	
-	//Note: dictionaries can't be serialized
-	Dictionary<string, Dictionary<int, Overlay>> overlays;
-	
-	public int TileSpecCount {
-		get { return tileSpecs.Count; }
-	}
-	public void AddTileSpec(Texture2D tex) {
-		TileSpec spec = new TileSpec();
-		spec.texture = tex;
-		tileSpecs.Add(spec);
-		RemakeTexture();
-	}
-	public void RemoveTileSpecAt(int i) {
-		for(int mi = 0; mi < stacks.Length; mi++) {
-			MapColumn tl = stacks[mi];
-			if(tl == null) { continue; }
-			for(int ti = 0; ti < tl.Count; i++) {
-				MapTile t = tl.At(ti);
-				if(!MapTileIsNull(t)) {
-					t.AdjustTileSpecsAfterRemoving(i);
-				}
+	bool NoInsetOrInvisibleNeighbors(int x, int y, MapTile t) {
+		int zMin=t.z-1, zMax=t.z+t.maxHeight;
+		MapTile neighbor=null;
+		for(int tz = zMin+1; tz < zMax; tz++) {
+			if(x > 0 && x <= _size.x && ((neighbor = TileAt(x-1, y, tz)) != null) && (!neighbor.noInsets || neighbor.invisible)) {
+				return false;
+			}
+			if(y > 0 && y <= _size.y && ((neighbor = TileAt(x, y-1, tz)) != null) && (!neighbor.noInsets || neighbor.invisible)) {
+				return false;
+			}
+			if(x >= -1 && x < _size.x-1 &&  ((neighbor = TileAt(x+1, y, tz)) != null) && (!neighbor.noInsets || neighbor.invisible)) {
+				return false;
+			}
+			if(y >= -1 && y < _size.y-1 &&  ((neighbor = TileAt(x, y+1, tz)) != null) && (!neighbor.noInsets || neighbor.invisible)) {
+				return false;
 			}
 		}
-		tileSpecs.RemoveAt(i);
-		RemakeTexture();
-	}
-	public TileSpec TileSpecAt(int i) {
-		return tileSpecs[i];
-	}
-	public void UpdateTileSpecAt(int i, Texture2D tex) {
-		tileSpecs[i].texture = tex;
-		RemakeTexture();
-	}
-	public void SetTileSpecOnTileAt(int spec, int x, int y, int z, Neighbors sides) {
-		MapTile t = TileAt(x,y,z);
-		if(!MapTileIsNull(t)) {
-			t.SetTileSpecOnSides(spec, sides);
-		}
-		RemakeMesh();
-	}
-	
-	void RemakeTexture() {
-		Texture2D[] textures = new Texture2D[tileSpecs.Count];
-		for(int i = 0; i < tileSpecs.Count; i++) {
-			if(tileSpecs[i].texture == null) {
-				textures[i] = new Texture2D(1, 1);
-			} else {
-				textures[i] = tileSpecs[i].texture;	
+		if(x >= 0 && x < _size.x && y >= 0 && y < _size.y) {
+			if(zMax >= 0 && ((neighbor = TileAt(x, y, zMax)) != null) && (!neighbor.noInsets || neighbor.invisible)) {
+				return false;
+			}
+			if(zMin >= 0 && ((neighbor = TileAt(x, y, zMin)) != null) && (!neighbor.noInsets || neighbor.invisible)) {
+				return false;
 			}
 		}
-		if(mainAtlas == null) { mainAtlas=new Texture2D(1024, 1024); }
-		tileRects = mainAtlas.PackTextures(textures, 0);
-		if(!Application.isPlaying) {
-			mainAtlas.Compress(true);
-//			EditorUtility.CompressTexture(mainAtlas, TextureFormat.DXT5);
-		} else {
-			mainAtlas.Compress(true);
-		}
-		RemakeMesh();
+		return true;
 	}
 	
-	[SerializeField]
-	Vector2 _size = new Vector2(10,10);
-	public Vector2 size {
-		get {
-			return _size;
-		}
-		set {
-			if(value == _size) { return; }
-			Vector2 oldSize = _size;
-			_size = value;
-			Debug.Log("size reset");
-			ResetStacks(oldSize);
-		}
-	}
-	
-	[SerializeField]
-	float _sideLength = 10;
-	public float sideLength {
-		get {
-			return _sideLength;
-		}
-		set {
-			if(value == _sideLength) { return; }
-			_sideLength = value;
-			RemakeMesh();
-		}
-	}
-	[SerializeField]
-	float _tileHeight = 10;
-	public float tileHeight {
-		get {
-			return _tileHeight;
-		}
-		set {
-			if(value == _tileHeight) { return; }
-			_tileHeight = value;
-			RemakeMesh();
-		}
-	}
 	void SetTileStackAt(MapTile stack, int x, int y) {
 		int idx = y*(int)_size.x+x;
 		if(idx >= stacks.Length) {
@@ -234,7 +303,6 @@ public class Map : MonoBehaviour {
 	
 	public void AddIsoTileAt(int x, int y, int z) {
 		if(stacks == null) {
-			Debug.Log("add reset");
 			ResetStacks(Vector2.zero);
 		}
 		MapColumn stackC = TileColumnAt(x,y);
@@ -308,14 +376,207 @@ public class Map : MonoBehaviour {
 		return t == null || !t.serializeHackUsable;
 	}
 	
-	void Awake() {
-		MeshRenderer mr = GetComponent<MeshRenderer>();
-		if(mr != null && mr.materials.Length >= 2) {
-			if(Application.isPlaying) {
-				mr.materials[1].color = Color.clear;
+	void ResetStacks(Vector2 oldSize) {
+		MapColumn[] newStacks = new MapColumn[(int)_size.x*(int)_size.y];
+		Debug.Log("reset");
+		for(int i = 0; i < newStacks.Length; i++) {
+			if(oldSize != Vector2.zero) {
+				if(oldSize == _size) {
+					newStacks[i] = stacks[i];
+				} else {
+					int y = i/(int)_size.x;
+					int x = i-y*(int)_size.x;
+					int oldI = y*(int)oldSize.x+x;
+					if(x >= 0 && x < oldSize.x && x < _size.x &&
+					   y >= 0 && y < oldSize.y && y < _size.y &&
+						 stacks != null) {
+						newStacks[i] = stacks[oldI];
+					} else {
+						newStacks[i] = null;
+					}
+				}
+			} else {
+				newStacks[i] = null;
+			}
+		}
+		this.stacks = newStacks;
+		RemakeMesh();
+	}
+	
+	public bool HasTileAt(int x, int y) {
+		MapColumn c = TileColumnAt(x,y);
+		return x >= 0 && x < size.x && y >= 0 && y < size.y && c != null && c.Count > 0;
+	}
+	
+	public bool HasTileAt(int x, int y, int z) {
+		return !MapTileIsNull(TileAt(x,y,z));
+	}
+
+	public int NearestZLevel(int x, int y, int z) {
+		MapColumn c = TileColumnAt(x,y);
+		int dz = int.MaxValue;
+		MapTile closest = null;
+		if(c == null || c.Count == 0) { return 0; }
+		for(int i = 0; i < c.Count; i++) {
+			MapTile s = c.At(i);
+			MapTile next = i+1 >= c.Count ? null : c.At(i+1);
+			if(next == null || next.z > s.maxZ) {
+				int thisDz = (int)Mathf.Abs((s.avgZ) - z);
+				if(thisDz < dz) {
+					dz = thisDz;
+					closest = s;
+				}
+			}
+		}
+		return closest.avgZ;
+	}
+	
+	public int NextZLevel(int x, int y, int z, bool wrap=false) {
+		MapColumn mc = TileColumnAt(x,y);
+		if(mc == null) { return 0; }
+		int lowestValidZ = -1;
+		int lastValidZ = -1;
+		
+		for(int i = 0; i < mc.Count; i++) {
+			bool valid = false;
+			MapTile t = mc.At(i);
+			if(MapTileIsNull(t)) { 
+				if(wrap) { return lowestValidZ; }
+				return lastValidZ;
+			} else {
+				MapTile n = NextTile(t);
+				if(MapTileIsNull(n)) {
+					valid = true;
+				} else {
+					if(n.z > t.maxZ) { valid = true; }
+				}
+				if(valid) {
+					if(lowestValidZ == -1) { lowestValidZ = t.avgZ; }
+					lastValidZ = t.avgZ;
+					if(lastValidZ > z) { return lastValidZ; }
+				}
+			}
+		}
+		return lowestValidZ;
+	}
+
+	//TODO: include a direction argument for ramps
+	public int[] ZLevelsWithin(int x, int y, int z, int range) {
+		if(x<0 || y<0 || x >= size.x || y >= size.y) { return new int[0]; }
+		MapColumn c = TileColumnAt(x,y);
+		if(c == null || c.Count == 0) { return new int[0]; }
+		List<int> zLevels = new List<int>();
+		for(int i = 0; i < c.Count; i++) {
+			MapTile t = c.At(i);
+			//skip anybody with a tile immediately above them
+			if(i+1 < c.Count && c.At(i+1).z <= t.maxZ) { continue; }
+			//skip tiles that are not within range
+			if(range < 0 || Mathf.Abs(t.avgZ-z) <= range) { 
+				zLevels.Add(t.avgZ); 
+			}
+		}
+		return zLevels.ToArray();
+	}
+	
+
+	
+	public Neighbors EnteringSideFromXYDelta(float dx, float dy) {
+		if(dx > 0) { return Neighbors.FrontLeftIdx; }
+		if(dx < 0) { return Neighbors.BackRightIdx; }
+		if(dy > 0) { return Neighbors.FrontRightIdx; }
+		if(dy < 0) { return Neighbors.BackLeftIdx; }
+/*		Debug.LogError("entering side uses weird deltas "+dx+","+dy);*/
+		return Neighbors.None;
+	}
+	
+	public Neighbors ExitingSideFromXYDelta(float dx, float dy) {
+		if(dx > 0) { return Neighbors.BackRightIdx; }
+		if(dx < 0) { return Neighbors.FrontLeftIdx; }
+		if(dy > 0) { return Neighbors.BackLeftIdx; }
+		if(dy < 0) { return Neighbors.FrontRightIdx; }
+/*		Debug.LogError("exiting side uses weird deltas "+dx+","+dy);*/
+		return Neighbors.None;
+	}
+	
+	public float SignedDZForMove(Vector3 to, Vector3 from) {
+		float dx = to.x-from.x;
+		float dy = to.y-from.y;
+		MapTile toTile = TileAt((int)to.x, (int)to.y, (int)to.z);
+		Neighbors entering = EnteringSideFromXYDelta(dx, dy);
+		MapTile fromTile = TileAt((int)from.x, (int)from.y, (int)from.z);
+		Neighbors exiting = ExitingSideFromXYDelta(dx, dy);
+		if(fromTile == null || toTile == null) { return float.MaxValue; }
+		float xz = (fromTile.LowestHeightAt(exiting)+fromTile.HighestHeightAt(exiting))/2.0f;
+		float ez = (toTile.LowestHeightAt(entering)+toTile.HighestHeightAt(entering))/2.0f;
+		return ez-xz;
+	}
+
+	public float AbsDZForMove(Vector3 to, Vector3 from) {
+		return Mathf.Abs(SignedDZForMove(to, from));
+	}
+
+	public MapTile TileAt(Vector3 pos) {
+		return TileAt((int)pos.x, (int)pos.y, (int)pos.z);
+	}
+	public MapTile TileAt(int x, int y, int z) {
+		if(x < 0 ||
+			y < 0 ||
+			x >= _size.x ||
+			y >= _size.y ||
+			z < 0) {
+			return null;
+		}
+		if(stacks == null) { return null; }
+		MapColumn c = TileColumnAt(x,y);
+		if(c == null) { return null; }
+		for(int i = 0; i < c.Count; i++) {
+			MapTile t = c.At(i);
+			if(t.ContainsZ(z)) { return MapTileIsNull(t) ? null : t; }
+			if(t.IsAboveZ(z)) { return null; }
+		}
+		return null;
+	}
+
+	public void AdjustHeightOnSidesOfTile(
+		int x, int y, int z,
+		int deltaH,
+		Neighbors sides,
+		bool top
+	) {
+		MapTile t = TileAt(x,y,z);
+		if(t == null) { return; }
+		t.AdjustHeightOnSides(deltaH, sides, top, NextTile(t));
+		RemakeMesh();
+	}
+	
+	public void InsetCornerOfTile(int x, int y, int z, float inset, Corners corner) {
+		MapTile t = TileAt(x,y,z);
+		if(t != null) { 
+			t.InsetCorner(inset, corner); 
+			RemakeMesh();
+		}
+	}
+	
+	public void InsetSidesOfTile(int x, int y, int z, float inset, Neighbors mask) {
+		MapTile t = TileAt(x,y,z);
+		if(t != null) { 
+			t.InsetSides(inset, mask); 
+			RemakeMesh();
+		}
+	}
+	public void SetTileInvisible(int x, int y, int z, bool invis) {
+		MapTile t = TileAt(x,y,z);
+		if(t != null) {
+			if(t.invisible != invis) {
+				t.invisible = invis;
+				RemakeMesh();
 			}
 		}
 	}
+	
+#endregion
+
+#region Mesh generation and UV-mapping
 	
 	void UVMap(MapTile t, Neighbors side, Vector2[] uvs, int idx) {
 		if(uvs == null) { return; }
@@ -371,34 +632,6 @@ public class Map : MonoBehaviour {
 				uvs[idx+3] = lr;
 			}
 		}
-	}
-	
-	bool NoInsetOrInvisibleNeighbors(int x, int y, MapTile t) {
-		int zMin=t.z-1, zMax=t.z+t.maxHeight;
-		MapTile neighbor=null;
-		for(int tz = zMin+1; tz < zMax; tz++) {
-			if(x > 0 && x <= _size.x && ((neighbor = TileAt(x-1, y, tz)) != null) && (!neighbor.noInsets || neighbor.invisible)) {
-				return false;
-			}
-			if(y > 0 && y <= _size.y && ((neighbor = TileAt(x, y-1, tz)) != null) && (!neighbor.noInsets || neighbor.invisible)) {
-				return false;
-			}
-			if(x >= -1 && x < _size.x-1 &&  ((neighbor = TileAt(x+1, y, tz)) != null) && (!neighbor.noInsets || neighbor.invisible)) {
-				return false;
-			}
-			if(y >= -1 && y < _size.y-1 &&  ((neighbor = TileAt(x, y+1, tz)) != null) && (!neighbor.noInsets || neighbor.invisible)) {
-				return false;
-			}
-		}
-		if(x >= 0 && x < _size.x && y >= 0 && y < _size.y) {
-			if(zMax >= 0 && ((neighbor = TileAt(x, y, zMax)) != null) && (!neighbor.noInsets || neighbor.invisible)) {
-				return false;
-			}
-			if(zMin >= 0 && ((neighbor = TileAt(x, y, zMin)) != null) && (!neighbor.noInsets || neighbor.invisible)) {
-				return false;
-			}
-		}
-		return true;
 	}
 	
 	void RemakeMesh() {
@@ -611,188 +844,8 @@ public class Map : MonoBehaviour {
 
 		InvalidateOverlayMesh();
 	}
-	
-	void ResetStacks(Vector2 oldSize) {
-		MapColumn[] newStacks = new MapColumn[(int)_size.x*(int)_size.y];
-		Debug.Log("reset");
-		for(int i = 0; i < newStacks.Length; i++) {
-			if(oldSize != Vector2.zero) {
-				if(oldSize == _size) {
-					newStacks[i] = stacks[i];
-				} else {
-					int y = i/(int)_size.x;
-					int x = i-y*(int)_size.x;
-					int oldI = y*(int)oldSize.x+x;
-					if(x >= 0 && x < oldSize.x && x < _size.x &&
-					   y >= 0 && y < oldSize.y && y < _size.y &&
-						 stacks != null) {
-						newStacks[i] = stacks[oldI];
-					} else {
-						newStacks[i] = null;
-					}
-				}
-			} else {
-				newStacks[i] = null;
-			}
-		}
-		this.stacks = newStacks;
-		RemakeMesh();
-	}
-	
-	// Use this for initialization
-	void Start () {
-		if(this.stacks == null) {
-			Debug.Log("start reset"); 
-			ResetStacks(Vector2.zero);
-		}
-	}
-	
-	// Update is called once per frame
-	void Update () {
-	}
-	
-	public bool HasTileAt(int x, int y) {
-		MapColumn c = TileColumnAt(x,y);
-		return x >= 0 && x < size.x && y >= 0 && y < size.y && c != null && c.Count > 0;
-	}
-	public bool HasTileAt(int x, int y, int z) {
-		return !MapTileIsNull(TileAt(x,y,z));
-	}
-
-	public int NearestZLevel(int x, int y, int z) {
-		MapColumn c = TileColumnAt(x,y);
-		int dz = int.MaxValue;
-		MapTile closest = null;
-		if(c == null || c.Count == 0) { return 0; }
-		for(int i = 0; i < c.Count; i++) {
-			MapTile s = c.At(i);
-			MapTile next = i+1 >= c.Count ? null : c.At(i+1);
-			if(next == null || next.z > s.maxZ) {
-				int thisDz = (int)Mathf.Abs((s.avgZ) - z);
-				if(thisDz < dz) {
-					dz = thisDz;
-					closest = s;
-				}
-			}
-		}
-		return closest.avgZ;
-	}
-	
-	public int NextZLevel(int x, int y, int z, bool wrap=false) {
-		MapColumn mc = TileColumnAt(x,y);
-		if(mc == null) { return 0; }
-		int lowestValidZ = -1;
-		int lastValidZ = -1;
-		
-		for(int i = 0; i < mc.Count; i++) {
-			bool valid = false;
-			MapTile t = mc.At(i);
-			if(MapTileIsNull(t)) { 
-				if(wrap) { return lowestValidZ; }
-				return lastValidZ;
-			} else {
-				MapTile n = NextTile(t);
-				if(MapTileIsNull(n)) {
-					valid = true;
-				} else {
-					if(n.z > t.maxZ) { valid = true; }
-				}
-				if(valid) {
-					if(lowestValidZ == -1) { lowestValidZ = t.avgZ; }
-					lastValidZ = t.avgZ;
-					if(lastValidZ > z) { return lastValidZ; }
-				}
-			}
-		}
-		return lowestValidZ;
-	}
-	
-	//TODO: include a direction argument for ramps
-	public int[] ZLevelsWithin(int x, int y, int z, int range) {
-		if(x<0 || y<0 || x >= size.x || y >= size.y) { return new int[0]; }
-		MapColumn c = TileColumnAt(x,y);
-		if(c == null || c.Count == 0) { return new int[0]; }
-		List<int> zLevels = new List<int>();
-		for(int i = 0; i < c.Count; i++) {
-			MapTile t = c.At(i);
-			//skip anybody with a tile immediately above them
-			if(i+1 < c.Count && c.At(i+1).z <= t.maxZ) { continue; }
-			//skip tiles that are not within range
-			if(range < 0 || Mathf.Abs(t.avgZ-z) <= range) { 
-				zLevels.Add(t.avgZ); 
-			}
-		}
-		return zLevels.ToArray();
-	}
-	
-	public MapTile TileAt(int x, int y, int z) {
-		if(x < 0 || 
-		   y < 0 || 
-		   x >= _size.x || 
-		   y >= _size.y || 
-		   z < 0) { 
-			return null; 
-		}
-		if(stacks == null) { return null; }
-		MapColumn c = TileColumnAt(x,y);
-		if(c == null) { return null; }
-		for(int i = 0; i < c.Count; i++) {
-			MapTile t = c.At(i);
-			if(t.ContainsZ(z)) { return t; }
-			if(t.IsAboveZ(z)) { return null; }
-		}
-		return null;
-	}
-	
-	public void AdjustHeightOnSidesOfTile(int x, int y, int z, int deltaH, Neighbors sides, bool top) {
-		MapTile t = TileAt(x,y,z);
-		if(t == null) { return; }
-		t.AdjustHeightOnSides(deltaH, sides, top, NextTile(t));
-		RemakeMesh();
-	}
-	
-	public void InsetCornerOfTile(int x, int y, int z, float inset, Map.Corners corner) {
-		MapTile t = TileAt(x,y,z);
-		if(t != null) { 
-			t.InsetCorner(inset, corner); 
-			RemakeMesh();
-		}
-	}
-	
-	public void InsetSidesOfTile(int x, int y, int z, float inset, Map.Neighbors mask) {
-		MapTile t = TileAt(x,y,z);
-		if(t != null) { 
-			t.InsetSides(inset, mask); 
-			RemakeMesh();
-		}
-	}
-	public void SetTileInvisible(int x, int y, int z, bool invis) {
-		MapTile t = TileAt(x,y,z);
-		if(t != null) {
-			if(t.invisible != invis) {
-				t.invisible = invis;
-				RemakeMesh();
-			}
-		}
-	}
-	
-	public Vector2 TransformKeyboardAxes(float h, float v, bool switchXY=true) {
-		//use the camera and the map's own rotation
-		Transform cam = Camera.main.transform;
-		//h*right+v*forward
-		Vector3 xp = cam.TransformDirection(new Vector3(1, 0, 0));
-		xp.y = 0;
-		xp = xp.normalized;
-		Vector3 yp = new Vector3(-xp.z, 0, xp.x);
-/*		Debug.Log("XP:"+xp+", YP:"+yp+", hxp:"+(h*xp)+", vyp:"+(v*yp)+", h:"+h+", v:"+v);*/
-		Vector3 result = h*xp + v*yp;
-		if(switchXY) {
-			return new Vector2(-result.z, result.x);
-		} else {
-			return new Vector2(result.x, result.z);
-		}
-	}
-	
+#endregion
+#region Coordinate conversions
 	public Vector3 TransformPointLocal(Vector3 tileCoord) {
 /*		Debug.Log("Tile: "+tileCoord+" is local "+new Vector3(tileCoord.x*sideLength, tileCoord.z*tileHeight, tileCoord.y*sideLength));*/
 		return new Vector3(tileCoord.x*sideLength, tileCoord.z*tileHeight, tileCoord.y*sideLength);
@@ -807,7 +860,8 @@ public class Map : MonoBehaviour {
 	public Vector3 InverseTransformPointWorld(Vector3 worldCoord) {
 		return this.InverseTransformPointLocal(this.transform.InverseTransformPoint(worldCoord));
 	}
-	
+#endregion
+#region Overlays
 	public GridOverlay PresentGridOverlay(string category, int id, Color color, Color selectedColor, PathNode[] destinations) {
 		if(overlays == null) { overlays = new Dictionary<string, Dictionary<int, Overlay>>(); }
 		if(!overlays.ContainsKey(category)) {
@@ -829,6 +883,7 @@ public class Map : MonoBehaviour {
 		overlays[category][id] = ov;
 		return ov;
 	}
+	
 	public RadialOverlay PresentSphereOverlay(string category, int id, Color color, Vector3 origin, float radius, bool drawRim=false, bool drawOuterVolume=false, bool invert=false) {
 		if(overlays == null) { overlays = new Dictionary<string, Dictionary<int, Overlay>>(); }
 		if(!overlays.ContainsKey(category)) {
@@ -855,6 +910,7 @@ public class Map : MonoBehaviour {
 		overlays[category][id] = ov;
 		return ov;
 	}
+	
 	public RadialOverlay PresentCylinderOverlay(string category, int id, Color color, Vector3 origin, float radius, float height, bool drawRim=false, bool drawOuterVolume=false, bool invert=false) {
 		if(overlays == null) { overlays = new Dictionary<string, Dictionary<int, Overlay>>(); }
 		if(!overlays.ContainsKey(category)) {
@@ -882,6 +938,7 @@ public class Map : MonoBehaviour {
 		overlays[category][id] = ov;
 		return ov;
 	}
+	
 	public void RemoveOverlay(string category, int id) {
 		if(overlays == null) { return; }
 		if(!overlays.ContainsKey(category)) { return; }
@@ -892,17 +949,14 @@ public class Map : MonoBehaviour {
 			Destroy(ov.gameObject);
 		}
 	}
+	
 	public bool IsShowingOverlay(string category, int id) {
 		if(overlays == null) { return false; }
 		return overlays[category].ContainsKey(id);
 	}
-	bool IsProp(GameObject go) {
-		if(go == this.gameObject) { return false; }
-		if(go.GetComponent<Prop>() != null) { return true; }
-		if(go.transform.parent == null) { return false; }
-		return IsProp(go.transform.parent.gameObject);
-	}
+	
 	Mesh overlayMesh;
+	
 	public Mesh OverlayMesh {
 		get { 
 			if(overlayMesh == null) {
@@ -934,16 +988,13 @@ public class Map : MonoBehaviour {
 		overlayMesh = null;
 		BroadcastMessage("OverlayMeshInvalidated", null, SendMessageOptions.DontRequireReceiver);
 	}
-	
-	public Scheduler scheduler {
-		get { 
-			return GetComponentInChildren<Scheduler>();
-		}
-	}
-	public Arbiter arbiter {
-		get { 
-			return GetComponentInChildren<Arbiter>();
-		}
+#endregion
+#region misc utilities
+	protected bool IsProp(GameObject go) {
+		if(go == this.gameObject) { return false; }
+		if(go.transform.parent == null) { return false; }
+		if(go.GetComponent<Prop>() != null) { return true; }
+		return IsProp(go.transform.parent.gameObject);
 	}
 	
 	public Vector4[] CoalesceTiles(PathNode[] spots) {
@@ -953,27 +1004,31 @@ public class Map : MonoBehaviour {
 			Vector3 s = sp.pos;
 			MapTile t = TileAt((int)s.x, (int)s.y, (int)s.z);
 			float w = t.maxHeight;
+			float bottom = t.z-1;
+			float surface = t.z;
+			float top = surface+w;
 			bool merged = false;
 			for(int i = 0; i < count; i++) {
 				Vector4 v4 = outputs[i];
 				if(v4.x == s.x && v4.y == s.y) {
-					if((v4.z+v4.w >= t.z-1 && v4.z <= t.z-1) ||
-					   (v4.z == t.z+w)) {
-						outputs[i].z = Mathf.Min(v4.z, t.z);
-						outputs[i].w = Mathf.Max(v4.z+v4.w, t.z+w)-outputs[i].z;
+					if((v4.z+v4.w >= bottom && v4.z <= bottom) ||
+					   (v4.z == top)) {
+						outputs[i].z = Mathf.Min(v4.z, surface);
+						outputs[i].w = Mathf.Max(v4.z+v4.w, top)-outputs[i].z;
 						merged = true;
 						break;
 					}
 				}
 			}
 			if(!merged) {
-				outputs[count] = new Vector4(s.x, s.y, t.z, w);
+				outputs[count] = new Vector4(s.x, s.y, surface, w);
 				count++;
 			}
 		}
 		Array.Resize(ref outputs, count);
 		return outputs;
 	}
+
 	public Character CharacterAt(Vector3 tc) {
 		foreach(Character c in GetComponentsInChildren<Character>()) {
 			Vector3 ctc = c.TilePosition;
@@ -986,214 +1041,5 @@ public class Map : MonoBehaviour {
 		}
 		return null;
 	}
-	public delegate PathDecision PathNodeIsValid(Vector3 start, PathNode pn, Character c);
-
-	readonly Vector2[] neighbors = {
-		new Vector2(-1, 0),
-		new Vector2( 1, 0),
-		new Vector2( 0,-1),
-		new Vector2( 0, 1)
-	};
-	
-	public PathNode[] PathsAround(
-		Vector3 tc, 
-		float minRadius, float maxRadius, 
-		float zDownMin, float zDownMax, 
-		float zUpMin, float zUpMax, 
-		bool shouldJump, //could be true for bows? think about it
-		bool deltasAreAbsolute,
-		PathNodeIsValid isValid=null
-	) {
-/*		Color debugColor = new Color(UnityEngine.Random.value, UnityEngine.Random.value, UnityEngine.Random.value, 1);*/
-		int x = (int)Mathf.Floor(tc.x), y = (int)Mathf.Floor(tc.y), z = (int)Mathf.Floor(tc.z);
-		Stack<PathNode> open = new Stack<PathNode>();
-		List<PathNode> closed = new List<PathNode>();
-		List<PathNode> nodes = new List<PathNode>();
-		PathNode startNode = new PathNode(new Vector3(x,y,z), null, 0);
-		open.Push(startNode);
-		MapTile t = TileAt(x,y,z);
-		if(MapTileIsNull(t)) { return new PathNode[0]; }
-		while(open.Count > 0) {
-			PathNode pn = open.Pop();
-			if(pn.distance > maxRadius) {
-				//this shouldn't be here
-				closed.Add(pn);
-				continue;
-			}
-			if(!closed.Contains(pn)) {
-				closed.Add(pn);
-				nodes.Add(pn);
-			}
-			if(pn.distance == maxRadius) {
-				//don't bother adding any more points, they'll be too far
-				continue;
-			}
-			for(int i = 0; i < neighbors.Length; i++) {
-				Vector2 n = neighbors[i];
-				int jumpDistance = zDownMax > 0 ? (int)(zDownMax/2) : 0;
-				Vector2 adj = new Vector2(pn.pos.x+n.x, pn.pos.y+n.y);
-				//push to open (if not yet there) all tiles at adj.x, adj.y whose .maxZ is within zDownMax of adj.z.
-				//TODO: fix people being able to walk through the floor!
-				foreach(int adjZ in ZLevelsWithin((int)adj.x, (int)adj.y, (int)pn.pos.z, -1)) {
-					Vector3 pos = new Vector3(adj.x, adj.y, adjZ);
-					float signedDZ = SignedDZForMove(pos, pn.pos);
-					float adz = Mathf.Abs(signedDZ);
-					PathNode newPn = new PathNode(pos, pn, pn.distance+1+0.01f*adz);
-					if(!closed.Contains(newPn) && !open.Contains(newPn)) {
-						PathDecision decision = isValid == null ? PathDecision.Normal : isValid(tc, newPn, CharacterAt(pos));
-						if(decision == PathDecision.PassOnly) {
-							newPn.canStop = false;
-						}
-/*						Debug.DrawLine(TransformPointWorld(pn.position)+new Vector3(0,12,0), TransformPointWorld(pos)+new Vector3(0,12,0), debugColor, 10.0f);*/
-						//can't jump over things, can only jump across things
-						if(shouldJump && pos.z < pn.pos.z) {
-							//FIXME: duplication
-							//go out further in adj until we get past jump/2
-							for(int j = 0; j < jumpDistance; j++) {
-								//don't go further than our move would allow
-								if(pn.distance+2+j > maxRadius) { continue; }
-								Vector2 jumpAdj = new Vector2(pn.pos.x+n.x*(j+2), pn.pos.y+n.y*(j+2));
-								bool jumped = false, cannotJump = false;
-								foreach(int jumpAdjZ in ZLevelsWithin((int)jumpAdj.x, (int)jumpAdj.y, (int)pn.pos.z, -1)) {
-									Vector3 jumpPos = new Vector3(jumpAdj.x, jumpAdj.y, jumpAdjZ);
-									float jumpDZ = AbsDZForMove(jumpPos, pn.pos);
-									//TODO: decide whether we can only cross like this downwards, or if up is also allowed
-									if(jumpDZ <= zDownMax) {
-										PathNode jumpPn = new PathNode(jumpPos, pn, pn.distance+2+j+0.01f*jumpDZ);
-										jumpPn.isLeap = true;
-										PathDecision jumpDecision = isValid == null ? PathDecision.Normal : isValid(tc, jumpPn, CharacterAt(jumpPos));
-										if(jumpDecision == PathDecision.PassOnly) {
-											jumpPn.canStop = false;
-										}
-										if((jumpDecision != PathDecision.Invalid)) {
-											open.Push(jumpPn);
-											jumped = true;
-										}
-									} else if(jumpAdjZ > pn.pos.z) { //don't jump through a wall
-										cannotJump = true;
-									}
-								}
-								if(jumped || cannotJump) { break; }
-							}
-						} 
-						bool heightOK = (signedDZ < 0 ? 
-							signedDZ > zDownMax : 
-							(signedDZ > 0 ? 
-								signedDZ < zUpMax : 
-								decision == PathDecision.Normal));
-/*						Debug.Log("Height OK? pos:"+newPn.pos+", dz:"+signedDZ+", down:"+zDownMin+".."+zDownMax+", up:"+zUpMin+".."+zUpMax+", decision:"+decision+": "+heightOK);*/
-						if((decision != PathDecision.Invalid) && heightOK) {
-/*							Debug.DrawLine(TransformPointWorld(pn.position)+new Vector3(2, 12, 0), TransformPointWorld(pos)+new Vector3(2, 12, 0), debugColor, 10.0f);*/
-							open.Push(newPn);
-						}
-					}
-				}
-			}
-		}
-		if(deltasAreAbsolute) {
-			return nodes.Where(delegate(PathNode n) {
-				int signedDZ = n.SignedDZFrom(tc);
-				return n.XYDistanceFrom(tc) >= minRadius && 
-				(signedDZ < 0 ? signedDZ <= -zDownMin : (signedDZ > 0 ? signedDZ >= zUpMin : true));
-			}).ToArray();
-		} else {
-			return nodes.Where(delegate(PathNode n) {
-				int signedDZ = n.signedDZ;
-				return n.xyDistance >= minRadius && 
-				(signedDZ < 0 ? signedDZ <= -zDownMin : (signedDZ > 0 ? signedDZ >= zUpMin : true));
-			}).ToArray();
-		}
-	}
-	public Neighbors EnteringSideFromXYDelta(float dx, float dy) {
-		if(dx > 0) { return Neighbors.FrontLeftIdx; }
-		if(dx < 0) { return Neighbors.BackRightIdx; }
-		if(dy > 0) { return Neighbors.FrontRightIdx; }
-		if(dy < 0) { return Neighbors.BackLeftIdx; }
-/*		Debug.LogError("entering side uses weird deltas "+dx+","+dy);*/
-		return Neighbors.None;
-	}
-	public Neighbors ExitingSideFromXYDelta(float dx, float dy) {
-		if(dx > 0) { return Neighbors.BackRightIdx; }
-		if(dx < 0) { return Neighbors.FrontLeftIdx; }
-		if(dy > 0) { return Neighbors.BackLeftIdx; }
-		if(dy < 0) { return Neighbors.FrontRightIdx; }
-/*		Debug.LogError("exiting side uses weird deltas "+dx+","+dy);*/
-		return Neighbors.None;
-	}
-	public float SignedDZForMove(Vector3 to, Vector3 from) {
-		float dx = to.x-from.x;
-		float dy = to.y-from.y;
-		MapTile toTile = TileAt((int)to.x, (int)to.y, (int)to.z);
-		Neighbors entering = EnteringSideFromXYDelta(dx, dy);
-		MapTile fromTile = TileAt((int)from.x, (int)from.y, (int)from.z);
-		Neighbors exiting = ExitingSideFromXYDelta(dx, dy);
-		if(fromTile == null || toTile == null) { return float.MaxValue; }
-				
-		float xz = (fromTile.LowestHeightAt(exiting)+fromTile.HighestHeightAt(exiting))/2.0f;
-		float ez = (toTile.LowestHeightAt(entering)+toTile.HighestHeightAt(entering))/2.0f;
-		return ez-xz;
-	}
-	public float AbsDZForMove(Vector3 to, Vector3 from) {
-		return Mathf.Abs(SignedDZForMove(to, from));
-	}
+#endregion
 }
-
-public enum PathDecision {
-	Invalid,
-	PassOnly,
-	Normal
-};
-
-[System.Serializable]
-public class PathNode {
-	public Vector3 pos=Vector3.zero;
-	public PathNode prev=null;
-	public float distance=0;
-	public bool canStop=true;
-	public bool isLeap=false;
-	public PathNode(Vector3 ps, PathNode pr, float dist) {
-		pos = ps; prev = pr; distance = dist;
-	}
-	public Vector3 position { get { return pos; } }
-	public int dz {
-		get { return (int)Mathf.Abs(signedDZ); }
-	}
-	public int signedDZ {
-		get { return SignedDZFrom(prev != null ? prev.pos : pos); }
-	}
-	public float xyDistance {
-		get { return XYDistanceFrom(prev != null ? prev.pos : pos); }
-	}
-	public float xyDistanceFromStart {
-		get { 
-			float dist=0; 
-			PathNode s = this;
-			while(s.prev != null) {
-				dist += Vector2.Distance(
-					new Vector2(s.pos.x, s.pos.y),
-					new Vector2(s.prev.pos.x, s.prev.pos.y)
-				);
-				s = s.prev;
-			}
-			return dist;
-		}
-	}
-	public int SignedDZFrom(Vector3 prevPos) {
-		return (int)(pos.z - prevPos.z);
-	}
-	public float XYDistanceFrom(Vector3 prevPos) {
-		return (int)(Mathf.Abs(pos.x - prevPos.x)+Mathf.Abs(pos.y - prevPos.y));
-	}
-	public override bool Equals(object obj) {	
-    if(obj is PathNode) {
-      return this.Equals((PathNode)obj);
-    }
-    return false;
-  }
-  public bool Equals(PathNode p) {
-    return p != null && pos == p.pos;
-  }
-  public override int GetHashCode() {
-    return pos.GetHashCode();
-  }
-};
