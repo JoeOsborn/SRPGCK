@@ -462,6 +462,9 @@ void Awake() {
 
 	//TODO: include a direction argument for ramps
 	public int[] ZLevelsWithin(int x, int y, int z, int range) {
+		return ZLevelsWithinLimits(x, y, range < 0 ? -1 : z-range-1, range < 0 ? -1 : z+range);
+	}
+	public int[] ZLevelsWithinLimits(int x, int y, int minZ, int maxZ) {
 		if(x<0 || y<0 || x >= size.x || y >= size.y) { return new int[0]; }
 		MapColumn c = TileColumnAt(x,y);
 		if(c == null || c.Count == 0) { return new int[0]; }
@@ -469,10 +472,16 @@ void Awake() {
 		for(int i = 0; i < c.Count; i++) {
 			MapTile t = c.At(i);
 			//skip anybody with a tile immediately above them
-			if(i+1 < c.Count && c.At(i+1).z <= t.maxZ) { continue; }
+			if(i+1 < c.Count) {
+				if(c.At(i+1).z <= t.maxZ) { 
+					continue; 
+				} else {
+					//it's fine, keep going
+				}
+			}
 			//skip tiles that are not within range
-			if(range < 0 || Mathf.Abs(t.avgZ-z) <= range) { 
-				zLevels.Add(t.avgZ); 
+			if(minZ < 0 || maxZ < 0 || (t.avgZ > minZ && t.avgZ <= maxZ)) { 
+				zLevels.Add(t.avgZ);
 			}
 		}
 		return zLevels.ToArray();

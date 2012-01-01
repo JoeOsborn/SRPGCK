@@ -1,7 +1,5 @@
 using UnityEngine;
 
-//TODO: merge move targeting up into action
-
 [System.Serializable]
 public class MoveSkill : ActionSkill {
 	override public MoveExecutor Executor { get { return moveExecutor; } }

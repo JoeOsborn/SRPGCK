@@ -28,12 +28,15 @@ public class Region {
 
 	public RegionType type=RegionType.Cylinder;
 
-	//projectiles are not pathable, they go out in a direction;
-	//movement is pathable, it can go forward, turn, etc.
-	//TODO: put pick/path/line/arc stuff into map.pathsaround
 	public InterveningSpaceType interveningSpaceType=InterveningSpaceType.Pick;
 	
 	public bool useArcRangeBonus=false;
+	
+	//WARNING: region generators will avoid using DZ checks if this flag is not set.
+	//now, these will get filtered out by the final range filter at the end of getvalidnodes,
+	//but just keep it in mind for certain fancy intervening-space generators
+	//this flag will have no effect on the Pick space type.
+	public bool useAbsoluteDZ=true;
 	
 	//these mean the same for pathable and non-pathable regions
 	//they don't apply to self, predicate, or compound.
@@ -124,7 +127,7 @@ public class Region {
 	
 	//FIXME: wrong because of reliance on z{Up|Down}{Max|Min}
 	public virtual PathDecision PathNodeIsValidHack(Vector3 start, PathNode pn, Character c) {
-		float dz = pn.position.z - start.z;
+		float dz = useAbsoluteDZ ? map.SignedDZForMove(pn.position, start) : pn.signedDZ;
 		float absDZ = Mathf.Abs(dz);
 		if(c != null && c != owner.character) {
 			if(c.EffectiveTeamID != owner.character.EffectiveTeamID) {
@@ -153,7 +156,7 @@ public class Region {
 	
 	//FIXME: wrong because of reliance on z{Up|Down}{Max|Min}
 	public virtual PathDecision PathNodeIsValidRange(Vector3 start, PathNode pn, Character c) {
-		float dz = pn.position.z - start.z;
+		float dz = useAbsoluteDZ ? map.SignedDZForMove(pn.position, start) : pn.signedDZ;
 		float absDZ = Mathf.Abs(dz);
 		//TODO: replace with some type of collision check?
 		if(c != null && c != owner.character) {
@@ -233,7 +236,7 @@ public class Region {
 		//intervening space selection filters what goes into `nodes` and what
 		//nodes get picked next time around—i.e. how prevs get set up.
 		
-		//TODO: line vs pick vs path vs arc should instead be composed with the region type to generate the final region
+		//TODO: line vs pick vs path vs arc should be composed with the region type to generate the final region
 		//use tc if we're anything but self or predicate or compound to get the candidate tiles
 		//use q if we're a cone or line to get the candidate tiles
 		//TODO: all should operate with quaternion-based node generators as well as grid-based node generators (and radius-based node generators?)
@@ -273,9 +276,10 @@ public class Region {
 				break;
 		}
 		return picked.Where(delegate(PathNode n) {
-			int signedDZ = n.SignedDZFrom(here);
+			int signedDZ = useAbsoluteDZ ? (int)map.SignedDZForMove(n.position, here) : n.signedDZ;
 			return n.XYDistanceFrom(here) >= xyrmn &&
-			(signedDZ < 0 ? signedDZ <= -zrdmn : (signedDZ > 0 ? signedDZ >= zrumn : true));
+			(signedDZ < 0 ? signedDZ <= -zrdmn : (signedDZ > 0 ? signedDZ >= zrumn : true)) &&
+			(signedDZ < 0 ? signedDZ >= -zrdmx : (signedDZ > 0 ? signedDZ <= zrumx : true));
 		}).ToArray();
 	}
 
@@ -334,7 +338,7 @@ public class Region {
 		float zUpMax, 
 		float zDownMax, 
 		float jumpDistance,
-		Vector3 dest
+		Vector3 start, Vector3 dest
 	) {
 		//FIXME: do something smart with arcs in the future
   	for(int j = 0; j < jumpDistance; j++) {
@@ -344,8 +348,7 @@ public class Region {
   		bool canJumpNoFurther = false;
   		foreach(int jumpAdjZ in map.ZLevelsWithin((int)jumpAdj.x, (int)jumpAdj.y, (int)pn.pos.z, -1)) {
   			Vector3 jumpPos = new Vector3(jumpAdj.x, jumpAdj.y, jumpAdjZ);
-  			float jumpDZ = map.AbsDZForMove(jumpPos, pn.pos);
-  			//TODO: decide whether we can only cross like this downwards, or if up is also allowed
+  			float jumpDZ = useAbsoluteDZ ? map.AbsDZForMove(start, pn.pos) : map.AbsDZForMove(jumpPos, pn.pos);
   			if(jumpDZ <= zDownMax) {
   				float addedJumpCost = 2+j-0.01f*(Mathf.Max(zUpMax, zDownMax)-jumpDZ)+1;
   				PathNode jumpPn = new PathNode(jumpPos, pn, pn.distance+addedJumpCost);
@@ -391,7 +394,7 @@ public class Region {
 //√ pick -- anywhere within region, prev nodes are all null
 //√ path -- anywhere -reachable- within region, prev nodes lead back to start by walking path
 //√ line -- anywhere within direct line from start, prev nodes lead back to start
-//X arc  -- anywhere within arc, prev nodes lead in a parabola
+//√ arc  -- anywhere within arc, prev nodes lead in a parabola
 	bool AddPathTo(
 		PathNode destPn, Vector3 start, 
 		Dictionary<Vector3, PathNode> pickables, 
@@ -412,6 +415,7 @@ public class Region {
 		}
 //		Debug.Log("seek path to "+dest);
 		int jumpDistance = (int)(zDownMax/2);
+		int headroom = 1;
 		HashSet<PathNode> closed = new HashSet<PathNode>();
 		var queue = new PriorityQueue<float, PathNode>();
 		if(!pickables.ContainsKey(start)) { return false; }
@@ -459,20 +463,23 @@ public class Region {
 				float py = pn.pos.y+n2.y;
 				//Debug.Log("search at "+px+", "+py + " (d "+n2.x+","+n2.y+")");
 				
-				//TODO: fix people being able to walk through the floor!
 				foreach(int adjZ in map.ZLevelsWithin((int)px, (int)py, (int)pn.pos.z, -1)) {
 					Vector3 pos = Trunc(new Vector3(px, py, adjZ));
-					float dz = map.SignedDZForMove(pos, pn.pos);
+					float dz = useAbsoluteDZ ? map.SignedDZForMove(pos, start) : map.SignedDZForMove(pos, pn.pos);
 					if(dz > 0 && dz > zUpMax) { continue; }
 					if(dz < 0 && Mathf.Abs(dz) > zDownMax) { continue; }
-					
+					if(dz > 0 && !canCrossWalls && map.ZLevelsWithinLimits((int)pn.pos.x, (int)pn.pos.y, (int)pn.pos.z, adjZ+headroom).Length != 0) {
+						continue;
+					}
+					if(dz < 0 && !canCrossWalls && map.ZLevelsWithinLimits((int)pos.x, (int)pos.y, adjZ, (int)pn.pos.z+headroom).Length != 0) {
+						continue;
+					}
 					if(map.TileAt(pos) == null) {
 						//can't path through empty space
 						continue; 
 					}
 					PathNode next=null;
-        	if(!pickables.TryGetValue(pos, out next))
-        	{
+        	if(!pickables.TryGetValue(pos, out next)) {
 						continue;
 					}
 					if(closed.Contains(next)) {
@@ -481,7 +488,7 @@ public class Region {
 					}
 					if(adjZ < pn.pos.z) {
 						//try to jump across me
-						TryAddingJumpPaths(queue, closed, pickables, ret, pn, (int)n2.x, (int)n2.y, maxRadius, zUpMax, zDownMax, jumpDistance, dest);
+						TryAddingJumpPaths(queue, closed, pickables, ret, pn, (int)n2.x, (int)n2.y, maxRadius, zUpMax, zDownMax, jumpDistance, start, dest);
 					}
 					float addedCost = Mathf.Abs(n2.x)+Mathf.Abs(n2.y)-0.01f*(Mathf.Max(zUpMax, zDownMax)-Mathf.Abs(pn.pos.z-adjZ)); //-0.3f because we are not a leap
 					next.isWall = map.TileAt(pos+new Vector3(0,0,1)) != null;
@@ -550,7 +557,7 @@ public class Region {
 					//CHECK: is this right? should it just be the signed delta? or is there some kind of "signed delta between lowest/highest points for z- and highest/lowest points for z+" nonsense?
 					float signedDZ = map.SignedDZForMove(pos, start);
 //					Debug.Log("signed dz:"+signedDZ+" at "+pos.z+" from "+start.z);
-					if(signedDZ < -zDownMax || signedDZ > zUpMax) { 
+					if(useAbsoluteDZ && (signedDZ < -zDownMax || signedDZ > zUpMax)) {
 						continue; 
 					}
 					float bonus = useArcRangeBonus ? -signedDZ/2.0f : 0;
@@ -603,7 +610,7 @@ public class Region {
 		var sortedPickables = pickables.Values.
 			OrderBy(p => p.XYDistanceFrom(start)).
 			ThenBy(p => Mathf.Abs(p.SignedDZFrom(start)));
-		//TODO: improve efficiency by storing intermediate calculations -- i.e. the tiles on the line from end to start
+		//improve efficiency by storing intermediate calculations -- i.e. the tiles on the line from end to start
 		foreach(PathNode pn in sortedPickables) {
 			if(pn.prev != null) { continue; }
 			Vector3 here = pn.pos;
@@ -719,8 +726,6 @@ public class Region {
 		return false;
 	}
 	
-	//REMEMBER: should take into account extra xy range for downward z levels (arc)
-	//there's a per-dz radius bonus/penalty for arcing (half the delta, signed)
 	public IEnumerable<PathNode> ArcReachableTilesAround(
 		Vector3 here,
 		Dictionary<Vector3, PathNode> pickables,

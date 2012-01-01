@@ -647,14 +647,12 @@ public class ActionSkill : Skill {
 		selectedTile = p;
 		targetTiles = effectRegion.GetValidTiles(p);
 		_GridOverlay.SetSelectedPoints(map.CoalesceTiles(targetTiles));
-		//TODO: show preview indicator until cancelled
 	}
 
 	public void TentativePick(PathNode pn) {
 		selectedTile = pn.pos;
 		targetTiles = effectRegion.GetValidTiles(pn.pos);
 		_GridOverlay.SetSelectedPoints(map.CoalesceTiles(targetTiles));
-		//TODO: show preview indicator until cancelled
 	}
 
 	public void CancelEffectPreview() {
