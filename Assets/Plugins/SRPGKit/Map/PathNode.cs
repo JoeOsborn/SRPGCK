@@ -17,6 +17,9 @@ public class PathNode {
 	public bool isWall=false;
 	public bool isEnemy=false;
 
+	public float altitude = 0;
+	public float velocity = 0;
+
 	public PathNode(Vector3 ps, PathNode pr, float dist) {
 		pos = ps; prev = pr; distance = dist;
 	}

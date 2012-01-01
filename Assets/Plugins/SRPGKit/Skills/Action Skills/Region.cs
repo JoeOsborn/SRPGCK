@@ -32,7 +32,9 @@ public class Region {
 	//movement is pathable, it can go forward, turn, etc.
 	//TODO: put pick/path/line/arc stuff into map.pathsaround
 	public InterveningSpaceType interveningSpaceType=InterveningSpaceType.Pick;
-
+	
+	public bool useArcRangeBonus=false;
+	
 	//these mean the same for pathable and non-pathable regions
 	//they don't apply to self, predicate, or compound.
 	public bool canCrossWalls=true;
@@ -119,6 +121,7 @@ public class Region {
 		get { return isEffectRegion; }
 		set { isEffectRegion = value; }
 	}
+	
 	//FIXME: wrong because of reliance on z{Up|Down}{Max|Min}
 	public virtual PathDecision PathNodeIsValidHack(Vector3 start, PathNode pn, Character c) {
 		float dz = pn.position.z - start.z;
@@ -147,6 +150,7 @@ public class Region {
 		}
 		return PathDecision.Normal;
 	}
+	
 	//FIXME: wrong because of reliance on z{Up|Down}{Max|Min}
 	public virtual PathDecision PathNodeIsValidRange(Vector3 start, PathNode pn, Character c) {
 		float dz = pn.position.z - start.z;
@@ -189,9 +193,11 @@ public class Region {
 			Quaternion.Euler(0, owner.character.Facing, 0)
 		);
 	}
+	
 	public virtual PathNode[] GetValidTiles(Quaternion q) {
 		return GetValidTiles(owner.character.TilePosition, q);
 	}
+	
 	public virtual PathNode[] GetValidTiles(Vector3 tc) {
 		return GetValidTiles(tc, Quaternion.Euler(0, owner.character.Facing, 0));
 	}
@@ -224,7 +230,6 @@ public class Region {
 		float zrumn, float zrumx,
 		InterveningSpaceType spaceType
   ) {
-		
 		//intervening space selection filters what goes into `nodes` and what
 		//nodes get picked next time around—i.e. how prevs get set up.
 		
@@ -241,7 +246,8 @@ public class Region {
 			case InterveningSpaceType.Arc:
 				picked = ArcReachableTilesAround(
 					here,
-					pickables
+					pickables,
+					xyrmx
 				);
 				break;
 			case InterveningSpaceType.Line:
@@ -324,7 +330,8 @@ public class Region {
 		List<PathNode> ret, 
 		PathNode pn, 
 		int n2x, int n2y,
-		float maxRadius, 
+		float maxRadius,
+		float zUpMax, 
 		float zDownMax, 
 		float jumpDistance,
 		Vector3 dest
@@ -344,7 +351,7 @@ public class Region {
   				PathNode jumpPn = new PathNode(jumpPos, pn, pn.distance+addedJumpCost);
   				jumpPn.isLeap = true;
   				jumpPn.isWall = map.TileAt(jumpPos+new Vector3(0,0,1)) != null;
-  				jumpPn.isEnemy = map.CharacterAt(jumpPos) != null;
+  				jumpPn.isEnemy = map.CharacterAt(jumpPos) != null && map.CharacterAt(jumpPos).EffectiveTeamID != owner.character.EffectiveTeamID;
 					jumpPn.prev = pn;
   				if(pickables.ContainsKey(jumpPos)) {
   					jumpPn.canStop = pickables[jumpPos].canStop;
@@ -368,7 +375,7 @@ public class Region {
   					continue;
   				}
 					//Debug.Log("enqueue leap to "+jumpPn.pos);
-  				queue.Enqueue(jumpPn.distance+Mathf.Abs(jumpPos.x-dest.x)+Mathf.Abs(jumpPos.y-dest.y)+Mathf.Abs(jumpPos.z-dest.z), jumpPn);
+					queue.Enqueue(jumpPn.distance+Mathf.Abs(jumpPos.x-dest.x)+Mathf.Abs(jumpPos.y-dest.y)+Mathf.Abs(jumpPos.z-dest.z), jumpPn);
   			} else if(jumpAdjZ > pn.pos.z) { //don't jump upwards or through a wall
   				MapTile jt = map.TileAt(jumpPos);
   				if(jt != null && jt.z <= pn.pos.z+2 && !canCrossWalls) { canJumpNoFurther = true; }
@@ -474,11 +481,11 @@ public class Region {
 					}
 					if(adjZ < pn.pos.z) {
 						//try to jump across me
-						TryAddingJumpPaths(queue, closed, pickables, ret, pn, (int)n2.x, (int)n2.y, maxRadius, zDownMax, jumpDistance, dest);
+						TryAddingJumpPaths(queue, closed, pickables, ret, pn, (int)n2.x, (int)n2.y, maxRadius, zUpMax, zDownMax, jumpDistance, dest);
 					}
 					float addedCost = Mathf.Abs(n2.x)+Mathf.Abs(n2.y)-0.01f*(Mathf.Max(zUpMax, zDownMax)-Mathf.Abs(pn.pos.z-adjZ)); //-0.3f because we are not a leap
 					next.isWall = map.TileAt(pos+new Vector3(0,0,1)) != null;
-					next.isEnemy = map.CharacterAt(pos) != null;
+					next.isEnemy = map.CharacterAt(pos) != null && map.CharacterAt(pos).EffectiveTeamID != owner.character.EffectiveTeamID;
 					next.distance = pn.distance+addedCost;
 					next.prev = pn;
 					if(next.isWall && !canCrossWalls) {
@@ -528,15 +535,29 @@ public class Region {
 	) {
 		var ret = new Dictionary<Vector3, PathNode>();
 		//for all tiles at all z levels with xy manhattan distance < max radius and z manhattan distance between -zDownMax and +zUpMax, make a node if that tile passes the isValid check
-		for(float i = -maxRadius; i <= maxRadius; i++) {
-			for(float j = -maxRadius; j <= maxRadius; j++) {
-				if(Mathf.Abs(i)+Mathf.Abs(j) > maxRadius) { continue; }
+		float maxBonus = useArcRangeBonus ? Mathf.Max(zDownMax, zUpMax)/2.0f : 0;
+		for(float i = -maxRadius-maxBonus; i <= maxRadius+maxBonus; i++) {
+			for(float j = -maxRadius-maxBonus; j <= maxRadius+maxBonus; j++) {
+				if(Mathf.Abs(i)+Mathf.Abs(j) > maxRadius+Mathf.Abs(maxBonus)) { 
+					continue; 
+				}
+//				Debug.Log("gen "+i+","+j);
+				
 				Vector2 here = new Vector2(start.x+i, start.y+j);
 				IEnumerable<int> levs = map.ZLevelsWithin((int)here.x, (int)here.y, (int)start.z, -1);
 				foreach(int adjZ in levs) {
 					Vector3 pos = new Vector3(here.x, here.y, adjZ);
 					//CHECK: is this right? should it just be the signed delta? or is there some kind of "signed delta between lowest/highest points for z- and highest/lowest points for z+" nonsense?
 					float signedDZ = map.SignedDZForMove(pos, start);
+//					Debug.Log("signed dz:"+signedDZ+" at "+pos.z+" from "+start.z);
+					if(signedDZ < -zDownMax || signedDZ > zUpMax) { 
+						continue; 
+					}
+					float bonus = useArcRangeBonus ? -signedDZ/2.0f : 0;
+//					Debug.Log("bonus at z="+adjZ+"="+bonus);
+					if(Mathf.Abs(i) + Mathf.Abs(j) > maxRadius+bonus) {
+						continue;
+					}
 					float adz = Mathf.Abs(signedDZ);
 					PathNode newPn = new PathNode(pos, null, i+j+0.01f*adz);
 					Character c = map.CharacterAt(pos);
@@ -548,30 +569,26 @@ public class Region {
 					if(aboveT != null) {
 						newPn.isWall = true;
 					}
-					bool heightOK = (signedDZ < 0 ?
-						signedDZ > zDownMax :
-						(signedDZ > 0 ?
-							signedDZ < zUpMax : true));
-					if(heightOK) {
-						PathDecision decision = isValid(start, newPn, map.CharacterAt(pos));
-						if(decision == PathDecision.PassOnly) {
-							newPn.canStop = false;
-						}
-						if(decision != PathDecision.Invalid) {
-							ret.Add(pos, newPn);
-						}
+					PathDecision decision = isValid(start, newPn, map.CharacterAt(pos));
+					if(decision == PathDecision.PassOnly) {
+						newPn.canStop = false;
+					}
+					if(decision != PathDecision.Invalid) {
+						ret.Add(pos, newPn);
 					}
 				}
 			}
 		}
 		return ret;
 	}
+	
 	public IEnumerable<PathNode> PickableTilesAround(
 		Vector3 here,
 		Dictionary<Vector3, PathNode> pickables
 	) {
 		return pickables.Values;
 	}
+	
 	bool AnglesWithin(float a, float b, float eps) {
 		return Mathf.Abs(Mathf.DeltaAngle(a, b)) < eps;
 	}
@@ -639,43 +656,113 @@ public class Region {
 		}
 		return ret;
 	}
-	//REMEMBER: should take into account extra xy range for downward z levels (arc); also, arc apex = arc radius
-	//there's a per-dz radius bonus for arcing (half the delta, signed)
-	public IEnumerable<PathNode> ArcReachableTilesAround(
-		Vector3 here,
+	
+	bool FindArcFromTo(
+		Vector3 startPos, Vector3 pos, Vector3 dir,
+		float d, float theta, float v, float g, float dt,
 		Dictionary<Vector3, PathNode> pickables
 	) {
-		//TODO: code with parametric eqs and walk t
-		return LineReachableTilesAround(here, pickables);
+/*		Color c = new Color(Random.value, Random.value, Random.value, 0.6f);*/
 		
-/*		//for each pos, find each arc between there and the start
-		//for each pos, use the shortest arc that collides with nothing, or else use the shortest arc (iow, collision adds 100 cost)
-		int x = (int)Mathf.Floor(tc.x), y = (int)Mathf.Floor(tc.y), z = (int)Mathf.Floor(tc.z);
-		Vector3 start = new Vector3(x,y,z);
-		List<PathNode> nodes = new List<PathNode>();
-		//for all tiles at all z levels with xy manhattan distance < max radius and z manhattan distance between -zDownMax and +zUpMax, make a node if that tile passes the isValid check
-		for(float i = -maxRadius-zDownMax/2; i <= maxRadius+zDownMax/2; i++) {
-			for(float j = -maxRadius-zDownMax/2; j <= maxRadius+zDownMax/2; j++) {
-				Vector2 here = new Vector2(start.x+i, start.y+j);
-				IEnumerable<int> levs = map.ZLevelsWithin((int)here.x, (int)here.y, (int)start.z, -1);
-				foreach(int zLev in levs) {
-					Vector3 pos = new Vector3(here.x, here.y, zLev);
-					float dz = start.z - zLev;
-					if(dz < -zDownMax) { continue; }
-					if(dz > zUpMax) { continue; }
-					float arcXYBonus = dz/2;
-					if((Mathf.Abs(i)+Mathf.Abs(j)-arcXYBonus) > maxRadius) { continue; }
-					//now: set up prevs in an arc back to start
-					//check two arcs for each -- the shallow one and the steep one
-					float xyDist = Mathf.Sqrt((here.x+here.y)*(here.x+here.y));
-					//y = ax^2+bx+c
-					//a,b,c are the relevant constants
-					//x = xyDist, y = zLev
-					//c can be 0
-					float angles = ; //either side of 45
+		Vector3 prevPos = startPos;
+		float sTH = Mathf.Sin(theta);
+		float cosTH = Mathf.Cos(theta);
+		float endT = d / (v * cosTH);
+		if(endT < 0) { Debug.LogError("Bad end T! "+endT); }
+		float t = 0;
+		while(t < endT && prevPos != pos) {
+			//x(t) = v*cos(45)*t
+			float xDist = v * cosTH * t;
+			float xr = xDist / d;
+			//y(t) = v*sin(45)*t - (g*t^2)/2
+			float y = v * sTH * t - (g * t * t)/2.0f;
+			Vector3 testPos = Round(new Vector3(startPos.x, startPos.y, startPos.z+y) + xr*dir);
+			if(testPos == prevPos && t != 0) { t += dt; continue; }
+/*			Debug.DrawLine(map.TransformPointWorld(prevPos), map.TransformPointWorld(testPos), c, 1.0f);*/
+			PathNode pn = null;
+			if(pickables.ContainsKey(testPos)) {
+				pn = pickables[testPos];
+				pn.prev = pickables[prevPos];
+				pn.distance = xDist;
+			} else {
+				//through an invalid point? 
+				//FIXME: will this work with big/tall tiles?
+				if(map.TileAt(testPos) != null) {
+					break;
 				}
+				//through empty space? that's ok!
+				pickables[testPos] = pn = new PathNode(testPos, pickables[prevPos], xDist);
+				pn.canStop = false;
+				pn.isWall = map.TileAt(testPos+new Vector3(0,0,1)) != null;
+				pn.isEnemy = map.CharacterAt(testPos) != null && map.CharacterAt(testPos).EffectiveTeamID != owner.character.EffectiveTeamID;
 			}
-		}*/
+			if(prevPos.z < testPos.z && map.TileAt(testPos) != null) {
+				pn.isWall = true;
+			}
+			if(pn.isWall && !canCrossWalls) {
+				//no good!
+				break;
+			}
+			if(pn.isEnemy && !canCrossEnemies) {
+				//no good!
+				break;
+			}
+			prevPos = testPos;
+			t += dt;
+		}
+//		Debug.DrawLine(map.TransformPointWorld(prevPos), map.TransformPointWorld(pos), c, 1.0f);
+		if(prevPos == pos) {
+			return true;
+		} else if(t >= endT) {
+/*			Debug.Log("T passed "+endT+" without reaching "+pos+", got "+prevPos);*/
+		}
+		return false;
+	}
+	
+	//REMEMBER: should take into account extra xy range for downward z levels (arc)
+	//there's a per-dz radius bonus/penalty for arcing (half the delta, signed)
+	public IEnumerable<PathNode> ArcReachableTilesAround(
+		Vector3 here,
+		Dictionary<Vector3, PathNode> pickables,
+		float maxRadius
+	) {
+		List<PathNode> ret = new List<PathNode>();
+		Vector3 startPos = here+new Vector3(0,0,1);
+		if(!pickables.ContainsKey(startPos) && map.TileAt(startPos) == null) {
+			pickables[startPos] = new PathNode(startPos, null, 0);
+		}
+		float g = 9.8f;
+		float dt = 0.05f;
+		float v = Mathf.Sqrt(g*maxRadius);
+		foreach(var pair in pickables.ToList()) {
+			Vector3 pos = pair.Key;
+			//Debug.Log("check "+pos);
+			Vector3 dir = new Vector3(pos.x-startPos.x, pos.y-startPos.y, 0);
+			PathNode posPn = pair.Value;
+			float d = Mathf.Sqrt((pos.x-startPos.x)*(pos.x-startPos.x)+(pos.y-startPos.y)*(pos.y-startPos.y));
+			if(d == 0) { continue; } //impossible to hit
+			//theta = atan((v^2±sqrt(v^4-g(gx^2+2yv^2))/gx)) for x=distance, y=target y
+			//either root, if it's not imaginary, will work! otherwise, bail because v is too small
+			float thX = d;
+			float thY = pos.z-startPos.z;
+			float thSqrtTerm = Mathf.Pow(v,4)-g*(g*thX*thX+2*thY*v*v);
+			if(thSqrtTerm < 0) { continue; } //impossible to hit with current v
+			float theta1 = Mathf.Atan((v*v+Mathf.Sqrt(thSqrtTerm))/(g*thX));
+			float theta2 = Mathf.Atan((v*v-Mathf.Sqrt(thSqrtTerm))/(g*thX));
+			//try 1, then 2. we also accept aiming downward.
+			if(FindArcFromTo(startPos, pos, dir, d, theta1, v, g, dt, pickables)) {
+				posPn.velocity = v;
+				posPn.altitude = theta1;
+				ret.Add(posPn);
+			} else if(FindArcFromTo(startPos, pos, dir, d, theta2, v, g, dt, pickables)) {
+				posPn.velocity = v;
+				posPn.altitude = theta2;
+				ret.Add(posPn);
+			} else {
+//				Debug.Log("nope");
+			}
+		}
+		return ret;
 	}
 
 #endregion

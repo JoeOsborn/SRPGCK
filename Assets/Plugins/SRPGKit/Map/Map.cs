@@ -507,7 +507,9 @@ void Awake() {
 		Neighbors exiting = ExitingSideFromXYDelta(dx, dy);
 		if(fromTile == null || toTile == null) { return float.MaxValue; }
 		float xz = (fromTile.LowestHeightAt(exiting)+fromTile.HighestHeightAt(exiting))/2.0f;
+/*		Debug.Log("avg from height:"+xz);*/
 		float ez = (toTile.LowestHeightAt(entering)+toTile.HighestHeightAt(entering))/2.0f;
+/*		Debug.Log("avg to height:"+ez);*/
 		return ez-xz;
 	}
 
