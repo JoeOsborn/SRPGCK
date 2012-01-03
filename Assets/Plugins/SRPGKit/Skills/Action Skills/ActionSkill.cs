@@ -843,7 +843,7 @@ public class ActionSkill : Skill {
 					} else {
 						p = p.prev;
 					}
-					while(p.prev != null && p.pos == p.prev.pos) {
+					while(p.prev != null && p.pos == p.prev.pos && p != p.prev) {
 						p.prev = p.prev.prev;
 					}
 				}

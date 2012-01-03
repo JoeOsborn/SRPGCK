@@ -19,6 +19,13 @@ public class PathNode {
 
 	public float altitude = 0;
 	public float velocity = 0;
+	
+	public float bonusRange=0;
+	public float radius=0;
+	public float angle=0;
+	
+	//used for cone and line; describes offset from centerline of directed region
+	public Vector3 centerOffset=Vector3.zero;
 
 	public PathNode(Vector3 ps, PathNode pr, float dist) {
 		pos = ps; prev = pr; distance = dist;
@@ -28,16 +35,16 @@ public class PathNode {
 		get { return (int)Mathf.Abs(signedDZ); }
 	}
 	public int signedDZ {
-		get { return SignedDZFrom(prev != null ? prev.pos : pos); }
+		get { return SignedDZFrom(prev != null && prev != this ? prev.pos : pos); }
 	}
 	public float xyDistance {
-		get { return XYDistanceFrom(prev != null ? prev.pos : pos); }
+		get { return XYDistanceFrom(prev != null && prev != this ? prev.pos : pos); }
 	}
 	public float xyDistanceFromStart {
 		get {
 			float dist=0;
 			PathNode s = this;
-			while(s.prev != null) {
+			while(s.prev != null && s.prev != s) {
 				dist += Vector2.Distance(
 					new Vector2(s.pos.x, s.pos.y),
 					new Vector2(s.prev.pos.x, s.prev.pos.y)
@@ -52,6 +59,9 @@ public class PathNode {
 	}
 	public float XYDistanceFrom(Vector3 prevPos) {
 		return (int)(Mathf.Abs(pos.x - prevPos.x)+Mathf.Abs(pos.y - prevPos.y));
+	}
+	public float XYZDistanceFrom(Vector3 prevPos) {
+		return (int)(XYDistanceFrom(prevPos)+Mathf.Abs(pos.z - prevPos.z));
 	}
 	public override bool Equals(object obj) {
     if(obj is PathNode) {

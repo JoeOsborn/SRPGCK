@@ -97,6 +97,7 @@ public class MoveSkill : ActionSkill {
 			targetRegion.radiusMin, targetRegion.radiusMax-radiusSoFar, 
 			targetRegion.zDownMin, targetRegion.zDownMax, 
 			targetRegion.zUpMin, targetRegion.zUpMax,
+			targetRegion.lineWidthMin, targetRegion.lineWidthMax,
 			targetRegion.interveningSpaceType
 		);
 	}
