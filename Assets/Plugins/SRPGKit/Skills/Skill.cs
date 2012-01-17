@@ -13,17 +13,17 @@ public class Skill : MonoBehaviour {
 	public bool replacesSkill=false;
 	public string replacedSkill = "";
 	public int replacementPriority=0;
-		
+
 	virtual public bool isPassive { get { return true; } }
-	
+
 	public bool deactivatesOnApplication=true;
 
 	public StatEffect[] passiveEffects;
-	
+
 	public List<Parameter> parameters;
 
 	protected Dictionary<string, Formula> runtimeParameters;
-	
+
 	//only relevant to targeted skills, sadly
 	[HideInInspector]
 	public List<Character> targets;
@@ -31,7 +31,7 @@ public class Skill : MonoBehaviour {
 	public Character currentTarget;
 	[HideInInspector]
 	public int currentHitType;
-	
+
 	//reaction
 	public bool reactionSkill=false;
 	public string[] reactionTypesApplied, reactionTypesApplier;
@@ -60,10 +60,10 @@ public class Skill : MonoBehaviour {
 		if(isPassive) { return; }
 		isActive = true;
 		if(reactionTargetRegion != null) {
-			reactionTargetRegion.owner = this;	
+			reactionTargetRegion.owner = this;
 		}
 		if(reactionEffectRegion != null) {
-			reactionEffectRegion.owner = this;	
+			reactionEffectRegion.owner = this;
 		}
 	}
 	public virtual void DeactivateSkill() {
@@ -75,10 +75,10 @@ public class Skill : MonoBehaviour {
 	}
 	public virtual void Update() {
 		if(reactionTargetRegion != null) {
-			reactionTargetRegion.owner = this;	
+			reactionTargetRegion.owner = this;
 		}
 		if(reactionEffectRegion != null) {
-			reactionEffectRegion.owner = this;	
+			reactionEffectRegion.owner = this;
 		}
 	}
 	public virtual void Cancel() {
@@ -86,7 +86,7 @@ public class Skill : MonoBehaviour {
 		DeactivateSkill();
 	}
 	public virtual void ResetSkill() {
-		
+
 	}
 	public virtual void Reset() {
 		ResetSkill();
@@ -152,25 +152,25 @@ public class Skill : MonoBehaviour {
 			}
 		}
 	}
-	
+
 	public bool HasParam(string pname) {
 		MakeParametersIfNecessary();
 		return runtimeParameters.ContainsKey(pname);
 	}
-	
+
 	public float GetParam(string pname, float fallback=float.NaN) {
 		MakeParametersIfNecessary();
 		//TODO: let all other equipment and skills modulate this param?
-		if(!HasParam(pname)) { 
+		if(!HasParam(pname)) {
 			if(float.IsNaN(fallback)) {
 				Debug.LogError("No fallback for missing param "+pname);
 			}
 /*			Debug.Log("using fallback "+fallback+" for "+pname);*/
-			return fallback; 
+			return fallback;
 		}
 		return runtimeParameters[pname].GetValue(this, null);
 	}
-	
+
 	public void SetParam(string pname, float value) {
 		MakeParametersIfNecessary();
 		if(!HasParam(pname)) {
@@ -184,13 +184,13 @@ public class Skill : MonoBehaviour {
 			}
 		}
 	}
-	
+
 	public void AddParam(string pname, Formula f) {
 		MakeParametersIfNecessary();
 		runtimeParameters[pname] = f;
 		parameters = parameters.Concat(new Parameter[]{new Parameter(pname, f)}).ToList();
 	}
-	
+
 	protected virtual void ApplyEffectsTo(StatEffect[] effects, List<Character> targs) {
 		if(lastEffects == null) {
 			lastEffects = new List<StatEffectRecord>();
@@ -202,9 +202,9 @@ public class Skill : MonoBehaviour {
 			Vector3 ttp = c.TilePosition;
 			Vector3 ctp = character.TilePosition;
 			float distance = Vector3.Distance(ttp, ctp);
-			float angle = currentTarget == character ? 
-				character.Facing : 
-				Mathf.Atan2(ttp.x-ctp.x, ttp.y-ctp.y);
+			float angle = currentTarget == character ?
+				character.Facing :
+				Mathf.Atan2(ttp.y-ctp.y, ttp.x-ctp.x);
 			SetParam("arg.distance", distance);
 			SetParam("arg.mdistance", Mathf.Abs(ttp.x-ctp.x)+Mathf.Abs(ttp.y-ctp.y)+Mathf.Abs(ttp.z-ctp.z));
 			SetParam("arg.mdistance.xy", Mathf.Abs(ttp.x-ctp.x)+Mathf.Abs(ttp.y-ctp.y));
@@ -215,9 +215,9 @@ public class Skill : MonoBehaviour {
 			foreach(StatEffect se in effects) {
 				lastEffects.Add(se.Apply(this, character, currentTarget));
 			}
-		}	
+		}
 	}
-	
+
 	public static Vector2 TransformKeyboardAxes(float h, float v, bool switchXY=true) {
 		//use the camera and the map's own rotation
 		Transform cam = Camera.main.transform;
@@ -233,13 +233,13 @@ public class Skill : MonoBehaviour {
 			return new Vector2(result.x, result.z);
 		}
 	}
-	
-	public Vector3 transformOffset { get { 
-		return character.transformOffset; 
+
+	public Vector3 transformOffset { get {
+		return character.transformOffset;
 	} }
-	public Character character { get { 
+	public Character character { get {
 		//TODO: cache
-		Character c = GetComponent<Character>(); 
+		Character c = GetComponent<Character>();
 		if(c != null) { return c; }
 		if(transform.parent != null) {
 			return transform.parent.GetComponent<Character>();

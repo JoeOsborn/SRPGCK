@@ -29,15 +29,15 @@ public class Region {
 	public RegionType type=RegionType.Cylinder;
 
 	public InterveningSpaceType interveningSpaceType=InterveningSpaceType.Pick;
-	
+
 	public bool useArcRangeBonus=false;
-	
+
 	//WARNING: region generators will avoid using DZ checks if this flag is not set.
 	//now, these will get filtered out by the final range filter at the end of getvalidnodes,
 	//but just keep it in mind for certain fancy intervening-space generators
 	//this flag will have no effect on the Pick space type or the Line or Cone region types.
 	public bool useAbsoluteDZ=true;
-	
+
 	//these mean the same for pathable and non-pathable regions
 	//they don't apply to self, predicate, or compound.
 	public bool canCrossWalls=true;
@@ -55,6 +55,14 @@ public class Region {
 	public Formula rFwdClipMaxF;
 	//these apply to line
 	public Formula lineWidthMinF, lineWidthMaxF;
+	//this applies to predicate, and gets these variable bindings as skill params:
+	//arg.region.{...}
+	//x, y, z, angle.xy, angle.z,
+	//target.x, target.y, target.z, angle.between.xy, angle.between.z
+	//dx, dy, dz, distance, distance.xy, mdistance, mdistance.xy
+	//as a bonus, in the scope of a region lookup the skill's "current target" is the character on a given tile
+	//it should return 0 (false) or non-0 (true)
+	public Formula predicateF;
 
 	public float radiusMin { get { return radiusMinF.GetValue(owner, null, null); } }
 	public float radiusMax { get { return radiusMaxF.GetValue(owner, null, null); } }
@@ -138,7 +146,7 @@ public class Region {
 		get { return isEffectRegion; }
 		set { isEffectRegion = value; }
 	}
-	
+
 	//FIXME: wrong because of reliance on z{Up|Down}{Max|Min}
 	public virtual PathDecision PathNodeIsValidHack(Vector3 start, PathNode pn, Character c) {
 		float dz = useAbsoluteDZ ? map.SignedDZForMove(pn.position, start) : pn.signedDZ;
@@ -167,7 +175,33 @@ public class Region {
 		}
 		return PathDecision.Normal;
 	}
-	
+	public virtual PathDecision PathNodeIsValidPredicate(
+		Vector3 start,
+		PathNode pn,
+		Character c
+	) {
+		Vector3 pos = pn.pos;
+		float distance = Vector3.Distance(pos, start);
+		float xyDistance = (new Vector2(pos.x-start.x, pos.y-start.y)).magnitude;
+		Character oldTarget = owner.currentTarget;
+		owner.currentTarget = c;
+		owner.SetParam("arg.region.distance", distance);
+		owner.SetParam("arg.region.distance.xy", xyDistance);
+		owner.SetParam("arg.region.mdistance", Mathf.Abs(pos.x-start.x)+Mathf.Abs(pos.y-start.y)+Mathf.Abs(pos.z-start.z));
+		owner.SetParam("arg.region.mdistance.xy", Mathf.Abs(pos.x-start.x)+Mathf.Abs(pos.y-start.y));
+		owner.SetParam("arg.region.dx", Mathf.Abs(pos.x-start.x));
+		owner.SetParam("arg.region.dy", Mathf.Abs(pos.y-start.y));
+		owner.SetParam("arg.region.dz", Mathf.Abs(pos.z-start.z));
+		owner.SetParam("arg.region.target.x", pos.x);
+		owner.SetParam("arg.region.target.y", pos.y);
+		owner.SetParam("arg.region.target.z", pos.z);
+		owner.SetParam("arg.region.angle.between.xy", Mathf.Atan2(pos.y-start.y, pos.x-start.x)*Mathf.Rad2Deg);
+		owner.SetParam("arg.region.angle.between.z", Mathf.Atan2(pos.z-start.z, xyDistance)*Mathf.Rad2Deg);
+		float ret = predicateF.GetValue(owner, null, null);
+		owner.currentTarget = oldTarget;
+		return (ret != 0) ? PathDecision.Normal : PathDecision.Invalid;
+	}
+
 	//FIXME: wrong because of reliance on z{Up|Down}{Max|Min}
 	public virtual PathDecision PathNodeIsValidRange(Vector3 start, PathNode pn, Character c) {
 		float dz = useAbsoluteDZ ? map.SignedDZForMove(pn.position, start) : pn.signedDZ;
@@ -210,11 +244,11 @@ public class Region {
 			Quaternion.Euler(0, owner.character.Facing, 0)
 		);
 	}
-	
+
 	public virtual PathNode[] GetValidTiles(Quaternion q) {
 		return GetValidTiles(owner.character.TilePosition, q);
 	}
-	
+
 	public virtual PathNode[] GetValidTiles(Vector3 tc) {
 		return GetValidTiles(tc, Quaternion.Euler(0, owner.character.Facing, 0));
 	}
@@ -229,7 +263,7 @@ public class Region {
 			interveningSpaceType
 		);
 	}
-	
+
 	public virtual PathNode[] GetTilesInRegion() {
 	  return GetValidTiles(
 			owner.character.TilePosition,
@@ -252,34 +286,45 @@ public class Region {
   ) {
 		//intervening space selection filters what goes into `nodes` and what
 		//nodes get picked next time around—i.e. how prevs get set up.
-		
-		//use tc if we're anything but self or predicate or compound to get the candidate tiles
-		//use q if we're a cone or line to get the candidate tiles
-		//TODO: all should operate with quaternion-based node generators as well as grid-based node generators (and radius-based node generators?)
+
+		//TODO: all should operate with continuous generators as well as grid-based generators
 		Vector3 here = Trunc(tc);
 		Dictionary<Vector3, PathNode> pickables = null;
 		switch(type) {
 			case RegionType.Cylinder:
-				pickables = spaceType == interveningSpaceType ? 
+				pickables = spaceType == interveningSpaceType ?
 					CylinderTilesAround(here, xyrmx, zrdmx, zrumx, PathNodeIsValidRange) :
 					CylinderTilesAround(here, xyrmx, zrdmx, zrumx, PathNodeIsValidHack);
 				break;
 			case RegionType.Sphere:
-				pickables = spaceType == interveningSpaceType ? 
+				pickables = spaceType == interveningSpaceType ?
 					SphereTilesAround(here, xyrmx, zrdmx, zrumx, PathNodeIsValidRange) :
 					SphereTilesAround(here, xyrmx, zrdmx, zrumx, PathNodeIsValidHack);
 				break;
 			case RegionType.Line:
-				pickables = spaceType == interveningSpaceType ? 
+				pickables = spaceType == interveningSpaceType ?
 					LineTilesAround(here, q, xyrmx, zrdmx, zrumx, xyDirection, zDirection, lwmn, lwmx, PathNodeIsValidRange) :
 					LineTilesAround(here, q, xyrmx, zrdmx, zrumx, xyDirection, zDirection, lwmn, lwmx, PathNodeIsValidHack);
 				break;
 			case RegionType.Cone:
-				pickables = spaceType == interveningSpaceType ? 
+				pickables = spaceType == interveningSpaceType ?
 					ConeTilesAround(here, q, xyrmx, zrdmx, zrumx, xyDirection, zDirection, xyArcMin, xyArcMax, zArcMin, zArcMax, rFwdClipMax, PathNodeIsValidRange) :
 					ConeTilesAround(here, q, xyrmx, zrdmx, zrumx, xyDirection, zDirection, xyArcMin, xyArcMax, zArcMin, zArcMax, rFwdClipMax, PathNodeIsValidHack);
 				break;
+			case RegionType.Self:
+				pickables =	new Dictionary<Vector3, PathNode>(){
+					{here, new PathNode(here, null, 0)}
+				};
+				break;
+			case RegionType.Predicate:
+				pickables =	PredicateSatisfyingTilesAround(here, q, xyrmx, zrdmx, zrumx);
+				break;
+			case RegionType.Compound:
+				Debug.LogError("Compound region type not yet supported");
+				pickables = null;
+				break;
 			default:
+				Debug.LogError("Unknown region type not supported");
 				pickables = null;
 				break;
 		}
@@ -393,7 +438,7 @@ public class Region {
 			Distinct().
 			ToArray();
 	}
-	
+
 	Vector3 Trunc(Vector3 v) {
 		return new Vector3((int)v.x, (int)v.y, (int)v.z);
 	}
@@ -401,7 +446,7 @@ public class Region {
 	Vector3 Round(Vector3 v) {
 		return new Vector3(Mathf.Round(v.x), Mathf.Round(v.y), Mathf.Round(v.z));
 	}
-	
+
 	float WrapAngle(float f) {
 		if(float.IsNaN(f)) { Debug.LogError("NAN!"); }
 		if(float.IsInfinity(f)) { Debug.LogError("INFINITY!"); }
@@ -410,7 +455,7 @@ public class Region {
 		if(r >= 360) { r -= 360; }
 		return r;
 	}
-	
+
 	bool AngleBetween(float a, float mn, float mx) { //ccw
 		float ang = WrapAngle(a);
 		float min = WrapAngle(mn);
@@ -428,15 +473,15 @@ public class Region {
 #region Pathing and movement
 
   void TryAddingJumpPaths(
-		PriorityQueue<float, PathNode> queue, 
-		HashSet<PathNode> closed, 
-		Dictionary<Vector3, PathNode> pickables, 
-		List<PathNode> ret, 
-		PathNode pn, 
+		PriorityQueue<float, PathNode> queue,
+		HashSet<PathNode> closed,
+		Dictionary<Vector3, PathNode> pickables,
+		List<PathNode> ret,
+		PathNode pn,
 		int n2x, int n2y,
 		float maxRadius,
-		float zUpMax, 
-		float zDownMax, 
+		float zUpMax,
+		float zDownMax,
 		float jumpDistance,
 		Vector3 start, Vector3 dest
 	) {
@@ -488,7 +533,7 @@ public class Region {
   		if(canJumpNoFurther) {
   			break;
   		}
-  	}	
+  	}
   }
 //rewrite as several smaller functions, one for each space type
 //√ pick -- anywhere within region, prev nodes are all null
@@ -496,8 +541,8 @@ public class Region {
 //√ line -- anywhere within direct line from start, prev nodes lead back to start
 //√ arc  -- anywhere within arc, prev nodes lead in a parabola
 	bool AddPathTo(
-		PathNode destPn, Vector3 start, 
-		Dictionary<Vector3, PathNode> pickables, 
+		PathNode destPn, Vector3 start,
+		Dictionary<Vector3, PathNode> pickables,
 		List<PathNode> ret,
 		float maxRadius, //max cost for path
 		float zDownMax, //apply to each step
@@ -508,9 +553,9 @@ public class Region {
 			return true;
 		}
 		Vector3 dest = destPn.pos;
-		if(dest == start) { 
-			//Debug.Log("ret gets "+dest+" which == "+start); 
-			ret.Add(destPn); 
+		if(dest == start) {
+			//Debug.Log("ret gets "+dest+" which == "+start);
+			ret.Add(destPn);
 			return true;
 		}
 //		Debug.Log("seek path to "+dest);
@@ -531,7 +576,7 @@ public class Region {
 			if(closed.Contains(pn)) {
 //				Debug.Log("closed");
 				continue;
-			}	
+			}
 			//if we have a path, or can reach a node that is in ret, add the involved nodes to ret if they're not yet present
 			if(pn.pos == dest) {
 				//add all prevs to ret
@@ -562,7 +607,7 @@ public class Region {
 				float px = pn.pos.x+n2.x;
 				float py = pn.pos.y+n2.y;
 				//Debug.Log("search at "+px+", "+py + " (d "+n2.x+","+n2.y+")");
-				
+
 				foreach(int adjZ in map.ZLevelsWithin((int)px, (int)py, (int)pn.pos.z, -1)) {
 					Vector3 pos = Trunc(new Vector3(px, py, adjZ));
 					float dz = useAbsoluteDZ ? map.SignedDZForMove(pos, start) : map.SignedDZForMove(pos, pn.pos);
@@ -576,7 +621,7 @@ public class Region {
 					}
 					if(map.TileAt(pos) == null) {
 						//can't path through empty space
-						continue; 
+						continue;
 					}
 					PathNode next=null;
         	if(!pickables.TryGetValue(pos, out next)) {
@@ -633,6 +678,20 @@ public class Region {
 		}
 		return ret;
 	}
+	public Dictionary<Vector3, PathNode> PredicateSatisfyingTilesAround(
+		Vector3 start,
+		Quaternion q,
+		float maxRadius,
+		float zDownMax,
+		float zUpMax
+	) {
+		owner.SetParam("arg.region.x", start.x);
+		owner.SetParam("arg.region.y", start.y);
+		owner.SetParam("arg.region.z", start.z);
+		owner.SetParam("arg.region.angle.xy", q.eulerAngles.y);
+		owner.SetParam("arg.region.angle.z", q.eulerAngles.z);
+		return CylinderTilesAround(start, maxRadius, zDownMax, zUpMax, PathNodeIsValidPredicate);
+	}
 	public Dictionary<Vector3, PathNode> CylinderTilesAround(
 		Vector3 start,
 		float maxRadius,
@@ -645,11 +704,11 @@ public class Region {
 		float maxBonus = useArcRangeBonus ? Mathf.Max(zDownMax, zUpMax)/2.0f : 0;
 		for(float i = -maxRadius-maxBonus; i <= maxRadius+maxBonus; i++) {
 			for(float j = -maxRadius-maxBonus; j <= maxRadius+maxBonus; j++) {
-				if(Mathf.Abs(i)+Mathf.Abs(j) > maxRadius+Mathf.Abs(maxBonus)) { 
-					continue; 
+				if(Mathf.Abs(i)+Mathf.Abs(j) > maxRadius+Mathf.Abs(maxBonus)) {
+					continue;
 				}
 //				Debug.Log("gen "+i+","+j);
-				
+
 				Vector2 here = new Vector2(start.x+i, start.y+j);
 				IEnumerable<int> levs = map.ZLevelsWithin((int)here.x, (int)here.y, (int)start.z, -1);
 				foreach(int adjZ in levs) {
@@ -658,7 +717,7 @@ public class Region {
 					float signedDZ = map.SignedDZForMove(pos, start);
 //					Debug.Log("signed dz:"+signedDZ+" at "+pos.z+" from "+start.z);
 					if(useAbsoluteDZ && (signedDZ < -zDownMax || signedDZ > zUpMax)) {
-						continue; 
+						continue;
 					}
 					float bonus = useArcRangeBonus ? -signedDZ/2.0f : 0;
 //					Debug.Log("bonus at z="+adjZ+"="+bonus);
@@ -669,7 +728,7 @@ public class Region {
 					PathNode newPn = new PathNode(pos, null, i+j+0.01f*adz);
 					newPn.bonusRange = bonus;
 					Character c = map.CharacterAt(pos);
-					if(c != null && 
+					if(c != null &&
 						 c.EffectiveTeamID != owner.character.EffectiveTeamID) {
 						newPn.isEnemy = true;
 					}
@@ -702,11 +761,11 @@ public class Region {
 		float maxBonus = useArcRangeBonus ? Mathf.Max(zDownMax, zUpMax)/2.0f : 0;
 		for(float i = -maxRadius-maxBonus; i <= maxRadius+maxBonus; i++) {
 			for(float j = -maxRadius-maxBonus; j <= maxRadius+maxBonus; j++) {
-				if(Mathf.Abs(i)+Mathf.Abs(j) > maxRadius+Mathf.Abs(maxBonus)) { 
-					continue; 
+				if(Mathf.Abs(i)+Mathf.Abs(j) > maxRadius+Mathf.Abs(maxBonus)) {
+					continue;
 				}
 //				Debug.Log("gen "+i+","+j);
-				
+
 				Vector2 here = new Vector2(start.x+i, start.y+j);
 				IEnumerable<int> levs = map.ZLevelsWithin((int)here.x, (int)here.y, (int)start.z, -1);
 				foreach(int adjZ in levs) {
@@ -716,7 +775,7 @@ public class Region {
 					float adz = Mathf.Abs(signedDZ);
 //					Debug.Log("signed dz:"+signedDZ+" at "+pos.z+" from "+start.z);
 					if(useAbsoluteDZ && (signedDZ < -zDownMax || signedDZ > zUpMax)) {
-						continue; 
+						continue;
 					}
 					float bonus = useArcRangeBonus ? -signedDZ/2.0f : 0;
 //					Debug.Log("bonus at z="+adjZ+"="+bonus);
@@ -728,7 +787,7 @@ public class Region {
 					newPn.radius = radius;
 					newPn.bonusRange = bonus;
 					Character c = map.CharacterAt(pos);
-					if(c != null && 
+					if(c != null &&
 						 c.EffectiveTeamID != owner.character.EffectiveTeamID) {
 						newPn.isEnemy = true;
 					}
@@ -748,14 +807,14 @@ public class Region {
 		}
 		return ret;
 	}
-	
+
 	public Dictionary<Vector3, PathNode> LineTilesAround(
 		Vector3 here, Quaternion q,
-		float xyrmx, 
-		float zrdmx, float zrumx, 
-		float xyDirection, 
-		float zDirection, 
-		float lwmn, float lwmx, 
+		float xyrmx,
+		float zrdmx, float zrumx,
+		float xyDirection,
+		float zDirection,
+		float lwmn, float lwmx,
 		PathNodeIsValid isValid
 	) {
 		var ret = new Dictionary<Vector3, PathNode>();
@@ -769,10 +828,10 @@ public class Region {
 				//FIXME: use of zPhi (cos, cos, 0) is not correct -- consider pointing vertically. it shouldn't collapse to a single column!
 				Vector3 oxy = new Vector3(Mathf.Sin(xyTheta)*Mathf.Cos(zPhi)*lwo, Mathf.Cos(xyTheta)*Mathf.Cos(zPhi)*lwo, 0);
 				for(int zRad = -(int)zrdmx; zRad <= (int)zrumx; zRad++) {
-					Vector3 oz = new Vector3(0, 0, Mathf.Sin(zPhi)*zRad);				
+					Vector3 oz = new Vector3(0, 0, Mathf.Sin(zPhi)*zRad);
 					Vector3 pos = Round(new Vector3(
-						here.x+linePos.x+oxy.x+oz.x, 
-						here.y+linePos.y+oxy.y+oz.y, 
+						here.x+linePos.x+oxy.x+oz.x,
+						here.y+linePos.y+oxy.y+oz.y,
 						here.z+linePos.z+oxy.z+oz.z
 					));
 					if(map.TileAt(pos) == null) { continue; }
@@ -783,7 +842,7 @@ public class Region {
 					pn.centerOffset = new Vector3(lwo, 0, zRad);
 					//FIXME: duplicated across other generators
 					Character c = map.CharacterAt(pos);
-					if(c != null && 
+					if(c != null &&
 						 c.EffectiveTeamID != owner.character.EffectiveTeamID) {
 						pn.isEnemy = true;
 					}
@@ -800,19 +859,19 @@ public class Region {
 						ret.Add(pos, pn);
 					}
 				}
-			}			
+			}
 		}
 		return ret;
 	}
 
 	public Dictionary<Vector3, PathNode> ConeTilesAround(
 		Vector3 here, Quaternion q,
-		float xyrmx, 
-		float zrdmx, float zrumx, 
-		float xyDirection, 
-		float zDirection, 
-		float xyArcMin, float xyArcMax, 
-		float zArcMin, float zArcMax, 
+		float xyrmx,
+		float zrdmx, float zrumx,
+		float xyDirection,
+		float zDirection,
+		float xyArcMin, float xyArcMax,
+		float zArcMin, float zArcMax,
 		float rFwdClipMax,
 		PathNodeIsValid isValid
 	) {
@@ -828,7 +887,7 @@ public class Region {
 			float xyd = Vector3.Distance(n.pos, here);
 			float xyArcTolerance = xyd == 0 ? 0 : (0.5f/xyd)*Mathf.Rad2Deg;
 			float zArcTolerance = xyd == 0 ? 0 : (0.5f/xyd)*Mathf.Rad2Deg;
-			
+
 			float xyAng = Mathf.Rad2Deg*Mathf.Atan2(n.pos.y-here.y, n.pos.x-here.x)-q.eulerAngles.y;
 			float zAng = Mathf.Rad2Deg*Mathf.Atan2(n.pos.z-here.z, xyd)-q.eulerAngles.z;
 			//FIXME: (cos,cos,sin) is wrong, consider vertical pointing
@@ -849,18 +908,18 @@ public class Region {
 			  signedDZ >= -zrdmx && signedDZ <= zrumx;
 		}).ToDictionary(pair => pair.Key, pair => pair.Value);
 	}
-	
+
 	public IEnumerable<PathNode> PickableTilesAround(
 		Vector3 here,
 		Dictionary<Vector3, PathNode> pickables
 	) {
 		return pickables.Values;
 	}
-	
+
 	bool AnglesWithin(float a, float b, float eps) {
 		return Mathf.Abs(Mathf.DeltaAngle(a, b)) < eps;
 	}
-	
+
 	public IEnumerable<PathNode> LineReachableTilesAround(
 		Vector3 start,
 		Dictionary<Vector3, PathNode> pickables
@@ -881,7 +940,7 @@ public class Region {
 				continue;
 			}
 			Vector3 d = truncStart-truncHere;
-			//HACK: moves too fast and produces infinite loops 
+			//HACK: moves too fast and produces infinite loops
 			//when normalized d is too big relative to the actual distance
 			d = d.normalized;
 			PathNode cur = pn;
@@ -912,9 +971,9 @@ public class Region {
 					//don't add this node and break now
 					break;
 				}
-				if(truncHere == truncStart || tries > 50) { 
+				if(truncHere == truncStart || tries > 50) {
 					ret.Add(pn);
-					break; 
+					break;
 				}
 				tries++;
 			}
@@ -924,14 +983,14 @@ public class Region {
 		}
 		return ret;
 	}
-	
+
 	bool FindArcFromTo(
 		Vector3 startPos, Vector3 pos, Vector3 dir,
 		float d, float theta, float v, float g, float dt,
 		Dictionary<Vector3, PathNode> pickables
 	) {
 /*		Color c = new Color(Random.value, Random.value, Random.value, 0.6f);*/
-		
+
 		Vector3 prevPos = startPos;
 		float sTH = Mathf.Sin(theta);
 		float cosTH = Mathf.Cos(theta);
@@ -955,7 +1014,7 @@ public class Region {
 				}
 				pn.distance = xDist;
 			} else {
-				//through an invalid point? 
+				//through an invalid point?
 				//FIXME: will this work with big/tall tiles?
 				if(map.TileAt(testPos) != null) {
 					break;
@@ -988,7 +1047,7 @@ public class Region {
 		}
 		return false;
 	}
-	
+
 	public IEnumerable<PathNode> ArcReachableTilesAround(
 		Vector3 here,
 		Dictionary<Vector3, PathNode> pickables,

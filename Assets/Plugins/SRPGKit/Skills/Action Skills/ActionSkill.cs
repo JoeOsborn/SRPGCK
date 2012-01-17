@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 public enum TargetingMode {
-	Self, //self only	//TODO: not clear if "self" is really a target mode, since it's easy to imagine both self-cardinal and arbitrary-tile-cardinal
+	Self, //self only
 	Pick, //one of a number of tiles
 	Cardinal, //one of four angles, usually applied to a cone or line targeting region inside of a sphere
 	Radial, //any Quaternion—usually applied to a cone or a line targeting region inside of a sphere
@@ -292,7 +292,7 @@ public class ActionSkill : Skill {
 						} else {
 							firstClickTime = -1;
 							if(!waypointsAreIncremental && !immediatelyExecuteDrawnPath &&
-									waypoints.Count > 0 && 
+									waypoints.Count > 0 &&
 									waypoints[waypoints.Count-1].pos == hitSpot) {
 								UnwindToLastWaypoint();
 							} else {
@@ -399,11 +399,12 @@ public class ActionSkill : Skill {
 		switch(targetingMode) {
 			case TargetingMode.Self:
 				if(supportKeyboard && Input.GetButtonDown("Confirm")) {
+					endOfPath = new PathNode(character.TilePosition, null, 0);
 					if(awaitingConfirmation || !requireConfirmation) {
 						awaitingConfirmation = false;
-						Pick(character.TilePosition);
+						Pick(endOfPath);
 					} else {
-						TentativePick(character.TilePosition);
+						TentativePick(endOfPath);
 						awaitingConfirmation = true;
 					}
 				}
@@ -467,8 +468,9 @@ public class ActionSkill : Skill {
 				break;
 			case TargetingMode.SelectRegion:
 				//TODO: change selected region
-				//keyboard: cycle
+				//keyboard: cycle in order
 				//mouse: pick
+				Debug.LogError("Region selection not yet supported");
 				break;
 			case TargetingMode.Pick:
 			case TargetingMode.Path:
@@ -503,7 +505,7 @@ public class ActionSkill : Skill {
 						ResetPosition();
 					}
 				} else {
-					//we can assume we've already moved a bit, 
+					//we can assume we've already moved a bit,
 					//so we'll just finish up by stopping here.
 					//the semantic isn't exactly cancelling, but it's close enough.
 					ExecutePathTo(new PathNode(Executor.position, null, 0));
@@ -543,8 +545,8 @@ public class ActionSkill : Skill {
 	}
 
 	virtual protected PathNode[] GetPresentedActionTiles() {
-		return displayUnimpededTargetRegion ? 
-		  targetRegion.GetTilesInRegion() : 
+		return displayUnimpededTargetRegion ?
+		  targetRegion.GetTilesInRegion() :
 		  GetValidActionTiles();
 	}
 	virtual protected PathNode[] GetValidActionTiles() {
@@ -592,7 +594,7 @@ public class ActionSkill : Skill {
 			}
 		}
 	}
-	
+
 	virtual public void PresentMoves() {
 		CreateOverlay();
 		awaitingConfirmation = false;
@@ -607,7 +609,9 @@ public class ActionSkill : Skill {
 		switch(targetingMode) {
 			case TargetingMode.Self:
 				if(requireConfirmation) {
-					TentativePick(character.TilePosition);
+					endOfPath = new PathNode(character.TilePosition, null, 0);
+					TentativePick(endOfPath);
+					awaitingConfirmation = true;
 				} else {
 					Pick(character.TilePosition);
 				}
@@ -630,8 +634,8 @@ public class ActionSkill : Skill {
 		}
 		ResetPosition();
 	}
-	
-	
+
+
 	protected virtual void ActivateTargetCustom() {
 	}
 	protected virtual void UpdateTargetCustom() {
@@ -661,14 +665,18 @@ public class ActionSkill : Skill {
 
 	public void Pick(Vector3 p) {
 		selectedTile = p;
+		//FIXME: support disjoint effect areas
 		targetTiles = targetRegion.ActualTilesForTargetedTiles(new PathNode[]{endOfPath});
+		//FIXME: support disjoint effect areas
 		targetTiles = effectRegion.GetValidTiles(targetTiles[0].pos);
 		ApplySkill();
 	}
 
 	public void Pick(PathNode pn) {
 		selectedTile = pn.pos;
+		//FIXME: support disjoint effect areas
 		targetTiles = targetRegion.ActualTilesForTargetedTiles(new PathNode[]{pn});
+		//FIXME: support disjoint effect areas
 		targetTiles = effectRegion.GetValidTiles(targetTiles[0].pos);
 		ApplySkill();
 	}
