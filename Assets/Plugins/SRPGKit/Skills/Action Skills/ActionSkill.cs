@@ -4,17 +4,19 @@ using System.Collections.Generic;
 using System.Linq;
 
 public enum TargetingMode {
-	Self, //self only
+	Self, //self only, suggests a Self-type targeting region.
 	Pick, //one of a number of tiles
-	Cardinal, //one of four angles, usually applied to a cone or line targeting region inside of a sphere
-	Radial, //any Quaternion—usually applied to a cone or a line targeting region inside of a sphere
-	SelectRegion, //one of a number of regions
-	Path, //a specific path
-	Custom
+	Cardinal, //one of four angles, usually applied to a cone or line targeting region
+	Radial, //any Quaternion—usually applied to a cone or a line targeting region
+	SelectRegion, //one of a number of regions, requires a Compound-type targeting region.
+	Path, //a specific path, most sensibly applied to line, cone, sphere, or cylinder targeting regions
+	Custom //subclass responsibility
 };
 //waypoints are orthogonal to targeting mode, but only work for Pick and Path.
 
 public class ActionSkill : Skill {
+	[HideInInspector]
+	public PathNode[] destinations;
 	public float keyboardMoveSpeed=10.0f;
 
 	public bool lockToGrid=true;
@@ -131,17 +133,19 @@ public class ActionSkill : Skill {
 
 	public Formula maxWaypointDistance;
 
+	public int selectedSubregion;
+
 	public override void Start() {
 		base.Start();
 		if(targetRegion == null) {
 			targetRegion = new Region();
 		}
-		targetRegion.owner = this;
+		targetRegion.Owner = this;
 		if(effectRegion == null) {
 			effectRegion = new Region();
 			effectRegion.IsEffectRegion = true;
 		}
-		effectRegion.owner = this;
+		effectRegion.Owner = this;
 		/*
 		executor = new MoveExecutor();
 		executor.owner = this;
@@ -199,18 +203,18 @@ public class ActionSkill : Skill {
 				break;
 			case TargetingMode.Pick:
 			case TargetingMode.Path:
+			case TargetingMode.SelectRegion:
 				//??
 				break;
 			case TargetingMode.Cardinal://??
 			case TargetingMode.Radial://??
-			case TargetingMode.SelectRegion://??
 				break;
 			case TargetingMode.Custom:
 				ActivateTargetCustom();
 				break;
 		}
-		targetRegion.owner = this;
-		effectRegion.owner = this;
+		targetRegion.Owner = this;
+		effectRegion.Owner = this;
 
 		PresentMoves();
 	}
@@ -236,8 +240,8 @@ public class ActionSkill : Skill {
 	public override void Update() {
 		base.Update();
 		if(!isActive) { return; }
-		targetRegion.owner = this;
-		effectRegion.owner = this;
+		targetRegion.Owner = this;
+		effectRegion.Owner = this;
 		if(character == null || !character.isActive) { return; }
 		if(!arbiter.IsLocalPlayer(character.EffectiveTeamID)) {
 			return;
@@ -250,7 +254,7 @@ public class ActionSkill : Skill {
 	protected virtual void UpdatePickOrPath() {
 		if(supportMouse) {
 			if(Input.GetMouseButton(0)) {
-				if(targetingMode == TargetingMode.Pick) {
+				if(targetingMode == TargetingMode.Pick || targetingMode == TargetingMode.SelectRegion) {
 					cycleIndicatorZ = false;
 				}
 				Ray r = Camera.main.ScreenPointToRay(Input.mousePosition);
@@ -310,7 +314,7 @@ public class ActionSkill : Skill {
 		if(supportKeyboard &&
 			(h != 0 || v != 0) &&
 			(!awaitingConfirmation || !requireConfirmation)) {
-			if(targetingMode == TargetingMode.Pick) {
+			if(targetingMode == TargetingMode.Pick || targetingMode == TargetingMode.SelectRegion) {
 				cycleIndicatorZ = true;
 				indicatorCycleT = 0;
 			}
@@ -367,7 +371,7 @@ public class ActionSkill : Skill {
 				}
 			}
 		}
-		if(targetingMode == TargetingMode.Pick &&
+		if((targetingMode == TargetingMode.Pick || targetingMode == TargetingMode.SelectRegion) &&
 				cycleIndicatorZ &&
 				(!awaitingConfirmation || !requireConfirmation)) {
 			indicatorCycleT += Time.deltaTime;
@@ -467,11 +471,6 @@ public class ActionSkill : Skill {
 				}
 				break;
 			case TargetingMode.SelectRegion:
-				//TODO: change selected region
-				//keyboard: cycle in order
-				//mouse: pick
-				Debug.LogError("Region selection not yet supported");
-				break;
 			case TargetingMode.Pick:
 			case TargetingMode.Path:
 				UpdatePickOrPath();
@@ -560,7 +559,7 @@ public class ActionSkill : Skill {
 		//TODO: overlays for weird region types, including compound
 		if(overlay != null) { return; }
 		if(lockToGrid) {
-			PathNode[] destinations = GetPresentedActionTiles();
+			destinations = GetPresentedActionTiles();
 			overlay = map.PresentGridOverlay(
 				skillName, character.gameObject.GetInstanceID(),
 				overlayColor,
@@ -616,12 +615,12 @@ public class ActionSkill : Skill {
 					Pick(character.TilePosition);
 				}
 				break;
+			case TargetingMode.SelectRegion://??
 			case TargetingMode.Pick:
 				cycleIndicatorZ = false;
 				break;
 			case TargetingMode.Cardinal://??
 			case TargetingMode.Radial://??
-			case TargetingMode.SelectRegion://??
 				break;
 			case TargetingMode.Path:
 				lines = probe.gameObject.AddComponent<LineRenderer>();
@@ -665,22 +664,39 @@ public class ActionSkill : Skill {
 
 	public void Pick(Vector3 p) {
 		selectedTile = p;
-		//FIXME: support disjoint effect areas
 		targetTiles = targetRegion.ActualTilesForTargetedTiles(new PathNode[]{endOfPath});
-		//FIXME: support disjoint effect areas
-		targetTiles = effectRegion.GetValidTiles(targetTiles[0].pos);
+		targetTiles = effectRegion.GetValidTiles(targetTiles);
 		ApplySkill();
 	}
 
 	public void Pick(PathNode pn) {
 		selectedTile = pn.pos;
-		//FIXME: support disjoint effect areas
 		targetTiles = targetRegion.ActualTilesForTargetedTiles(new PathNode[]{pn});
-		//FIXME: support disjoint effect areas
-		targetTiles = effectRegion.GetValidTiles(targetTiles[0].pos);
+		targetTiles = effectRegion.GetValidTiles(targetTiles);
+		ApplySkill();
+	}
+
+	public void TentativePickSubregion(int subregionIndex) {
+		if(subregionIndex < 0 || subregionIndex >= targetRegion.regions.Length) {
+			Debug.LogError("Subregion "+subregionIndex+" out of bounds "+targetRegion.regions.Length);
+		}
+		targetTiles = targetRegion.regions[subregionIndex].GetValidTiles();
+		targetTiles = effectRegion.GetValidTiles(targetTiles);
+		_GridOverlay.SetSelectedPoints(map.CoalesceTiles(targetTiles));
+	}
+
+	public void PickSubregion(int subregionIndex) {
+		if(subregionIndex < 0 || subregionIndex >= targetRegion.regions.Length) {
+			Debug.LogError("Subregion "+subregionIndex+" out of bounds "+targetRegion.regions.Length);
+		}
+		targetTiles = targetRegion.ActualTilesForTargetedTiles(targetRegion.regions[subregionIndex].GetValidTiles());
+		targetTiles = effectRegion.GetValidTiles(targetTiles);
 		ApplySkill();
 	}
 	//targeting facings, unlike character facings (for now at least!), may be arbitrary quaternions
+
+	//TODO: work with targeting region to select tiles for facing-picks
+
 	public void TentativePickFacing(Quaternion f) {
 		targetTiles = effectRegion.GetValidTiles(f);
 		_GridOverlay.SetSelectedPoints(map.CoalesceTiles(targetTiles));
@@ -876,16 +892,42 @@ public class ActionSkill : Skill {
 			UpdateOverlayParameters();
 		}
 	}
-	virtual protected void TemporaryExecutePathTo(PathNode p) {
+	protected int SubregionContaining(Vector3 p) {
+		Vector3 tp = new Vector3((int)p.x, (int)p.y, (int)p.z);
+		foreach(PathNode pn in destinations) {
+			if(pn.pos == tp) {
+				return pn.subregion;
+			}
+		}
+		return -1;
+	}
+	virtual protected void TemporaryExecutePathTo(PathNode pn) {
 		//pick? face? dunno?
-		TentativePick(p);
+		if(targetingMode == TargetingMode.SelectRegion) {
+			int sr = SubregionContaining(pn.pos);
+			if(sr == -1) { return; }
+			TentativePickSubregion(sr);
+		} else {
+			TentativePick(pn);
+		}
 	}
 
 	virtual protected void IncrementalExecutePathTo(PathNode pn) {
-		TentativePick(pn); //??
+		//??
+		if(targetingMode == TargetingMode.SelectRegion) {
+			int sr = SubregionContaining(pn.pos);
+			if(sr == -1) { return; }
+			TentativePickSubregion(sr);
+		} else {
+			TentativePick(pn);
+		}
 	}
 	virtual protected void ExecutePathTo(PathNode pn) {
-		Pick(pn);
+		if(targetingMode == TargetingMode.SelectRegion) {
+			PickSubregion(SubregionContaining(pn.pos));
+		} else {
+			Pick(pn);
+		}
 	}
 
 	protected void UpdateOverlayParameters() {
@@ -940,20 +982,24 @@ public class ActionSkill : Skill {
 		if(immediatelyExecuteDrawnPath) {
 			IncrementalExecutePathTo(new PathNode(newDest, null, 0));
 		}
-		if(ShouldDrawPath) {
-			//update the overlay
-			UpdateOverlayParameters();
-			if(lockToGrid) {
-				Vector4[] selPts = _GridOverlay.selectedPoints ?? new Vector4[0];
-				_GridOverlay.SetSelectedPoints(selPts.Concat(
-					new Vector4[]{new Vector4(newDest.x, newDest.y, newDest.z, 1)}
-				).ToArray());
-			}
+		if(targetingMode == TargetingMode.SelectRegion) {
+			TemporaryExecutePathTo(endOfPath);
 		} else {
-			if(lockToGrid) {
-				_GridOverlay.SetSelectedPoints(
-					new Vector4[]{new Vector4(newDest.x, newDest.y, newDest.z, 1)}
-				);
+			if(ShouldDrawPath) {
+				//update the overlay
+				UpdateOverlayParameters();
+				if(lockToGrid) {
+					Vector4[] selPts = _GridOverlay.selectedPoints ?? new Vector4[0];
+					_GridOverlay.SetSelectedPoints(selPts.Concat(
+						new Vector4[]{new Vector4(newDest.x, newDest.y, newDest.z, 1)}
+					).ToArray());
+				}
+			} else {
+				if(lockToGrid) {
+					_GridOverlay.SetSelectedPoints(
+						new Vector4[]{new Vector4(newDest.x, newDest.y, newDest.z, 1)}
+					);
+				}
 			}
 		}
 		if(probe != null) {

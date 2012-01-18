@@ -50,20 +50,20 @@ public class Skill : MonoBehaviour {
 
 	public virtual void Start() {
 		if(reactionTargetRegion!=null) {
-			reactionTargetRegion.owner = this;
+			reactionTargetRegion.Owner = this;
 		}
 		if(reactionEffectRegion!=null) {
-			reactionEffectRegion.owner = this;
+			reactionEffectRegion.Owner = this;
 		}
 	}
 	public virtual void ActivateSkill() {
 		if(isPassive) { return; }
 		isActive = true;
 		if(reactionTargetRegion != null) {
-			reactionTargetRegion.owner = this;
+			reactionTargetRegion.Owner = this;
 		}
 		if(reactionEffectRegion != null) {
-			reactionEffectRegion.owner = this;
+			reactionEffectRegion.Owner = this;
 		}
 	}
 	public virtual void DeactivateSkill() {
@@ -75,10 +75,10 @@ public class Skill : MonoBehaviour {
 	}
 	public virtual void Update() {
 		if(reactionTargetRegion != null) {
-			reactionTargetRegion.owner = this;
+			reactionTargetRegion.Owner = this;
 		}
 		if(reactionEffectRegion != null) {
-			reactionEffectRegion.owner = this;
+			reactionEffectRegion.Owner = this;
 		}
 	}
 	public virtual void Cancel() {
@@ -126,8 +126,8 @@ public class Skill : MonoBehaviour {
 				int hitType = (int)GetParam("reaction.hitType", 0);
 				currentHitType = hitType;
 				if(reactionEffects[hitType].Length > 0) {
-					reactionTargetRegion.owner = this;
-					reactionEffectRegion.owner = this;
+					reactionTargetRegion.Owner = this;
+					reactionEffectRegion.Owner = this;
 					PathNode[] reactionTiles = reactionTargetRegion.GetValidTiles();
 					reactionTiles = reactionTargetRegion.ActualTilesForTargetedTiles(reactionTiles);
 					List<Character> tentativeTargets = reactionTargetRegion.CharactersForTargetedTiles(reactionTiles);

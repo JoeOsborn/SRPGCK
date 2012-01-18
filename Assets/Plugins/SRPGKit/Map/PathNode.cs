@@ -19,11 +19,13 @@ public class PathNode {
 
 	public float altitude = 0;
 	public float velocity = 0;
-	
+
 	public float bonusRange=0;
 	public float radius=0;
 	public float angle=0;
-	
+
+	public int subregion=-1;
+
 	//used for cone and line; describes offset from centerline of directed region
 	public Vector3 centerOffset=Vector3.zero;
 
@@ -34,6 +36,7 @@ public class PathNode {
 	public int dz {
 		get { return (int)Mathf.Abs(signedDZ); }
 	}
+	public int Subregion { get { return subregion == -1 ? (prev != null ? prev.subregion : -1) : subregion; }}
 	public int signedDZ {
 		get { return SignedDZFrom(prev != null && prev != this ? prev.pos : pos); }
 	}

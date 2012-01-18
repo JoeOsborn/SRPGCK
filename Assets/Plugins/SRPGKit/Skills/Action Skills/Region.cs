@@ -9,8 +9,8 @@ public enum RegionType {
 	Line,
 	Cone,
 	Self,
-	Predicate,
-	Compound
+	Predicate, //actually "CylinderPredicate"--applies predicate to tiles within standard cylindrical region
+	Compound //merges subregions based on their types, ignoring their intervening space types.
 };
 
 public enum InterveningSpaceType {
@@ -22,9 +22,16 @@ public enum InterveningSpaceType {
 
 [System.Serializable]
 public class Region {
-	[System.NonSerialized]
-	[HideInInspector]
-	public Skill owner;
+	protected Skill owner;
+	public Skill Owner {
+		get { return owner; }
+		set {
+			owner = value;
+			foreach(Region r in regions) {
+				r.Owner = owner;
+			}
+		}
+	}
 
 	public RegionType type=RegionType.Cylinder;
 
@@ -39,7 +46,7 @@ public class Region {
 	public bool useAbsoluteDZ=true;
 
 	//these mean the same for pathable and non-pathable regions
-	//they don't apply to self, predicate, or compound.
+	//they don't apply to self or predicate.
 	public bool canCrossWalls=true;
 	public bool canCrossEnemies=true;
 
@@ -63,6 +70,11 @@ public class Region {
 	//as a bonus, in the scope of a region lookup the skill's "current target" is the character on a given tile
 	//it should return 0 (false) or non-0 (true)
 	public Formula predicateF;
+
+	//only used for compound regions. subregions of a compound region may only
+	//generate tiles, and may not apply their intervening space modes.
+	//more complex uses of compound spaces should subclass Skill or Region.
+	public Region[] regions;
 
 	public float radiusMin { get { return radiusMinF.GetValue(owner, null, null); } }
 	public float radiusMax { get { return radiusMaxF.GetValue(owner, null, null); } }
@@ -93,35 +105,6 @@ public class Region {
 		new Vector2( 0, 1)
 	};
 
-/*	readonly Vector3[] XYZNeighbors = {
-		new Vector3(-1,-1, 0),
-		new Vector3( 0,-1, 0),
-		new Vector3( 1,-1, 0),
-		new Vector3(-1, 0, 0),
-		new Vector3( 1, 0, 0),
-		new Vector3(-1, 1, 0),
-		new Vector3( 0, 1, 0),
-		new Vector3( 1, 1, 0),
-
-		new Vector3(-1,-1, 1),
-		new Vector3( 0,-1, 1),
-		new Vector3( 1,-1, 1),
-		new Vector3(-1, 0, 1),
-		new Vector3( 1, 0, 1),
-		new Vector3(-1, 1, 1),
-		new Vector3( 0, 1, 1),
-		new Vector3( 1, 1, 1),
-
-		new Vector3(-1,-1,-1),
-		new Vector3( 0,-1,-1),
-		new Vector3( 1,-1,-1),
-		new Vector3(-1, 0,-1),
-		new Vector3( 1, 0,-1),
-		new Vector3(-1, 1,-1),
-		new Vector3( 0, 1,-1),
-		new Vector3( 1, 1,-1)
-	};*/
-
 	public Region() {
 		type = RegionType.Cylinder;
 		interveningSpaceType = InterveningSpaceType.Pick;
@@ -139,12 +122,18 @@ public class Region {
 		zArcMaxF = Formula.Constant(0);
 		lineWidthMinF = Formula.Constant(0);
 		lineWidthMaxF = Formula.Constant(0);
+		predicateF = Formula.Constant(0);
 	}
 
 	public bool isEffectRegion=false;
 	public bool IsEffectRegion {
 		get { return isEffectRegion; }
-		set { isEffectRegion = value; }
+		set {
+			isEffectRegion = value;
+			foreach(Region r in regions) {
+				r.IsEffectRegion = value;
+			}
+		}
 	}
 
 	//FIXME: wrong because of reliance on z{Up|Down}{Max|Min}
@@ -195,8 +184,10 @@ public class Region {
 		owner.SetParam("arg.region.target.x", pos.x);
 		owner.SetParam("arg.region.target.y", pos.y);
 		owner.SetParam("arg.region.target.z", pos.z);
-		owner.SetParam("arg.region.angle.between.xy", Mathf.Atan2(pos.y-start.y, pos.x-start.x)*Mathf.Rad2Deg);
-		owner.SetParam("arg.region.angle.between.z", Mathf.Atan2(pos.z-start.z, xyDistance)*Mathf.Rad2Deg);
+		owner.SetParam("arg.region.angle.between.absolute.xy", Mathf.Atan2(pos.y-start.y, pos.x-start.x)*Mathf.Rad2Deg);
+		owner.SetParam("arg.region.angle.between.absolute.z", Mathf.Atan2(pos.z-start.z, xyDistance)*Mathf.Rad2Deg);
+		owner.SetParam("arg.region.angle.between.xy", Mathf.Atan2(pos.y-start.y, pos.x-start.x)*Mathf.Rad2Deg - owner.GetParam("arg.region.angle.xy"));
+		owner.SetParam("arg.region.angle.between.z", Mathf.Atan2(pos.z-start.z, xyDistance)*Mathf.Rad2Deg - owner.GetParam("arg.region.angle.z"));
 		float ret = predicateF.GetValue(owner, null, null);
 		owner.currentTarget = oldTarget;
 		return (ret != 0) ? PathDecision.Normal : PathDecision.Invalid;
@@ -320,8 +311,22 @@ public class Region {
 				pickables =	PredicateSatisfyingTilesAround(here, q, xyrmx, zrdmx, zrumx);
 				break;
 			case RegionType.Compound:
-				Debug.LogError("Compound region type not yet supported");
-				pickables = null;
+				pickables =	new Dictionary<Vector3, PathNode>();
+				for(int i = 0; i < regions.Length; i++) {
+					Region r = regions[i];
+					PathNode[] thesePickables = r.GetValidTiles(
+						here, q,
+						xyrmn, xyrmx,
+						zrdmn, zrdmx,
+						zrumn, zrumx,
+						lwmn, lwmx,
+						InterveningSpaceType.Pick
+					);
+					foreach(PathNode p in thesePickables) {
+						p.subregion = i;
+						pickables[p.pos] = p;
+					}
+				}
 				break;
 			default:
 				Debug.LogError("Unknown region type not supported");
@@ -360,6 +365,7 @@ public class Region {
 				break;
 		}
 		switch(type) {
+			case RegionType.Predicate:
 			case RegionType.Cylinder:
 				return picked.Where(delegate(PathNode n) {
 					float xyd = n.XYDistanceFrom(here);
@@ -397,6 +403,19 @@ public class Region {
 			default:
 				return picked.ToArray();
 		}
+	}
+
+	public virtual PathNode[] GetValidTiles(PathNode[] allTiles) {
+		Dictionary<Vector3, PathNode> union = new Dictionary<Vector3, PathNode>();
+		foreach(PathNode start in allTiles) {
+			//take union of all valid tiles
+			//TODO: in many cases, this will just be the passed-in tiles. optimize!
+			PathNode[] theseValid = GetValidTiles(start.pos);
+			foreach(PathNode v in theseValid) {
+				union[v.pos] = v;
+			}
+		}
+		return union.Values.ToArray();
 	}
 
 	public virtual List<Character> CharactersForTargetedTiles(PathNode[] tiles) {
@@ -828,7 +847,8 @@ public class Region {
 				//FIXME: use of zPhi (cos, cos, 0) is not correct -- consider pointing vertically. it shouldn't collapse to a single column!
 				Vector3 oxy = new Vector3(Mathf.Sin(xyTheta)*Mathf.Cos(zPhi)*lwo, Mathf.Cos(xyTheta)*Mathf.Cos(zPhi)*lwo, 0);
 				for(int zRad = -(int)zrdmx; zRad <= (int)zrumx; zRad++) {
-					Vector3 oz = new Vector3(0, 0, Mathf.Sin(zPhi)*zRad);
+					//FIXME: (sin,sin,cos) here may be way wrong-- it really depends on xyTheta as well!!
+					Vector3 oz = new Vector3(Mathf.Sin(zPhi)*zRad, Mathf.Sin(zPhi)*zRad, Mathf.Cos(zPhi)*zRad);
 					Vector3 pos = Round(new Vector3(
 						here.x+linePos.x+oxy.x+oz.x,
 						here.y+linePos.y+oxy.y+oz.y,
@@ -856,7 +876,7 @@ public class Region {
 						pn.canStop = false;
 					}
 					if(decision != PathDecision.Invalid) {
-						ret.Add(pos, pn);
+						ret[pos] = pn;
 					}
 				}
 			}
