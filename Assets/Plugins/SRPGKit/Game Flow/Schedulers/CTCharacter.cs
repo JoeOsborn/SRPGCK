@@ -9,15 +9,15 @@ public class CTCharacter : MonoBehaviour {
 	[HideInInspector]
 	[SerializeField]
 	protected bool _hasActed=false;
-	
+
 	Character character;
-	
+
 	void FindCharacter() {
 		if(character == null) {
 			character = GetComponent<Character>();
 		}
 	}
-	
+
 	virtual public float CT {
 		get {
 			FindCharacter();
@@ -56,7 +56,7 @@ public class CTCharacter : MonoBehaviour {
 			_hasActed = value;
 		}
 	}
-	
+
 	virtual public void Tick() {
 		if(CT < MaxCT) {
 			float speed = character.GetStat("speed");
@@ -64,9 +64,9 @@ public class CTCharacter : MonoBehaviour {
 			foreach(StatusEffect se in character.StatusEffects) {
 				se.Tick(se.ticksInLocalTime ? speed : 1);
 			}
-		}	
+		}
 	}
-	
+
 	virtual public float PerActivationCTCost {
 		get {
 			return ((CTScheduler)GetComponent<Character>().map.scheduler).defaultPerActivationCTCost;
