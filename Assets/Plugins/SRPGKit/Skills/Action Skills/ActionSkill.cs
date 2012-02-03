@@ -484,9 +484,10 @@ public class ActionSkill : Skill {
 				if(!Mathf.Approximately(oldFacing, character.Facing)) {
 					TentativePickFacing(character.Facing);
 				}
+				float df = Mathf.Abs(Mathf.DeltaAngle(targetFacing,character.Facing));
 				if(supportMouse &&
 				   Input.GetMouseButtonDown(0) &&
-				   Mathf.Abs(targetFacing-character.Facing) < facingClosenessThreshold) {
+				   df < facingClosenessThreshold) {
 					if(Time.time-firstClickTime > doubleClickThreshold) {
 						firstClickTime = Time.time;
 					} else {
@@ -502,7 +503,7 @@ public class ActionSkill : Skill {
 				}
 				if(supportKeyboard &&
 					 Input.GetButtonDown("Confirm") &&
-				   Mathf.Abs(targetFacing-character.Facing) < facingClosenessThreshold) {
+				   df < facingClosenessThreshold) {
 					if(awaitingConfirmation || !requireConfirmation) {
 						awaitingConfirmation = false;
 						PickFacing(character.Facing);
@@ -558,6 +559,10 @@ public class ActionSkill : Skill {
 				targetTiles = new PathNode[0];
 				if(lockToGrid && _GridOverlay != null) {
 					_GridOverlay.SetSelectedPoints(new Vector4[0]);
+				}
+				if(targetingMode == TargetingMode.Cardinal ||
+					 targetingMode == TargetingMode.Radial) {
+			 		TentativePickFacing(character.Facing);
 				}
 			} else {
 				//Back out of skill!
