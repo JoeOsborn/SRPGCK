@@ -202,11 +202,11 @@ public class DebugGUI : MonoBehaviour {
 							bool yesButton=false, noButton=false;
 							OnGUIConfirmation("Confirm?", out yesButton, out noButton);
 							if(yesButton) {
-					  	ask.AwaitingConfirmation = false;
+					  		ask.AwaitingConfirmation = false;
 								ask.ApplySkill();
 							}
 							if(noButton) {
-					  	ask.AwaitingConfirmation = false;
+					  		ask.AwaitingConfirmation = false;
 							}
 						}
 						showAnySchedulerButtons = false;

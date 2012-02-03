@@ -279,7 +279,7 @@ public class Region {
 		//nodes get picked next time around—i.e. how prevs get set up.
 
 		//TODO: all should operate with continuous generators as well as grid-based generators
-		Vector3 here = Trunc(tc);
+		Vector3 here = SRPGUtil.Trunc(tc);
 		Dictionary<Vector3, PathNode> pickables = null;
 		switch(type) {
 			case RegionType.Cylinder:
@@ -458,37 +458,6 @@ public class Region {
 			ToArray();
 	}
 
-	Vector3 Trunc(Vector3 v) {
-		return new Vector3((int)v.x, (int)v.y, (int)v.z);
-	}
-
-	Vector3 Round(Vector3 v) {
-		return new Vector3(Mathf.Round(v.x), Mathf.Round(v.y), Mathf.Round(v.z));
-	}
-
-	float WrapAngle(float f) {
-		if(float.IsNaN(f)) { Debug.LogError("NAN!"); }
-		if(float.IsInfinity(f)) { Debug.LogError("INFINITY!"); }
-		float r = f;
-		while(r < 0) { r += 360; }
-		if(r >= 360) { r -= 360; }
-		return r;
-	}
-
-	bool AngleBetween(float a, float mn, float mx) { //ccw
-		float ang = WrapAngle(a);
-		float min = WrapAngle(mn);
-		float max = WrapAngle(mx);
-		//does a ccw (+) sweep from min to max pass through ang?
-		//0..ang..360
-		if(min <= max && (ang >= min && ang <= max)) { return true; }
-		//270..ang..90
-		if(min >= max && (ang <= max || ang >= min)) {
-			return true;
-		}
-		return false;
-	}
-
 #region Pathing and movement
 
   void TryAddingJumpPaths(
@@ -628,7 +597,7 @@ public class Region {
 				//Debug.Log("search at "+px+", "+py + " (d "+n2.x+","+n2.y+")");
 
 				foreach(int adjZ in map.ZLevelsWithin((int)px, (int)py, (int)pn.pos.z, -1)) {
-					Vector3 pos = Trunc(new Vector3(px, py, adjZ));
+					Vector3 pos = SRPGUtil.Trunc(new Vector3(px, py, adjZ));
 					float dz = useAbsoluteDZ ? map.SignedDZForMove(pos, start) : map.SignedDZForMove(pos, pn.pos);
 					if(dz > 0 && dz > zUpMax) { continue; }
 					if(dz < 0 && Mathf.Abs(dz) > zDownMax) { continue; }
@@ -685,7 +654,7 @@ public class Region {
 	) {
 		var ret = new List<PathNode>();
 		//we bump start up by 1 in z so that the line can come from the head rather than the feet
-		Vector3 truncStart = Trunc(here);
+		Vector3 truncStart = SRPGUtil.Trunc(here);
 		var sortedPickables = pickables.Values.
 			OrderBy(p => p.XYDistanceFrom(here)).
 			ThenBy(p => Mathf.Abs(p.SignedDZFrom(here)));
@@ -849,7 +818,7 @@ public class Region {
 				for(int zRad = -(int)zrdmx; zRad <= (int)zrumx; zRad++) {
 					//FIXME: (sin,sin,cos) here may be way wrong-- it really depends on xyTheta as well!!
 					Vector3 oz = new Vector3(Mathf.Sin(zPhi)*zRad, Mathf.Sin(zPhi)*zRad, Mathf.Cos(zPhi)*zRad);
-					Vector3 pos = Round(new Vector3(
+					Vector3 pos = SRPGUtil.Round(new Vector3(
 						here.x+linePos.x+oxy.x+oz.x,
 						here.y+linePos.y+oxy.y+oz.y,
 						here.z+linePos.z+oxy.z+oz.z
@@ -920,10 +889,10 @@ public class Region {
 			float fwd = n.radius*Mathf.Cos(n.angle);
 			float signedDZ = n.centerOffset.z;
 			return xyd <= xyrmx+n.bonusRange &&
-			  (AngleBetween(xyAng, xyDirection+xyArcMin-xyArcTolerance, xyDirection+xyArcMax+xyArcTolerance) ||
-			   AngleBetween(xyAng, xyDirection-xyArcMax-xyArcTolerance, xyDirection-xyArcMin+xyArcTolerance)) &&
-			  (AngleBetween(zAng, zDirection+zArcMin-zArcTolerance, zDirection+zArcMax+zArcTolerance) ||
-			   AngleBetween(zAng, zDirection-zArcMax-zArcTolerance, zDirection-zArcMin+zArcTolerance)) &&
+			  (SRPGUtil.AngleBetween(xyAng, xyDirection+xyArcMin-xyArcTolerance, xyDirection+xyArcMax+xyArcTolerance) ||
+			   SRPGUtil.AngleBetween(xyAng, xyDirection-xyArcMax-xyArcTolerance, xyDirection-xyArcMin+xyArcTolerance)) &&
+			  (SRPGUtil.AngleBetween(zAng, zDirection+zArcMin-zArcTolerance, zDirection+zArcMax+zArcTolerance) ||
+			   SRPGUtil.AngleBetween(zAng, zDirection-zArcMax-zArcTolerance, zDirection-zArcMin+zArcTolerance)) &&
  				(rFwdClipMax <= 0 || fwd <= (rFwdClipMax+1)) &&
 			  signedDZ >= -zrdmx && signedDZ <= zrumx;
 		}).ToDictionary(pair => pair.Key, pair => pair.Value);
@@ -946,7 +915,7 @@ public class Region {
 	) {
 		var ret = new List<PathNode>();
 		//we bump start up by 1 in z so that the line can come from the head rather than the feet
-		Vector3 truncStart = Trunc(start+new Vector3(0,0,1));
+		Vector3 truncStart = SRPGUtil.Trunc(start+new Vector3(0,0,1));
 		var sortedPickables = pickables.Values.
 			OrderBy(p => p.XYDistanceFrom(start)).
 			ThenBy(p => Mathf.Abs(p.SignedDZFrom(start)));
@@ -954,7 +923,7 @@ public class Region {
 		foreach(PathNode pn in sortedPickables) {
 			if(pn.prev != null) { continue; }
 			Vector3 here = pn.pos;
-			Vector3 truncHere = Trunc(here);
+			Vector3 truncHere = SRPGUtil.Trunc(here);
 			if(truncHere == truncStart) {
 				ret.Add(pn);
 				continue;
@@ -968,7 +937,7 @@ public class Region {
 			int tries = 0;
 			while(truncHere != truncStart) {
 				here += d;
-				truncHere = Round(here);
+				truncHere = SRPGUtil.Round(here);
 				if(prevTrunc == truncHere) { continue; }
 				prevTrunc = truncHere;
 				PathNode herePn = null;
@@ -1023,7 +992,7 @@ public class Region {
 			float xr = xDist / d;
 			//y(t) = v*sin(45)*t - (g*t^2)/2
 			float y = v * sTH * t - (g * t * t)/2.0f;
-			Vector3 testPos = Round(new Vector3(startPos.x, startPos.y, startPos.z+y) + xr*dir);
+			Vector3 testPos = SRPGUtil.Round(new Vector3(startPos.x, startPos.y, startPos.z+y) + xr*dir);
 			if(testPos == prevPos && t != 0) { t += dt; continue; }
 /*			Debug.DrawLine(map.TransformPointWorld(prevPos), map.TransformPointWorld(testPos), c, 1.0f);*/
 			PathNode pn = null;

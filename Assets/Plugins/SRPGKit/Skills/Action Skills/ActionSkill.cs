@@ -6,8 +6,8 @@ using System.Linq;
 public enum TargetingMode {
 	Self, //self only, suggests a Self-type targeting region.
 	Pick, //one of a number of tiles
-	Cardinal, //one of four angles, usually applied to a cone or line targeting region
-	Radial, //any Quaternion—usually applied to a cone or a line targeting region
+	Cardinal, //one of a set number of angles when applied to a cone or line targeting region OR one of a set number of subregions when applied to a compound region. jumps directly to the input angle.
+	Radial, //any Quaternion—usually applied to a cone or a line targeting region OR to a compound region. input rotates the target angle by an amount.
 	SelectRegion, //one of a number of regions, requires a Compound-type targeting region.
 	Path, //a specific path, most sensibly applied to line, cone, sphere, or cylinder targeting regions
 	Custom //subclass responsibility
@@ -41,7 +41,9 @@ public class ActionSkill : Skill {
 
 	//cardinal/radial targeting mode
 	[HideInInspector]
-	public float initialFacing;
+	public float initialFacing, targetFacing;
+
+	const float facingClosenessThreshold = 1;
 
 	//tile generation region (line/range/cone/etc)
 	public Region targetRegion, effectRegion;
@@ -83,7 +85,12 @@ public class ActionSkill : Skill {
 	public bool RequireConfirmation { get { return requireConfirmation; } }
 	public bool AwaitingConfirmation {
 		get { return awaitingConfirmation; }
-		set { awaitingConfirmation = value; }
+		set {
+			if(!value && awaitingConfirmation) {
+				IncrementalCancel();
+			}
+			awaitingConfirmation = value;
+		}
 	}
 	public float IndicatorCycleLength { get { return indicatorCycleLength; } }
 
@@ -132,6 +139,11 @@ public class ActionSkill : Skill {
 	public float NewNodeThreshold { get { return lockToGrid ? 1 : newNodeThreshold; } }
 
 	public Formula maxWaypointDistance;
+
+	public Formula rotationSpeedXYF;
+	public float rotationSpeedXY { get {
+		return rotationSpeedXYF.GetValue(this, null, null);
+	} }
 
 	public int selectedSubregion;
 
@@ -208,6 +220,7 @@ public class ActionSkill : Skill {
 				break;
 			case TargetingMode.Cardinal://??
 			case TargetingMode.Radial://??
+				targetFacing = initialFacing;
 				break;
 			case TargetingMode.Custom:
 				ActivateTargetCustom();
@@ -402,19 +415,24 @@ public class ActionSkill : Skill {
 		float v = Input.GetAxis("Vertical");
 		switch(targetingMode) {
 			case TargetingMode.Self:
-				if(supportKeyboard && Input.GetButtonDown("Confirm")) {
-					endOfPath = new PathNode(character.TilePosition, null, 0);
-					if(awaitingConfirmation || !requireConfirmation) {
-						awaitingConfirmation = false;
-						Pick(endOfPath);
-					} else {
+				if(requireConfirmation) {
+					if(!awaitingConfirmation) {
+						endOfPath = new PathNode(character.TilePosition, null, 0);
 						TentativePick(endOfPath);
 						awaitingConfirmation = true;
 					}
+				} else {
+					Pick(character.TilePosition);
+				}
+				if(supportKeyboard && Input.GetButtonDown("Confirm")) {
+					endOfPath = new PathNode(character.TilePosition, null, 0);
+					awaitingConfirmation = false;
+					Pick(endOfPath);
 				}
 				break;
 			case TargetingMode.Cardinal:
 			case TargetingMode.Radial:
+				float oldFacing = character.Facing;
 				if(supportKeyboard && (h != 0 || v != 0) &&
 					(!awaitingConfirmation || !requireConfirmation)) {
 					Vector2 d = TransformKeyboardAxes(h, v);
@@ -423,8 +441,19 @@ public class ActionSkill : Skill {
 							if(Mathf.Abs(d.x) > Mathf.Abs(d.y)) { d.x = Mathf.Sign(d.x); d.y = 0; }
 							else { d.x = 0; d.y = Mathf.Sign(d.y); }
 						}
+						targetFacing = Mathf.Atan2(d.y, d.x)*Mathf.Rad2Deg;
+					} else {
+						//adjust facing by d.x
+						if(lockToGrid) {
+							if((Time.time-lastIndicatorKeyboardMove) > indicatorKeyboardMoveThreshold) {
+								targetFacing += d.x < 0 ? 90 : (d.x > 0 ? -90 : 0);
+								lastIndicatorKeyboardMove = Time.time;
+							}
+						} else {
+							targetFacing += rotationSpeedXY*d.x*Time.deltaTime;
+						}
+//						targetFacingZ += rotationSpeedZ*d.y*Time.deltaTime;
 					}
-					FaceDirection(Mathf.Atan2(d.y, d.x)*Mathf.Rad2Deg);
 				}
 				if(supportMouse &&
 					Input.GetMouseButton(0)) {
@@ -436,31 +465,44 @@ public class ActionSkill : Skill {
 						d.y /= Screen.height/2.0f;
 						d.y -= 1;
 						d = TransformKeyboardAxes(d.x, d.y);
-						if(targetingMode == TargetingMode.Cardinal) {
+						if(targetingMode == TargetingMode.Cardinal || (targetingMode == TargetingMode.Radial && lockToGrid)) {
 							if(d.x != 0 && d.y != 0) {
 								if(Mathf.Abs(d.x) > Mathf.Abs(d.y)) { d.x = Mathf.Sign(d.x); d.y = 0; }
 								else { d.x = 0; d.y = Mathf.Sign(d.y); }
 							}
-						}
-						FaceDirection(Mathf.Atan2(d.y, d.x)*Mathf.Rad2Deg-90);
-					}
-					if(Input.GetMouseButtonDown(0)) {
-						if(Time.time-firstClickTime > doubleClickThreshold) {
-							firstClickTime = Time.time;
+							targetFacing = Mathf.Atan2(d.y, d.x)*Mathf.Rad2Deg-90;
 						} else {
-							firstClickTime = -1;
-							if(awaitingConfirmation) {
-								PickFacing(character.Facing);
-								awaitingConfirmation = false;
-							} else {
-								TentativePickFacing(character.Facing);
-								awaitingConfirmation = true;
-							}
+							targetFacing = Mathf.Atan2(d.y, d.x)*Mathf.Rad2Deg-90;
+						}
+					}
+				}
+				if(lockToGrid) {
+					FaceDirection(targetFacing);
+				} else {
+					FaceDirection(Mathf.MoveTowardsAngle(character.Facing, targetFacing, rotationSpeedXY*Time.deltaTime));
+				}
+				if(!Mathf.Approximately(oldFacing, character.Facing)) {
+					TentativePickFacing(character.Facing);
+				}
+				if(supportMouse &&
+				   Input.GetMouseButtonDown(0) &&
+				   Mathf.Abs(targetFacing-character.Facing) < facingClosenessThreshold) {
+					if(Time.time-firstClickTime > doubleClickThreshold) {
+						firstClickTime = Time.time;
+					} else {
+						firstClickTime = -1;
+						if(awaitingConfirmation) {
+							PickFacing(character.Facing);
+							awaitingConfirmation = false;
+						} else {
+							TentativePickFacing(character.Facing);
+							awaitingConfirmation = true;
 						}
 					}
 				}
 				if(supportKeyboard &&
-						Input.GetButtonDown("Confirm")) {
+					 Input.GetButtonDown("Confirm") &&
+				   Mathf.Abs(targetFacing-character.Facing) < facingClosenessThreshold) {
 					if(awaitingConfirmation || !requireConfirmation) {
 						awaitingConfirmation = false;
 						PickFacing(character.Facing);
@@ -481,46 +523,53 @@ public class ActionSkill : Skill {
 		}
 	}
 
+	protected virtual void IncrementalCancel() {
+		if(targetingMode == TargetingMode.Custom) {
+			CancelTargetCustom();
+		} else if(targetingMode == TargetingMode.Pick ||
+							targetingMode == TargetingMode.Path) {
+			if(canCancelWaypoints) {
+				if(requireConfirmation && awaitingConfirmation) {
+					awaitingConfirmation = false;
+					targetTiles = new PathNode[0];
+					if(performTemporarySteps) {
+						TemporaryExecutePathTo(new PathNode(Executor.position, null, 0));
+					}
+					ResetPosition();
+				} else if(waypoints.Count > 0 && !waypointsAreIncremental && !immediatelyExecuteDrawnPath) {
+					UnwindToLastWaypoint();
+				} else if(endOfPath == null || endOfPath.prev == null) {
+					Cancel();
+				} else {
+					ResetPosition();
+				}
+			} else {
+				//we can assume we've already moved a bit,
+				//so we'll just finish up by stopping here.
+				//the semantic isn't exactly cancelling, but it's close enough.
+				ExecutePathTo(new PathNode(Executor.position, null, 0));
+			}
+		} else if(targetingMode == TargetingMode.Self) {
+			//Back out of skill!
+			Cancel();
+		} else {
+			if(awaitingConfirmation && requireConfirmation) {
+				awaitingConfirmation = false;
+				targetTiles = new PathNode[0];
+				if(lockToGrid && _GridOverlay != null) {
+					_GridOverlay.SetSelectedPoints(new Vector4[0]);
+				}
+			} else {
+				//Back out of skill!
+				Cancel();
+			}
+		}
+	}
+
 	protected virtual void UpdateCancel() {
 		if(supportKeyboard &&
 				Input.GetButtonDown("Cancel")) {
-			if(targetingMode == TargetingMode.Custom) {
-				CancelTargetCustom();
-			} else if(targetingMode == TargetingMode.Pick ||
-								targetingMode == TargetingMode.Path) {
-				if(canCancelWaypoints) {
-					if(requireConfirmation && awaitingConfirmation) {
-						awaitingConfirmation = false;
-						targetTiles = new PathNode[0];
-						if(performTemporarySteps) {
-							TemporaryExecutePathTo(new PathNode(Executor.position, null, 0));
-						}
-						ResetPosition();
-					} else if(waypoints.Count > 0 && !waypointsAreIncremental && !immediatelyExecuteDrawnPath) {
-						UnwindToLastWaypoint();
-					} else if(endOfPath == null || endOfPath.prev == null) {
-						Cancel();
-					} else {
-						ResetPosition();
-					}
-				} else {
-					//we can assume we've already moved a bit,
-					//so we'll just finish up by stopping here.
-					//the semantic isn't exactly cancelling, but it's close enough.
-					ExecutePathTo(new PathNode(Executor.position, null, 0));
-				}
-			} else {
-				if(awaitingConfirmation && requireConfirmation) {
-					awaitingConfirmation = false;
-					targetTiles = new PathNode[0];
-					if(lockToGrid && _GridOverlay != null) {
-						_GridOverlay.SetSelectedPoints(new Vector4[0]);
-					}
-				} else {
-					//Back out of skill!
-					Cancel();
-				}
-			}
+			IncrementalCancel();
 		}
 	}
 
@@ -607,13 +656,6 @@ public class ActionSkill : Skill {
 		waypoints = new List<PathNode>();
 		switch(targetingMode) {
 			case TargetingMode.Self:
-				if(requireConfirmation) {
-					endOfPath = new PathNode(character.TilePosition, null, 0);
-					TentativePick(endOfPath);
-					awaitingConfirmation = true;
-				} else {
-					Pick(character.TilePosition);
-				}
 				break;
 			case TargetingMode.SelectRegion://??
 			case TargetingMode.Pick:
@@ -621,6 +663,7 @@ public class ActionSkill : Skill {
 				break;
 			case TargetingMode.Cardinal://??
 			case TargetingMode.Radial://??
+				TentativePickFacing(character.Facing);
 				break;
 			case TargetingMode.Path:
 				lines = probe.gameObject.AddComponent<LineRenderer>();
@@ -700,7 +743,6 @@ public class ActionSkill : Skill {
 	public void TentativePickFacing(Quaternion f) {
 		targetTiles = effectRegion.GetValidTiles(f);
 		_GridOverlay.SetSelectedPoints(map.CoalesceTiles(targetTiles));
-		//TODO: show preview indicator until cancelled
 	}
 	public void PickFacing(Quaternion f) {
 		//TODO: wut???
