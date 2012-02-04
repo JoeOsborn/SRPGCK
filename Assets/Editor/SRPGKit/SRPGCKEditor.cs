@@ -34,6 +34,12 @@ public abstract class SRPGCKEditor : Editor {
 	public override void OnInspectorGUI() {
 	  CheckUndo();
 		CheckFocus();
+		GUILayout.BeginHorizontal();
+		GUILayout.Label("Formulae", GUILayout.Width(60));
+		GUI.enabled=false;
+		EditorGUILayout.TextField(fdb == null ? "null" : AssetDatabase.GetAssetPath(fdb));
+		GUI.enabled=true;
+		GUILayout.EndHorizontal();
 		OnSRPGCKInspectorGUI();
 		FinishOnGUI();
 	}
