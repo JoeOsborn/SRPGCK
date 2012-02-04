@@ -8,14 +8,14 @@ public class DebugGUI : MonoBehaviour {
 	Texture2D areaBGTexture;
 	[SerializeField]
 	List<string> selectedGroup;
-	
+
 	public void Start() {
 		areaBGTexture = new Texture2D(1,1);
 		areaBGTexture.SetPixel(0, 0, new Color(0.3f, 0.3f, 0.8f, 0.5f));
 		areaBGTexture.Apply();
 		selectedGroup = new List<string>();
 	}
-	
+
 	public void Update() {
 		Scheduler s = GetComponent<Scheduler>();
 		if(s.activeCharacter != null) {
@@ -24,12 +24,12 @@ public class DebugGUI : MonoBehaviour {
 			mc.targetPivot = s.activeCharacter.transform.position;
 		}
 	}
-	
+
 	protected void OnGUIConfirmation(string msg, out bool yesButton, out bool noButton) {
 		GUIStyle bgStyle = new GUIStyle();
 		bgStyle.normal.background = areaBGTexture;
 		GUILayout.BeginArea(new Rect(
-			Screen.width/2-64, Screen.height/2-32, 
+			Screen.width/2-64, Screen.height/2-32,
 			128, 64
 		), bgStyle); {
 		  GUILayout.BeginVertical(); {
@@ -49,66 +49,75 @@ public class DebugGUI : MonoBehaviour {
 					}
 		    } GUILayout.EndHorizontal();
 		  } GUILayout.EndVertical();
-		} GUILayout.EndArea();	
+		} GUILayout.EndArea();
 	}
-	
+
 	void SkillApplied(Skill s) {
 		selectedGroup = null;
 	}
 	void DeactivatedCharacter(Character c) {
 		selectedGroup = null;
 	}
-	
+
 	bool IsSkillEnabled(CTCharacter ctc, Skill s) {
-		return (!(s is MoveSkill) || !ctc.HasMoved) && 
-	  (((s is MoveSkill) || (s is WaitSkill)) || !ctc.HasActed);		
+		return (!(s is MoveSkill) || !ctc.HasMoved) &&
+	  (((s is MoveSkill) || (s is WaitSkill)) || !ctc.HasActed);
 	}
-	
-	IEnumerable<string> OnGUISkillGroup(Character ac, CTCharacter ctc, Skill[] skills, IEnumerable<string> selectedGroup) {
-		Regex delimiter = new Regex("//");
-		//group by skillGroup
-		//anything with selectedGroup as its group is the current level
-		//anything that is one away from selectedGroup is the next level
+
+	Character lastShownCharacter = null;
+	IEnumerable<object> sorted=null;
+	Regex delimiter;
+	string lastSegment=null;
+	int lastSegmentCount=0;
+
+	IEnumerable<string> OnGUISkillGroup(Character ac, CTCharacter ctc, IEnumerable<Skill> skills, IEnumerable<string> selectedGroup) {
+		if(delimiter == null) { delimiter = new Regex("//"); }
 		IEnumerable<string> nextSelectedGroup = selectedGroup;
 		int segmentCount = selectedGroup == null ? 0 : selectedGroup.Count();
-		string groupPath = selectedGroup == null ? "" : string.Join("//", selectedGroup.ToArray());
-		var groups = skills.Where(x => !x.isPassive).OrderBy(x => x.skillName).GroupBy(x => x.skillGroup);
-		List<object> usedEntities = new List<object>();
-		//top level skills
-		
-		//TODO: can defer sort score calculation until later --
-		//find each subgroup prefix and do the deepGroupSkills calculation later
-		//since each prefix ought to be unique across a number of groups, we can use
-		//set union semantics.
-		foreach(var group in groups.Where(x => x.Key == groupPath)) {
-			foreach(Skill s in group) {
-				usedEntities.Add(s as object);
+		string segment = (selectedGroup == null || selectedGroup.Count() == 0) ? null :  selectedGroup.Last();
+		if(ac != lastShownCharacter || segmentCount != lastSegmentCount || segment != lastSegment || sorted == null) {
+			//group by skillGroup
+			//anything with selectedGroup as its group is the current level
+			//anything that is one away from selectedGroup is the next level
+			string groupPath = selectedGroup == null ? "" : string.Join("//", selectedGroup.ToArray());
+			var groups = skills.Where(x => !x.isPassive).OrderBy(x => x.skillName).GroupBy(x => x.skillGroup);
+			List<object> usedEntities = new List<object>();
+			//top level skills
+
+			//TODO: can defer sort score calculation until later --
+			//find each subgroup prefix and do the deepGroupSkills calculation later
+			//since each prefix ought to be unique across a number of groups, we can use
+			//set union semantics.
+			foreach(var group in groups.Where(x => x.Key == groupPath)) {
+				foreach(Skill s in group) {
+					usedEntities.Add(s as object);
+				}
 			}
+			foreach(var group in groups.Where(x =>
+				x.Key != groupPath &&
+				x.Key != null &&
+				(groupPath == null || (x.Key.StartsWith(groupPath))))
+			) {
+				string[] groupSegments = delimiter.Split(group.Key);
+				//it's a next group
+				string[] groupKeySegments = new string[segmentCount+1];
+				Array.Copy(groupSegments, groupKeySegments, segmentCount+1);
+				string groupKey = string.Join("//", groupKeySegments);
+				if(!usedEntities.Contains(groupKey)) {
+					usedEntities.Add(groupKey);
+				}
+			}
+			//get it all ordered and sorted and interleaved and displayed nicely
+			sorted = usedEntities.OrderBy(delegate(object x) {
+				if(x is Skill) {
+					return (x as Skill).skillSorting;
+				} else {
+					string key = x as string;
+					var deepGroupSkills = skills.Where(y => y.skillGroup != null && y.skillGroup.StartsWith(key));
+					return (int)Mathf.Round((float)deepGroupSkills.Average(y => y.skillSorting));
+				}
+			}).ToArray().AsEnumerable();
 		}
-		foreach(var group in groups.Where(x => 
-			x.Key != groupPath && 
-			x.Key != null && 
-			(groupPath == null || (x.Key.StartsWith(groupPath))))
-		) {
-			string[] groupSegments = delimiter.Split(group.Key);
-			//it's a next group
-			string[] groupKeySegments = new string[segmentCount+1];
-			Array.Copy(groupSegments, groupKeySegments, segmentCount+1);
-			string groupKey = string.Join("//", groupKeySegments);
-			if(!usedEntities.Contains(groupKey)) {
-				usedEntities.Add(groupKey);
-			}
-		}
-		//get it all ordered and sorted and interleaved and displayed nicely
-		var sorted = usedEntities.OrderBy(delegate(object x) {
-			if(x is Skill) {
-				return (x as Skill).skillSorting;
-			} else {
-				string key = x as string;
-				var deepGroupSkills = skills.Where(y => y.skillGroup != null && y.skillGroup.StartsWith(key));
-				return (int)Mathf.Round((float)deepGroupSkills.Average(y => y.skillSorting));
-			}
-		});
 		foreach(object o in sorted) {
 			if(o is Skill) {
 				Skill skill = o as Skill;
@@ -140,23 +149,27 @@ public class DebugGUI : MonoBehaviour {
 				nextSelectedGroup = nextSel;
 			}
 		}
-		return nextSelectedGroup;
+		lastShownCharacter = ac;
+		lastSegment = segment;
+		lastSegmentCount = segmentCount;
+		return nextSelectedGroup == null ? null : nextSelectedGroup.ToList().AsEnumerable();
 	}
-	
+	Map map;
 	public void OnGUI() {
 		Scheduler s = GetComponent<Scheduler>();
 		Arbiter a = GetComponent<Arbiter>();
 		bool showAnySchedulerButtons = true;
 		bool showCancelButton = true;
 		Character ac = s.activeCharacter;
+		var skills = ac == null ? new Skill[0] : ac.Skills;
 		if(ac != null) {
-			Map map = transform.parent.GetComponent<Map>();
+			if(map == null) { map = transform.parent.GetComponent<Map>(); }
 			MoveSkill ms = ac.moveSkill;
 			if(ms.isActive && ms != null) {
 				if(a.IsLocalPlayer(ac.EffectiveTeamID)) {
 					MoveExecutor me = ms.Executor;
 					if(!me.IsMoving) {
-						if(ms.RequireConfirmation && 
+						if(ms.RequireConfirmation &&
 							 ms.AwaitingConfirmation) {
 							bool yesButton=false, noButton=false;
 							OnGUIConfirmation("Move here?", out yesButton, out noButton);
@@ -168,20 +181,20 @@ public class DebugGUI : MonoBehaviour {
 							if(noButton) {
 					      ms.AwaitingConfirmation = false;
 					      ms.TemporaryMove(map.InverseTransformPointWorld(me.position));
-							} 
-						} else {	
+							}
+						} else {
 							showCancelButton = false;
 						}
 						showAnySchedulerButtons = false;
 					}
 				}/* else if(io is ContinuousWithinTilesMoveIO) {
 					ContinuousWithinTilesMoveIO mio = io as ContinuousWithinTilesMoveIO;
-					if(mio.character != null && 
+					if(mio.character != null &&
 						mio.character.isActive &&
-						a.IsLocalPlayer(mio.character.EffectiveTeamID) && 
+						a.IsLocalPlayer(mio.character.EffectiveTeamID) &&
 						mio.supportMouse) {
 						GUILayout.BeginArea(new Rect(
-							Screen.width/2-48, Screen.height-32, 
+							Screen.width/2-48, Screen.height-32,
 							96, 24
 						));
 						if(GUILayout.Button("End Move")) {
@@ -193,11 +206,11 @@ public class DebugGUI : MonoBehaviour {
 				}*/
 			}
 
-			foreach(Skill skill in ac.Skills) {
+			foreach(Skill skill in skills) {
 				if(!skill.isPassive && skill.isActive && skill is ActionSkill && !(skill is MoveSkill || skill is WaitSkill)) {
 					ActionSkill ask = skill as ActionSkill;
 					if(a.IsLocalPlayer(ac.EffectiveTeamID)) {
-						if(ask.RequireConfirmation && 
+						if(ask.RequireConfirmation &&
 							 ask.AwaitingConfirmation) {
 							bool yesButton=false, noButton=false;
 							OnGUIConfirmation("Confirm?", out yesButton, out noButton);
@@ -210,13 +223,13 @@ public class DebugGUI : MonoBehaviour {
 							}
 						}
 						showAnySchedulerButtons = false;
-					}			
+					}
 				}
 			}
 			WaitSkill ws = ac.waitSkill as WaitSkill;
 			if(ws != null && ws.isActive) {
 				if(a.IsLocalPlayer(ac.EffectiveTeamID)) {
-					if(ws.RequireConfirmation && 
+					if(ws.RequireConfirmation &&
 						 ws.AwaitingConfirmation) {
 						bool yesButton=false, noButton=false;
 						OnGUIConfirmation("Wait here?", out yesButton, out noButton);
@@ -238,12 +251,12 @@ public class DebugGUI : MonoBehaviour {
 					showAnySchedulerButtons = false;
 				}
 			}
-			
+
 		}
 		if(s is CTScheduler) {
 			if(ac != null && a.IsLocalPlayer(ac.EffectiveTeamID)) {
 				GUILayout.BeginArea(new Rect(
-					8, 8, 
+					8, 8,
 					128, 180
 				));
 				GUILayout.Label("Current Character:");
@@ -251,14 +264,13 @@ public class DebugGUI : MonoBehaviour {
 				GUILayout.Label("Health: "+Mathf.Ceil(ac.GetStat("health")));
 				CTCharacter ctc = ac.GetComponent<CTCharacter>();
 				GUILayout.Label("CT: "+Mathf.Floor(ctc.CT));
-				
+
 				//TODO:0: support skills
 				//show list of skills
 				Skill activeSkill = null;
-				Skill[] skills = ac.Skills;
-				for(int i = 0; i < skills.Length; i++) {
-					if(skills[i].isActive) {
-						activeSkill = skills[i];
+				foreach(Skill sk in skills) {
+					if(sk.isActive) {
+						activeSkill = sk;
 						break;
 					}
 				}
@@ -269,7 +281,7 @@ public class DebugGUI : MonoBehaviour {
 				} else if(showCancelButton) {
 					if(GUILayout.Button("Cancel "+activeSkill.skillName)) {
 						activeSkill.Cancel();
-					}	
+					}
 				}
 				GUILayout.EndArea();
 			}
@@ -277,12 +289,12 @@ public class DebugGUI : MonoBehaviour {
 			TeamRoundsPickAnyOnceScheduler tps = s as TeamRoundsPickAnyOnceScheduler;
 			if(a.IsLocalPlayer(tps.currentTeam)) {
 				GUILayout.BeginArea(new Rect(
-					8, 8, 
+					8, 8,
 					96, 128
 				));
 				GUILayout.Label("Current Team:"+tps.currentTeam);
 				if(showAnySchedulerButtons &&
-					!(ac != null && ac.moveSkill.Executor.IsMoving) && 
+					!(ac != null && ac.moveSkill.Executor.IsMoving) &&
 				  GUILayout.Button("End Round")) {
 					tps.EndRound();
 				}
@@ -290,15 +302,15 @@ public class DebugGUI : MonoBehaviour {
 			}
 		} else if(s is TeamRoundsPointsScheduler) {
 			TeamRoundsPointsScheduler tps = s as TeamRoundsPointsScheduler;
-			if(a.IsLocalPlayer(tps.currentTeam)) { 
+			if(a.IsLocalPlayer(tps.currentTeam)) {
 				GUILayout.BeginArea(new Rect(
-					8, 8, 
+					8, 8,
 					96, 128
 				));
 				GUILayout.Label("Current Team: "+tps.currentTeam);
 				GUILayout.Label("Points Left: "+tps.pointsRemaining);
 				if(showAnySchedulerButtons &&
-					!(ac != null && ac.moveSkill.Executor.IsMoving) && 
+					!(ac != null && ac.moveSkill.Executor.IsMoving) &&
 				  GUILayout.Button("End Round")) {
 					tps.EndRound();
 				}

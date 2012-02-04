@@ -56,8 +56,8 @@ public class RoundsInitiativeScheduler : Scheduler {
 		BeginRound();
 	}
 
-	override public void Update () {
-		base.Update();
+	override public void FixedUpdate () {
+		base.FixedUpdate();
 		if(activeCharacter == null) {
 			if(order.Count == 0) {
 				EndRound();

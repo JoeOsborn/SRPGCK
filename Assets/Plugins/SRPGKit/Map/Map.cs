@@ -4,7 +4,7 @@ using System;
 using System.Linq;
 using UnityEditor;
 
-//  [FlagsAttribute] 
+//  [FlagsAttribute]
 public enum Neighbors {
 	FrontLeftIdx =0,
 	FrontRightIdx=1,
@@ -12,14 +12,14 @@ public enum Neighbors {
 	BackLeftIdx  =3,
 	BottomIdx    =4,
 	TopIdx       =5,
-	
+
 	FrontLeft =1<<3, //-x
 	FrontRight=1<<4, //-y
 	BackRight =1<<5, //+x
 	BackLeft  =1<<6, //+y
 	Bottom    =1<<7, //-z
 	Top       =1<<8, //+z
-	
+
 	Sides     =FrontLeft|FrontRight|BackRight|BackLeft,
 	All       =Sides|Bottom|Top,
 	Any       =All,
@@ -36,40 +36,44 @@ public enum Corners {
 [System.Serializable]
 public class Map : MonoBehaviour {
 	public bool usesBottomFace=true;
-	
+
 	[SerializeField]
 	MapColumn[] stacks;
 
 	[SerializeField]
 	List<TileSpec> tileSpecs=new List<TileSpec>();
-	
+
 	[SerializeField]
 	Texture2D mainAtlas;
-	
+
 	[SerializeField]
 	Rect[] tileRects;
-	
+
 	//Note: dictionaries can't be serialized, so we'll lose overlays on deserialize
 	Dictionary<string, Dictionary<int, Overlay>> overlays;
-	
+
 #region Calculated and lazy properties
-  //TODO: cache these two
+
+	Scheduler _scheduler;
   public Scheduler scheduler {
-  	get { 
-  		return GetComponentInChildren<Scheduler>();
+  	get {
+			if(_scheduler == null) { _scheduler = GetComponentInChildren<Scheduler>(); }
+  		return _scheduler;
   	}
   }
-  	
+
+	Arbiter _arbiter;
   public Arbiter arbiter {
-  	get { 
-  		return GetComponentInChildren<Arbiter>();
+  	get {
+			if(_arbiter == null) { _arbiter = GetComponentInChildren<Arbiter>(); }
+  		return _arbiter;
   	}
   }
-	
+
 	public int TileSpecCount {
 		get { return tileSpecs.Count; }
 	}
-	
+
 	[SerializeField]
 	Vector2 _size = new Vector2(10,10);
 	public Vector2 size {
@@ -83,7 +87,7 @@ public class Map : MonoBehaviour {
 			ResetStacks(oldSize);
 		}
 	}
-	
+
 	[SerializeField]
 	float _sideLength = 10;
 	public float sideLength {
@@ -96,7 +100,7 @@ public class Map : MonoBehaviour {
 			RemakeMesh();
 		}
 	}
-	
+
 	[SerializeField]
 	float _tileHeight = 10;
 	public float tileHeight {
@@ -109,7 +113,7 @@ public class Map : MonoBehaviour {
 			RemakeMesh();
 		}
 	}
-	
+
 #endregion
 #region Monobehaviour stuff
 void Start() {
@@ -127,14 +131,14 @@ void Awake() {
 }
 #endregion
 #region Tilespec and texture-building
-	
+
 	public void AddTileSpec(Texture2D tex) {
 		TileSpec spec = new TileSpec();
 		spec.texture = tex;
 		tileSpecs.Add(spec);
 		RemakeTexture();
 	}
-	
+
 	public void RemoveTileSpecAt(int i) {
 		for(int mi = 0; mi < stacks.Length; mi++) {
 			MapColumn tl = stacks[mi];
@@ -149,16 +153,16 @@ void Awake() {
 		tileSpecs.RemoveAt(i);
 		RemakeTexture();
 	}
-	
+
 	public TileSpec TileSpecAt(int i) {
 		return tileSpecs[i];
 	}
-	
+
 	public void UpdateTileSpecAt(int i, Texture2D tex) {
 		tileSpecs[i].texture = tex;
 		RemakeTexture();
 	}
-	
+
 	public void SetTileSpecOnTileAt(int spec, int x, int y, int z, Neighbors sides) {
 		MapTile t = TileAt(x,y,z);
 		if(!MapTileIsNull(t)) {
@@ -166,14 +170,14 @@ void Awake() {
 		}
 		RemakeMesh();
 	}
-	
+
 	void RemakeTexture() {
 		Texture2D[] textures = new Texture2D[tileSpecs.Count];
 		for(int i = 0; i < tileSpecs.Count; i++) {
 			if(tileSpecs[i].texture == null) {
 				textures[i] = new Texture2D(1, 1);
 			} else {
-				textures[i] = tileSpecs[i].texture;	
+				textures[i] = tileSpecs[i].texture;
 			}
 		}
 		if(mainAtlas == null) { mainAtlas=new Texture2D(1024, 1024); }
@@ -186,7 +190,7 @@ void Awake() {
 		}
 		RemakeMesh();
 	}
-	
+
 #endregion
 
 #region Tile queries and updates
@@ -197,7 +201,7 @@ void Awake() {
 		//FIXME: for tiles of x and y dims > 1
 		int zMin=z-1, zMax=z+1;
 		MapTile t = TileAt(x,y,z);
-		if(t != null) { 
+		if(t != null) {
 			zMin = t.z-1;
 			zMax = t.z+t.maxHeight;
 		}
@@ -226,7 +230,7 @@ void Awake() {
 		}
 		return mask;
 	}
-	
+
 	bool NoInsetOrInvisibleNeighbors(int x, int y, MapTile t) {
 		int zMin=t.z-1, zMax=t.z+t.maxHeight;
 		MapTile neighbor=null;
@@ -254,7 +258,7 @@ void Awake() {
 		}
 		return true;
 	}
-	
+
 	void SetTileStackAt(MapTile stack, int x, int y) {
 		int idx = y*(int)_size.x+x;
 		if(idx >= stacks.Length) {
@@ -268,15 +272,15 @@ void Awake() {
 		}
 		stacks[idx].Add(stack);
 	}
-	
+
 	MapColumn TileColumnAt(int x, int y) {
 		int idx = y*(int)_size.x+x;
 		if(idx >= stacks.Length) {
 			return null;
 		}
-		return stacks[idx];	
+		return stacks[idx];
 	}
-	
+
 	MapTile NextTile(MapTile t) {
 		MapColumn stack = TileColumnAt(t.x, t.y);
 		if(stack == null) { return null; }
@@ -288,7 +292,7 @@ void Awake() {
 /*		Debug.Log("next after "+t+" at "+tidx+" is "+stack.At(tidx+1)+" where count is "+stack.Count);*/
 		return stack.At(tidx+1);
 	}
-	
+
 	void SetNextTile(MapTile prev, MapTile next) {
 		int idx = prev.y*(int)_size.x+prev.x;
 		if(idx >= stacks.Length) {
@@ -300,7 +304,7 @@ void Awake() {
 		if(tidx == -1) { return; }
 		stack.Insert(tidx, next);
 	}
-	
+
 	public void AddIsoTileAt(int x, int y, int z) {
 		if(stacks == null) {
 			ResetStacks(Vector2.zero);
@@ -358,7 +362,7 @@ void Awake() {
 			return;
 		}
 		bool removed = false;
-		for(int i = 0; i < stackC.Count; i++) { 
+		for(int i = 0; i < stackC.Count; i++) {
 			stack = stackC.At(i);
 			if(stack.IsAboveZ(z)) { return; }
 			if(stack.ContainsZ(z)) {
@@ -371,11 +375,11 @@ void Awake() {
 			RemakeMesh();
 		}
 	}
-	
+
 	bool MapTileIsNull(MapTile t) {
 		return t == null || !t.serializeHackUsable;
 	}
-	
+
 	void ResetStacks(Vector2 oldSize) {
 		MapColumn[] newStacks = new MapColumn[(int)_size.x*(int)_size.y];
 		Debug.Log("reset");
@@ -402,12 +406,12 @@ void Awake() {
 		this.stacks = newStacks;
 		RemakeMesh();
 	}
-	
+
 	public bool HasTileAt(int x, int y) {
 		MapColumn c = TileColumnAt(x,y);
 		return x >= 0 && x < size.x && y >= 0 && y < size.y && c != null && c.Count > 0;
 	}
-	
+
 	public bool HasTileAt(int x, int y, int z) {
 		return !MapTileIsNull(TileAt(x,y,z));
 	}
@@ -430,17 +434,17 @@ void Awake() {
 		}
 		return closest.avgZ;
 	}
-	
+
 	public int NextZLevel(int x, int y, int z, bool wrap=false) {
 		MapColumn mc = TileColumnAt(x,y);
 		if(mc == null) { return 0; }
 		int lowestValidZ = -1;
 		int lastValidZ = -1;
-		
+
 		for(int i = 0; i < mc.Count; i++) {
 			bool valid = false;
 			MapTile t = mc.At(i);
-			if(MapTileIsNull(t)) { 
+			if(MapTileIsNull(t)) {
 				if(wrap) { return lowestValidZ; }
 				return lastValidZ;
 			} else {
@@ -473,22 +477,22 @@ void Awake() {
 			MapTile t = c.At(i);
 			//skip anybody with a tile immediately above them
 			if(i+1 < c.Count) {
-				if(c.At(i+1).z <= t.maxZ) { 
-					continue; 
+				if(c.At(i+1).z <= t.maxZ) {
+					continue;
 				} else {
 					//it's fine, keep going
 				}
 			}
 			//skip tiles that are not within range
-			if(minZ < 0 || maxZ < 0 || (t.avgZ > minZ && t.avgZ <= maxZ)) { 
+			if(minZ < 0 || maxZ < 0 || (t.avgZ > minZ && t.avgZ <= maxZ)) {
 				zLevels.Add(t.avgZ);
 			}
 		}
 		return zLevels.ToArray();
 	}
-	
 
-	
+
+
 	public Neighbors EnteringSideFromXYDelta(float dx, float dy) {
 		if(dx > 0) { return Neighbors.FrontLeftIdx; }
 		if(dx < 0) { return Neighbors.BackRightIdx; }
@@ -497,7 +501,7 @@ void Awake() {
 /*		Debug.LogError("entering side uses weird deltas "+dx+","+dy);*/
 		return Neighbors.None;
 	}
-	
+
 	public Neighbors ExitingSideFromXYDelta(float dx, float dy) {
 		if(dx > 0) { return Neighbors.BackRightIdx; }
 		if(dx < 0) { return Neighbors.FrontLeftIdx; }
@@ -506,7 +510,7 @@ void Awake() {
 /*		Debug.LogError("exiting side uses weird deltas "+dx+","+dy);*/
 		return Neighbors.None;
 	}
-	
+
 	public float SignedDZForMove(Vector3 to, Vector3 from) {
 		float dx = to.x-from.x;
 		float dy = to.y-from.y;
@@ -559,19 +563,19 @@ void Awake() {
 		t.AdjustHeightOnSides(deltaH, sides, top, NextTile(t));
 		RemakeMesh();
 	}
-	
+
 	public void InsetCornerOfTile(int x, int y, int z, float inset, Corners corner) {
 		MapTile t = TileAt(x,y,z);
-		if(t != null) { 
-			t.InsetCorner(inset, corner); 
+		if(t != null) {
+			t.InsetCorner(inset, corner);
 			RemakeMesh();
 		}
 	}
-	
+
 	public void InsetSidesOfTile(int x, int y, int z, float inset, Neighbors mask) {
 		MapTile t = TileAt(x,y,z);
-		if(t != null) { 
-			t.InsetSides(inset, mask); 
+		if(t != null) {
+			t.InsetSides(inset, mask);
 			RemakeMesh();
 		}
 	}
@@ -584,11 +588,11 @@ void Awake() {
 			}
 		}
 	}
-	
+
 #endregion
 
 #region Mesh generation and UV-mapping
-	
+
 	void UVMap(MapTile t, Neighbors side, Vector2[] uvs, int idx) {
 		if(uvs == null) { return; }
 		int specIdx;
@@ -644,10 +648,10 @@ void Awake() {
 			}
 		}
 	}
-	
+
 	void RemakeMesh() {
 		if(stacks == null) { return; }
-		
+
 		MeshFilter mf = GetComponent<MeshFilter>();
 		if(mf == null) {
 			mf = gameObject.AddComponent<MeshFilter>();
@@ -660,7 +664,7 @@ void Awake() {
 		if(mc == null) {
 			mc = gameObject.AddComponent<MeshCollider>();
 		}
-		
+
 		if(mr.sharedMaterials.Length < 2 || mr.sharedMaterials[0] == null || mr.sharedMaterials[1] == null) {
 			mr.sharedMaterials = new Material[]{
 				new Material(Shader.Find("Transparent/Cutout/Diffuse")),
@@ -669,31 +673,31 @@ void Awake() {
 			mr.sharedMaterials[1].color = Application.isPlaying ? Color.clear : new Color(0.7f, 0.7f, 1.0f, 0.5f);
 		}
 		if(mr.sharedMaterials[0].mainTexture != mainAtlas) {
-			mr.sharedMaterials[0].mainTexture = mainAtlas;	
+			mr.sharedMaterials[0].mainTexture = mainAtlas;
 		}
 		if(mr.sharedMaterials[1].mainTexture != mainAtlas) {
-			mr.sharedMaterials[1].mainTexture = mainAtlas;	
+			mr.sharedMaterials[1].mainTexture = mainAtlas;
 		}
 		Mesh mesh = mf.sharedMesh != null ? mf.sharedMesh : new Mesh();
 		mesh.Clear();
-		
+
 		float height = _tileHeight;
-		
+
 		//FIXME: height assumption may be higher than necessary
 		//24 vertices per so each gets a uv, we will say 20 units high
-		Vector3[] vertices = new Vector3[(int)(_size.x*_size.y*20*24)]; 
+		Vector3[] vertices = new Vector3[(int)(_size.x*_size.y*20*24)];
 		//10 tris, 3 indices per, we will say 20 units high
 		int[] opaqueTriangles = new int[(int)(_size.x*_size.y*20*10*3)];
 		Vector2[] uvs = new Vector2[vertices.Length];
-		
+
 		int vertIdx = 0;
 		int opaqueTriIdx = 0;
 
 		//10 tris, 3 indices per, we will say 20 units high
 		int[] transparentTriangles = new int[(int)(_size.x*_size.y*20*10*3)];
-		
+
 		int transparentTriIdx = 0;
-				
+
 		for(int i = 0; i < stacks.Length; i++) {
 			MapColumn tlist = stacks[i];
 			if(tlist == null) { continue; }
@@ -705,7 +709,7 @@ void Awake() {
 				int z = t.z;
 				int[] triangles = t.invisible ? transparentTriangles : opaqueTriangles;
 				int triIdx = t.invisible ? transparentTriIdx : opaqueTriIdx;
-				
+
 				bool avoidNeighbors = t.maxHeight == 1 && t.noInsets && !t.invisible && NoInsetOrInvisibleNeighbors(x, y, t);
 				float lx = (x+0+t.sideInsets[(int)Neighbors.FrontLeftIdx ])*_sideLength-_sideLength/2;
 				float fx = (x+0+t.sideInsets[(int)Neighbors.FrontLeftIdx ])*_sideLength-_sideLength/2;
@@ -715,9 +719,9 @@ void Awake() {
 				float ry = (y+0+t.sideInsets[(int)Neighbors.FrontRightIdx])*_sideLength-_sideLength/2;
 				float ly = (y+1-t.sideInsets[(int)Neighbors.BackLeftIdx ])*_sideLength-_sideLength/2;
 				float by = (y+1-t.sideInsets[(int)Neighbors.BackLeftIdx ])*_sideLength-_sideLength/2;
-				
+
 				//TODO: include corner insets and their extra geometry
-				
+
 
 				//TODO: stairs and their extra geometry
 
@@ -744,7 +748,7 @@ void Awake() {
 					vertices[vertIdx+2] = tr; //7
 					vertices[vertIdx+3] = tb; //6
 					UVMap(t, Neighbors.Top, uvs, vertIdx);
-        
+
 					triangles[triIdx+0*3+0] = vertIdx+0;
 					triangles[triIdx+0*3+1] = vertIdx+1;
 					triangles[triIdx+0*3+2] = vertIdx+2;
@@ -760,7 +764,7 @@ void Awake() {
 					vertices[vertIdx+2] = tb; //6
 					vertices[vertIdx+3] = bb; //2
 					UVMap(t, Neighbors.BackLeft, uvs, vertIdx);
-					
+
 					triangles[triIdx+0*3+0] = vertIdx+0;
 					triangles[triIdx+0*3+1] = vertIdx+1;
 					triangles[triIdx+0*3+2] = vertIdx+2;
@@ -894,7 +898,7 @@ void Awake() {
 		overlays[category][id] = ov;
 		return ov;
 	}
-	
+
 	public RadialOverlay PresentSphereOverlay(string category, int id, Color color, Vector3 origin, float radius, bool drawRim=false, bool drawOuterVolume=false, bool invert=false) {
 		if(overlays == null) { overlays = new Dictionary<string, Dictionary<int, Overlay>>(); }
 		if(!overlays.ContainsKey(category)) {
@@ -921,7 +925,7 @@ void Awake() {
 		overlays[category][id] = ov;
 		return ov;
 	}
-	
+
 	public RadialOverlay PresentCylinderOverlay(string category, int id, Color color, Vector3 origin, float radius, float height, bool drawRim=false, bool drawOuterVolume=false, bool invert=false) {
 		if(overlays == null) { overlays = new Dictionary<string, Dictionary<int, Overlay>>(); }
 		if(!overlays.ContainsKey(category)) {
@@ -949,7 +953,7 @@ void Awake() {
 		overlays[category][id] = ov;
 		return ov;
 	}
-	
+
 	public void RemoveOverlay(string category, int id) {
 		if(overlays == null) { return; }
 		if(!overlays.ContainsKey(category)) { return; }
@@ -960,18 +964,18 @@ void Awake() {
 			Destroy(ov.gameObject);
 		}
 	}
-	
+
 	public bool IsShowingOverlay(string category, int id) {
 		if(overlays == null) { return false; }
 		return overlays[category].ContainsKey(id);
 	}
-	
+
 	Mesh overlayMesh;
-	
+
 	public Mesh OverlayMesh {
-		get { 
+		get {
 			if(overlayMesh == null) {
-				//caveat: this will only behave properly wrt static meshes, 
+				//caveat: this will only behave properly wrt static meshes,
 				//so be sure you can't stand on parts of props that animate.
 				overlayMesh = new Mesh();
 		    MeshFilter[] meshFilters = GetComponentsInChildren<MeshFilter>(false);
@@ -1007,7 +1011,7 @@ void Awake() {
 		if(go.GetComponent<Prop>() != null) { return true; }
 		return IsProp(go.transform.parent.gameObject);
 	}
-	
+
 	public Vector4[] CoalesceTiles(PathNode[] spots) {
 		Vector4[] outputs = new Vector4[spots.Length];
 		int count=0;

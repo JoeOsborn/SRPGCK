@@ -70,6 +70,10 @@ public class Scheduler : MonoBehaviour {
 	}
 
 	public virtual void Update () {
+
+	}
+
+	public virtual void FixedUpdate () {
 		if(!begun) { Begin(); }
 		if(activeCharacter != null && activeCharacter.isActive) { return; }
 		if(activeCharacter != null && !activeCharacter.isActive) { Deactivate(activeCharacter); }

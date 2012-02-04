@@ -237,16 +237,23 @@ public class Skill : MonoBehaviour {
 	public Vector3 transformOffset { get {
 		return character.transformOffset;
 	} }
+	Character _character;
 	public Character character { get {
-		//TODO: cache
-		Character c = GetComponent<Character>();
-		if(c != null) { return c; }
-		if(transform.parent != null) {
-			return transform.parent.GetComponent<Character>();
+		if(_character == null) {
+			Transform t = transform;
+			while(t != null) {
+				Character c = t.GetComponent<Character>();
+				if(c != null) { _character = c; break; }
+				t = t.parent;
+			}
 		}
-		return null;
+		return _character;
 	} }
-	public Map map { get { return character.transform.parent.GetComponent<Map>(); } }
+	Map _map;
+	public Map map { get {
+		if(_map == null) { _map = character.transform.parent.GetComponent<Map>(); }
+		return _map;
+	} }
 	public Scheduler scheduler { get { return this.map.scheduler; } }
 	public Arbiter arbiter { get { return this.map.arbiter; } }
 }

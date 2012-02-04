@@ -3,79 +3,84 @@ using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 
-public class Character : MonoBehaviour {		
-	//TODO: cache
-	public Map map { get { return transform.parent == null ? null : transform.parent.GetComponent<Map>(); } }
+public class Character : MonoBehaviour {
+	Map _map;
+	public Map map { get {
+		if(_map == null) {
+			_map = transform.parent == null ? null : transform.parent.GetComponent<Map>();
+		}
+		return _map;
+	} }
 
-	//I believe this is a stored property here in character, 
-	//not merely a query to scheduler for whether active==this 
+	//I believe this is a stored property here in character,
+	//not merely a query to scheduler for whether active==this
 	//(what if you can have multiple active dudes?)
 	[HideInInspector]
 	public bool isActive=false;
-	
+
 	public string characterName;
 	public int teamID;
 	public Vector3 transformOffset = new Vector3(0, 5, 0);
-	
+
 	public List<Parameter> stats;
-	
+
 	public string[] equipmentSlots;
 
 	[HideInInspector]
 	public Dictionary<string, Formula> runtimeStats;
-	
+
 	//skills are monobehaviors (though I wish I could make them components)
 	//that are added/configured normally. skill instances can have a "path" that
 	//denotes how to get to them via menus, but that's an application concern
 	//a skill group is a gameobject that contains a bunch of skills with the right configurations,
 	//and it can add (by duplication) or remove its component skills from a target gameobject.
-	
+
 	[HideInInspector]
-	public string currentAnimation;	
-	
-	public MoveSkill moveSkill { get { 
+	public string currentAnimation;
+
+	public MoveSkill moveSkill { get {
 		return GetComponent<MoveSkill>();
 	} }
 
-	public WaitSkill waitSkill { get { 
+	public WaitSkill waitSkill { get {
 		return GetComponent<WaitSkill>();
 	} }
-	
+
 	public override string ToString() {
 		return characterName;
 	}
-	
+
 	void Awake () {
 		for(int i = 0; i < equipmentSlots.Length; i++) {
 			equipmentSlots[i] = equipmentSlots[i].NormalizeName();
 		}
 	}
-	
+
 	public virtual void Reset() {
 		characterName = name;
 		equipmentSlots = new string[]{"hand", "hand", "head", "body", "accessory"};
 	}
-	
+
 	//can be modulated by charm, etc
 	public int EffectiveTeamID { get {
 		return teamID;
 	} }
-	
+
 	public Vector3 TilePosition { get {
 		return map == null ? Vector3.zero : map.InverseTransformPointWorld(transform.position-transformOffset);
 	} }
-	
+
 	public void Activate() {
 		isActive = true;
 	}
-	
+
 	public void Deactivate() {
 		if(this.moveSkill.isActive) {
-			this.moveSkill.Cancel(); 
+			this.moveSkill.Cancel();
 		}
 		isActive = false;
 	}
-	
+
 	public void TriggerAnimation(string animType, bool force=false) {
 		if(currentAnimation != animType || force) {
 			currentAnimation = animType;
@@ -83,12 +88,12 @@ public class Character : MonoBehaviour {
 			SendMessage("UseAnimation", animType, SendMessageOptions.DontRequireReceiver);
 		}
 	}
-	
-	public virtual float Facing { 
+
+	public virtual float Facing {
 		get {
 			//subtract from 360 to make it counter-clockwise starting at x+
 			return 360-transform.rotation.eulerAngles.y;
-		} 
+		}
 		set {
 			//subtract from 360 to make it clockwise starting at x+
 			transform.rotation = Quaternion.Euler(0, 360-value, 0);
@@ -96,12 +101,11 @@ public class Character : MonoBehaviour {
 			SendMessage("UseFacing", value, SendMessageOptions.DontRequireReceiver);
 		}
 	}
-	
-	
-	void Update () {
+
+	void FixedUpdate () {
 		if(map == null) {
 			Debug.Log("Characters must be children of Map objects!");
-			return; 
+			return;
 		}
 		if(!map.scheduler.ContainsCharacter(this)) {
 			map.scheduler.AddCharacter(this);
@@ -128,20 +132,20 @@ public class Character : MonoBehaviour {
 			//"Candidate Tiles" Tc[], optionally requested by MoveInput
 			//"Decided Tiles" Td[], optionally requested by MoveExecutor. May or may not hide T[] and/or Tc[].
 		//MoveIO also interprets player input (by mouse/keyboard/etc), optionally requests the temporary display of Tc[] during the decision-making process, and once finished requests that the MoveExecutor perform the actual move.
-		//MoveExecutor optionally sets Td[] on the MoveFeedback while performing the actual move (pursuant to Region's success flag). 
+		//MoveExecutor optionally sets Td[] on the MoveFeedback while performing the actual move (pursuant to Region's success flag).
 		//  MoveExecutors may be reversible.
 		//  This is where the character's Unity transform is manipulated and the map is updated to reflect the character's new position.
-		
+
 		//For example, an FFT character would have a Region that did a flood-fill on the map with Move and Jump calculations (or, if they had Fly or Teleport, other Regions), a MoveIO script using an Overlay and an update loop that's click-based, and a MoveExecutor that animates from pos to dest, taking jumps and so on into account -- all this wrapped in a CT-based scheduler.
 		//Valkyria Chronicles would use a phase-based scheduler with user-decided turns based on resource expenditure (rather than just "use all units"), a movement region that offers a circular radius around the player, movement feedback that shows that radius (or shows, in lighter tint, the terrain reachable before the player's action points expire; with a darker tint, the unreachable terrain), MoveInput that works off of keyboard, mouse, or controller, and a MoveExecutor that merely updates the character's position and lets the map know about it.
 		//This system is opt-in. Valkyria movement could work simply with a Scheduler and a custom script that moves the character according to keyboard input while it's active, updating the map (if any) as needed.
-	}	
+	}
 	void OnDestroy() {
 		if(map != null && map.scheduler != null) {
 			map.scheduler.RemoveCharacter(this);
 		}
 	}
-	
+
 	void MakeStatsIfNecessary() {
 		if(runtimeStats == null) {
 			runtimeStats = new Dictionary<string, Formula>();
@@ -150,37 +154,61 @@ public class Character : MonoBehaviour {
 			}
 		}
 	}
-	
-	public Skill[] Skills { get {
-		//TODO: cache
-		//first off, replace any skills that have been replaced
-		Skill[] allSkills = GetComponentsInChildren<Skill>();
-		return allSkills.Where(delegate(Skill x) {
-			string replPath = x.skillGroup+"//"+x.skillName;
-			int replPri = x.replacementPriority;
-			return !allSkills.Any(y => 
-				y.replacesSkill &&
-				y.replacedSkill == replPath && 
-				y.replacementPriority > replPri);
-		}).ToArray();
+	IEnumerable<Skill> skills;
+	IEnumerable<Equipment> equipment;
+	IEnumerable<StatusEffect> statusEffects;
+	public void ApplyStatusEffect(StatusEffect se) {
+		se.transform.parent = transform; //??
+		InvalidateStatusEffects();
+	}
+	public void InvalidateSkills() {
+		skills = null;
+	}
+	public void InvalidateEquipment() {
+		equipment = null;
+		InvalidateStatusEffects();
+	}
+	public void InvalidateStatusEffects() {
+		statusEffects = null;
+	}
+	public IEnumerable<Skill> Skills { get {
+		if(skills == null) {
+			//replace any skills that need replacing
+			Skill[] allSkills = GetComponentsInChildren<Skill>();
+			skills = allSkills.Where(delegate(Skill x) {
+				string replPath = x.skillGroup+"//"+x.skillName;
+				int replPri = x.replacementPriority;
+				return !allSkills.Any(y =>
+					y != x &&
+					y.replacesSkill &&
+					y.replacedSkill == replPath &&
+					y.replacementPriority > replPri);
+			}).ToArray().AsEnumerable();
+		}
+		return skills;
 	} }
-	public Equipment[] Equipment { get {
-		//TODO: cache
-		return GetComponentsInChildren<Equipment>();
+	public IEnumerable<Equipment> Equipment { get {
+		if(equipment == null) {
+			equipment = GetComponentsInChildren<Equipment>().AsEnumerable();
+		}
+		return equipment;
 	} }
-	public StatusEffect[] StatusEffects { get {
-		//TODO: cache
-		StatusEffect[] allEffects = GetComponentsInChildren<StatusEffect>();
-		return allEffects.Where(delegate(StatusEffect x) {
-			string replPath = x.effectType;
-			int replPri = x.priority;
-			return !allEffects.Any(y => 
-				y.effectType == replPath && 
-				y.replaces &&
-				y.priority > replPri);
-		}).ToArray();
+	public IEnumerable<StatusEffect> StatusEffects { get {
+		if(statusEffects == null) {
+			StatusEffect[] allEffects = GetComponentsInChildren<StatusEffect>();
+			statusEffects = allEffects.Where(delegate(StatusEffect x) {
+				string replPath = x.effectType;
+				int replPri = x.priority;
+				return !allEffects.Any(y =>
+					y != x &&
+					y.effectType == replPath &&
+					y.replaces &&
+					y.priority > replPri);
+			}).ToArray().AsEnumerable();
+		}
+		return statusEffects;
 	} }
-	
+
 	public bool HasStat(string statName) {
 		MakeStatsIfNecessary();
 		return runtimeStats.ContainsKey(statName);
@@ -189,16 +217,16 @@ public class Character : MonoBehaviour {
 	public bool HasStatusEffect(string statName) {
 		return StatusEffects.Any(se => se.effectType == statName);
 	}
-	
+
 	public float GetBaseStat(string statName, float fallback=-1) {
 		MakeStatsIfNecessary();
 		if(!HasStat(statName)) {
 			if(fallback == -1) {
-				Debug.LogError("No fallback for missing stat "+statName);	
+				Debug.LogError("No fallback for missing stat "+statName);
 			}
 			return fallback;
 		}
-		return runtimeStats[statName].GetCharacterValue(this);	
+		return runtimeStats[statName].GetCharacterValue(this);
 	}
 
 	public void SetBaseStat(string statName, float amt) {
@@ -224,7 +252,7 @@ public class Character : MonoBehaviour {
 			Debug.LogError("Can't adjust value of non-constant base stat "+statName);
 		}
 	}
-	
+
 	public float GetStat(string statName, float fallback=-1) {
 		float stat = GetBaseStat(statName, fallback);
 /*		Debug.Log("base "+statName+":"+stat);*/
@@ -256,19 +284,21 @@ public class Character : MonoBehaviour {
 //		Debug.Log("final "+statName+":"+stat);
 		return stat;
 	}
-	
+
 	public bool IsEquipmentSlotFull(int equipmentSlot) {
 		return Equipment.Any(e => e.equippedSlots.Contains(equipmentSlot));
 	}
-	
+
 	public void EmptyEquipmentSlot(int slot) {
 		if(IsEquipmentSlotFull(slot)) {
 			foreach(Equipment e in Equipment.Where(eq => eq.equippedSlots.Contains(slot))) {
 				e.Unequip();
+				InvalidateSkills();
+				InvalidateEquipment();
 			}
-		}	
+		}
 	}
-	
+
 	public int GetEmptyEquipmentSlot(string slotType, List<int> exceptSlots) {
 		int first = -1;
 		int firstEmpty = -1;
@@ -307,5 +337,7 @@ public class Character : MonoBehaviour {
 			}
 		}
 		e.EquipOn(this, usedSlots.ToArray());
+		InvalidateSkills();
+		InvalidateEquipment();
 	}
 }

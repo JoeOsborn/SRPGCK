@@ -47,13 +47,16 @@ public class TeamRoundsPickAnyOnceScheduler : Scheduler {
 		c.moveSkill.ActivateSkill();
 	}
 	
-	override public void Update () {
-		base.Update();
+	override public void FixedUpdate () {
+		base.FixedUpdate();
 		if(activeCharacter == null) {
 			if(remainingCharacters.Count == 0) {
 				EndRound();
 			}
 		}
+	}
+	override public void Update() {
+		base.Update();
 		if(GetComponent<Arbiter>().IsLocalPlayer(currentTeam) && Input.GetMouseButtonDown(0)) {
 			//TODO: need another caller for Activate()
 			Ray r = Camera.main.ScreenPointToRay(Input.mousePosition);

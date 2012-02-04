@@ -94,8 +94,8 @@ public class CTScheduler : Scheduler {
 	}
 	//after c acts, reduce c's CT by per-act cost (40)
 		
-	override public void Update () {
-		base.Update();
+	public override void FixedUpdate () {
+		base.FixedUpdate();
 		//if there is no active unit
 		if(activeCharacter == null) {
 		  //TODO: take the first scheduled attack with CT > 100 and trigger it

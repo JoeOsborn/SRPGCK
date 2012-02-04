@@ -135,8 +135,8 @@ public class TeamRoundsPointsScheduler : Scheduler {
 		Deactivate(s.character);
 	}
 	
-	override public void Update () {
-		base.Update();
+	override public void FixedUpdate () {
+		base.FixedUpdate();
 		if(activeCharacter == null) {
 			if(pointsRemaining == 0) {
 				EndRound();
@@ -154,6 +154,9 @@ public class TeamRoundsPointsScheduler : Scheduler {
 				Deactivate(activeCharacter);
 			}
 		}
+	}
+	override public void Update() {
+		base.Update();
 		if(GetComponent<Arbiter>().IsLocalPlayer(currentTeam) && activeCharacter == null && Input.GetMouseButtonDown(0)) {
 			//TODO: need another caller for Activate()
 			Ray r = Camera.main.ScreenPointToRay(Input.mousePosition);
