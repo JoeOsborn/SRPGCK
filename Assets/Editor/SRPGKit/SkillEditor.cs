@@ -13,9 +13,10 @@ public class SkillEditor : SRPGCKEditor {
 	
 	protected Skill s;
   public override void OnEnable() {
+		s = target as Skill;
+		fdb = s.fdb;
 		base.OnEnable();
 		name = "Skill";
-		s = target as Skill;
 	}
 	
 	public override void OnSRPGCKInspectorGUI () {

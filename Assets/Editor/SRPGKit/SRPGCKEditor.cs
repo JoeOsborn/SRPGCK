@@ -3,47 +3,50 @@ using UnityEditor;
 using System.Linq;
 
 public abstract class SRPGCKEditor : Editor {
+	public Formulae fdb;
+
 	public bool listeningForGuiChanges;
 	public bool guiChanged;
 
 	public string[] formulaOptions;
-	
+
 	public string lastFocusedControl, newFocusedControl;
-	
+
 	protected virtual void UpdateFormulae() {
-		if(Formulae.GetInstance() == null) {
-			Debug.LogError("Need a formulae object somewhere to store formulae!");
+		if(fdb != null && fdb.formulaNames != null) {
+			formulaOptions = (new string[]{"Custom"}).Concat(fdb.formulaNames).ToArray();
 		} else {
-			formulaOptions = (new string[]{"Custom"}).Concat(Formulae.GetInstance().formulaNames).ToArray();
+			formulaOptions = new string[]{"Custom"};
 		}
 	}
-	
+
 	void CheckFocus() {
-	  newFocusedControl = GUI.GetNameOfFocusedControl();	
+	  newFocusedControl = GUI.GetNameOfFocusedControl();
 	}
-	
+
 	public virtual void OnEnable() {
+		if(fdb == null) { fdb = Formulae.DefaultFormulae; }
 		UpdateFormulae();
 	}
-	
+
 	public abstract void OnSRPGCKInspectorGUI();
-	
+
 	public override void OnInspectorGUI() {
 	  CheckUndo();
 		CheckFocus();
 		OnSRPGCKInspectorGUI();
 		FinishOnGUI();
 	}
-	
+
 	public virtual bool FocusMovedFrom(string name) {
 		return lastFocusedControl == name && newFocusedControl != name;
 	}
-	
+
 	protected virtual void FinishOnGUI() {
 		if(GUI.changed) {
 			EditorUtility.SetDirty(target);
 		}
-		lastFocusedControl = newFocusedControl;	
+		lastFocusedControl = newFocusedControl;
 	}
 
   private void CheckUndo()
@@ -70,5 +73,5 @@ public abstract class SRPGCKEditor : Editor {
       listeningForGuiChanges = false;
     }
   }
-	
+
 }

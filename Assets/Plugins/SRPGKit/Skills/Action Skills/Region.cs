@@ -32,6 +32,11 @@ public class Region {
 			}
 		}
 	}
+	[HideInInspector]
+	public Formulae fdb { get {
+		if(owner != null) { return owner.fdb; }
+		return Formulae.DefaultFormulae;
+	} }
 
 	public RegionType type=RegionType.Cylinder;
 
@@ -56,9 +61,9 @@ public class Region {
 	//ending BEFORE an enemy (as a move would)
 	public bool canHaltAtEnemies=true;
 
-	//these apply to cylinder, sphere, cone, and line
+	//these apply to cylinder/predicate, sphere, cone, and line
 	public Formula radiusMinF, radiusMaxF;
-	//these apply to cylinder (define), sphere (clip), and line (define up/down displacements from line)
+	//these apply to cylinder/predicate (define), sphere (clip), line (define up/down displacements from line)
 	public Formula zUpMinF, zUpMaxF, zDownMinF, zDownMaxF;
 	//these apply to cone and line
 	public Formula xyDirectionF, zDirectionF;
@@ -81,24 +86,24 @@ public class Region {
 	//generate tiles, and may not apply their intervening space modes.
 	//more complex uses of compound spaces should subclass Skill or Region.
 	public Region[] regions;
+	
+	public float radiusMin { get { return radiusMinF.GetValue(fdb, owner, null, null); } }
+	public float radiusMax { get { return radiusMaxF.GetValue(fdb, owner, null, null); } }
+	public float zUpMin { get { return zUpMinF.GetValue(fdb, owner, null, null); } }
+	public float zUpMax { get { return zUpMaxF.GetValue(fdb, owner, null, null); } }
+	public float zDownMin { get { return zDownMinF.GetValue(fdb, owner, null, null); } }
+	public float zDownMax { get { return zDownMaxF.GetValue(fdb, owner, null, null); } }
+	public float lineWidthMin { get { return lineWidthMinF.GetValue(fdb, owner, null, null); } }
+	public float lineWidthMax { get { return lineWidthMaxF.GetValue(fdb, owner, null, null); } }
 
-	public float radiusMin { get { return radiusMinF.GetValue(owner, null, null); } }
-	public float radiusMax { get { return radiusMaxF.GetValue(owner, null, null); } }
-	public float zUpMin { get { return zUpMinF.GetValue(owner, null, null); } }
-	public float zUpMax { get { return zUpMaxF.GetValue(owner, null, null); } }
-	public float zDownMin { get { return zDownMinF.GetValue(owner, null, null); } }
-	public float zDownMax { get { return zDownMaxF.GetValue(owner, null, null); } }
-	public float lineWidthMin { get { return lineWidthMinF.GetValue(owner, null, null); } }
-	public float lineWidthMax { get { return lineWidthMaxF.GetValue(owner, null, null); } }
+	public float xyDirection { get { return xyDirectionF.GetValue(fdb, owner, null, null); } }
+	public float zDirection { get { return zDirectionF.GetValue(fdb, owner, null, null); } }
+	public float xyArcMin { get { return xyArcMinF.GetValue(fdb, owner, null, null); } }
+	public float zArcMin { get { return zArcMinF.GetValue(fdb, owner, null, null); } }
+	public float xyArcMax { get { return xyArcMaxF.GetValue(fdb, owner, null, null); } }
+	public float zArcMax { get { return zArcMaxF.GetValue(fdb, owner, null, null); } }
 
-	public float xyDirection { get { return xyDirectionF.GetValue(owner, null, null); } }
-	public float zDirection { get { return zDirectionF.GetValue(owner, null, null); } }
-	public float xyArcMin { get { return xyArcMinF.GetValue(owner, null, null); } }
-	public float zArcMin { get { return zArcMinF.GetValue(owner, null, null); } }
-	public float xyArcMax { get { return xyArcMaxF.GetValue(owner, null, null); } }
-	public float zArcMax { get { return zArcMaxF.GetValue(owner, null, null); } }
-
-	public float rFwdClipMax { get { return rFwdClipMaxF.GetValue(owner, null, null); } }
+	public float rFwdClipMax { get { return rFwdClipMaxF.GetValue(fdb, owner, null, null); } }
 
 	protected Map map { get { return owner.map; } }
 
@@ -194,7 +199,7 @@ public class Region {
 		owner.SetParam("arg.region.angle.between.absolute.z", Mathf.Atan2(pos.z-start.z, xyDistance)*Mathf.Rad2Deg);
 		owner.SetParam("arg.region.angle.between.xy", Mathf.Atan2(pos.y-start.y, pos.x-start.x)*Mathf.Rad2Deg - owner.GetParam("arg.region.angle.xy"));
 		owner.SetParam("arg.region.angle.between.z", Mathf.Atan2(pos.z-start.z, xyDistance)*Mathf.Rad2Deg - owner.GetParam("arg.region.angle.z"));
-		float ret = predicateF.GetValue(owner, null, null);
+		float ret = predicateF.GetValue(fdb, owner, null, null);
 		owner.currentTarget = oldTarget;
 		return (ret != 0) ? PathDecision.Normal : PathDecision.Invalid;
 	}

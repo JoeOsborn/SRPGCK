@@ -8,14 +8,8 @@ public class Arbiter : MonoBehaviour {
 
 	public int[] localPlayers, aiPlayers, networkPlayers;
 
-	void Start () {
-	
-	}
-	
-	void Update () {
-	
-	}
-	
+	public Formulae formulae;
+
 	public bool IsLocalPlayer(int teamID) {
 		return Array.IndexOf(localPlayers, teamID) != -1;
 	}

@@ -9,6 +9,9 @@ public class StatusEffectEditor : SRPGCKEditor {
 	bool showPassiveEffects=true;
 	
 	public override void OnEnable() {
+		//FIXME: fdb = What exactly? 
+		//status effects don't have owners in 
+		//any meaningful data-lookup sense!
 		base.OnEnable();
 		name = "StatusEffect";
 	}

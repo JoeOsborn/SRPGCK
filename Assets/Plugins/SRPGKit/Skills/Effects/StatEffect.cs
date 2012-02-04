@@ -16,9 +16,9 @@ public enum StatEffectType {
 	Augment,
 	Multiply,
 	Replace,
-	
+
 	ChangeFacing,
-	
+
 	EndTurn
 };
 
@@ -44,14 +44,15 @@ public class StatEffect {
 	public string statName;
 	public StatEffectType effectType=StatEffectType.Augment;
 	public Formula value;
-	
+
 	//these two are only relevant for stateffects used in action and reaction skills
 	public string[] reactableTypes;
 	//for characters, equipment, and passive skills, "self", "wielder", or "character" is implicit
 	public StatEffectTarget target = StatEffectTarget.Applied;
-	
+
 	public float ModifyStat(float stat, Skill scontext, Character ccontext, Equipment econtext, out StatEffectRecord rec) {
-		float finalValue=value.GetValue(scontext, ccontext, econtext);
+		Formulae fdb = scontext != null ? scontext.fdb : (ccontext != null ? ccontext.fdb : (econtext != null ? econtext.fdb : Formulae.DefaultFormulae));
+		float finalValue=value.GetValue(fdb, scontext, ccontext, econtext);
 		rec = new StatEffectRecord(this, stat);
 		switch(effectType) {
 			case StatEffectType.Augment: return stat+finalValue;
@@ -65,8 +66,9 @@ public class StatEffect {
 		StatEffectRecord ignore;
 		return ModifyStat(stat, scontext, ccontext, econtext, out ignore);
 	}
-	
+
 	public StatEffectRecord Apply(Skill skill, Character character, Character targ) {
+		Formulae fdb = skill != null ? skill.fdb : (character != null ? character.fdb : (targ != null ? targ.fdb : Formulae.DefaultFormulae));
 		StatEffectRecord effect=null;
 		Character actualTarget=null;
 		switch(target) {
@@ -82,13 +84,13 @@ public class StatEffect {
 			case StatEffectType.Multiply:
 			case StatEffectType.Replace:
 				actualTarget.SetBaseStat(
-					statName, 
+					statName,
 					ModifyStat(actualTarget.GetStat(statName), skill, null, null, out effect)
 				);
 				Debug.Log("hit "+actualTarget+", new "+statName+" "+actualTarget.GetStat(statName));
 				break;
 			case StatEffectType.ChangeFacing:
-				float angle = value.GetValue(skill, targ, null);
+				float angle = value.GetValue(fdb, skill, targ, null);
 				actualTarget.Facing = angle;
 				effect = new StatEffectRecord(this, angle);
 				break;
@@ -99,7 +101,7 @@ public class StatEffect {
 		}
 		return effect;
 	}
-	
+
 	//editor only
 	public bool editorShowsReactableTypes=true;
 }
@@ -112,7 +114,7 @@ public class StatEffectRecord {
 		effect = e;
 		value = v;
 	}
-	
+
 	public bool Matches(string[] statNames, StatChangeType[] changes, string[] reactableTypes) {
 		bool statNameOK = statNames == null || statNames.Length == 0 || statNames.Contains(effect.statName);
 		bool changeOK = changes == null || changes.Length == 0 || changes.Any(delegate(StatChangeType c) {

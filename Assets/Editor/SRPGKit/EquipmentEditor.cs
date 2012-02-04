@@ -14,9 +14,10 @@ public class EquipmentEditor : SRPGCKEditor {
 	
 	Equipment e;
   public override void OnEnable() {
+		e = target as Equipment;
+		fdb = e.fdb;
 		base.OnEnable();
 		name = "Equipment";
-		e = target as Equipment;
 	}
 	
 	public override void OnSRPGCKInspectorGUI () {		

@@ -2,17 +2,14 @@ using UnityEngine;
 using System.Linq;
 using System.Collections.Generic;
 
-[ExecuteInEditMode]
-public class Formulae : MonoBehaviour {
-	[HideInInspector]
-	[System.NonSerialized]
-	public static Formulae instance;
-	
+using UnityEditor;
+
+public class Formulae : ScriptableObject {
 	public List<string> formulaNames;
 	public List<Formula> formulae;
-	
+
 	Dictionary<string, Formula> runtimeFormulae;
-	
+
 	void MakeFormulaeIfNecessary() {
 		if(runtimeFormulae == null) {
 			runtimeFormulae = new Dictionary<string, Formula>();
@@ -21,17 +18,18 @@ public class Formulae : MonoBehaviour {
 			}
 		}
 	}
-	
-	public static Formulae GetInstance() {
-		if(instance == null) {
-			object[] fs = FindObjectsOfType(typeof(Formulae));
-			if(fs.Length > 0) {
-				instance = fs[0] as Formulae;
-			}
+
+	public static Formulae DefaultFormulae { get {
+		//load up the asset
+		SRPGCKSettings settings = SRPGCKSettings.Settings;
+		if(settings.defaultFormulae == null) {
+			Formulae fdb = Resources.Load("Formulae") as Formulae;
+			if(fdb != null) { settings.defaultFormulae = fdb; }
+			else { Debug.LogError("Please create a default formulae DB and assign it to the global SRPGCKSettings asset."); }
 		}
-		return instance;
-	}
-	
+		return settings.defaultFormulae;
+	} }
+
 	public void AddFormula(Formula f, string name) {
 		MakeFormulaeIfNecessary();
 		runtimeFormulae.Add(name, f);
@@ -52,22 +50,16 @@ public class Formulae : MonoBehaviour {
 			formulae.RemoveAt(idx);
 		}
 	}
-	
-	public void Awake() {
-		instance = this;
-/*		if(instance != null) { Destroy(this); }
-		else { instance = this; }
-*/	}
-	
-	protected static float LookupEquipmentParamOn(
-		string fname, LookupType type, 
+
+	protected float LookupEquipmentParamOn(
+		string fname, LookupType type,
 		Character ccontext, Formula f
 	) {
 		if(ccontext != null) {
 			var equips = ccontext.Equipment.Where(eq => eq.Matches(f.equipmentSlots, f.equipmentCategories) && eq.HasParam(fname));
-			if(equips.Count() == 0) { 
+			if(equips.Count() == 0) {
 				Debug.LogError("No equipment with param "+fname);
-				return -1; 
+				return -1;
 			}
 			var results = equips.Select(eq => eq.GetParam(fname));
 			switch(f.mergeMode) {
@@ -89,12 +81,12 @@ public class Formulae : MonoBehaviour {
 		return -1;
 	}
 
-	protected static bool CanLookupEquipmentParamOn(
-		string fname, LookupType type, 
+	protected bool CanLookupEquipmentParamOn(
+		string fname, LookupType type,
 		Character ccontext, Formula f
 	) {
 		if(ccontext != null) {
-			var equips = ccontext.Equipment.Where(eq => 
+			var equips = ccontext.Equipment.Where(eq =>
 				eq.Matches(f.equipmentSlots, f.equipmentCategories) &&
 				(fname == null || eq.HasParam(fname))
 			);
@@ -102,17 +94,16 @@ public class Formulae : MonoBehaviour {
 		}
 		return false;
 	}
-	
-	public static bool CanLookup(
-		string fname, LookupType type, 
+
+	public bool CanLookup(
+		string fname, LookupType type,
 		Skill scontext=null, Character ccontext=null, Equipment econtext=null,
 		Formula f=null
 	) {
-		if(instance == null) { return false; }
 		switch(type) {
 			case LookupType.Auto:
-				return (econtext != null && econtext.HasParam(fname)) || 
-							 (scontext != null && scontext.HasParam(fname)) || 
+				return (econtext != null && econtext.HasParam(fname)) ||
+							 (scontext != null && scontext.HasParam(fname)) ||
 							 (ccontext != null && ccontext.HasStat(fname));
 			case LookupType.SkillParam:
 				return scontext.HasParam(fname);
@@ -122,13 +113,13 @@ public class Formulae : MonoBehaviour {
 				if(ccontext != null) { return ccontext.HasStat(fname); }
 				return false;
 			case LookupType.ActorEquipmentParam:
-				if(scontext != null) { 
-					ccontext = scontext.character; 
+				if(scontext != null) {
+					ccontext = scontext.character;
 				} else if(ccontext == null && econtext != null) {
 					if(econtext.Matches(f.equipmentSlots, f.equipmentCategories)) {
-						return econtext.HasParam(fname); 
-					} else { 
-						ccontext = econtext.wielder; 
+						return econtext.HasParam(fname);
+					} else {
+						ccontext = econtext.wielder;
 					}
 				}
 				return CanLookupEquipmentParamOn(fname, type, ccontext, f);
@@ -147,7 +138,7 @@ public class Formulae : MonoBehaviour {
 				if(scontext != null) { return scontext.currentTarget.HasStatusEffect(fname); }
 				return false;
 			case LookupType.TargetEquipmentParam:
-				if(scontext != null) { 
+				if(scontext != null) {
 					ccontext = scontext.currentTarget;
 				} else {
 					ccontext = null;
@@ -156,7 +147,7 @@ public class Formulae : MonoBehaviour {
 			case LookupType.TargetSkillParam:
 				return false;
 			case LookupType.NamedFormula:
-				return instance.HasFormula(fname);
+				return HasFormula(fname);
 			case LookupType.ReactedSkillParam:
 				if(scontext != null) {
 					return true;
@@ -173,12 +164,11 @@ public class Formulae : MonoBehaviour {
 		}
 		return false;
 	}
-	public static float Lookup(
-		string fname, LookupType type, 
+	public float Lookup(
+		string fname, LookupType type,
 		Skill scontext=null, Character ccontext=null, Equipment econtext=null,
 		Formula f=null
 	) {
-		if(instance == null) { return -1; }
 		switch(type) {
 			case LookupType.Auto:
 				return (econtext != null ? econtext.GetParam(fname) :
@@ -193,13 +183,13 @@ public class Formulae : MonoBehaviour {
 				Debug.LogError("Cannot find actor stat "+fname);
 				return -1;
 			case LookupType.ActorEquipmentParam:
-				if(scontext != null) { 
-					ccontext = scontext.character; 
+				if(scontext != null) {
+					ccontext = scontext.character;
 				} else if(ccontext == null && econtext != null) {
 					if(econtext.Matches(f.equipmentSlots, f.equipmentCategories)) {
-						return econtext.GetParam(fname); 
-					} else { 
-						ccontext = econtext.wielder; 
+						return econtext.GetParam(fname);
+					} else {
+						ccontext = econtext.wielder;
 					}
 				}
 				return LookupEquipmentParamOn(fname, type, ccontext, f);
@@ -218,7 +208,7 @@ public class Formulae : MonoBehaviour {
 				Debug.LogError("Cannot find target stat "+fname);
 				return -1;
 			case LookupType.TargetEquipmentParam:
-				if(scontext != null) { 
+				if(scontext != null) {
 					ccontext = scontext.currentTarget;
 				} else {
 					ccontext = null;
@@ -232,11 +222,11 @@ public class Formulae : MonoBehaviour {
 				Debug.LogError("Cannot find target skill param "+fname);
 				return -1;
 			case LookupType.NamedFormula:
-				if(!instance.HasFormula(fname)) { 
+				if(!HasFormula(fname)) {
 					Debug.LogError("Missing formula "+fname);
-					return -1; 
+					return -1;
 				}
-				return instance.LookupFormula(fname).GetValue(scontext, ccontext, econtext);
+				return LookupFormula(fname).GetValue(this, scontext, ccontext, econtext);
 			case LookupType.ReactedSkillParam:
 				if(scontext != null) {
 					return scontext.currentReactedSkill.GetParam(fname);
@@ -280,7 +270,7 @@ public class Formulae : MonoBehaviour {
 		MakeFormulaeIfNecessary();
 		return runtimeFormulae.ContainsKey(fname);
 	}
-	
+
 	public Formula LookupFormula(string fname) {
 		MakeFormulaeIfNecessary();
 		if(!HasFormula(fname)) { return null; }

@@ -157,6 +157,12 @@ public class Skill : MonoBehaviour {
 		MakeParametersIfNecessary();
 		return runtimeParameters.ContainsKey(pname);
 	}
+	
+	[HideInInspector]
+	public Formulae fdb { get {
+		if(character != null) { return character.fdb; }
+		return Formulae.DefaultFormulae;
+	} }
 
 	public float GetParam(string pname, float fallback=float.NaN) {
 		MakeParametersIfNecessary();
@@ -168,7 +174,7 @@ public class Skill : MonoBehaviour {
 /*			Debug.Log("using fallback "+fallback+" for "+pname);*/
 			return fallback;
 		}
-		return runtimeParameters[pname].GetValue(this, null);
+		return runtimeParameters[pname].GetValue(fdb, this, null);
 	}
 
 	public void SetParam(string pname, float value) {

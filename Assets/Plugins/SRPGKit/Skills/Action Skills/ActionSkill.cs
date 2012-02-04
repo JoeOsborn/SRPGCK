@@ -142,7 +142,7 @@ public class ActionSkill : Skill {
 
 	public Formula rotationSpeedXYF;
 	public float rotationSpeedXY { get {
-		return rotationSpeedXYF.GetValue(this, null, null);
+		return rotationSpeedXYF.GetValue(fdb, this, null, null);
 	} }
 
 	public int selectedSubregion;
@@ -1004,7 +1004,7 @@ public class ActionSkill : Skill {
 	protected bool PermitsNewWaypoints { get {
 		if(immediatelyExecuteDrawnPath) { return false; }
 		if(useOnlyOneWaypoint || maxWaypointDistance == null) { return false; }
-		return ((radiusSoFar + newNodeThreshold) < maxWaypointDistance.GetValue(this, null, null));
+		return ((radiusSoFar + newNodeThreshold) < maxWaypointDistance.GetValue(fdb, this, null, null));
 	} }
 
 	protected void RegisterPathPoint(Vector3 newDest, bool backwards=false) {

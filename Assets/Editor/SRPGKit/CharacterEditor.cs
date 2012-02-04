@@ -11,9 +11,10 @@ public class CharacterEditor : SRPGCKEditor {
 	
 	Character c;
   public override void OnEnable() {
+		c = target as Character;
+		fdb = c.fdb;
 		base.OnEnable();
 		name = "Character";
-		c = target as Character;
 	}
 	public override void OnSRPGCKInspectorGUI () {		
 		c.characterName = EditorGUILayout.TextField("Name", c.characterName).NormalizeName();

@@ -29,6 +29,11 @@ public class Character : MonoBehaviour {
 	[HideInInspector]
 	public Dictionary<string, Formula> runtimeStats;
 
+	[HideInInspector]
+	public Formulae fdb { get {
+		return (map != null && map.arbiter != null && map.arbiter.formulae != null) ? map.arbiter.formulae : Formulae.DefaultFormulae;
+	} }
+
 	//skills are monobehaviors (though I wish I could make them components)
 	//that are added/configured normally. skill instances can have a "path" that
 	//denotes how to get to them via menus, but that's an application concern
@@ -226,7 +231,7 @@ public class Character : MonoBehaviour {
 			}
 			return fallback;
 		}
-		return runtimeStats[statName].GetCharacterValue(this);
+		return runtimeStats[statName].GetCharacterValue(fdb, this);
 	}
 
 	public void SetBaseStat(string statName, float amt) {

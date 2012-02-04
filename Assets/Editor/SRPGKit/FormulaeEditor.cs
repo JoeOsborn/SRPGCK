@@ -5,30 +5,36 @@ using System.Linq;
 
 [CustomEditor(typeof(Formulae))]
 
-public class FormulaeEditor : SRPGCKEditor {		
-	Formulae fdb;
+public class FormulaeEditor : SRPGCKEditor {
+  [MenuItem("SRPGCK/Create formula database")]
+  public static Formulae CreateFormulae()
+  {
+    Formulae asset = ScriptableObject.CreateInstance<Formulae>();
+		asset.formulaNames = new List<string>();
+		asset.formulae = new List<Formula>();
+		AssetDatabase.CreateAsset(asset, AssetDatabase.GenerateUniqueAssetPath("Assets/Resources/Formulae.asset"));
+    AssetDatabase.SaveAssets();
+    EditorUtility.FocusProjectWindow();
+    Selection.activeObject = asset;
+		return asset;
+  }
 
 	protected override void UpdateFormulae() {
-		if(Formulae.GetInstance() == null) {
-			Debug.LogError("Need a formulae object somewhere to store formulae!");
-		} else {
-			formulaOptions = Formulae.GetInstance().formulaNames.ToArray();
-		}
-	}	
-	
+		formulaOptions = fdb.formulaNames.ToArray();
+	}
+
 	public override void OnEnable() {
+		fdb = target as Formulae;
 		base.OnEnable();
 		name = "Formulae";
-		fdb = target as Formulae;
 		selection = 0;
 		newFormulaName = "";
 	}
-	
+
 	int selection = 0;
 	string newFormulaName;
-	
-	public override void OnSRPGCKInspectorGUI () {
 
+	public override void OnSRPGCKInspectorGUI () {
 		EditorGUILayout.BeginHorizontal();
 		GUILayout.FlexibleSpace();
 		newFormulaName = EditorGUILayout.TextField(newFormulaName);

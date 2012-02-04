@@ -382,7 +382,7 @@ void Awake() {
 
 	void ResetStacks(Vector2 oldSize) {
 		MapColumn[] newStacks = new MapColumn[(int)_size.x*(int)_size.y];
-		Debug.Log("reset");
+		// Debug.Log("reset new sz "+_size+" old sz "+oldSize);
 		for(int i = 0; i < newStacks.Length; i++) {
 			if(oldSize != Vector2.zero) {
 				if(oldSize == _size) {
@@ -393,9 +393,11 @@ void Awake() {
 					int oldI = y*(int)oldSize.x+x;
 					if(x >= 0 && x < oldSize.x && x < _size.x &&
 					   y >= 0 && y < oldSize.y && y < _size.y &&
-						 stacks != null) {
+						 stacks != null &&
+						 oldI < stacks.Length) {
 						newStacks[i] = stacks[oldI];
 					} else {
+						// Debug.Log("("+x+","+y+")"+" new i "+i+" old i "+oldI+" out of range "+stacks.Length);
 						newStacks[i] = null;
 					}
 				}

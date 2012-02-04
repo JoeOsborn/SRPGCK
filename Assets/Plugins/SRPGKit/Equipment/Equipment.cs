@@ -51,10 +51,16 @@ public class Equipment : MonoBehaviour {
 		return runtimeParameters.ContainsKey(pname);
 	}
 	
+	[HideInInspector]
+	public Formulae fdb { get {
+		if(wielder != null) { return wielder.fdb; }
+		return Formulae.DefaultFormulae;
+	} }
+	
 	public float GetParam(string pname) {
 		MakeParametersIfNecessary();
 		FindWielder();
-		return runtimeParameters[pname].GetValue(null, null, this);
+		return runtimeParameters[pname].GetValue(fdb, null, null, this);
 	}
 	
 	public void EquipOn(Character c, int[] slots) {
