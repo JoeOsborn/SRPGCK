@@ -33,36 +33,36 @@ public class MapEditor : Editor {
 	public Vector2 lastSize=Vector2.zero;
 	public float lastSideLength=0, lastH=0;
 	public Vector3 lastPos=Vector3.zero;
-	
+
 	public Vector2 specScrollPos = Vector2.zero;
 	public Texture2D specPlaceholderTexture=null;
 	public int specSelectedSpec=0;
-	
+
 	public bool makeInvisibleTiles=false;
 	public float[] sideInsets={0,0,0,0,0,0};
 	public float[] cornerInsets={0,0,0,0};
-	
+
 	List<TileBounds> tiles=new List<TileBounds>();
-	
+
 	void RegisterUndo(string label) {
 		//close, but no cigar:
 		/*Map m = ((Map)target);
 		Undo.RegisterUndo(EditorUtility.CollectDeepHierarchy(new Object[]{
-			m.gameObject, 
+			m.gameObject,
 			m.gameObject.GetComponent<MeshFilter>(),
 			m.gameObject.GetComponent<MeshFilter>().sharedMesh}
 		), label);*/
 		Undo.RegisterSceneUndo(label);
 	}
-	
+
 	void GUIUpdateTexture(Texture2D tex, int idx, Dictionary<string, int> names) {
 		Map m = (Map)target;
 		string name = "MAP_TEX_"+idx;
 		names[name] = idx;
 		GUI.SetNextControlName(name);
 		Texture2D nextTex = (Texture2D)EditorGUILayout.ObjectField(
-			tex == specPlaceholderTexture ? null : tex, 
-			typeof(Texture2D), 
+			tex == specPlaceholderTexture ? null : tex,
+			typeof(Texture2D),
 			false,
 			GUILayout.Height(64),
 			GUILayout.Width(64)
@@ -82,65 +82,72 @@ public class MapEditor : Editor {
 					m.UpdateTileSpecAt(specSelectedSpec, nextTex);
 				}
 			  if(nextTex != null) {
-					string path = AssetDatabase.GetAssetPath(nextTex); 
-	        TextureImporter textureImporter = AssetImporter.GetAtPath(path) as TextureImporter; 
+					string path = AssetDatabase.GetAssetPath(nextTex);
+	        TextureImporter textureImporter = AssetImporter.GetAtPath(path) as TextureImporter;
 					textureImporter.textureType = TextureImporterType.Advanced;
 					textureImporter.anisoLevel = 1;
 					textureImporter.filterMode = FilterMode.Bilinear;
 					textureImporter.maxTextureSize = 1024;
 					textureImporter.textureFormat = TextureImporterFormat.AutomaticCompressed;
-	        textureImporter.mipmapEnabled = false;    
+	        textureImporter.mipmapEnabled = false;
 	        textureImporter.isReadable = true;
 					AssetDatabase.ImportAsset(path);
 				}
 			}
-		}	
+		}
 	}
-	
+
 	public override void OnInspectorGUI () {
 		Map m = (Map)target;
 		showDimensions = EditorGUILayout.Foldout(showDimensions, "Map Dimensions");
 		if(showDimensions) {
-			EditorGUI.indentLevel++;
-			EditorGUILayout.BeginHorizontal();
-			float nextXSz = EditorGUILayout.FloatField("Width", m.size.x);
-			float nextYSz = EditorGUILayout.FloatField("Height", m.size.y);
+	//		EditorGUI.indentLevel++;
+			GUILayout.BeginHorizontal();
+			GUILayout.Label("Width", GUILayout.Width(78));
+			float nextXSz = EditorGUILayout.FloatField(m.size.x, GUILayout.Width(32));
+			GUILayout.Label("Height", GUILayout.Width(78));
+			float nextYSz = EditorGUILayout.FloatField(m.size.y, GUILayout.Width(32));
 			Vector2 nextSz = new Vector2(nextXSz, nextYSz);
 			if(nextSz != m.size) {
 				RegisterUndo("Map Size Change");
 				m.size = nextSz;
 			}
-			EditorGUILayout.EndHorizontal();
-			EditorGUILayout.BeginHorizontal();
-			float nextLength = EditorGUILayout.FloatField("Side Length", m.sideLength);
+			GUILayout.EndHorizontal();
+			GUILayout.BeginHorizontal();
+			GUILayout.Label("Side Length", GUILayout.Width(78));
+			float nextLength = EditorGUILayout.FloatField(m.sideLength, GUILayout.Width(32));
 			if(nextLength != m.sideLength) {
 				RegisterUndo("Map Side Length Change");
 				m.sideLength = nextLength;
 			}
-			float nextHeight = EditorGUILayout.FloatField("Tile Height", m.tileHeight);
+			GUILayout.Label("Tile Height", GUILayout.Width(78));
+			float nextHeight = EditorGUILayout.FloatField(m.tileHeight, GUILayout.Width(32));
 			if(nextHeight != m.tileHeight) {
 				RegisterUndo("Map Side Height Change");
 				m.tileHeight = nextHeight;
 			}
-			EditorGUILayout.EndHorizontal();
-			EditorGUI.indentLevel--;
+			GUILayout.EndHorizontal();
+	//		EditorGUI.indentLevel--;
 		}
 
 		EditorGUILayout.Separator();
 
-		int nextZ = EditorGUILayout.IntSlider("Edit Z", editZ, 0, 20);
+		GUILayout.BeginHorizontal();
+		GUILayout.Label("Edit Z", GUILayout.Width(78));
+		int nextZ = EditorGUILayout.IntSlider(editZ, 0, 20);
 		if(nextZ != editZ) {
 //			RegisterUndo(target, "Map Height Selection");
 			editZ = nextZ;
 		}
+		GUILayout.EndHorizontal();
 
 		EditorGUILayout.Separator();
 
 		EditorGUILayout.BeginHorizontal();
 		GUIContent[] toolbarOptions = new GUIContent[3];
-		toolbarOptions[(int)EditMode.AddRemove] = new GUIContent("Add/Remove Tiles");
-		toolbarOptions[(int)EditMode.Reshape] = new GUIContent("Reshape Tiles");
-		toolbarOptions[(int)EditMode.Paint] = new GUIContent("Paint Tiles");
+		toolbarOptions[(int)EditMode.AddRemove] = new GUIContent("Add/Remove");
+		toolbarOptions[(int)EditMode.Reshape] = new GUIContent("Reshape");
+		toolbarOptions[(int)EditMode.Paint] = new GUIContent("Paint");
 		EditMode nextMode = (EditMode)GUILayout.Toolbar((int)editMode, toolbarOptions);
 		EditorGUILayout.EndHorizontal();
 		if(nextMode != editMode) {
@@ -149,29 +156,42 @@ public class MapEditor : Editor {
 		}
 		if(editMode == EditMode.AddRemove || editMode == EditMode.Reshape) {
 			//show inset/offset settings for current stamp
-			makeInvisibleTiles = EditorGUILayout.Toggle("Invisible", makeInvisibleTiles);
+			GUILayout.BeginHorizontal();
+			GUILayout.Label("Invisible", GUILayout.Width(78));
+			makeInvisibleTiles = EditorGUILayout.Toggle(makeInvisibleTiles);
+			GUILayout.EndHorizontal();
 			GUILayout.Label("Side Insets");
 			EditorGUILayout.BeginHorizontal();
-			sideInsets[(int)Neighbors.FrontLeftIdx ] = Mathf.Clamp(EditorGUILayout.FloatField("-X", sideInsets[(int)Neighbors.FrontLeftIdx  ]), 0, 1.0f-sideInsets[(int)Neighbors.BackRightIdx ]);
-			sideInsets[(int)Neighbors.BackRightIdx ] = Mathf.Clamp(EditorGUILayout.FloatField("+X", sideInsets[(int)Neighbors.BackRightIdx  ]), 0, 1.0f-sideInsets[(int)Neighbors.FrontLeftIdx ]);
+			GUILayout.Label("-X", GUILayout.Width(32));
+			sideInsets[(int)Neighbors.FrontLeftIdx ] = Mathf.Clamp(EditorGUILayout.FloatField(sideInsets[(int)Neighbors.FrontLeftIdx  ], GUILayout.Width(32)), 0, 1.0f-sideInsets[(int)Neighbors.BackRightIdx ]);
+			GUILayout.Label("+X", GUILayout.Width(32));
+			sideInsets[(int)Neighbors.BackRightIdx ] = Mathf.Clamp(EditorGUILayout.FloatField(sideInsets[(int)Neighbors.BackRightIdx  ], GUILayout.Width(32)), 0, 1.0f-sideInsets[(int)Neighbors.FrontLeftIdx ]);
 			EditorGUILayout.EndHorizontal();
 			EditorGUILayout.BeginHorizontal();
-			sideInsets[(int)Neighbors.FrontRightIdx] = Mathf.Clamp(EditorGUILayout.FloatField("-Y", sideInsets[(int)Neighbors.FrontRightIdx ]), 0, 1.0f-sideInsets[(int)Neighbors.BackLeftIdx  ]);
-			sideInsets[(int)Neighbors.BackLeftIdx  ] = Mathf.Clamp(EditorGUILayout.FloatField("+Y", sideInsets[(int)Neighbors.BackLeftIdx   ]), 0, 1.0f-sideInsets[(int)Neighbors.FrontRightIdx]);
+			GUILayout.Label("-Y", GUILayout.Width(32));
+			sideInsets[(int)Neighbors.FrontRightIdx] = Mathf.Clamp(EditorGUILayout.FloatField(sideInsets[(int)Neighbors.FrontRightIdx ], GUILayout.Width(32)), 0, 1.0f-sideInsets[(int)Neighbors.BackLeftIdx  ]);
+			GUILayout.Label("+Y", GUILayout.Width(32));
+			sideInsets[(int)Neighbors.BackLeftIdx  ] = Mathf.Clamp(EditorGUILayout.FloatField(sideInsets[(int)Neighbors.BackLeftIdx   ], GUILayout.Width(32)), 0, 1.0f-sideInsets[(int)Neighbors.FrontRightIdx]);
 			EditorGUILayout.EndHorizontal();
 			EditorGUILayout.BeginHorizontal();
-			sideInsets[(int)Neighbors.BottomIdx    ] = Mathf.Clamp(EditorGUILayout.FloatField("-Z", sideInsets[(int)Neighbors.BottomIdx     ]), 0, 1.0f-sideInsets[(int)Neighbors.TopIdx       ]);
-			sideInsets[(int)Neighbors.TopIdx       ] = Mathf.Clamp(EditorGUILayout.FloatField("+Z", sideInsets[(int)Neighbors.TopIdx        ]), 0, 1.0f-sideInsets[(int)Neighbors.BottomIdx    ]);
+			GUILayout.Label("-Z", GUILayout.Width(32));
+			sideInsets[(int)Neighbors.BottomIdx    ] = Mathf.Clamp(EditorGUILayout.FloatField(sideInsets[(int)Neighbors.BottomIdx     ], GUILayout.Width(32)), 0, 1.0f-sideInsets[(int)Neighbors.TopIdx       ]);
+			GUILayout.Label("+Z", GUILayout.Width(32));
+			sideInsets[(int)Neighbors.TopIdx       ] = Mathf.Clamp(EditorGUILayout.FloatField(sideInsets[(int)Neighbors.TopIdx        ], GUILayout.Width(32)), 0, 1.0f-sideInsets[(int)Neighbors.BottomIdx    ]);
 			EditorGUILayout.EndHorizontal();
-			GUILayout.Label("Corner Insets (not yet implemented)");
-			EditorGUILayout.BeginHorizontal();
-			cornerInsets[(int)Corners.Front] = Mathf.Clamp(EditorGUILayout.FloatField(" 0" , cornerInsets[(int)Corners.Front]), 0, 1.0f);
-			cornerInsets[(int)Corners.Right] = Mathf.Clamp(EditorGUILayout.FloatField("+X" , cornerInsets[(int)Corners.Right]), 0, 1.0f);
-			EditorGUILayout.EndHorizontal();
-			EditorGUILayout.BeginHorizontal();
-			cornerInsets[(int)Corners.Left ] = Mathf.Clamp(EditorGUILayout.FloatField("+Y" , cornerInsets[(int)Corners.Left ]), 0, 1.0f);
-			cornerInsets[(int)Corners.Back ] = Mathf.Clamp(EditorGUILayout.FloatField("+XY", cornerInsets[(int)Corners.Back ]), 0, 1.0f);
-			EditorGUILayout.EndHorizontal();
+			// GUILayout.Label("Corner Insets (not yet implemented)");
+			// EditorGUILayout.BeginHorizontal();
+			// GUILayout.Label(" 0", GUILayout.Width(32));
+			// cornerInsets[(int)Corners.Front] = Mathf.Clamp(EditorGUILayout.FloatField(cornerInsets[(int)Corners.Front], GUILayout.Width(32)), 0, 1.0f);
+			// GUILayout.Label("+X", GUILayout.Width(32));
+			// cornerInsets[(int)Corners.Right] = Mathf.Clamp(EditorGUILayout.FloatField(cornerInsets[(int)Corners.Right], GUILayout.Width(32)), 0, 1.0f);
+			// EditorGUILayout.EndHorizontal();
+			// EditorGUILayout.BeginHorizontal();
+			// GUILayout.Label("+Y", GUILayout.Width(32));
+			// cornerInsets[(int)Corners.Left ] = Mathf.Clamp(EditorGUILayout.FloatField(cornerInsets[(int)Corners.Left ], GUILayout.Width(32)), 0, 1.0f);
+			// GUILayout.Label("+XY", GUILayout.Width(32));
+			// cornerInsets[(int)Corners.Back ] = Mathf.Clamp(EditorGUILayout.FloatField(cornerInsets[(int)Corners.Back ], GUILayout.Width(32)), 0, 1.0f);
+			// EditorGUILayout.EndHorizontal();
 		} else if(editMode == EditMode.Paint) {
 			EditorGUILayout.Separator();
 			specScrollPos = EditorGUILayout.BeginScrollView(specScrollPos, true, false, GUILayout.Height(80));
@@ -213,7 +233,7 @@ public class MapEditor : Editor {
 			//now, show the parameters for this spec
 			bool oldEnabled = GUI.enabled;
 			GUI.enabled = specSelectedSpec < m.TileSpecCount;
-			
+
 			if(GUILayout.Button("Delete Tile")) {
 				RegisterUndo("Delete Tile Spec");
 				m.RemoveTileSpecAt(specSelectedSpec);
@@ -224,12 +244,12 @@ public class MapEditor : Editor {
 			}
 			GUI.enabled = oldEnabled;
 			EditorGUI.indentLevel--;
-			EditorGUILayout.Separator();				
+			EditorGUILayout.Separator();
 		}
 
 		if(GUI.changed) {
 			EditorUtility.SetDirty(target);
-		}		
+		}
 	}
 
 	void SetupAddRemoveTileBounds(TileBounds b, int idx) {
@@ -283,53 +303,53 @@ public class MapEditor : Editor {
 			tiles.Add(b);
 		}
 	}
-	
+
 	void BaseStampOffsetsAt(int idx) {
-		Map m = (Map)target;	
+		Map m = (Map)target;
 		int ny = idx/(int)m.size.x;
 		int nx = idx-(ny*(int)m.size.x);
 		/*		int nz = tiles[idx].z;*/
 		int nz = editZ;
 		m.SetTileInvisible(nx, ny, nz, makeInvisibleTiles);
-		
-		m.InsetSidesOfTile(nx, ny, nz, sideInsets[(int)Neighbors.FrontRightIdx], Neighbors.FrontRight); 
-		m.InsetSidesOfTile(nx, ny, nz, sideInsets[(int)Neighbors.FrontLeftIdx ], Neighbors.FrontLeft ); 
-		m.InsetSidesOfTile(nx, ny, nz, sideInsets[(int)Neighbors.BackRightIdx ], Neighbors.BackRight ); 
-		m.InsetSidesOfTile(nx, ny, nz, sideInsets[(int)Neighbors.BackLeftIdx  ], Neighbors.BackLeft  ); 
-		m.InsetSidesOfTile(nx, ny, nz, sideInsets[(int)Neighbors.BottomIdx    ], Neighbors.Bottom    ); 
-		m.InsetSidesOfTile(nx, ny, nz, sideInsets[(int)Neighbors.TopIdx       ], Neighbors.Top       ); 
 
-		m.InsetCornerOfTile(nx, ny, nz, cornerInsets[(int)Corners.Left ], Corners.Left ); 
-		m.InsetCornerOfTile(nx, ny, nz, cornerInsets[(int)Corners.Front], Corners.Front); 
-		m.InsetCornerOfTile(nx, ny, nz, cornerInsets[(int)Corners.Right], Corners.Right); 
-		m.InsetCornerOfTile(nx, ny, nz, cornerInsets[(int)Corners.Back ], Corners.Back ); 
+		m.InsetSidesOfTile(nx, ny, nz, sideInsets[(int)Neighbors.FrontRightIdx], Neighbors.FrontRight);
+		m.InsetSidesOfTile(nx, ny, nz, sideInsets[(int)Neighbors.FrontLeftIdx ], Neighbors.FrontLeft );
+		m.InsetSidesOfTile(nx, ny, nz, sideInsets[(int)Neighbors.BackRightIdx ], Neighbors.BackRight );
+		m.InsetSidesOfTile(nx, ny, nz, sideInsets[(int)Neighbors.BackLeftIdx  ], Neighbors.BackLeft  );
+		m.InsetSidesOfTile(nx, ny, nz, sideInsets[(int)Neighbors.BottomIdx    ], Neighbors.Bottom    );
+		m.InsetSidesOfTile(nx, ny, nz, sideInsets[(int)Neighbors.TopIdx       ], Neighbors.Top       );
+
+		m.InsetCornerOfTile(nx, ny, nz, cornerInsets[(int)Corners.Left ], Corners.Left );
+		m.InsetCornerOfTile(nx, ny, nz, cornerInsets[(int)Corners.Front], Corners.Front);
+		m.InsetCornerOfTile(nx, ny, nz, cornerInsets[(int)Corners.Right], Corners.Right);
+		m.InsetCornerOfTile(nx, ny, nz, cornerInsets[(int)Corners.Back ], Corners.Back );
 	}
-	
+
 	void StampOffsetsAt(int idx) {
 		RegisterUndo("Inset Tile");
 		BaseStampOffsetsAt(idx);
 		EditorUtility.SetDirty(target);
 	}
-	
+
 	void RemoveOffsetsAt(int idx) {
-		Map m = (Map)target;	
+		Map m = (Map)target;
 		int ny = idx/(int)m.size.x;
 		int nx = idx-(ny*(int)m.size.x);
 		/*		int nz = tiles[idx].z;*/
 		int nz = editZ;
 		m.SetTileInvisible(nx, ny, nz, false);
-		
+
 		RegisterUndo("Clear Insets");
-		m.InsetSidesOfTile(nx, ny, nz, 0, Neighbors.All); 
-		m.InsetCornerOfTile(nx, ny, nz, 0, Corners.Left ); 
-		m.InsetCornerOfTile(nx, ny, nz, 0, Corners.Front); 
-		m.InsetCornerOfTile(nx, ny, nz, 0, Corners.Right); 
-		m.InsetCornerOfTile(nx, ny, nz, 0, Corners.Back ); 
+		m.InsetSidesOfTile(nx, ny, nz, 0, Neighbors.All);
+		m.InsetCornerOfTile(nx, ny, nz, 0, Corners.Left );
+		m.InsetCornerOfTile(nx, ny, nz, 0, Corners.Front);
+		m.InsetCornerOfTile(nx, ny, nz, 0, Corners.Right);
+		m.InsetCornerOfTile(nx, ny, nz, 0, Corners.Back );
 		EditorUtility.SetDirty(target);
 	}
-	
+
 	void AddOrStampIsoTileAt(int idx) {
-		Map m = (Map)target;	
+		Map m = (Map)target;
 		int ny = idx/(int)m.size.x;
 		int nx = idx-(ny*(int)m.size.x);
 /*		int nz = tiles[idx].z;*/
@@ -341,9 +361,9 @@ public class MapEditor : Editor {
 		BaseStampOffsetsAt(idx);
 		EditorUtility.SetDirty(target);
 	}
-	
+
 	void RemoveIsoTileAt(int idx) {
-		Map m = (Map)target;	
+		Map m = (Map)target;
 		int ny = idx/(int)m.size.x;
 		int nx = idx-(ny*(int)m.size.x);
 /*		int nz = tiles[idx].z;*/
@@ -352,21 +372,21 @@ public class MapEditor : Editor {
 		m.RemoveIsoTileAt(nx, ny, nz);
 		EditorUtility.SetDirty(target);
 	}
-	
+
 	void SetTileSpecAt(int idx, Neighbors collidedFace) {
 		Map m = (Map)target;
 		int ny = idx/(int)m.size.x;
 		int nx = idx-(ny*(int)m.size.x);
 		int nz = editZ;
 		RegisterUndo("Paint Tile");
-		m.SetTileSpecOnTileAt(specSelectedSpec, nx, ny, nz, collidedFace);	
+		m.SetTileSpecOnTileAt(specSelectedSpec, nx, ny, nz, collidedFace);
 		EditorUtility.SetDirty(target);
 	}
-	
+
 	float modf(float f) {
 		return f - Mathf.Floor(f);
 	}
-	
+
 	void AdjustIsoHeightAt(int idx, Neighbors collidedFace, Vector3 wpos, int dh) {
 		Map m = (Map)target;
 		int ny = idx/(int)m.size.x;
@@ -407,14 +427,14 @@ public class MapEditor : Editor {
 		m.AdjustHeightOnSidesOfTile(nx, ny, nz, dh, side, top);
 		EditorUtility.SetDirty(target);
 	}
-	
+
 	bool Roughly(float a, float b) {
 		const float roughEps = 0.05f;
 		return Mathf.Abs(a-b) < roughEps;
 	}
-	
+
 	Neighbors CollidedFaceAt(Vector3 cp, TileBounds b) {
-		Vector3 collisionPoint = cp - b.center;				
+		Vector3 collisionPoint = cp - b.center;
 		Vector3 sz = b.size;
 		Neighbors collidedFace = Neighbors.None;
 		if(Roughly(collisionPoint.x, sz.x/2)) {
@@ -422,7 +442,7 @@ public class MapEditor : Editor {
 		} else if(Roughly(collisionPoint.x, -sz.x/2)) {
 			collidedFace = Neighbors.FrontLeft;
 		} else if(Roughly(collisionPoint.z, sz.z/2)) {
-			collidedFace = Neighbors.BackLeft;					
+			collidedFace = Neighbors.BackLeft;
 		} else if(Roughly(collisionPoint.z, -sz.z/2)) {
 			collidedFace = Neighbors.FrontRight;
 		} else if(collisionPoint.y < 0) {
@@ -432,7 +452,7 @@ public class MapEditor : Editor {
 		}
 		return collidedFace;
 	}
-	
+
 	public void OnSceneGUI() {
 		Event e = Event.current;
 		//draw a grid at the lowest available levels for the map
@@ -452,8 +472,8 @@ public class MapEditor : Editor {
 			here+new Vector3(s*sz.x+0.2f,-0.1f,s*sz.y+0.2f),
 			here+new Vector3(s*sz.x+0.2f,-0.1f,-0.1f)
 		};
-		Handles.DrawSolidRectangleWithOutline(basePlane, 
-		                                      Color.clear, 
+		Handles.DrawSolidRectangleWithOutline(basePlane,
+		                                      Color.clear,
 		                                      Color.black);
 		Vector2 mpos = e.mousePosition;
 		Ray ray = HandleUtility.GUIPointToWorldRay(mpos);
@@ -461,14 +481,14 @@ public class MapEditor : Editor {
 		float closestDistance = Mathf.Infinity;
 		Vector3 collisionPoint = Vector3.zero;
 		Neighbors collidedFace = Neighbors.None;
-		bool dimsChanged = 
-			sz != lastSize || 
-	   	s != lastSideLength || 
-	   	pos != lastPos || 
+		bool dimsChanged =
+			sz != lastSize ||
+	   	s != lastSideLength ||
+	   	pos != lastPos ||
 	   	h != lastH;
 		if(editMode == EditMode.AddRemove) {
 			int neededBoxes = (int)(sz.x*sz.y);
-			if(dimsChanged || 
+			if(dimsChanged ||
 				 editModeChanged ||
 		   	 tiles.Count <= neededBoxes) {
 				for(int i = 0; i < neededBoxes; i++) {
@@ -504,7 +524,7 @@ public class MapEditor : Editor {
 			}
 		} else if(editMode == EditMode.Reshape || editMode == EditMode.Paint) {
 			int neededBoxes = (int)(sz.x*sz.y);
-			if(dimsChanged || 
+			if(dimsChanged ||
 				 editModeChanged ||
 			 	 tiles.Count <= neededBoxes) {
 				for(int i = 0; i < neededBoxes; i++) {
@@ -532,7 +552,7 @@ public class MapEditor : Editor {
 				DrawWireBounds(closest.center, closest.size, Color.green, collidedFace);
 			}
 		}
-		
+
 		int controlID = GUIUtility.GetControlID(FocusType.Passive);
 		if(e.type == EventType.mouseUp) {
 			draggingInMap = false;
@@ -601,7 +621,7 @@ public class MapEditor : Editor {
 	public static void DrawWireBounds(Vector3 center, Vector3 size, Color lineColor) {
 		DrawWireBounds(center, size, lineColor, Neighbors.All);
 	}
-	
+
 	public static void DrawWireBounds(Vector3 center, Vector3 size, Color lineColor, Neighbors sides) {
 		float bh = size.y-0.2f;
 		float bs = size.x-0.2f;
@@ -656,7 +676,7 @@ public class MapEditor : Editor {
 				here+new Vector3(bs,bh,bs),
 				here+new Vector3(bs,0,bs),
 				here+new Vector3(bs,0,0),
-				here+new Vector3(bs,bh,0)										
+				here+new Vector3(bs,bh,0)
 			};
 			Handles.DrawSolidRectangleWithOutline(backRight, Color.clear, lineColor);
 		}

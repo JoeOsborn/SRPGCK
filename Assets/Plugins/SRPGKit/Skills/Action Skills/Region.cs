@@ -49,6 +49,12 @@ public class Region {
 	//they don't apply to self or predicate.
 	public bool canCrossWalls=true;
 	public bool canCrossEnemies=true;
+	//turn this off for move skills!
+	//it only has meaning if canCrossEnemies is false.
+	//basically, it's the difference between:
+	//ending ON an enemy (as an attack would); and
+	//ending BEFORE an enemy (as a move would)
+	public bool canHaltAtEnemies=true;
 
 	//these apply to cylinder, sphere, cone, and line
 	public Formula radiusMinF, radiusMaxF;
@@ -136,34 +142,34 @@ public class Region {
 		}
 	}
 
-	//FIXME: wrong because of reliance on z{Up|Down}{Max|Min}
-	public virtual PathDecision PathNodeIsValidHack(Vector3 start, PathNode pn, Character c) {
-		float dz = useAbsoluteDZ ? map.SignedDZForMove(pn.position, start) : pn.signedDZ;
-		float absDZ = Mathf.Abs(dz);
-		if(c != null && c != owner.character) {
-			if(c.EffectiveTeamID != owner.character.EffectiveTeamID) {
-				return (IsEffectRegion ? PathDecision.Normal : PathDecision.PassOnly);
-			} else {
-				if(!IsEffectRegion) {
-					return PathDecision.PassOnly;
-				}
-			}
-		}
-		if(IsEffectRegion) {
-			if(dz < 0 ? (absDZ > zUpMax) :
-					(dz > 0 ? absDZ > zDownMax : false)) {
-				return PathDecision.PassOnly;
-			}
-		} else {
-			if((dz == 0 ?
-				(zDownMin != 0 && zUpMin != 0) :
-					(dz < 0 ? (dz > -zDownMin || dz <= -zDownMax) :
-					(dz < zUpMin || dz >= zUpMax)))) {
-				return PathDecision.PassOnly;
-			}
-		}
-		return PathDecision.Normal;
-	}
+	// //FIXME: wrong because of reliance on z{Up|Down}{Max|Min}
+	// public virtual PathDecision PathNodeIsValidHack(Vector3 start, PathNode pn, Character c) {
+	// 	float dz = useAbsoluteDZ ? map.SignedDZForMove(pn.position, start) : pn.signedDZ;
+	// 	float absDZ = Mathf.Abs(dz);
+	// 	if(c != null && c != owner.character) {
+	// 		if(c.EffectiveTeamID != owner.character.EffectiveTeamID) {
+	// 			return (IsEffectRegion ? PathDecision.Normal : PathDecision.PassOnly);
+	// 		} else {
+	// 			if(!IsEffectRegion) {
+	// 				return PathDecision.PassOnly;
+	// 			}
+	// 		}
+	// 	}
+	// 	if(IsEffectRegion) {
+	// 		if(dz < 0 ? (absDZ > zUpMax) :
+	// 				(dz > 0 ? absDZ > zDownMax : false)) {
+	// 			return PathDecision.PassOnly;
+	// 		}
+	// 	} else {
+	// 		if((dz == 0 ?
+	// 			(zDownMin != 0 && zUpMin != 0) :
+	// 				(dz < 0 ? (dz > -zDownMin || dz <= -zDownMax) :
+	// 				(dz < zUpMin || dz >= zUpMax)))) {
+	// 			return PathDecision.PassOnly;
+	// 		}
+	// 	}
+	// 	return PathDecision.Normal;
+	// }
 	public virtual PathDecision PathNodeIsValidPredicate(
 		Vector3 start,
 		PathNode pn,
@@ -200,9 +206,11 @@ public class Region {
 		//TODO: replace with some type of collision check?
 		if(c != null && c != owner.character) {
 			if(c.EffectiveTeamID != owner.character.EffectiveTeamID) {
-				return canCrossEnemies ?
-					(IsEffectRegion ? PathDecision.Normal : PathDecision.PassOnly) :
-					PathDecision.Invalid;
+				if(canCrossEnemies) {
+					return (IsEffectRegion||canHaltAtEnemies) ? PathDecision.Normal : PathDecision.PassOnly;
+				} else {
+					return canHaltAtEnemies ? PathDecision.Normal : PathDecision.Invalid;
+				}
 			} else {
 				if(!IsEffectRegion) {
 					return PathDecision.PassOnly;
@@ -263,7 +271,8 @@ public class Region {
 			zDownMin, zDownMax,
 			zUpMin, zUpMax,
 			lineWidthMin, lineWidthMax,
-			InterveningSpaceType.Pick
+			interveningSpaceType,
+			true
 		);
 	}
 
@@ -273,7 +282,8 @@ public class Region {
 		float zrdmn, float zrdmx,
 		float zrumn, float zrumx,
 		float lwmn, float lwmx,
-		InterveningSpaceType spaceType
+		InterveningSpaceType spaceType,
+		bool returnAllTiles=false
   ) {
 		//intervening space selection filters what goes into `nodes` and what
 		//nodes get picked next time around—i.e. how prevs get set up.
@@ -283,24 +293,16 @@ public class Region {
 		Dictionary<Vector3, PathNode> pickables = null;
 		switch(type) {
 			case RegionType.Cylinder:
-				pickables = spaceType == interveningSpaceType ?
-					CylinderTilesAround(here, xyrmx, zrdmx, zrumx, PathNodeIsValidRange) :
-					CylinderTilesAround(here, xyrmx, zrdmx, zrumx, PathNodeIsValidHack);
+				pickables = CylinderTilesAround(here, xyrmx, zrdmx, zrumx, PathNodeIsValidRange);
 				break;
 			case RegionType.Sphere:
-				pickables = spaceType == interveningSpaceType ?
-					SphereTilesAround(here, xyrmx, zrdmx, zrumx, PathNodeIsValidRange) :
-					SphereTilesAround(here, xyrmx, zrdmx, zrumx, PathNodeIsValidHack);
+				pickables = SphereTilesAround(here, xyrmx, zrdmx, zrumx, PathNodeIsValidRange);
 				break;
 			case RegionType.Line:
-				pickables = spaceType == interveningSpaceType ?
-					LineTilesAround(here, q, xyrmx, zrdmx, zrumx, xyDirection, zDirection, lwmn, lwmx, PathNodeIsValidRange) :
-					LineTilesAround(here, q, xyrmx, zrdmx, zrumx, xyDirection, zDirection, lwmn, lwmx, PathNodeIsValidHack);
+				pickables = LineTilesAround(here, q, xyrmx, zrdmx, zrumx, xyDirection, zDirection, lwmn, lwmx, PathNodeIsValidRange);
 				break;
 			case RegionType.Cone:
-				pickables = spaceType == interveningSpaceType ?
-					ConeTilesAround(here, q, xyrmx, zrdmx, zrumx, xyDirection, zDirection, xyArcMin, xyArcMax, zArcMin, zArcMax, rFwdClipMax, PathNodeIsValidRange) :
-					ConeTilesAround(here, q, xyrmx, zrdmx, zrumx, xyDirection, zDirection, xyArcMin, xyArcMax, zArcMin, zArcMax, rFwdClipMax, PathNodeIsValidHack);
+				pickables = ConeTilesAround(here, q, xyrmx, zrdmx, zrumx, xyDirection, zDirection, xyArcMin, xyArcMax, zArcMin, zArcMax, rFwdClipMax, PathNodeIsValidRange);
 				break;
 			case RegionType.Self:
 				pickables =	new Dictionary<Vector3, PathNode>(){
@@ -339,13 +341,15 @@ public class Region {
 				picked = ArcReachableTilesAround(
 					here,
 					pickables,
-					xyrmx
+					xyrmx,
+					returnAllTiles
 				);
 				break;
 			case InterveningSpaceType.Line:
 				picked = LineReachableTilesAround(
 					here,
-					pickables
+					pickables,
+					returnAllTiles
 				);
 				break;
 			case InterveningSpaceType.Pick:
@@ -360,7 +364,8 @@ public class Region {
 					pickables,
 					xyrmx,
 					zrdmx,
-					zrumx
+					zrumx,
+					returnAllTiles
 				);
 				break;
 		}
@@ -433,12 +438,24 @@ public class Region {
 		PathNode cur = p;
 		PathNode lastEnd = p;
 		int tries = 0;
+		Color c = Color.red;
 		while(cur != null) {
+			Debug.Log("cur:"+cur);
+			if(cur.prev != null) {
+				Debug.DrawLine(map.TransformPointWorld(cur.pos), map.TransformPointWorld(cur.prev.pos), c, 1.0f, false);
+			}
 			if(cur.isWall && !canCrossWalls) {
-				lastEnd = cur;
+				lastEnd = cur.prev;
+				if(cur.prev != null) { Debug.Log("block just before wall "+cur.prev.pos); }
 			}
 			if(cur.isEnemy && !canCrossEnemies) {
-				lastEnd = cur;
+				if(canHaltAtEnemies) {
+					lastEnd = cur;
+					Debug.Log("block on top of enemy "+cur.pos);
+				} else {
+					lastEnd = cur.prev;
+					if(cur.prev != null) { Debug.Log("block just before enemy "+cur.prev.pos); }
+				}
 			}
 			cur = cur.prev;
 			tries++;
@@ -471,7 +488,8 @@ public class Region {
 		float zUpMax,
 		float zDownMax,
 		float jumpDistance,
-		Vector3 start, Vector3 dest
+		Vector3 start, Vector3 dest,
+		bool provideAllTiles
 	) {
 		//FIXME: do something smart with arcs in the future
   	for(int j = 0; j < jumpDistance; j++) {
@@ -495,26 +513,28 @@ public class Region {
 						//can't land here
 						continue;
 					}
-					//FIXME: these ".z == .z" checks may be buggy wrt tall tiles
-  				if(jumpPn.isWall && !canCrossWalls) {
+					//FIXME: these ".z == .z || .z==.z+1" checks may be buggy wrt tall tiles
+  				if(!provideAllTiles && jumpPn.isWall && !canCrossWalls) {
   					if(jumpPos.z == pn.pos.z || jumpPos.z == pn.pos.z+1) {
   						canJumpNoFurther = true;
   						break;
   					}
   					continue;
   				}
-  				if(jumpPn.isEnemy && !canCrossEnemies) {
+  				if(!provideAllTiles && jumpPn.isEnemy && !canCrossEnemies) {
   					if(jumpPos.z == pn.pos.z || jumpPos.z == pn.pos.z+1) {
   						canJumpNoFurther = true;
   						break;
   					}
-  					continue;
+						if(!canHaltAtEnemies) {
+	  					continue;
+						}
   				}
-					//Debug.Log("enqueue leap to "+jumpPn.pos);
+					// Debug.Log("enqueue leap to "+jumpPn.pos);
 					queue.Enqueue(jumpPn.distance+Mathf.Abs(jumpPos.x-dest.x)+Mathf.Abs(jumpPos.y-dest.y)+Mathf.Abs(jumpPos.z-dest.z), jumpPn);
   			} else if(jumpAdjZ > pn.pos.z) { //don't jump upwards or through a wall
   				MapTile jt = map.TileAt(jumpPos);
-  				if(jt != null && jt.z <= pn.pos.z+2 && !canCrossWalls) { canJumpNoFurther = true; }
+  				if(!provideAllTiles && jt != null && jt.z <= pn.pos.z+2 && !canCrossWalls) { canJumpNoFurther = true; }
   				break;
   			}
   		}
@@ -534,7 +554,8 @@ public class Region {
 		List<PathNode> ret,
 		float maxRadius, //max cost for path
 		float zDownMax, //apply to each step
-		float zUpMax //apply to each step
+		float zUpMax, //apply to each step
+		bool provideAllTiles
 	) {
 		if(ret.Contains(destPn)) {
 			//Debug.Log("dest "+destPn.pos+" is already in ret");
@@ -587,9 +608,10 @@ public class Region {
 				//don't bother trying to add any more points, they'll be too far
 				continue;
 			}
+			if(pn.isEnemy && !canCrossEnemies && !provideAllTiles) { continue; }
       foreach(Vector2 n2 in XYNeighbors)
       {
-				if(pn.XYDistanceFrom(start)+n2.x+n2.y > maxRadius) {
+				if(pn.XYDistanceFrom(start)+n2.x+n2.y > maxRadius && !provideAllTiles) {
 					continue;
 				}
 				float px = pn.pos.x+n2.x;
@@ -601,10 +623,10 @@ public class Region {
 					float dz = useAbsoluteDZ ? map.SignedDZForMove(pos, start) : map.SignedDZForMove(pos, pn.pos);
 					if(dz > 0 && dz > zUpMax) { continue; }
 					if(dz < 0 && Mathf.Abs(dz) > zDownMax) { continue; }
-					if(dz > 0 && !canCrossWalls && map.ZLevelsWithinLimits((int)pn.pos.x, (int)pn.pos.y, (int)pn.pos.z, adjZ+headroom).Length != 0) {
+					if(!provideAllTiles && dz > 0 && !canCrossWalls && map.ZLevelsWithinLimits((int)pn.pos.x, (int)pn.pos.y, (int)pn.pos.z, adjZ+headroom).Length != 0) {
 						continue;
 					}
-					if(dz < 0 && !canCrossWalls && map.ZLevelsWithinLimits((int)pos.x, (int)pos.y, adjZ, (int)pn.pos.z+headroom).Length != 0) {
+					if(!provideAllTiles && dz < 0 && !canCrossWalls && map.ZLevelsWithinLimits((int)pos.x, (int)pos.y, adjZ, (int)pn.pos.z+headroom).Length != 0) {
 						continue;
 					}
 					if(map.TileAt(pos) == null) {
@@ -621,17 +643,17 @@ public class Region {
 					}
 					if(adjZ < pn.pos.z) {
 						//try to jump across me
-						TryAddingJumpPaths(queue, closed, pickables, ret, pn, (int)n2.x, (int)n2.y, maxRadius, zUpMax, zDownMax, jumpDistance, start, dest);
+						TryAddingJumpPaths(queue, closed, pickables, ret, pn, (int)n2.x, (int)n2.y, maxRadius, zUpMax, zDownMax, jumpDistance, start, dest, provideAllTiles);
 					}
 					float addedCost = Mathf.Abs(n2.x)+Mathf.Abs(n2.y)-0.01f*(Mathf.Max(zUpMax, zDownMax)-Mathf.Abs(pn.pos.z-adjZ)); //-0.3f because we are not a leap
 					next.isWall = map.TileAt(pos+new Vector3(0,0,1)) != null;
 					next.isEnemy = map.CharacterAt(pos) != null && map.CharacterAt(pos).EffectiveTeamID != owner.character.EffectiveTeamID;
 					next.distance = pn.distance+addedCost;
 					next.prev = pn;
-					if(next.isWall && !canCrossWalls) {
+					if(!provideAllTiles && next.isWall && !canCrossWalls) {
 						continue;
 					}
-					if(next.isEnemy && !canCrossEnemies) {
+					if(!provideAllTiles && next.isEnemy && !canCrossEnemies && !canHaltAtEnemies) {
 						continue;
 					}
 					queue.Enqueue(next.distance+Mathf.Abs(pos.x-dest.x)+Mathf.Abs(pos.y-dest.y)+Mathf.Abs(pos.z-dest.z), next);
@@ -650,7 +672,8 @@ public class Region {
 		Dictionary<Vector3, PathNode> pickables,
 		float xyrmx,
 		float zrdmx,
-		float zrumx
+		float zrumx,
+		bool provideAllTiles
 	) {
 		var ret = new List<PathNode>();
 		//we bump start up by 1 in z so that the line can come from the head rather than the feet
@@ -662,7 +685,7 @@ public class Region {
 		foreach(PathNode pn in sortedPickables) {
 			//find the path
 //			if(pn.prev != null) { Debug.Log("pos "+pn.pos+" has prev "+pn.prev.pos); continue; }
-			AddPathTo(pn, truncStart, pickables, ret, xyrmx, zrdmx, zrumx);
+			AddPathTo(pn, truncStart, pickables, ret, xyrmx, zrdmx, zrumx, provideAllTiles);
 		}
 		return ret;
 	}
@@ -911,7 +934,8 @@ public class Region {
 
 	public IEnumerable<PathNode> LineReachableTilesAround(
 		Vector3 start,
-		Dictionary<Vector3, PathNode> pickables
+		Dictionary<Vector3, PathNode> pickables,
+		bool provideAllTiles
 	) {
 		var ret = new List<PathNode>();
 		//we bump start up by 1 in z so that the line can come from the head rather than the feet
@@ -922,20 +946,21 @@ public class Region {
 		//improve efficiency by storing intermediate calculations -- i.e. the tiles on the line from end to start
 		foreach(PathNode pn in sortedPickables) {
 			if(pn.prev != null) { continue; }
-			Vector3 here = pn.pos;
-			Vector3 truncHere = SRPGUtil.Trunc(here);
-			if(truncHere == truncStart) {
+			Vector3 here = truncStart;
+			Vector3 truncEnd = SRPGUtil.Trunc(pn.pos);
+			Vector3 truncHere = truncStart;
+			if(truncStart == truncEnd) {
 				ret.Add(pn);
 				continue;
 			}
-			Vector3 d = truncStart-truncHere;
+			Vector3 d = truncEnd-truncHere;
 			//HACK: moves too fast and produces infinite loops
 			//when normalized d is too big relative to the actual distance
 			d = d.normalized;
-			PathNode cur = pn;
+			PathNode cur = pickables[truncHere];
 			Vector3 prevTrunc = here;
 			int tries = 0;
-			while(truncHere != truncStart) {
+			while(truncHere != truncEnd) {
 				here += d;
 				truncHere = SRPGUtil.Round(here);
 				if(prevTrunc == truncHere) { continue; }
@@ -950,18 +975,21 @@ public class Region {
 					}
 					pickables.Add(truncHere, herePn);
 				}
-				cur.prev = herePn;
+				herePn.prev = cur;
 				cur = herePn;
-				if(herePn.isWall && !canCrossWalls) {
+				if(herePn.isWall && !canCrossWalls && !provideAllTiles) {
 					//don't add this node or parents and break now
 					break;
 				}
-				if(herePn.isEnemy && !canCrossEnemies) {
+				if(herePn.isEnemy && !canCrossEnemies && !canHaltAtEnemies && !provideAllTiles) {
 					//don't add this node and break now
 					break;
 				}
-				if(truncHere == truncStart || tries > 50) {
+				if(truncHere == truncEnd || tries > 50) {
 					ret.Add(pn);
+					break;
+				}
+				if(cur.isEnemy && !canCrossEnemies && !provideAllTiles) {
 					break;
 				}
 				tries++;
@@ -976,9 +1004,10 @@ public class Region {
 	bool FindArcFromTo(
 		Vector3 startPos, Vector3 pos, Vector3 dir,
 		float d, float theta, float v, float g, float dt,
-		Dictionary<Vector3, PathNode> pickables
+		Dictionary<Vector3, PathNode> pickables,
+		bool provideAllTiles
 	) {
-/*		Color c = new Color(Random.value, Random.value, Random.value, 0.6f);*/
+		//Color c = new Color(Random.value, Random.value, Random.value, 0.6f);
 
 		Vector3 prevPos = startPos;
 		float sTH = Mathf.Sin(theta);
@@ -994,7 +1023,7 @@ public class Region {
 			float y = v * sTH * t - (g * t * t)/2.0f;
 			Vector3 testPos = SRPGUtil.Round(new Vector3(startPos.x, startPos.y, startPos.z+y) + xr*dir);
 			if(testPos == prevPos && t != 0) { t += dt; continue; }
-/*			Debug.DrawLine(map.TransformPointWorld(prevPos), map.TransformPointWorld(testPos), c, 1.0f);*/
+			// if(pos.x==1&&pos.y==0&&pos.z==0) { Debug.DrawLine(map.TransformPointWorld(prevPos), map.TransformPointWorld(testPos), c, 1.0f); }
 			PathNode pn = null;
 			if(pickables.ContainsKey(testPos)) {
 				pn = pickables[testPos];
@@ -1003,36 +1032,38 @@ public class Region {
 				}
 				pn.distance = xDist;
 			} else {
-				//through an invalid point?
-				//FIXME: will this work with big/tall tiles?
-				if(map.TileAt(testPos) != null) {
-					break;
-				}
-				//through empty space? that's ok!
 				pickables[testPos] = pn = new PathNode(testPos, (testPos != prevPos && pickables.ContainsKey(prevPos) ? pickables[prevPos] : null), xDist);
 				pn.canStop = false;
-				pn.isWall = map.TileAt(testPos+new Vector3(0,0,1)) != null;
+				pn.isWall = /*map.TileAt(testPos) != null && */map.TileAt(testPos+new Vector3(0,0,1)) != null;
 				pn.isEnemy = map.CharacterAt(testPos) != null && map.CharacterAt(testPos).EffectiveTeamID != owner.character.EffectiveTeamID;
 			}
 			if(prevPos.z < testPos.z && map.TileAt(testPos) != null) {
 				pn.isWall = true;
 			}
-			if(pn.isWall && !canCrossWalls) {
+			if(pn.isWall && !canCrossWalls && !provideAllTiles) {
 				//no good!
+//				if(pos.x==1&&pos.y==0&&pos.z==0) Debug.Log("wall, can't cross at testpos "+testPos);
 				break;
 			}
-			if(pn.isEnemy && !canCrossEnemies) {
+			if(pn.isEnemy && !canCrossEnemies && !canHaltAtEnemies && !provideAllTiles) {
 				//no good!
+//				if(pos.x==1&&pos.y==0&&pos.z==0) Debug.Log("enemy, can't cross, can't halt at testpos "+testPos);
 				break;
 			}
+			if(pn.prev != null && pn.prev.isEnemy && !canCrossEnemies && !provideAllTiles) {
+				//no good!
+//				if(pos.x==1&&pos.y==0&&pos.z==0) Debug.Log("halted already at testpos "+testPos);
+				break;
+			}
+//			if(pos.x==1&&pos.y==0&&pos.z==0) Debug.Log("go through testpos "+testPos);
 			prevPos = testPos;
 			t += dt;
 		}
-//		Debug.DrawLine(map.TransformPointWorld(prevPos), map.TransformPointWorld(pos), c, 1.0f);
+//		if(pos.x==1&&pos.y==0&&pos.z==0) { Debug.DrawLine(map.TransformPointWorld(prevPos), map.TransformPointWorld(pos), c, 1.0f); }
 		if(prevPos == pos) {
 			return true;
 		} else if(t >= endT) {
-/*			Debug.Log("T passed "+endT+" without reaching "+pos+", got "+prevPos);*/
+//			if(pos.x==1&&pos.y==0&&pos.z==0) Debug.Log("T passed "+endT+" without reaching "+pos+", got "+prevPos);
 		}
 		return false;
 	}
@@ -1040,7 +1071,8 @@ public class Region {
 	public IEnumerable<PathNode> ArcReachableTilesAround(
 		Vector3 here,
 		Dictionary<Vector3, PathNode> pickables,
-		float maxRadius
+		float maxRadius,
+		bool provideAllTiles
 	) {
 		List<PathNode> ret = new List<PathNode>();
 		Vector3 startPos = here+new Vector3(0,0,1);
@@ -1066,11 +1098,11 @@ public class Region {
 			float theta1 = Mathf.Atan((v*v+Mathf.Sqrt(thSqrtTerm))/(g*thX));
 			float theta2 = Mathf.Atan((v*v-Mathf.Sqrt(thSqrtTerm))/(g*thX));
 			//try 1, then 2. we also accept aiming downward.
-			if(FindArcFromTo(startPos, pos, dir, d, theta1, v, g, dt, pickables)) {
+			if(FindArcFromTo(startPos, pos, dir, d, theta1, v, g, dt, pickables, provideAllTiles)) {
 				posPn.velocity = v;
 				posPn.altitude = theta1;
 				ret.Add(posPn);
-			} else if(FindArcFromTo(startPos, pos, dir, d, theta2, v, g, dt, pickables)) {
+			} else if(FindArcFromTo(startPos, pos, dir, d, theta2, v, g, dt, pickables, provideAllTiles)) {
 				posPn.velocity = v;
 				posPn.altitude = theta2;
 				ret.Add(posPn);
