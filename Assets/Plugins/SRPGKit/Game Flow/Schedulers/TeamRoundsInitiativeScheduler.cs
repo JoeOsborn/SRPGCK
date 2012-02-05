@@ -2,8 +2,10 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 
-public class RoundsInitiativeScheduler : Scheduler {
+public class TeamRoundsInitiativeScheduler : Scheduler {
 	public List<Initiative> order;
+	public int teamCount=2;
+	public int currentTeam=0;
 
 	override public void Start () {
 		base.Start();
@@ -13,8 +15,10 @@ public class RoundsInitiativeScheduler : Scheduler {
 	public void BeginRound() {
 		order.Clear();
 		// Debug.Log("begin round with "+characters.Count+" characters");
-		for(int i = 0; i < characters.Count; i++) {
-			Character c = characters[i];
+		var teamChars = characters.
+			Where(c => c.EffectiveTeamID == currentTeam).ToList();
+		for(int i = 0; i < teamChars.Count; i++) {
+			Character c = teamChars[i];
 			float ini = c.GetStat("initiative");
 			Debug.Log("character "+c.name+" ini:"+ini);
 			order.Add(new Initiative(c, ini));
@@ -26,6 +30,10 @@ public class RoundsInitiativeScheduler : Scheduler {
 	public void EndRound() {
 		// Debug.Log("end round");
 		map.BroadcastMessage("RoundEnded", SendMessageOptions.DontRequireReceiver);
+		currentTeam++;
+		if(currentTeam >= teamCount) {
+			currentTeam = 0;
+		}
 		BeginRound();
 	}
 

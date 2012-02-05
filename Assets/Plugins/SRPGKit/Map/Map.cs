@@ -143,7 +143,7 @@ void Awake() {
 		for(int mi = 0; mi < stacks.Length; mi++) {
 			MapColumn tl = stacks[mi];
 			if(tl == null) { continue; }
-			for(int ti = 0; ti < tl.Count; i++) {
+			for(int ti = 0; ti < tl.Count; ti++) {
 				MapTile t = tl.At(ti);
 				if(!MapTileIsNull(t)) {
 					t.AdjustTileSpecsAfterRemoving(i);
