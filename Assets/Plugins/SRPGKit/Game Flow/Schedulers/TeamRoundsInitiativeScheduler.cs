@@ -23,7 +23,7 @@ public class TeamRoundsInitiativeScheduler : Scheduler {
 			Debug.Log("character "+c.name+" ini:"+ini);
 			order.Add(new Initiative(c, ini));
 		}
-		order = order.OrderBy(i => i.initiative).ToList();
+		order = order.OrderByDescending(i => i.initiative).ToList();
 		map.BroadcastMessage("RoundBegan", SendMessageOptions.DontRequireReceiver);
 	}
 
@@ -39,14 +39,10 @@ public class TeamRoundsInitiativeScheduler : Scheduler {
 
 	override public void SkillApplied(Skill s) {
 		base.SkillApplied(s);
-		//FIXME: too eager, put something in the UI
-		Deactivate(s.character);
 	}
 
 	override public void Activate(Character c, object ctx=null) {
 		base.Activate(c, ctx);
-		//FIXME: (for now): ON `activate`, MOVE
-		c.moveSkill.ActivateSkill();
 	}
 
 	protected override void Begin() {

@@ -7,24 +7,24 @@ public enum TurnLimitMode {
 }
 
 public class TeamRoundsPointsScheduler : Scheduler {
-	public TurnLimitMode limitMode=TurnLimitMode.Time;
-	
+	public TurnLimitMode limitMode=TurnLimitMode.AP;
+
 	public bool onlyDrainAPForXYDistance = true;
-	
+
 	public float defaultLimiterMax=10;
 	public float defaultLimiterDiminishScale=0.75f;
 	public float defaultMoveAPCost=1; //per tile move cost
 	public float defaultAPLossPerSecond=0;
-		
+
 	public int teamCount=2;
 
 	public int currentTeam=0;
-	
+
 	public int pointsPerRound=8;
 
 	[HideInInspector]
 	public int pointsRemaining=0;
-	
+
 	override public void Start () {
 		pointsRemaining = pointsPerRound;
 		foreach(Character c in characters) {
@@ -33,7 +33,7 @@ public class TeamRoundsPointsScheduler : Scheduler {
 			ppc.Limiter = 0;
 		}
 	}
-	
+
 	public void EndRound() {
 		if(activeCharacter != null) {
 			Deactivate(activeCharacter);
@@ -52,21 +52,21 @@ public class TeamRoundsPointsScheduler : Scheduler {
 		}
 		map.BroadcastMessage("RoundBegan", currentTeam, SendMessageOptions.DontRequireReceiver);
 	}
-	
+
 	public void DecreaseAP(float amt) {
 		if(activeCharacter != null && limitMode == TurnLimitMode.AP) {
 			RoundPointsCharacter ppc = activeCharacter.GetComponent<RoundPointsCharacter>();
 			ppc.Limiter -= amt;
 		}
 	}
-	
+
 	override public void AddCharacter(Character c) {
 		base.AddCharacter(c);
 		if(c.GetComponent<RoundPointsCharacter>() == null) {
 			c.gameObject.AddComponent<RoundPointsCharacter>();
 		}
 	}
-	
+
 	override public void Activate(Character c, object ctx=null) {
 		if(c == null) { return; }
 		RoundPointsCharacter ppc = c.GetComponent<RoundPointsCharacter>();
@@ -92,16 +92,12 @@ public class TeamRoundsPointsScheduler : Scheduler {
 		base.Activate(c, ctx);
 		ppc.UsesThisRound = uses+1;
 		//(for now): ON `activate`, MOVE
-		activeCharacter.moveSkill.ActivateSkill();
+	//	activeCharacter.moveSkill.ActivateSkill();
 		pointsRemaining--;
 	}
-	
-	override public void CharacterMovedIncremental(Character c, Vector3 from, Vector3 to) {
-		CharacterMoved(c, from, to);
-	}
-	
-	override public void CharacterMoved(Character c, Vector3 from, Vector3 to) {
-		//FIXME: should get path nodes instead of an instantaneous vector, since we don't really want straight-line distance
+
+	override public void CharacterMovedIncremental(Character c, Vector3 from, Vector3 to, PathNode endOfPath) {
+		//FIXME: might be broken for certain types of incremental tile-locked moves
 /*		Debug.Log("moved to "+to);*/
 		RoundPointsCharacter ppc = c.GetComponent<RoundPointsCharacter>();
 		if(limitMode == TurnLimitMode.AP) {
@@ -112,12 +108,29 @@ public class TeamRoundsPointsScheduler : Scheduler {
 			} else {
 				distance = Vector3.Distance(to, from);
 			}
-/*			Debug.Log("Distance: "+distance);*/
+			Debug.Log("Inc distance: "+distance+" from "+from+" to "+to);
 			DecreaseAP(moveAPCost * distance);
 			Debug.Log("new AP: "+ppc.Limiter);
 		}
 	}
-	
+
+	override public void CharacterMoved(Character c, Vector3 from, Vector3 to, PathNode endOfPath) {
+/*		Debug.Log("moved to "+to);*/
+		RoundPointsCharacter ppc = c.GetComponent<RoundPointsCharacter>();
+		if(limitMode == TurnLimitMode.AP) {
+			float moveAPCost = ppc.PerUnitMovementAPCost;
+			float distance = 0;
+			if(onlyDrainAPForXYDistance) {
+				distance = endOfPath.xyDistanceFromStart;
+			} else {
+				distance = Mathf.Floor(endOfPath.distance);
+			}
+			Debug.Log("Distance: "+distance+" from "+from+" to "+to);
+			DecreaseAP(moveAPCost * distance);
+			Debug.Log("new AP: "+ppc.Limiter);
+		}
+	}
+
 	//NEXT: maybe this is best phrased as a call from the scheduler to the Region letting it know
 	//some relevant information? Or else a call from the Region to the scheduler -- either way,
 	//the Region must be AP-savvy in order to get the correct paths.
@@ -129,12 +142,11 @@ public class TeamRoundsPointsScheduler : Scheduler {
 		float moveAPCost = ppc.PerUnitMovementAPCost;
 		return (float)(ppc.Limiter/moveAPCost);
 	}
-	
+
 	override public void SkillApplied(Skill s) {
 		base.SkillApplied(s);
-		Deactivate(s.character);
 	}
-	
+
 	override public void FixedUpdate () {
 		base.FixedUpdate();
 		if(activeCharacter == null) {

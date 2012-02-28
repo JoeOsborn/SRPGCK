@@ -19,7 +19,7 @@ public class RoundsInitiativeScheduler : Scheduler {
 			Debug.Log("character "+c.name+" ini:"+ini);
 			order.Add(new Initiative(c, ini));
 		}
-		order = order.OrderBy(i => i.initiative).ToList();
+		order = order.OrderByDescending(i => i.initiative).ToList();
 		map.BroadcastMessage("RoundBegan", SendMessageOptions.DontRequireReceiver);
 	}
 

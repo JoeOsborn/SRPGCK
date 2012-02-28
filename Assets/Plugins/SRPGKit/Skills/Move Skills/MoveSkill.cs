@@ -61,7 +61,8 @@ public class MoveSkill : ActionSkill {
 			scheduler.CharacterMovedTemporary(
 				character, 
 				map.InverseTransformPointWorld(src), 
-				map.InverseTransformPointWorld(endNode.pos)
+				map.InverseTransformPointWorld(endNode.pos),
+				pn
 			);
 		});
 	}
@@ -73,7 +74,8 @@ public class MoveSkill : ActionSkill {
 			scheduler.CharacterMovedIncremental(
 				character, 
 				src, 
-				endNode.pos
+				endNode.pos,
+				pn
 			);
 		});
 	}
@@ -84,7 +86,8 @@ public class MoveSkill : ActionSkill {
 			scheduler.CharacterMoved(
 				character, 
 				map.InverseTransformPointWorld(src), 
-				map.InverseTransformPointWorld(endNode.pos)
+				map.InverseTransformPointWorld(endNode.pos),
+				pn
 			);
 			ApplySkill();
 		});

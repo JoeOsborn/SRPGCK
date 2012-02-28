@@ -86,7 +86,7 @@ public class Region {
 	//generate tiles, and may not apply their intervening space modes.
 	//more complex uses of compound spaces should subclass Skill or Region.
 	public Region[] regions;
-	
+
 	public float radiusMin { get { return radiusMinF.GetValue(fdb, owner, null, null); } }
 	public float radiusMax { get { return radiusMaxF.GetValue(fdb, owner, null, null); } }
 	public float zUpMin { get { return zUpMinF.GetValue(fdb, owner, null, null); } }
@@ -141,6 +141,7 @@ public class Region {
 		get { return isEffectRegion; }
 		set {
 			isEffectRegion = value;
+			if(regions == null) { return; }
 			foreach(Region r in regions) {
 				r.IsEffectRegion = value;
 			}
@@ -710,7 +711,7 @@ public class Region {
 	}
 	public Dictionary<Vector3, PathNode> CylinderTilesAround(
 		Vector3 start,
-		float maxRadius,
+		float maxRadiusF,
 		float zDownMax,
 		float zUpMax,
 		PathNodeIsValid isValid
@@ -718,8 +719,11 @@ public class Region {
 		var ret = new Dictionary<Vector3, PathNode>();
 		//for all tiles at all z levels with xy manhattan distance < max radius and z manhattan distance between -zDownMax and +zUpMax, make a node if that tile passes the isValid check
 		float maxBonus = useArcRangeBonus ? Mathf.Max(zDownMax, zUpMax)/2.0f : 0;
-		for(float i = -maxRadius-maxBonus; i <= maxRadius+maxBonus; i++) {
-			for(float j = -maxRadius-maxBonus; j <= maxRadius+maxBonus; j++) {
+		float maxRadius = Mathf.Floor(maxRadiusF);
+		float minR = -maxRadius-maxBonus;
+		float maxR = maxRadius+maxBonus;
+		for(float i = minR; i <= maxR; i++) {
+			for(float j = minR; j <= maxR; j++) {
 				if(Mathf.Abs(i)+Mathf.Abs(j) > maxRadius+Mathf.Abs(maxBonus)) {
 					continue;
 				}
@@ -767,7 +771,7 @@ public class Region {
 
 	public Dictionary<Vector3, PathNode> SphereTilesAround(
 		Vector3 start,
-		float maxRadius,
+		float maxRadiusF,
 		float zDownMax,
 		float zUpMax,
 		PathNodeIsValid isValid
@@ -775,8 +779,11 @@ public class Region {
 		var ret = new Dictionary<Vector3, PathNode>();
 		//for all tiles at all z levels with xyz manhattan distance < max radius and z manhattan distance between -zDownMax and +zUpMax, make a node if that tile passes the isValid check
 		float maxBonus = useArcRangeBonus ? Mathf.Max(zDownMax, zUpMax)/2.0f : 0;
-		for(float i = -maxRadius-maxBonus; i <= maxRadius+maxBonus; i++) {
-			for(float j = -maxRadius-maxBonus; j <= maxRadius+maxBonus; j++) {
+		float maxRadius = Mathf.Floor(maxRadiusF);
+		float minR = -maxRadius-maxBonus;
+		float maxR = maxRadius+maxBonus;
+		for(float i = minR; i <= maxR; i++) {
+			for(float j = minR; j <= maxR; j++) {
 				if(Mathf.Abs(i)+Mathf.Abs(j) > maxRadius+Mathf.Abs(maxBonus)) {
 					continue;
 				}

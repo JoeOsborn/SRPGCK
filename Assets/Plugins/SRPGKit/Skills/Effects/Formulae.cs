@@ -33,6 +33,7 @@ public class Formulae : ScriptableObject {
 	public void AddFormula(Formula f, string name) {
 		MakeFormulaeIfNecessary();
 		runtimeFormulae.Add(name, f);
+		f.name = name;
 		int idx = formulaNames.IndexOf(name);
 		if(idx != -1) {
 			formulae[idx] = f;

@@ -80,8 +80,11 @@ public class Character : MonoBehaviour {
 	}
 
 	public void Deactivate() {
-		if(this.moveSkill.isActive) {
+		if(this.moveSkill != null && this.moveSkill.isActive) {
 			this.moveSkill.Cancel();
+		}
+		if(this.waitSkill != null && this.waitSkill.isActive) {
+			this.waitSkill.Cancel();
 		}
 		isActive = false;
 	}

@@ -9,6 +9,11 @@ public class DebugGUI : MonoBehaviour {
 	[SerializeField]
 	List<string> selectedGroup;
 
+	bool activeCharacterHasMoved;
+	bool activeCharacterHasActed;
+	public bool permitMultipleMoves = false;
+	public bool permitMultipleActions = false;
+
 	public void Start() {
 		areaBGTexture = new Texture2D(1,1);
 		areaBGTexture.SetPixel(0, 0, new Color(0.3f, 0.3f, 0.8f, 0.5f));
@@ -54,14 +59,26 @@ public class DebugGUI : MonoBehaviour {
 
 	void SkillApplied(Skill s) {
 		selectedGroup = null;
+		Scheduler sch = GetComponent<Scheduler>();
+		Character ac = sch.activeCharacter;
+		if(s.character == ac) {
+			if(s is MoveSkill) {
+				activeCharacterHasMoved = true;
+			}
+			if(s is ActionSkill) {
+				activeCharacterHasActed = true;
+			}
+		}
 	}
 	void DeactivatedCharacter(Character c) {
 		selectedGroup = null;
+		activeCharacterHasMoved = false;
+		activeCharacterHasActed = false;
 	}
 
-	bool IsSkillEnabled(CTCharacter ctc, Skill s) {
-		return (!(s is MoveSkill) || !ctc.HasMoved) &&
-	  (((s is MoveSkill) || (s is WaitSkill)) || !ctc.HasActed);
+	bool IsSkillEnabled(Skill s) {
+		return (!(s is MoveSkill) || (permitMultipleMoves || !activeCharacterHasMoved)) &&
+	  (((s is MoveSkill) || (s is WaitSkill)) || (permitMultipleActions || !activeCharacterHasActed));
 	}
 
 	Character lastShownCharacter = null;
@@ -70,7 +87,7 @@ public class DebugGUI : MonoBehaviour {
 	string lastSegment=null;
 	int lastSegmentCount=0;
 
-	IEnumerable<string> OnGUISkillGroup(Character ac, CTCharacter ctc, IEnumerable<Skill> skills, IEnumerable<string> selectedGroup) {
+	IEnumerable<string> OnGUISkillGroup(Character ac, IEnumerable<Skill> skills, IEnumerable<string> selectedGroup) {
 		if(delimiter == null) { delimiter = new Regex("//"); }
 		IEnumerable<string> nextSelectedGroup = selectedGroup;
 		int segmentCount = selectedGroup == null ? 0 : selectedGroup.Count();
@@ -121,7 +138,7 @@ public class DebugGUI : MonoBehaviour {
 		foreach(object o in sorted) {
 			if(o is Skill) {
 				Skill skill = o as Skill;
-				GUI.enabled = IsSkillEnabled(ctc, skill);
+				GUI.enabled = IsSkillEnabled(skill);
 				if(GUILayout.Button(skill.skillName)) {
 					skill.ActivateSkill();
 				}
@@ -131,7 +148,7 @@ public class DebugGUI : MonoBehaviour {
 				string[] groupSegments = delimiter.Split(groupKey);
 				string groupName = groupSegments[segmentCount];
 				var deepGroupSkills = skills.Where(x => x.skillGroup != null && x.skillGroup.StartsWith(groupKey));
-				GUI.enabled = deepGroupSkills.Any(x => IsSkillEnabled(ctc, x));
+				GUI.enabled = deepGroupSkills.Any(x => IsSkillEnabled(x));
 				if(GUILayout.Button(groupName)) {
 					if(selectedGroup == null) {
 						nextSelectedGroup = new[] { groupName };
@@ -182,10 +199,14 @@ public class DebugGUI : MonoBehaviour {
 					      ms.AwaitingConfirmation = false;
 					      ms.TemporaryMove(map.InverseTransformPointWorld(me.position));
 							}
+							showCancelButton = false;
 						} else {
 							showCancelButton = false;
 						}
 						showAnySchedulerButtons = false;
+					} else {
+						showAnySchedulerButtons = false;
+						showCancelButton = false;
 					}
 				}/* else if(io is ContinuousWithinTilesMoveIO) {
 					ContinuousWithinTilesMoveIO mio = io as ContinuousWithinTilesMoveIO;
@@ -241,17 +262,11 @@ public class DebugGUI : MonoBehaviour {
 			      	ws.AwaitingConfirmation = false;
 						}
 					} else {
-					  if(s is CTScheduler) {
-					  	CTCharacter ctc = ac.GetComponent<CTCharacter>();
-					  	showCancelButton = !(ctc.HasMoved && ctc.HasActed);
-					  } else {
-					  	showCancelButton = true;
-					  }
+				  	showCancelButton = permitMultipleMoves || permitMultipleActions || !(activeCharacterHasMoved && activeCharacterHasActed);
 					}
 					showAnySchedulerButtons = false;
 				}
 			}
-
 		}
 		if(s is CTScheduler) {
 			if(ac != null && a.IsLocalPlayer(ac.EffectiveTeamID)) {
@@ -259,8 +274,7 @@ public class DebugGUI : MonoBehaviour {
 					8, 8,
 					128, 180
 				));
-				GUILayout.Label("Current Character:");
-				GUILayout.Label(ac.gameObject.name);
+				GUILayout.Label("Character:"+ac.gameObject.name);
 				GUILayout.Label("Health: "+Mathf.Ceil(ac.GetStat("health")));
 				CTCharacter ctc = ac.GetComponent<CTCharacter>();
 				GUILayout.Label("CT: "+Mathf.Floor(ctc.CT));
@@ -276,7 +290,7 @@ public class DebugGUI : MonoBehaviour {
 				}
 				if(activeSkill == null) {
 					//root: move, act group, wait
-					var nextSel = OnGUISkillGroup(ac, ctc, skills, selectedGroup);
+					var nextSel = OnGUISkillGroup(ac, skills, selectedGroup);
 					selectedGroup = nextSel == null ? null : nextSel.ToList();
 				} else if(showCancelButton) {
 					if(GUILayout.Button("Cancel "+activeSkill.skillName)) {
@@ -287,41 +301,121 @@ public class DebugGUI : MonoBehaviour {
 			}
 		} else if(s is TeamRoundsPickAnyOnceScheduler) {
 			TeamRoundsPickAnyOnceScheduler tps = s as TeamRoundsPickAnyOnceScheduler;
+			GUILayout.BeginArea(new Rect(
+				8, 8,
+				110, 180
+			));
+			GUILayout.Label("Current Team:"+tps.currentTeam);
+			if(ac != null) {
+				GUILayout.Label("Character:"+ac.gameObject.name);
+				GUILayout.Label("Health: "+Mathf.Ceil(ac.GetStat("health")));
+				//show list of skills
+				Skill activeSkill = null;
+				foreach(Skill sk in skills) {
+					if(sk.isActive) {
+						activeSkill = sk;
+						break;
+					}
+				}
+				if(activeSkill == null) {
+					//root: move, act group, wait
+					var nextSel = OnGUISkillGroup(ac, skills, selectedGroup);
+					selectedGroup = nextSel == null ? null : nextSel.ToList();
+				} else if(showCancelButton) {
+					if(GUILayout.Button("Cancel "+activeSkill.skillName)) {
+						activeSkill.Cancel();
+					}
+				}
+			} else {
+				GUILayout.Label("Click any team member");
+			}
 			if(a.IsLocalPlayer(tps.currentTeam)) {
-				GUILayout.BeginArea(new Rect(
-					8, 8,
-					96, 128
-				));
-				GUILayout.Label("Current Team:"+tps.currentTeam);
 				if(showAnySchedulerButtons &&
 					!(ac != null && ac.moveSkill.Executor.IsMoving) &&
 				  GUILayout.Button("End Round")) {
 					tps.EndRound();
 				}
-				GUILayout.EndArea();
 			}
+			GUILayout.EndArea();
 		} else if(s is TeamRoundsPointsScheduler) {
 			TeamRoundsPointsScheduler tps = s as TeamRoundsPointsScheduler;
 			if(a.IsLocalPlayer(tps.currentTeam)) {
 				GUILayout.BeginArea(new Rect(
 					8, 8,
-					96, 128
+					110, 180
 				));
 				GUILayout.Label("Current Team: "+tps.currentTeam);
 				GUILayout.Label("Points Left: "+tps.pointsRemaining);
-				if(showAnySchedulerButtons &&
-					!(ac != null && ac.moveSkill.Executor.IsMoving) &&
-				  GUILayout.Button("End Round")) {
-					tps.EndRound();
-				}
-				if(showAnySchedulerButtons &&
-					ac != null && ac.moveSkill.Executor.IsMoving) {
-					if(GUILayout.Button("End Move")) {
-						ac.moveSkill.ApplySkill();
+				if(ac != null) {
+					GUILayout.Label("Character:"+ac.gameObject.name);
+					GUILayout.Label("Health: "+Mathf.Ceil(ac.GetStat("health")));
+					RoundPointsCharacter rpc = ac.GetComponent<RoundPointsCharacter>();
+					GUILayout.Label("AP: "+Mathf.Floor(rpc.Limiter));
+
+					//show list of skills
+					Skill activeSkill = null;
+					foreach(Skill sk in skills) {
+						if(sk.isActive) {
+							activeSkill = sk;
+							break;
+						}
+					}
+					if(activeSkill == null) {
+						//root: move, act group, wait
+						var nextSel = OnGUISkillGroup(ac, skills, selectedGroup);
+						selectedGroup = nextSel == null ? null : nextSel.ToList();
+					} else if(showCancelButton) {
+						if(GUILayout.Button("Cancel "+activeSkill.skillName)) {
+							activeSkill.Cancel();
+						}
+						if(showAnySchedulerButtons &&
+							 activeSkill is MoveSkill &&
+							 !(activeSkill as MoveSkill).Executor.IsMoving) {
+							if(GUILayout.Button("End Move")) {
+								activeSkill.ApplySkill();
+							}
+						}
+					}
+				} else {
+					if(showAnySchedulerButtons &&
+						!(ac != null && ac.moveSkill.Executor.IsMoving) &&
+					  GUILayout.Button("End Round")) {
+						tps.EndRound();
 					}
 				}
 				GUILayout.EndArea();
 			}
+		} else if(s is TeamRoundsInitiativeScheduler || s is RoundsInitiativeScheduler) {
+			GUILayout.BeginArea(new Rect(
+				8, 8,
+				110, 180
+			));
+			TeamRoundsInitiativeScheduler tis = s as TeamRoundsInitiativeScheduler;
+			if(tis != null) {
+				GUILayout.Label("Current Team:"+tis.currentTeam);
+			}
+			if(ac != null) {
+				GUILayout.Label("Character:"+ac.gameObject.name);
+				GUILayout.Label("Health: "+Mathf.Ceil(ac.GetStat("health")));
+				//show list of skills
+				Skill activeSkill = null;
+				foreach(Skill sk in skills) {
+					if(sk.isActive) {
+						activeSkill = sk;
+						break;
+					}
+				}
+				if(activeSkill == null) {
+					//root: move, act group, wait
+					var nextSel = OnGUISkillGroup(ac, skills, selectedGroup);
+					selectedGroup = nextSel == null ? null : nextSel.ToList();
+				} else if(showCancelButton) {
+					if(GUILayout.Button("Cancel "+activeSkill.skillName)) {
+						activeSkill.Cancel();
+					}
+				}
+			}
+			GUILayout.EndArea();
 		}
 	}
 }

@@ -84,10 +84,11 @@ public interface IFormulaElement {
 [System.Serializable]
 public class Formula : IFormulaElement {
 	//only used in editor:
-	public string text="", name="";
+	public string text="";
 	public string compilationError="";
 
 	//normal vars from here on
+	public string name;
 	public FormulaType formulaType;
 
 	//constant

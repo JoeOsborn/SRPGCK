@@ -5,7 +5,7 @@ public class TeamRoundsPickAnyOnceScheduler : Scheduler {
 	public int teamCount=2;
 
 	public int currentTeam=0;
-	
+
 	public List<Character> remainingCharacters;
 
 	override public void Start () {
@@ -16,7 +16,7 @@ public class TeamRoundsPickAnyOnceScheduler : Scheduler {
 			}
 		}
 	}
-	
+
 	public void EndRound() {
 		if(activeCharacter != null) {
 			Deactivate(activeCharacter);
@@ -37,16 +37,15 @@ public class TeamRoundsPickAnyOnceScheduler : Scheduler {
 
 	override public void SkillApplied(Skill s) {
 		base.SkillApplied(s);
-		Deactivate(s.character);
+	//	Deactivate(s.character);
 	}
-	
+
 	override public void Activate(Character c, object ctx=null) {
-		base.Activate(c, ctx);			
+		base.Activate(c, ctx);
 		remainingCharacters.Remove(c);
-		//(for now): ON `activate`, MOVE
-		c.moveSkill.ActivateSkill();
+//		c.moveSkill.ActivateSkill();
 	}
-	
+
 	override public void FixedUpdate () {
 		base.FixedUpdate();
 		if(activeCharacter == null) {
@@ -57,7 +56,9 @@ public class TeamRoundsPickAnyOnceScheduler : Scheduler {
 	}
 	override public void Update() {
 		base.Update();
-		if(GetComponent<Arbiter>().IsLocalPlayer(currentTeam) && Input.GetMouseButtonDown(0)) {
+		if(activeCharacter != null) { return; }
+		if(GetComponent<Arbiter>().IsLocalPlayer(currentTeam) &&
+		   Input.GetMouseButtonDown(0)) {
 			//TODO: need another caller for Activate()
 			Ray r = Camera.main.ScreenPointToRay(Input.mousePosition);
 			RaycastHit[] hits = Physics.RaycastAll(r);
@@ -72,7 +73,9 @@ public class TeamRoundsPickAnyOnceScheduler : Scheduler {
 					}
 				}
 			}
-			if(closestCharacter != null && !closestCharacter.isActive && closestCharacter.EffectiveTeamID == currentTeam) {
+			if(closestCharacter != null &&
+			   !closestCharacter.isActive &&
+			   closestCharacter.EffectiveTeamID == currentTeam) {
 				Activate(closestCharacter);
 			}
 		}

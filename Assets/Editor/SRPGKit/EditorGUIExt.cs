@@ -28,7 +28,7 @@ public class EditorGUIExt
 		GUI.enabled = wasEnabled;
    	EditorGUIUtility.LookLikeControls();
 	}
- 
+
 	/// <summary>
 	/// Creates a filepath textfield with a browse button. Opens the open file panel.
 	/// </summary>
@@ -126,7 +126,7 @@ public class EditorGUIExt
 		selected_index = GUILayout.Toolbar(selected_index, toolbar);
 		return (Enum) values.GetValue(selected_index);
 	}
-	
+
 	public static Formula FormulaField(Formula f, string type, string[] formulaOptions, string lastFocusedControl=null, int i=0) {
 		int selection= 0;
 		int lastSelection = 0;
@@ -135,7 +135,7 @@ public class EditorGUIExt
 			f = Formula.Constant(0);
 		}
 		if(formulaOptions != null) {
-			if(f.formulaType == FormulaType.Lookup && 
+			if(f.formulaType == FormulaType.Lookup &&
 				 f.lookupType == LookupType.NamedFormula) {
 				selection = System.Array.IndexOf(formulaOptions, f.lookupReference);
 				lastSelection = selection;
@@ -163,7 +163,7 @@ public class EditorGUIExt
 		EditorGUILayout.EndVertical();
 		return f;
 	}
-	
+
 	public static Parameter ParameterField(Parameter p, string type, string[] formulaOptions, string lastFocusedControl=null, int i = 0) {
 		Parameter newP = p;
 		EditorGUILayout.BeginVertical();
@@ -181,7 +181,7 @@ public class EditorGUIExt
 		}
 		EditorGUILayout.EndHorizontal();
 		EditorGUILayout.EndVertical();
-		return newP;	
+		return newP;
 	}
 
 	public static StatEffect StatEffectField(StatEffect fx, StatEffectContext ctx, string type, string[] formulaOptions, string lastFocusedControl=null, int i = 0) {
@@ -199,7 +199,7 @@ public class EditorGUIExt
 			GUILayout.EndVertical();
 			GUILayout.EndHorizontal();
 		} else {
-			newFx.effectType = (StatEffectType)EditorGUILayout.EnumPopup("Effect Type:", fx.effectType);	
+			newFx.effectType = (StatEffectType)EditorGUILayout.EnumPopup("Effect Type:", fx.effectType);
 		}
 		newFx.value = EditorGUIExt.FormulaField(fx.value, type, formulaOptions, lastFocusedControl, i);
 		GUILayout.BeginHorizontal();
@@ -249,7 +249,7 @@ public class EditorGUIExt
 			EditorGUILayout.EndHorizontal();
 			EditorGUILayout.EndVertical();
 			EditorGUILayout.EndHorizontal();
-		} 
+		}
 		EditorGUILayout.EndVertical();
 		return newEffects;
 	}
@@ -322,7 +322,7 @@ public class EditorGUIExt
 			EditorGUILayout.EndHorizontal();
 			EditorGUILayout.EndVertical();
 			EditorGUILayout.EndHorizontal();
-		} 
+		}
 		EditorGUILayout.EndVertical();
 		return newParams;
 	}
@@ -404,7 +404,7 @@ public class EditorGUIExt
 		EditorGUILayout.EndVertical();
 		return newArray;
 	}
-	
+
 	public static Region RegionGUI(Region reg, bool showEffect=true) {
 		Region newReg = reg;
 		GUILayout.BeginHorizontal();

@@ -55,13 +55,13 @@ public class Scheduler : MonoBehaviour {
 
 	}
 
-	public virtual void CharacterMoved(Character c, Vector3 src, Vector3 dest) {
+	public virtual void CharacterMoved(Character c, Vector3 src, Vector3 dest, PathNode endOfPath) {
 
 	}
-	public virtual void CharacterMovedIncremental(Character c, Vector3 src, Vector3 dest) {
-		CharacterMovedTemporary(c, src, dest);
+	public virtual void CharacterMovedIncremental(Character c, Vector3 src, Vector3 dest, PathNode endOfPath) {
+		CharacterMovedTemporary(c, src, dest, endOfPath);
 	}
-	public virtual void CharacterMovedTemporary(Character c, Vector3 src, Vector3 dest) {
+	public virtual void CharacterMovedTemporary(Character c, Vector3 src, Vector3 dest, PathNode endOfPath) {
 
 	}
 

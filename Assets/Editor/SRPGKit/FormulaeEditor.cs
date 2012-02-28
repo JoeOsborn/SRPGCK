@@ -20,56 +20,55 @@ public class FormulaeEditor : SRPGCKEditor {
   }
 
 	protected override void UpdateFormulae() {
-		formulaOptions = fdb.formulaNames.ToArray();
+
 	}
 
 	public override void OnEnable() {
 		fdb = target as Formulae;
 		base.OnEnable();
 		name = "Formulae";
-		selection = 0;
-		newFormulaName = "";
+		newFormula = Formula.Constant(0);
+		newFormula.name = "";
 	}
 
-	int selection = 0;
-	string newFormulaName;
+	Formula newFormula;
+
+	public void EditFormulaField(Formula f) {
+		string name = "formulae.formula."+f.name;
+		GUI.SetNextControlName(name);
+		bool priorWrap = EditorStyles.textField.wordWrap;
+		EditorStyles.textField.wordWrap = true;
+		f.text = EditorGUILayout.TextArea(f.text, GUILayout.Height(32)).RemoveControlCharacters();
+		EditorStyles.textField.wordWrap = priorWrap;
+		if(GUI.GetNameOfFocusedControl() == name) {
+			FormulaCompiler.CompileInPlace(f);
+		}
+	}
 
 	public override void OnSRPGCKInspectorGUI () {
-		EditorGUILayout.BeginHorizontal();
-		GUILayout.FlexibleSpace();
-		newFormulaName = EditorGUILayout.TextField(newFormulaName);
-		if(GUILayout.Button("Create New")) {
-			fdb.AddFormula(Formula.Constant(0), newFormulaName);
-			UpdateFormulae();
-			selection = formulaOptions.Length-1;
-		}
-		EditorGUILayout.EndHorizontal();
 		EditorGUILayout.Space();
-
-		EditorGUILayout.BeginHorizontal();
-		GUI.enabled = formulaOptions.Length > 0;
-		selection = EditorGUILayout.Popup("Formula:", selection, formulaOptions);
-		if(GUILayout.Button("Delete", GUILayout.Width(64))) {
-			fdb.RemoveFormula(formulaOptions[selection]);
-			UpdateFormulae();
-			while(selection >= formulaOptions.Length && formulaOptions.Length > 0) {
-				selection--;
+		for(int i = 0; i < fdb.formulae.Count; i++) {
+			Formula f = fdb.formulae[i];
+			EditorGUILayout.BeginHorizontal();
+			EditorGUILayout.PrefixLabel(f.name);
+			GUILayout.FlexibleSpace();
+			if(GUILayout.Button("Delete")) {
+				fdb.RemoveFormula(f.name);
 			}
+			EditorGUILayout.EndHorizontal();
+			EditFormulaField(f);
+		}
+		EditorGUILayout.Space();
+		EditorGUILayout.BeginHorizontal();
+		newFormula.name = EditorGUILayout.TextField(newFormula.name);
+		GUI.enabled = newFormula.name.Length > 0;
+		if(GUILayout.Button("New Formula")) {
+			fdb.AddFormula(newFormula, newFormula.name);
+			newFormula = Formula.Constant(0);
+			newFormula.name = "";
 		}
 		GUI.enabled = true;
 		EditorGUILayout.EndHorizontal();
-
-		if(formulaOptions.Length > 0) {
-			string name = "formulae.formula";
-			GUI.SetNextControlName(name);
-			bool priorWrap = EditorStyles.textField.wordWrap;
-			EditorStyles.textField.wordWrap = true;
-			Formula f = fdb.formulae[selection];
-			f.text = EditorGUILayout.TextArea(f.text).RemoveControlCharacters();
-			EditorStyles.textField.wordWrap = priorWrap;
-			if(GUI.GetNameOfFocusedControl() == name) {
-				FormulaCompiler.CompileInPlace(f);
-			}
-		}
+		EditFormulaField(newFormula);
 	}
 }

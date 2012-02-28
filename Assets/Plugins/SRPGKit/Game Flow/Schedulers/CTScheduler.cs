@@ -7,15 +7,15 @@ public class CTScheduler : Scheduler {
 	public float defaultPerMoveCTCost = 30;
 	public float defaultPerActionCTCost = 40;
 	public float defaultPerActivationCTCost = 30;
-	
+
 	public bool coalesceCTDecrements = false;
 	[SerializeField]
 	protected float pendingCTDecrement = 0;
-		
+
 	override public void Start () {
 		base.Start();
 	}
-	
+
 	override public void AddCharacter(Character c) {
 		if(!c.HasStat("ct")) {
 			Debug.LogError("CT-scheduled character "+c+" must have CT stat.");
@@ -30,7 +30,7 @@ public class CTScheduler : Scheduler {
 			c.gameObject.AddComponent<CTCharacter>();
 		}
 	}
-	
+
 	override public void Activate(Character c, object ctx=null) {
 		base.Activate(c, ctx);
 		pendingCTDecrement = 0;
@@ -38,9 +38,9 @@ public class CTScheduler : Scheduler {
 		ctc.HasMoved = false;
 		ctc.HasActed = false;
 		//(for now): ON `activate`, MOVE
-//		Debug.Log("activate"); 
+//		Debug.Log("activate");
 	}
-	
+
 	override public void Deactivate(Character c, object ctx=null) {
 		base.Deactivate(c, ctx);
 		//reduce c's CT by base turn cost (30)
@@ -67,7 +67,7 @@ public class CTScheduler : Scheduler {
 				} else {
 					ctc.CT = Mathf.Max(ctc.CT-cost, 0);
 				}
-				ctc.HasMoved = true;		
+				ctc.HasMoved = true;
 			} else {
 				float cost = ctc.PerActionCTCost;
 				if(coalesceCTDecrements) {
@@ -78,14 +78,13 @@ public class CTScheduler : Scheduler {
 				ctc.HasActed = true;
 			}
 		}
-	}	
-	
-	override public void CharacterMoved(Character c, Vector3 src, Vector3 dest) {
-		base.CharacterMoved(c, src, dest);
+	}
+
+	override public void CharacterMoved(Character c, Vector3 src, Vector3 dest, PathNode endOfPath) {
+		base.CharacterMoved(c, src, dest, endOfPath);
 		//reduce c's CT by per-tile movement cost (0)
-		//FIXME: multiply by number of tiles traversed, needs pathnode
 		CTCharacter ctc = c.GetComponent<CTCharacter>();
-		float cost = ctc.PerTileCTCost;
+		float cost = ctc.PerTileCTCost*endOfPath.xyDistanceFromStart;
 		if(coalesceCTDecrements) {
 			pendingCTDecrement += cost;
 		} else {
@@ -93,13 +92,13 @@ public class CTScheduler : Scheduler {
 		}
 	}
 	//after c acts, reduce c's CT by per-act cost (40)
-		
+
 	public override void FixedUpdate () {
 		base.FixedUpdate();
 		//if there is no active unit
 		if(activeCharacter == null) {
 		  //TODO: take the first scheduled attack with CT > 100 and trigger it
-			
+
 			//else, take the first unit with CT > 100, if any, and activate it
 			foreach(Character c in characters) {
 				CTCharacter ctc = c.GetComponent<CTCharacter>();
@@ -111,7 +110,7 @@ public class CTScheduler : Scheduler {
 				}
 			}
 			//TODO: else, tick up every attack by their effective speed
-			
+
 			//and tick up CT on everybody by their effective speed
 			foreach(Character c in characters) {
 				CTCharacter ctc = c.GetComponent<CTCharacter>();

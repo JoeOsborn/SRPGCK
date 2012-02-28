@@ -253,6 +253,7 @@ public class ActionSkill : Skill {
 	public override void Update() {
 		base.Update();
 		if(!isActive) { return; }
+		if(Executor != null && Executor.IsMoving) { return; }
 		targetRegion.Owner = this;
 		effectRegion.Owner = this;
 		if(character == null || !character.isActive) { return; }
@@ -313,7 +314,8 @@ public class ActionSkill : Skill {
 									waypoints[waypoints.Count-1].pos == hitSpot) {
 								UnwindToLastWaypoint();
 							} else {
-								if(overlay.ContainsPosition(hitSpot)) {
+								if(overlay.ContainsPosition(hitSpot) &&
+									 overlay.PositionAt(hitSpot).canStop) {
 									ConfirmWaypoint();
 								}
 							}
@@ -397,7 +399,8 @@ public class ActionSkill : Skill {
 		}
 		if(supportKeyboard &&
 			Input.GetButtonDown("Confirm") &&
-			overlay.ContainsPosition(selectedTile)) {
+			overlay.ContainsPosition(selectedTile) &&
+		  overlay.PositionAt(selectedTile).canStop) {
 			if(requireConfirmation &&
 				!awaitingConfirmation) {
 				awaitingConfirmation = true;
