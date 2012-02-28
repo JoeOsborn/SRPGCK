@@ -75,28 +75,29 @@ public class EditorGUIExt
 		foldout = EditorGUILayout.Foldout(foldout, label);
 		string[] newArray = array;
 		if(foldout) {
-			if(width == -1) {
-				EditorGUILayout.BeginHorizontal();
-			} else {
-				EditorGUILayout.BeginHorizontal(GUILayout.Width(width));
-			}
+			EditorGUILayout.BeginHorizontal();
+
+			EditorGUILayout.Space();
 			EditorGUILayout.Space();
 			EditorGUILayout.BeginVertical();
-			int arraySize = EditorGUILayout.IntField("Size", array.Length);
-			if (arraySize != array.Length)
+			int arraySize = array.Length;
+			EditorGUILayout.BeginHorizontal();
+			GUILayout.Label("Size", GUILayout.Height(18));
+			GUILayout.FlexibleSpace();
+			arraySize = EditorGUILayout.IntField(array.Length, EditorStyles.textField, GUILayout.Height(18));
+			EditorGUILayout.EndHorizontal();
+			if(arraySize != array.Length) {
 				newArray = new string[arraySize];
-			for (int i = 0; i < arraySize; i++)
-			{
+			}
+			for(int i = 0; i < arraySize; i++) {
 				string entry = defaultString;
-				if (i < array.Length)
+				if(i < array.Length) {
 					entry = array[i];
+				}
 				if(showElementName) {
 					newArray[i] = EditorGUILayout.TextField("Element " + i, entry);
 				} else {
-					EditorGUILayout.BeginHorizontal();
-					GUILayout.FlexibleSpace();
 					newArray[i] = EditorGUILayout.TextField(entry);
-					EditorGUILayout.EndHorizontal();
 				}
 			}
 			EditorGUILayout.EndVertical();
