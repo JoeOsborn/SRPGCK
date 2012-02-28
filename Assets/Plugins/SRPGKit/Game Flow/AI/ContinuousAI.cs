@@ -17,7 +17,7 @@ public class ContinuousAI : AI {
 /*		public void Update() {
 			//we'll need different ones of these later for team phased vs ct, I'm sure
 			Character c = GetComponent<Scheduler>().activeCharacter;
-			if(c == null || !GetComponent<Arbiter>().IsAIPlayer(c.EffectiveTeamID)) {
+			if(c == null || !GetComponent<Arbiter>().IsAITeam(c.EffectiveTeamID)) {
 				return;
 			}
 			if(c.moveSkill.Executor.IsMoving) { return; }

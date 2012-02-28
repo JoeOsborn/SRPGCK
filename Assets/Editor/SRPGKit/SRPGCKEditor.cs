@@ -12,7 +12,10 @@ public abstract class SRPGCKEditor : Editor {
 
 	public string lastFocusedControl, newFocusedControl;
 
+	protected bool useFormulae=true;
+
 	protected virtual void UpdateFormulae() {
+		if(!useFormulae) { return; }
 		if(fdb != null && fdb.formulaNames != null) {
 			formulaOptions = (new string[]{"Custom"}).Concat(fdb.formulaNames).ToArray();
 		} else {
@@ -25,6 +28,7 @@ public abstract class SRPGCKEditor : Editor {
 	}
 
 	public virtual void OnEnable() {
+		if(!useFormulae) { return; }
 		if(fdb == null) { fdb = Formulae.DefaultFormulae; }
 		UpdateFormulae();
 	}
@@ -34,12 +38,14 @@ public abstract class SRPGCKEditor : Editor {
 	public override void OnInspectorGUI() {
 	  CheckUndo();
 		CheckFocus();
-		GUILayout.BeginHorizontal();
-		GUILayout.Label("Formulae", GUILayout.Width(60));
-		GUI.enabled=false;
-		EditorGUILayout.TextField(fdb == null ? "null" : AssetDatabase.GetAssetPath(fdb));
-		GUI.enabled=true;
-		GUILayout.EndHorizontal();
+		if(useFormulae) {
+			GUILayout.BeginHorizontal();
+			GUILayout.Label("Formulae", GUILayout.Width(60));
+			GUI.enabled=false;
+			EditorGUILayout.TextField(fdb == null ? "null" : AssetDatabase.GetAssetPath(fdb));
+			GUI.enabled=true;
+			GUILayout.EndHorizontal();
+		}
 		OnSRPGCKInspectorGUI();
 		FinishOnGUI();
 	}

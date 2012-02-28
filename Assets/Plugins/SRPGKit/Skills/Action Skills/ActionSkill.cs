@@ -257,7 +257,7 @@ public class ActionSkill : Skill {
 		targetRegion.Owner = this;
 		effectRegion.Owner = this;
 		if(character == null || !character.isActive) { return; }
-		if(!arbiter.IsLocalPlayer(character.EffectiveTeamID)) {
+		if(!arbiter.IsLocalTeam(character.EffectiveTeamID)) {
 			return;
 		}
 		if(GUIUtility.hotControl != 0) { return; }

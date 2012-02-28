@@ -2,21 +2,31 @@ using UnityEngine;
 using System;
 using System.Collections;
 
+public enum TeamLocation {
+	Local,
+	AI,
+	Network
+}
+
 public class Arbiter : MonoBehaviour {
 	//packages up game rules
 	//for now, just maps players (network, AI, local) to teamIDs
 
-	public int[] localPlayers, aiPlayers, networkPlayers;
+	public TeamLocation[] teams;
+
+	public void Awake() {
+		teams = new TeamLocation[]{TeamLocation.Local, TeamLocation.Local};
+	}
 
 	public Formulae formulae;
 
-	public bool IsLocalPlayer(int teamID) {
-		return Array.IndexOf(localPlayers, teamID) != -1;
+	public bool IsLocalTeam(int teamID) {
+		return teams[teamID] == TeamLocation.Local;
 	}
-	public bool IsNetworkPlayer(int teamID) {
-		return Array.IndexOf(networkPlayers, teamID) != -1;
+	public bool IsNetworkTeam(int teamID) {
+		return teams[teamID] == TeamLocation.Network;
 	}
-	public bool IsAIPlayer(int teamID) {
-		return Array.IndexOf(aiPlayers, teamID) != -1;
+	public bool IsAITeam(int teamID) {
+		return teams[teamID] == TeamLocation.AI;
 	}
 }

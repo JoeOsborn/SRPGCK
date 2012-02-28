@@ -169,7 +169,7 @@ public class TeamRoundsPointsScheduler : Scheduler {
 	}
 	override public void Update() {
 		base.Update();
-		if(GetComponent<Arbiter>().IsLocalPlayer(currentTeam) && activeCharacter == null && Input.GetMouseButtonDown(0)) {
+		if(GetComponent<Arbiter>().IsLocalTeam(currentTeam) && activeCharacter == null && Input.GetMouseButtonDown(0)) {
 			//TODO: need another caller for Activate()
 			Ray r = Camera.main.ScreenPointToRay(Input.mousePosition);
 			RaycastHit[] hits = Physics.RaycastAll(r);

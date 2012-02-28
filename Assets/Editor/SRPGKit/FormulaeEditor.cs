@@ -19,11 +19,8 @@ public class FormulaeEditor : SRPGCKEditor {
 		return asset;
   }
 
-	protected override void UpdateFormulae() {
-
-	}
-
 	public override void OnEnable() {
+		useFormulae = false;
 		fdb = target as Formulae;
 		base.OnEnable();
 		name = "Formulae";
@@ -46,7 +43,6 @@ public class FormulaeEditor : SRPGCKEditor {
 	}
 
 	public override void OnSRPGCKInspectorGUI () {
-		EditorGUILayout.Space();
 		for(int i = 0; i < fdb.formulae.Count; i++) {
 			Formula f = fdb.formulae[i];
 			EditorGUILayout.BeginHorizontal();

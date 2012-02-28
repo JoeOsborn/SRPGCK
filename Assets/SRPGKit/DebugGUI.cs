@@ -183,7 +183,7 @@ public class DebugGUI : MonoBehaviour {
 			if(map == null) { map = transform.parent.GetComponent<Map>(); }
 			MoveSkill ms = ac.moveSkill;
 			if(ms.isActive && ms != null) {
-				if(a.IsLocalPlayer(ac.EffectiveTeamID)) {
+				if(a.IsLocalTeam(ac.EffectiveTeamID)) {
 					MoveExecutor me = ms.Executor;
 					if(!me.IsMoving) {
 						if(ms.RequireConfirmation &&
@@ -212,7 +212,7 @@ public class DebugGUI : MonoBehaviour {
 					ContinuousWithinTilesMoveIO mio = io as ContinuousWithinTilesMoveIO;
 					if(mio.character != null &&
 						mio.character.isActive &&
-						a.IsLocalPlayer(mio.character.EffectiveTeamID) &&
+						a.IsLocalTeam(mio.character.EffectiveTeamID) &&
 						mio.supportMouse) {
 						GUILayout.BeginArea(new Rect(
 							Screen.width/2-48, Screen.height-32,
@@ -230,7 +230,7 @@ public class DebugGUI : MonoBehaviour {
 			foreach(Skill skill in skills) {
 				if(!skill.isPassive && skill.isActive && skill is ActionSkill && !(skill is MoveSkill || skill is WaitSkill)) {
 					ActionSkill ask = skill as ActionSkill;
-					if(a.IsLocalPlayer(ac.EffectiveTeamID)) {
+					if(a.IsLocalTeam(ac.EffectiveTeamID)) {
 						if(ask.RequireConfirmation &&
 							 ask.AwaitingConfirmation) {
 							bool yesButton=false, noButton=false;
@@ -249,7 +249,7 @@ public class DebugGUI : MonoBehaviour {
 			}
 			WaitSkill ws = ac.waitSkill as WaitSkill;
 			if(ws != null && ws.isActive) {
-				if(a.IsLocalPlayer(ac.EffectiveTeamID)) {
+				if(a.IsLocalTeam(ac.EffectiveTeamID)) {
 					if(ws.RequireConfirmation &&
 						 ws.AwaitingConfirmation) {
 						bool yesButton=false, noButton=false;
@@ -269,7 +269,7 @@ public class DebugGUI : MonoBehaviour {
 			}
 		}
 		if(s is CTScheduler) {
-			if(ac != null && a.IsLocalPlayer(ac.EffectiveTeamID)) {
+			if(ac != null && a.IsLocalTeam(ac.EffectiveTeamID)) {
 				GUILayout.BeginArea(new Rect(
 					8, 8,
 					128, 180
@@ -329,7 +329,7 @@ public class DebugGUI : MonoBehaviour {
 			} else {
 				GUILayout.Label("Click any team member");
 			}
-			if(a.IsLocalPlayer(tps.currentTeam)) {
+			if(a.IsLocalTeam(tps.currentTeam)) {
 				if(showAnySchedulerButtons &&
 					!(ac != null && ac.moveSkill.Executor.IsMoving) &&
 				  GUILayout.Button("End Round")) {
@@ -339,7 +339,7 @@ public class DebugGUI : MonoBehaviour {
 			GUILayout.EndArea();
 		} else if(s is TeamRoundsPointsScheduler) {
 			TeamRoundsPointsScheduler tps = s as TeamRoundsPointsScheduler;
-			if(a.IsLocalPlayer(tps.currentTeam)) {
+			if(a.IsLocalTeam(tps.currentTeam)) {
 				GUILayout.BeginArea(new Rect(
 					8, 8,
 					110, 180
