@@ -584,7 +584,7 @@ public class Region {
 		while(!queue.IsEmpty && tries < 100) {
 			tries++;
 			PathNode pn = queue.Dequeue();
-			// Debug.Log("dequeue "+pn);
+			// 	Debug.Log("dequeue "+pn);
 			//skip stuff we've seen already
 			if(closed.Contains(pn)) {
 //				Debug.Log("closed");
@@ -594,8 +594,7 @@ public class Region {
 			if(pn.pos == dest) {
 				//add all prevs to ret
 				PathNode cur = pn;
-//				Debug.Log("cur:"+cur.pos+" dest:"+dest+" con? "+ret.Contains(pn));
-				// Debug.Log("found path from "+start+" to "+dest+":"+pn);
+					// Debug.Log("found path from "+start+" to "+dest+":"+pn);
 				while(cur.prev != null) {
 					// Debug.Log(""+cur.pos);
 					if(!ret.Contains(cur)) {
@@ -620,7 +619,7 @@ public class Region {
 				}
 				float px = pn.pos.x+n2.x;
 				float py = pn.pos.y+n2.y;
-				//Debug.Log("search at "+px+", "+py + " (d "+n2.x+","+n2.y+")");
+					// Debug.Log("search at "+px+", "+py + " (d "+n2.x+","+n2.y+")");
 
 				foreach(int adjZ in map.ZLevelsWithin((int)px, (int)py, (int)pn.pos.z, -1)) {
 					Vector3 pos = SRPGUtil.Trunc(new Vector3(px, py, adjZ));
@@ -647,6 +646,7 @@ public class Region {
 					}
 					if(next.distance > 0 && next.distance <= pn.distance) {
 						//skip anything that's got a better path to it than we can offer
+							// Debug.Log("Don't bother looking via "+next);
 						continue;
 					}
 					if(adjZ < pn.pos.z) {
@@ -746,8 +746,8 @@ public class Region {
 					if(Mathf.Abs(i) + Mathf.Abs(j) > maxRadius+bonus) {
 						continue;
 					}
-					float adz = Mathf.Abs(signedDZ);
-					PathNode newPn = new PathNode(pos, null, i+j+0.01f*adz);
+//					float adz = Mathf.Abs(signedDZ);
+					PathNode newPn = new PathNode(pos, null, 0/*i+j+0.01f*adz*/);
 					newPn.bonusRange = bonus;
 					Character c = map.CharacterAt(pos);
 					if(c != null &&
@@ -808,7 +808,7 @@ public class Region {
 					if(radius > maxRadius+bonus) {
 						continue;
 					}
-					PathNode newPn = new PathNode(pos, null, i+j+0.01f*adz);
+					PathNode newPn = new PathNode(pos, null, 0/*i+j+0.01f*adz*/);
 					newPn.radius = radius;
 					newPn.bonusRange = bonus;
 					Character c = map.CharacterAt(pos);
