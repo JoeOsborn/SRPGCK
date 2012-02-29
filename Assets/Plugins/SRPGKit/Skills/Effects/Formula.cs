@@ -10,6 +10,7 @@ public enum FormulaType {
 	Subtract,
 	Multiply,
 	Divide,
+	Remainder,
 	Exponent,
 	Root,
 	Mean,
@@ -112,6 +113,8 @@ public class Formula : IFormulaElement {
 	public void CopyFrom(Formula f) {
 /*		Debug.Log("copy from "+f);*/
 		if(f == null) { return; }
+		name = f.name;
+		text = f.text;
 		formulaType = f.formulaType;
 		constantValue = f.constantValue;
 		lookupReference = f.lookupReference;
@@ -129,6 +132,7 @@ public class Formula : IFormulaElement {
 		Formula f = new Formula();
 		f.formulaType = FormulaType.Constant;
 		f.constantValue = c;
+		f.text = ""+c;
 		return f;
 	}
 	public static Formula Lookup(string n, LookupType type=LookupType.Auto) {
@@ -192,6 +196,12 @@ public class Formula : IFormulaElement {
 			  	result /= arguments[i].GetValue(fdb, scontext, ccontext, econtext);
 			  }
 				break;
+			case FormulaType.Remainder:
+			  result = arguments[0].GetValue(fdb, scontext, ccontext, econtext);
+			  for(int i = 1; i < arguments.Length; i++) {
+			  	result = result % arguments[i].GetValue(fdb, scontext, ccontext, econtext);
+			  }
+				break;
 			case FormulaType.Exponent:
 			  result = arguments[0].GetValue(fdb, scontext, ccontext, econtext);
 				if(arguments.Length == 1) {
@@ -223,11 +233,11 @@ public class Formula : IFormulaElement {
 				break;
 			case FormulaType.RandomRange: {
 				float low=0, high=1;
-				if(arguments.Length >= 1) {
-					low = arguments[0].GetValue(fdb, scontext, ccontext, econtext);
-				}
 				if(arguments.Length >= 2) {
+					low = arguments[0].GetValue(fdb, scontext, ccontext, econtext);
 					high = arguments[1].GetValue(fdb, scontext, ccontext, econtext);
+				} else if(arguments.Length == 1) {
+					high = arguments[0].GetValue(fdb, scontext, ccontext, econtext);
 				}
 				result = Random.Range(low, high);
 				break;

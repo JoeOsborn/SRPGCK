@@ -30,15 +30,19 @@ public class FormulaeEditor : SRPGCKEditor {
 
 	Formula newFormula;
 
-	public void EditFormulaField(Formula f) {
-		string name = "formulae.formula."+f.name;
-		GUI.SetNextControlName(name);
+	public void EditFormulaField(Formula f, int i) {
+		string name = "formulae.formula."+i;
 		bool priorWrap = EditorStyles.textField.wordWrap;
 		EditorStyles.textField.wordWrap = true;
+		GUI.SetNextControlName(name);
 		f.text = EditorGUILayout.TextArea(f.text, GUILayout.Height(32)).RemoveControlCharacters();
+		GUI.SetNextControlName("");
 		EditorStyles.textField.wordWrap = priorWrap;
 		if(GUI.GetNameOfFocusedControl() == name) {
 			FormulaCompiler.CompileInPlace(f);
+		}
+		if(f.compilationError != null && f.compilationError.Length > 0) {
+			EditorGUILayout.HelpBox(f.compilationError, MessageType.Error);
 		}
 	}
 
@@ -52,11 +56,14 @@ public class FormulaeEditor : SRPGCKEditor {
 				fdb.RemoveFormula(f.name);
 			}
 			EditorGUILayout.EndHorizontal();
-			EditFormulaField(f);
+			EditFormulaField(f, i);
 		}
 		EditorGUILayout.Space();
 		EditorGUILayout.BeginHorizontal();
+		if(newFormula.name == null) { newFormula.name = ""; }
+		GUI.SetNextControlName("formulae.new.name");
 		newFormula.name = EditorGUILayout.TextField(newFormula.name);
+		GUI.SetNextControlName("");
 		GUI.enabled = newFormula.name.Length > 0;
 		if(GUILayout.Button("New Formula")) {
 			fdb.AddFormula(newFormula, newFormula.name);
@@ -65,6 +72,6 @@ public class FormulaeEditor : SRPGCKEditor {
 		}
 		GUI.enabled = true;
 		EditorGUILayout.EndHorizontal();
-		EditFormulaField(newFormula);
+		EditFormulaField(newFormula, fdb.formulae.Count);
 	}
 }

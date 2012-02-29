@@ -10,7 +10,10 @@ public class SkillEditor : SRPGCKEditor {
 	bool showPassiveEffects=true;
 	bool showReactionTypesApplied=true, showReactionTypesApplier=true;
 	bool showReactionStatChangesApplied=true, showReactionStatChangesApplier=true;
-	
+
+	bool showReactionTargetRegion=true;
+	bool showReactionEffectRegion=true;
+
 	protected Skill s;
   public override void OnEnable() {
 		s = target as Skill;
@@ -18,14 +21,15 @@ public class SkillEditor : SRPGCKEditor {
 		base.OnEnable();
 		name = "Skill";
 	}
-	
-	public override void OnSRPGCKInspectorGUI () {
-		float halfWidth = Screen.width/2;
-		GUILayout.BeginVertical();
 
+	protected void CoreSkillGUI() {
 		s.skillName = EditorGUILayout.TextField("Name", s.skillName).NormalizeName();
 		s.skillGroup = EditorGUILayout.TextField("Group", s.skillGroup).NormalizeName();
 		s.skillSorting = EditorGUILayout.IntField("Sorting", s.skillSorting);
+	}
+
+	protected void BasicSkillGUI() {
+		CoreSkillGUI();
 		s.replacesSkill = EditorGUILayout.Toggle("Replaces Skill", s.replacesSkill);
 		if(s.replacesSkill) {
 			s.replacedSkill = EditorGUILayout.TextField("Skill", s.replacedSkill).NormalizeName();
@@ -34,65 +38,43 @@ public class SkillEditor : SRPGCKEditor {
 
 		s.deactivatesOnApplication = EditorGUILayout.Toggle("Deactivates After Use", s.deactivatesOnApplication);
 
-		
 		EditorGUILayout.Space();
 		//parameters LATER: group parameters by used component (e.g. reaction. params near reaction)
 		s.parameters = EditorGUIExt.ParameterFoldout("Parameter", s.parameters, formulaOptions, lastFocusedControl, ref showParameters);
 		EditorGUILayout.Space();
-	
+
 		s.passiveEffects = EditorGUIExt.StatEffectFoldout("Passive Effect", s.passiveEffects, StatEffectContext.Normal, formulaOptions, lastFocusedControl, ref showPassiveEffects);
-	
-		EditorGUILayout.Space();
+	}
+
+	protected void ReactionSkillGUI() {
 		s.reactionSkill = EditorGUILayout.Toggle("Reaction Skill", s.reactionSkill);
 		if(s.reactionSkill) {
 			GUILayout.Label("Reaction Triggers");
-			EditorGUILayout.BeginHorizontal(GUILayout.Width(Screen.width-32));
-			s.reactionStatChangesApplier = EditorGUIExt.StatChangeFoldout("Stat Change (Attacker)", s.reactionStatChangesApplier, ref showReactionStatChangesApplier, halfWidth-16);
-			s.reactionStatChangesApplied = EditorGUIExt.StatChangeFoldout("Stat Change (Defender)", s.reactionStatChangesApplied, ref showReactionStatChangesApplied, halfWidth-16);
-			EditorGUILayout.EndHorizontal();
-			EditorGUILayout.BeginHorizontal(GUILayout.Width(Screen.width-32));
-			s.reactionTypesApplier = EditorGUIExt.ArrayFoldout("Effect Type (Attacker)", s.reactionTypesApplier, ref showReactionTypesApplier, false, halfWidth-16, "attack");
-			s.reactionTypesApplied = EditorGUIExt.ArrayFoldout("Effect Type (Defender)", s.reactionTypesApplied, ref showReactionTypesApplied, false, halfWidth-16, "attack");
-			EditorGUILayout.EndHorizontal();
+			EditorGUILayout.HelpBox("e.g. \"applied loses health\"",MessageType.Info);
+			s.reactionStatChangesApplied = EditorGUIExt.StatChangeFoldout("Stat Change (Applied)", s.reactionStatChangesApplied, ref showReactionStatChangesApplied);
+			EditorGUILayout.HelpBox("e.g. \"applied is hit by geomancy\"",MessageType.Info);
+			s.reactionTypesApplied = EditorGUIExt.ArrayFoldout("Reactable Type (Applied)", s.reactionTypesApplied, ref showReactionTypesApplied, false, -1, "attack");
+			EditorGUILayout.HelpBox("e.g. \"applier loses MP\"",MessageType.Info);
+			s.reactionStatChangesApplier = EditorGUIExt.StatChangeFoldout("Stat Change (Applier)", s.reactionStatChangesApplier, ref showReactionStatChangesApplier);
+			EditorGUILayout.HelpBox("e.g. \"applier receives vampirism bonus\"",MessageType.Info);
+			s.reactionTypesApplier = EditorGUIExt.ArrayFoldout("Reactable Type (Applier)", s.reactionTypesApplier, ref showReactionTypesApplier, false, -1, "attack");
 			//reaction region
 			//reaction effects
-			s.reactionTargetRegion = EditorGUIExt.RegionGUI(s.reactionTargetRegion);
-			s.reactionEffectRegion = EditorGUIExt.RegionGUI(s.reactionEffectRegion);
+			s.reactionTargetRegion = EditorGUIExt.RegionGUI("Reaction Target", s.name+".reaction", ref showReactionTargetRegion, s.reactionTargetRegion, formulaOptions, Screen.width-32);
+			s.reactionEffectRegion = EditorGUIExt.RegionGUI("Reaction Effect", s.name+".reaction", ref showReactionEffectRegion, s.reactionEffectRegion, formulaOptions, Screen.width-32);
+			if(s.reactionEffects != null && s.reactionEffects.Length > 1) {
+				EditorGUILayout.HelpBox("Be sure that the reaction.hitType parameter is defined to provide a value from 0 to "+(s.reactionEffects.Length-1), (s.HasParam("reaction.hitType") ? MessageType.Info : MessageType.Error));
+			}
 			s.reactionEffects = EditorGUIExt.StatEffectGroupsGUI("Effect Group", s.reactionEffects, StatEffectContext.Action, formulaOptions, lastFocusedControl);
 			EditorGUILayout.Space();
-			if(s.reactionEffects != null && s.reactionEffects.Length > 1) {
-				GUI.enabled=false;
-				bool priorWrap = EditorStyles.textField.wordWrap;
-				Color priorColor = EditorStyles.textField.normal.textColor;
-				EditorStyles.textField.wordWrap = true;
-				if(!s.HasParam("reaction.hitType")) {
-					EditorStyles.textField.normal.textColor = Color.red;	
-				}
-				EditorGUILayout.TextArea("Be sure that the reaction.hitType parameter is defined to provide a value from 0 to "+(s.reactionEffects.Length-1), GUILayout.Width(Screen.width-32));
-				EditorStyles.textField.wordWrap = priorWrap;
-				EditorStyles.textField.normal.textColor = priorColor;	
-				GUI.enabled=true;
-			}
 		}
+	}
 
-		//be sure each reaction and target effect's reactableTypes and target are shown!
-		
-/*		EditorGUILayout.BeginHorizontal();
-		EditorGUIExt.ArrayFoldout("Slots", e.equipmentSlots, ref showSlots, halfWidth);
-		EditorGUIExt.ArrayFoldout("Categories", e.equipmentCategories, ref showCategories, halfWidth);
-		EditorGUILayout.EndHorizontal();
-
+	public override void OnSRPGCKInspectorGUI () {
+		GUILayout.BeginVertical();
+		BasicSkillGUI();
 		EditorGUILayout.Space();
-
-		e.parameters = EditorGUIExt.ParameterFoldout("Parameter", e.parameters, formulaOptions, lastFocusedControl, ref showParameters);
-		
-		EditorGUILayout.Space();
-
-		
-		EditorGUILayout.Space();
-		
-		e.statusEffectPrefabs = EditorGUIExt.ObjectArrayFoldout<StatusEffect>("Status Effect Prefabs", e.statusEffectPrefabs, ref showStatusEffects);
-*/		
+		ReactionSkillGUI();
 		GUILayout.EndVertical();
 	}
 }

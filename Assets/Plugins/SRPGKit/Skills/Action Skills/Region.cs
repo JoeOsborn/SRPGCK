@@ -32,7 +32,6 @@ public class Region {
 			}
 		}
 	}
-	[HideInInspector]
 	public Formulae fdb { get {
 		if(owner != null) { return owner.fdb; }
 		return Formulae.DefaultFormulae;
@@ -136,7 +135,7 @@ public class Region {
 		predicateF = Formula.Constant(0);
 	}
 
-	public bool isEffectRegion=false;
+	protected bool isEffectRegion=false;
 	public bool IsEffectRegion {
 		get { return isEffectRegion; }
 		set {

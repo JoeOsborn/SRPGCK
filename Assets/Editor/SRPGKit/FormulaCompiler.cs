@@ -8,8 +8,8 @@ using System.Linq;
 F <- NULL | Phrase.
 Phrase <- UnaryExpression
         | PrefixExpression
-        | IfExpression 
-        | InfixExpression 
+        | IfExpression
+        | InfixExpression
         | Term.
 UnaryExpression <- UNARY_OP Phrase.
 InfixExpression <- Phrase INFIX_OP Phrase.
@@ -68,12 +68,15 @@ public class Identifier : IFormulaElement {
 }
 
 public class FormulaCompiler : Grammar<IFormulaElement> {
-	
+
 	public static bool CompileInPlace(Formula f) {
 /*		Debug.Log("compile "+f.text);*/
 		FormulaCompiler fc = new FormulaCompiler();
 		try {
 			Formula newF = fc.Parse(f.text) as Formula;
+			if(newF != null) {
+				newF.text = f.text;
+			}
 			f.CopyFrom(newF);
 			f.compilationError = "";
 			return true;
@@ -82,10 +85,12 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 		}
 		return false;
 	}
-	
+
 	public FormulaCompiler() {
 		Infix("+", 10, Add); Infix("-", 10, Sub);
 		Infix("*", 20, Mul); Infix("/", 20, Div);
+		Infix("%", 20, Rem);
+
 		InfixR("^", 30, Pow);
 		Prefix("-", 200, Neg);
 		Infix("==", 5, Eq); Infix("!=", 5, Neq);
@@ -94,7 +99,7 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 		TernaryPrefix("if", ":", ";", 1, If);
 
 		Group("(", ")", 1);
-		
+
 		Builtin("abs", 1, 1, Abs);
 		Builtin("root", 1, 2, Root);
 		Builtin("mean", 1, int.MaxValue, Mean);
@@ -106,15 +111,15 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 		Builtin("ceil", 1, 1, Ceil);
 		Builtin("round", 1, 1, Round);
 		Builtin("any", 1, int.MaxValue, PickAny);
-		
+
 		Builtin("exists", 1, 1, LookupSuccessful);
-		
+
 		string[] sides = new string[]{"front", "left", "right", "back", "away", "sides", "towards", "default"};
 		Branch("targeted-side", sides, TargetedSide);
 		Branch("targeter-side", sides, TargeterSide);
 		BranchFormulae("random", RandomBranch);
 		//more branches could be added later! woo!
-		
+
 		Symbol("no-change");
 		Symbol("increase");
 		Symbol("decrease");
@@ -130,7 +135,7 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 		Symbol("max");
 		Symbol("mean");
 		Symbol("sum");
-		
+
 		//lookup reacted effect
 		var effectLookup = Symbol("effect", 10);
 		effectLookup.Nud = (parser) => {
@@ -200,7 +205,7 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 					} else if(parser.Token.Id == "mean") {
 						mergeMode = FormulaMergeMode.Mean;
 					} else if(parser.Token.Id == "sum") {
-						mergeMode = FormulaMergeMode.Sum;						
+						mergeMode = FormulaMergeMode.Sum;
 					}
 					parser.Advance(null);
 				}
@@ -259,7 +264,7 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 			f.formulaType = FormulaType.Lookup;
 			f.lookupType = LookupType.ActorStatusEffect;
 			return f;
-		});		
+		});
 //LookupOn() and equip() generate the leftmost lookup formulae, and DOT composes the lookup formulae
 //with additional constraints and path components.
 		Symbol(".");
@@ -328,18 +333,18 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 		};
 
 		Match("(identifier)", char.IsLetter, 0, name => new Identifier(name));
-		
+
 		Match("(number)", c => char.IsDigit(c) || c == '.', 0, Number);
 //		Match("(identifier)", char.IsLetter, 1, Identifier);
 		SkipWhile(char.IsWhiteSpace);
 	}
-	
+
 	protected Symbol<IFormulaElement> LookupOn(string name, Func<PrattParser<IFormulaElement>, IFormulaElement> nud) {
 		var elt = Symbol(name, 99);
 		elt.Nud = nud;
 		return elt;
 	}
-	
+
 	protected void FillEquipFormula(PrattParser<IFormulaElement> parser, Formula f) {
 		if(parser.Token.Id != "(") {
 			f.equipmentSlots = null;
@@ -381,7 +386,7 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 				} else if(parser.Token.Id == "mean") {
 					mergeMode = FormulaMergeMode.Mean;
 				} else if(parser.Token.Id == "sum") {
-					mergeMode = FormulaMergeMode.Sum;						
+					mergeMode = FormulaMergeMode.Sum;
 				}
 				parser.Advance(null);
 			}
@@ -389,9 +394,9 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 			f.equipmentCategories = categories.ToArray();
 			f.equipmentSlots = slots.ToArray();
 			f.mergeMode = mergeMode;
-		}	
+		}
 	}
-	
+
 	protected Symbol<IFormulaElement> Branch(string name, string[] optKeys, Func<IEnumerable<IFormulaElement>, IFormulaElement> selector) {
 		//make sure we have our special symbols
 		Symbol("{");
@@ -491,7 +496,7 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 		};
 		return branchType;
 	}
-	
+
 	protected Symbol<IFormulaElement> Builtin(string name, int argsMin, int argsMax, Func<IEnumerable<IFormulaElement>, IFormulaElement> selector) {
 		//make sure we have our special symbols
 		Symbol("(");
@@ -526,14 +531,14 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 		};
 		return builtin;
 	}
-	
+
 	Formula CheckFormulaArg(IFormulaElement ife) {
-		if(ife != null && !(ife is Formula)) { 
-			return Formula.Lookup((ife as Identifier).Name); 
+		if(ife != null && !(ife is Formula)) {
+			return Formula.Lookup((ife as Identifier).Name);
 		}
 		return ife as Formula;
 	}
-	
+
 	IFormulaElement TargetedSide(IEnumerable<IFormulaElement> forms) {
 		Formula f = new Formula();
 		f.formulaType = FormulaType.BranchAppliedSide;
@@ -555,7 +560,7 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 		f.arguments = cases.Concat(forms).Select(form => CheckFormulaArg(form)).ToArray();
 		return f;
 	}
-	
+
 	//TODO: refactor! higher-order function could generate this with the formula type in a closure.
 	IFormulaElement Abs(IEnumerable<IFormulaElement> forms) {
 		Formula f = new Formula();
@@ -605,7 +610,7 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 		f.arguments = forms.Select(cf => CheckFormulaArg(cf)).ToArray();
 		return f;
 	}
-	
+
 	IFormulaElement Floor(IEnumerable<IFormulaElement> forms) {
 		Formula f = new Formula();
 		f.formulaType = FormulaType.RoundDown;
@@ -630,83 +635,89 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 		f.arguments = forms.Select(cf => CheckFormulaArg(cf)).ToArray();
 		return f;
 	}
-	
+
 	IFormulaElement LookupSuccessful(IEnumerable<IFormulaElement> forms) {
 		Formula f = new Formula();
 		f.CopyFrom(CheckFormulaArg(forms.ElementAt(0)));
 		f.formulaType = FormulaType.LookupSuccessful;
 		return f;
 	}
-	
-	
+
+
 	IFormulaElement Number(string lit) { return Formula.Constant(float.Parse(lit)); }
-	IFormulaElement Eq(IFormulaElement lhs, IFormulaElement rhs) { 
+	IFormulaElement Eq(IFormulaElement lhs, IFormulaElement rhs) {
 		Formula f = new Formula();
 		f.formulaType = FormulaType.Equal;
-		f.arguments = new Formula[]{CheckFormulaArg(lhs), CheckFormulaArg(rhs)}; 
+		f.arguments = new Formula[]{CheckFormulaArg(lhs), CheckFormulaArg(rhs)};
 		return f;
 	}
-	IFormulaElement Neq(IFormulaElement lhs, IFormulaElement rhs) { 
+	IFormulaElement Neq(IFormulaElement lhs, IFormulaElement rhs) {
 		Formula f = new Formula();
 		f.formulaType = FormulaType.NotEqual;
-		f.arguments = new Formula[]{CheckFormulaArg(lhs), CheckFormulaArg(rhs)}; 
+		f.arguments = new Formula[]{CheckFormulaArg(lhs), CheckFormulaArg(rhs)};
 		return f;
 	}
-	IFormulaElement GT(IFormulaElement lhs, IFormulaElement rhs) { 
+	IFormulaElement GT(IFormulaElement lhs, IFormulaElement rhs) {
 		Formula f = new Formula();
 		f.formulaType = FormulaType.GreaterThan;
-		f.arguments = new Formula[]{CheckFormulaArg(lhs), CheckFormulaArg(rhs)}; 
+		f.arguments = new Formula[]{CheckFormulaArg(lhs), CheckFormulaArg(rhs)};
 		return f;
 	}
-	IFormulaElement GTE(IFormulaElement lhs, IFormulaElement rhs) { 
+	IFormulaElement GTE(IFormulaElement lhs, IFormulaElement rhs) {
 		Formula f = new Formula();
 		f.formulaType = FormulaType.GreaterThanOrEqual;
-		f.arguments = new Formula[]{CheckFormulaArg(lhs), CheckFormulaArg(rhs)}; 
+		f.arguments = new Formula[]{CheckFormulaArg(lhs), CheckFormulaArg(rhs)};
 		return f;
 	}
-	IFormulaElement LT(IFormulaElement lhs, IFormulaElement rhs) { 
+	IFormulaElement LT(IFormulaElement lhs, IFormulaElement rhs) {
 		Formula f = new Formula();
 		f.formulaType = FormulaType.LessThan;
-		f.arguments = new Formula[]{CheckFormulaArg(lhs), CheckFormulaArg(rhs)}; 
+		f.arguments = new Formula[]{CheckFormulaArg(lhs), CheckFormulaArg(rhs)};
 		return f;
 	}
-	IFormulaElement LTE(IFormulaElement lhs, IFormulaElement rhs) { 
+	IFormulaElement LTE(IFormulaElement lhs, IFormulaElement rhs) {
 		Formula f = new Formula();
 		f.formulaType = FormulaType.LessThanOrEqual;
-		f.arguments = new Formula[]{CheckFormulaArg(lhs), CheckFormulaArg(rhs)}; 
+		f.arguments = new Formula[]{CheckFormulaArg(lhs), CheckFormulaArg(rhs)};
 		return f;
 	}
-	IFormulaElement Add(IFormulaElement lhs, IFormulaElement rhs) { 
+	IFormulaElement Add(IFormulaElement lhs, IFormulaElement rhs) {
 		Formula f = new Formula();
 		f.formulaType = FormulaType.Add;
-		f.arguments = new Formula[]{CheckFormulaArg(lhs), CheckFormulaArg(rhs)}; 
+		f.arguments = new Formula[]{CheckFormulaArg(lhs), CheckFormulaArg(rhs)};
 		return f;
 	}
-	IFormulaElement Sub(IFormulaElement lhs, IFormulaElement rhs) { 
+	IFormulaElement Sub(IFormulaElement lhs, IFormulaElement rhs) {
 		Formula f = new Formula();
 		f.formulaType = FormulaType.Subtract;
-		f.arguments = new Formula[]{CheckFormulaArg(lhs), CheckFormulaArg(rhs)}; 
+		f.arguments = new Formula[]{CheckFormulaArg(lhs), CheckFormulaArg(rhs)};
 		return f;
 	}
-	IFormulaElement Mul(IFormulaElement lhs, IFormulaElement rhs) { 
+	IFormulaElement Mul(IFormulaElement lhs, IFormulaElement rhs) {
 		Formula f = new Formula();
 		f.formulaType = FormulaType.Multiply;
-		f.arguments = new Formula[]{CheckFormulaArg(lhs), CheckFormulaArg(rhs)}; 
+		f.arguments = new Formula[]{CheckFormulaArg(lhs), CheckFormulaArg(rhs)};
 		return f;
 	}
-	IFormulaElement Div(IFormulaElement lhs, IFormulaElement rhs) { 
+	IFormulaElement Div(IFormulaElement lhs, IFormulaElement rhs) {
 		Formula f = new Formula();
 		f.formulaType = FormulaType.Divide;
-		f.arguments = new Formula[]{CheckFormulaArg(lhs), CheckFormulaArg(rhs)}; 
+		f.arguments = new Formula[]{CheckFormulaArg(lhs), CheckFormulaArg(rhs)};
 		return f;
 	}
-	IFormulaElement Pow(IFormulaElement lhs, IFormulaElement rhs) { 
+	IFormulaElement Rem(IFormulaElement lhs, IFormulaElement rhs) {
+		Formula f = new Formula();
+		f.formulaType = FormulaType.Remainder;
+		f.arguments = new Formula[]{CheckFormulaArg(lhs), CheckFormulaArg(rhs)};
+		return f;
+	}
+	IFormulaElement Pow(IFormulaElement lhs, IFormulaElement rhs) {
 		Formula f = new Formula();
 		f.formulaType = FormulaType.Exponent;
-		f.arguments = new Formula[]{CheckFormulaArg(lhs), CheckFormulaArg(rhs)}; 
+		f.arguments = new Formula[]{CheckFormulaArg(lhs), CheckFormulaArg(rhs)};
 		return f;
 	}
-	IFormulaElement Neg(IFormulaElement arg) { 
+	IFormulaElement Neg(IFormulaElement arg) {
 		Formula outer = new Formula();
 		outer.formulaType = FormulaType.Multiply;
 		outer.arguments = new Formula[]{
@@ -721,21 +732,21 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 		outer.arguments = new Formula[]{CheckFormulaArg(a), CheckFormulaArg(b), CheckFormulaArg(c)};
 		return outer;
 	}
-	
-	
+
+
 	/*struct FormulaToken {
 			enum Type {
 				None,
-				
+
 				Number,
 				Symbol,
-				
+
 				Comma,
 				OpenParen,
 				CloseParen,
 				OpenBracket,
 				CloseBracket,
-				
+
 				Dot,
 				Minus,
 				Negate,
@@ -902,9 +913,9 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 		bool ParseInPlace(out string error) {
 			string localError = null;
 			List<FormulaToken> tokens = Tokenize(out localError);
-			if(tokens == null) { 
+			if(tokens == null) {
 				error = "tokenization error:"+localError;
-				return false; 
+				return false;
 			}
 			if(tokens.Count == 0) {
 				error = "empty formula";
@@ -967,7 +978,7 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 					}
 					return true;
 				default:
-					//try for a 
+					//try for a
 					error = "bad phrase start at token "+i+":"+toks[i].type;
 					return false;
 			}

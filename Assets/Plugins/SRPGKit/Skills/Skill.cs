@@ -7,10 +7,10 @@ public class Skill : MonoBehaviour {
 	[HideInInspector]
 	public bool isActive=false;
 	public string skillName;
-	public string skillGroup="";
+	public string skillGroup = "";
 	public int skillSorting = 0;
 
-	public bool replacesSkill=false;
+	public bool replacesSkill = false;
 	public string replacedSkill = "";
 	public int replacementPriority=0;
 
@@ -147,6 +147,7 @@ public class Skill : MonoBehaviour {
 	void MakeParametersIfNecessary() {
 		if(runtimeParameters == null) {
 			runtimeParameters = new Dictionary<string, Formula>();
+			if(parameters == null) { parameters = new List<Parameter>(); }
 			for(int i = 0; i < parameters.Count; i++) {
 				runtimeParameters.Add(parameters[i].Name.NormalizeName(), parameters[i].Formula);
 			}
@@ -157,7 +158,7 @@ public class Skill : MonoBehaviour {
 		MakeParametersIfNecessary();
 		return runtimeParameters.ContainsKey(pname);
 	}
-	
+
 	[HideInInspector]
 	public Formulae fdb { get {
 		if(character != null) { return character.fdb; }
@@ -190,7 +191,7 @@ public class Skill : MonoBehaviour {
 			}
 		}
 	}
-
+	
 	public void AddParam(string pname, Formula f) {
 		MakeParametersIfNecessary();
 		runtimeParameters[pname] = f;

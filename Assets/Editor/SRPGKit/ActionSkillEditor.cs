@@ -3,67 +3,112 @@ using UnityEditor;
 using System.Collections.Generic;
 using System.Linq;
 
-//[CustomEditor(typeof(ActionSkill))]
-//TODO: ActionSkillEditor and MoveSkillEditor.
-public class ActionSkillEditor : SkillEditor {	
+[CustomEditor(typeof(ActionSkill))]
+public class ActionSkillEditor : SkillEditor {
 	ActionSkill atk;
+	bool showIO=true;
+	bool showTargeting=true;
+	bool showTargetRegion=true;
+	bool showEffectRegion=true;
+
+	GUIContent[] targetingModes;
+	GUIContent[] displayUnimpededTargetRegionFlags;
+
  	public override void OnEnable() {
 		base.OnEnable();
 		name = "ActionSkill";
 		atk = target as ActionSkill;
 	}
-	
-	public override void OnSRPGCKInspectorGUI () {
-		base.OnSRPGCKInspectorGUI();
-		EditorGUILayout.Space();
-		
-		GUILayout.Label("Targeting IO");
-		EditorGUI.indentLevel++;
-		atk.supportKeyboard = EditorGUILayout.Toggle("Support Keyboard", atk.supportKeyboard);
-		atk.supportMouse = EditorGUILayout.Toggle("Support Mouse", atk.supportMouse);
-		atk.requireConfirmation = EditorGUILayout.Toggle("Require Confirmation", atk.requireConfirmation);
-		atk.indicatorCycleLength = EditorGUILayout.FloatField("Z Cycle Time", atk.indicatorCycleLength);
-		EditorGUI.indentLevel--;
-		EditorGUILayout.Space();
-		
-		GUILayout.Label("Attack");
-		EditorGUI.indentLevel++;
-		atk.targetRegion = EditorGUIExt.RegionGUI(atk.targetRegion);
-		atk.effectRegion = EditorGUIExt.RegionGUI(atk.effectRegion);
-		atk.targetEffects = EditorGUIExt.StatEffectGroupsGUI("Attack Effect Group", atk.targetEffects, StatEffectContext.Action, formulaOptions, lastFocusedControl);
-		EditorGUI.indentLevel--;
-		EditorGUILayout.Space();
-		if(atk.targetEffects != null && atk.targetEffects.Length > 1) {
-			GUI.enabled=false;
-			bool priorWrap = EditorStyles.textField.wordWrap;
-			Color priorColor = EditorStyles.textField.normal.textColor;
-			EditorStyles.textField.wordWrap = true;
-			if(!s.HasParam("hitType")) {
-				EditorStyles.textField.normal.textColor = Color.red;	
-			}
-			EditorGUILayout.TextArea("Be sure that the hitType parameter is defined to provide a value from 0 to "+(atk.targetEffects.Length-1), GUILayout.Width(Screen.width-32));
-			EditorStyles.textField.wordWrap = priorWrap;
-			EditorStyles.textField.normal.textColor = priorColor;	
-			GUI.enabled=true;
+
+	protected void TargetedSkillGUI() {
+		int buttonsWide = (int)(Screen.width/EditorGUIExt.buttonDim);
+		if(targetingModes == null) {
+			targetingModes = new GUIContent[]{
+				new GUIContent("Self", EditorGUIUtility.LoadRequired("skl-target-self.png") as Texture),
+				new GUIContent("Pick", EditorGUIUtility.LoadRequired("skl-target-pick.png") as Texture),
+				new GUIContent("Face", EditorGUIUtility.LoadRequired("skl-target-cardinal.png") as Texture),
+				new GUIContent("Turn", EditorGUIUtility.LoadRequired("skl-target-radial.png") as Texture),
+				new GUIContent("Select Region", EditorGUIUtility.LoadRequired("skl-target-selectregion.png") as Texture),
+				new GUIContent("Draw Path", EditorGUIUtility.LoadRequired("skl-target-path.png") as Texture)
+			};
 		}
-		
-		//be sure each reaction and target effect's reactableTypes and target are shown!
-		
-/*		EditorGUILayout.BeginHorizontal();
-		EditorGUIExt.ArrayFoldout("Slots", e.equipmentSlots, ref showSlots, halfWidth);
-		EditorGUIExt.ArrayFoldout("Categories", e.equipmentCategories, ref showCategories, halfWidth);
-		EditorGUILayout.EndHorizontal();
+		if(displayUnimpededTargetRegionFlags == null) {
+			displayUnimpededTargetRegionFlags = new GUIContent[]{
+				new GUIContent("Hide", EditorGUIUtility.LoadRequired("skl-impeded-off.png") as Texture),
+				new GUIContent("Display", EditorGUIUtility.LoadRequired("skl-impeded-on.png") as Texture)
+			};
+		}
 
+		//FIXME: implicit assumption: lockToGrid=true;
+		//so, no invertOverlay, overlayType, drawOverlayRim, drawOverlayVolume, rotationSpeedXYF
+		//FIXME: not showing probe for now
+		if((showIO = EditorGUILayout.Foldout(showIO, "I/O"))) {
+			EditorGUI.indentLevel++;
+			EditorGUILayout.ColorField("Target Overlay", atk.overlayColor);
+			EditorGUILayout.ColorField("Effect Highlight", atk.highlightColor);
+			atk.supportKeyboard = EditorGUILayout.Toggle("Support Keyboard", atk.supportKeyboard);
+			if(atk.supportKeyboard) {
+				atk.keyboardMoveSpeed = EditorGUILayout.FloatField("Keyboard Move Speed", atk.keyboardMoveSpeed);
+				atk.indicatorCycleLength = EditorGUILayout.FloatField("Z Cycle Time", atk.indicatorCycleLength);
+			}
+			atk.supportMouse = EditorGUILayout.Toggle("Support Mouse", atk.supportMouse);
+			atk.requireConfirmation = EditorGUILayout.Toggle("Require Confirmation", atk.requireConfirmation);
+			if(atk.targetingMode == TargetingMode.Path) {
+				atk.pathMaterial = EditorGUILayout.ObjectField("Path Material", atk.pathMaterial, typeof(Material), false) as Material;
+			}
+			if(atk.targetingMode != TargetingMode.Self) {
+				atk.performTemporarySteps = EditorGUILayout.Toggle("Preview partial selections", atk.performTemporarySteps);
+			}
+			EditorGUI.indentLevel--;
+			EditorGUILayout.Space();
+		}
+		if((showTargeting = EditorGUILayout.Foldout(showTargeting, "Targeting Mode"))) {
+			EditorGUI.indentLevel++;
+			atk.targetingMode = (TargetingMode)GUILayout.SelectionGrid((int)atk.targetingMode, targetingModes, buttonsWide, EditorGUIExt.imageButtonGridStyle);
+			if(atk.targetingMode == TargetingMode.SelectRegion) {
+				atk.targetRegion.type = RegionType.Compound;
+			}
+			if(atk.targetingMode == TargetingMode.Path) {
+				atk.newNodeThreshold = EditorGUILayout.FloatField("Min Path Distance", atk.newNodeThreshold);
+				atk.immediatelyExecuteDrawnPath = EditorGUILayout.Toggle("Instantly Apply Path", atk.immediatelyExecuteDrawnPath);
+			}
+			if(atk.targetingMode != TargetingMode.Self) {
+				if(atk.targetRegion.interveningSpaceType != InterveningSpaceType.Pick) {
+					GUILayout.Label("Show blocked tiles?");
+					atk.displayUnimpededTargetRegion = GUILayout.SelectionGrid(atk.displayUnimpededTargetRegion ? 1 : 0, displayUnimpededTargetRegionFlags, 2, EditorGUIExt.imageButtonGridStyle) == 1 ? true : false;
+				}
+			}
+			if(atk.targetingMode == TargetingMode.Pick ||
+			   atk.targetingMode == TargetingMode.Path) {
+ 				if(!(atk.useOnlyOneWaypoint = !EditorGUILayout.Toggle("Use Waypoints", !atk.useOnlyOneWaypoint))) {
+ 					atk.waypointsAreIncremental = EditorGUILayout.Toggle("Instantly Apply Waypoints", atk.waypointsAreIncremental);
+ 					atk.maxWaypointDistance = EditorGUIExt.FormulaField("Max Waypoint Distance", atk.maxWaypointDistance, atk.name+".targeting.maxWaypointDistance", formulaOptions);
+ 					atk.canCancelWaypoints = EditorGUILayout.Toggle("Cancellable Waypoints", atk.canCancelWaypoints);
+ 				}
+			}
+			EditorGUI.indentLevel--;
+			EditorGUILayout.Space();
+		}
+		atk.targetRegion = EditorGUIExt.RegionGUI("Target", atk.name, ref showTargetRegion, atk.targetRegion, formulaOptions, Screen.width-32);
 		EditorGUILayout.Space();
+	}
 
-		e.parameters = EditorGUIExt.ParameterFoldout("Parameter", e.parameters, formulaOptions, lastFocusedControl, ref showParameters);
-		
-		EditorGUILayout.Space();
+	protected void EffectSkillGUI() {
+		atk.effectRegion = EditorGUIExt.RegionGUI("Effect", atk.name, ref showEffectRegion, atk.effectRegion, formulaOptions, Screen.width-32);
+		if(atk.targetEffects != null && atk.targetEffects.Length > 1) {
+			EditorGUILayout.HelpBox("Be sure that the hitType parameter is defined to provide a value from 0 to "+(atk.targetEffects.Length-1), (s.HasParam("hitType") ? MessageType.Info : MessageType.Error));
+		}
+		atk.targetEffects = EditorGUIExt.StatEffectGroupsGUI("Attack Effect Group", atk.targetEffects, StatEffectContext.Action, formulaOptions, lastFocusedControl);
+	}
 
-		
+	public override void OnSRPGCKInspectorGUI () {
+		BasicSkillGUI();
 		EditorGUILayout.Space();
-		
-		e.statusEffectPrefabs = EditorGUIExt.ObjectArrayFoldout<StatusEffect>("Status Effect Prefabs", e.statusEffectPrefabs, ref showStatusEffects);
-*/
+		TargetedSkillGUI();
+		EditorGUILayout.Space();
+		EffectSkillGUI();
+		EditorGUILayout.Space();
+		ReactionSkillGUI();
+		EditorGUILayout.Space();
 	}
 }

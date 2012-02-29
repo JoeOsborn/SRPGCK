@@ -76,7 +76,6 @@ public class EditorGUIExt
 		string[] newArray = array;
 		if(foldout) {
 			EditorGUILayout.BeginHorizontal();
-
 			EditorGUILayout.Space();
 			EditorGUILayout.Space();
 			EditorGUILayout.BeginVertical();
@@ -128,7 +127,7 @@ public class EditorGUIExt
 		return (Enum) values.GetValue(selected_index);
 	}
 
-	public static Formula FormulaField(Formula f, string type, string[] formulaOptions, string lastFocusedControl=null, int i=0) {
+	public static Formula FormulaField(string label, Formula f, string type, string[] formulaOptions, string lastFocusedControl=null, int i=0) {
 		int selection= 0;
 		int lastSelection = 0;
 		EditorGUILayout.BeginVertical();
@@ -141,13 +140,12 @@ public class EditorGUIExt
 				selection = System.Array.IndexOf(formulaOptions, f.lookupReference);
 				lastSelection = selection;
 			}
-			selection = EditorGUILayout.Popup("Formula:", selection, formulaOptions);
+			selection = EditorGUILayout.Popup(label, selection, formulaOptions);
 		}
 		if(selection == 0 || formulaOptions == null) {
 			if(lastSelection != selection) {
 				f = Formula.Constant(0);
 			}
-			EditorGUILayout.BeginHorizontal();
 			string name = type+".formula."+i;
 			GUI.SetNextControlName(name);
 			bool priorWrap = EditorStyles.textField.wordWrap;
@@ -157,7 +155,9 @@ public class EditorGUIExt
 			if(GUI.GetNameOfFocusedControl() == name) {
 				FormulaCompiler.CompileInPlace(f);
 			}
-			EditorGUILayout.EndHorizontal();
+			if(f.compilationError != null && f.compilationError != "") {
+				EditorGUILayout.HelpBox(f.compilationError, MessageType.Error);
+			}
 		} else if(lastSelection != selection && formulaOptions != null) {
 			f = Formula.Lookup(formulaOptions[selection], LookupType.NamedFormula);
 		}
@@ -169,15 +169,10 @@ public class EditorGUIExt
 		Parameter newP = p;
 		EditorGUILayout.BeginVertical();
 		newP.Name = EditorGUILayout.TextField("Name:", p.Name == null ? "" : p.Name).NormalizeName();
-		newP.Formula = EditorGUIExt.FormulaField(p.Formula, type, formulaOptions, lastFocusedControl, i);
+		newP.Formula = EditorGUIExt.FormulaField("Formula:", p.Formula, type, formulaOptions, lastFocusedControl, i);
 		EditorGUILayout.BeginHorizontal();
-		if(newP.Formula.compilationError != null && newP.Formula.compilationError != "") {
-			GUILayout.Label(newP.Formula.compilationError);
-		} else {
-			GUILayout.Label("");
-		}
 		GUILayout.FlexibleSpace();
-		if(GUILayout.Button("Delete")) {
+		if(GUILayout.Button("Delete", GUILayout.Width(64))) {
 			newP = null;
 		}
 		EditorGUILayout.EndHorizontal();
@@ -190,27 +185,20 @@ public class EditorGUIExt
 		GUILayout.BeginVertical();
 		newFx.statName = EditorGUILayout.TextField("Stat Name:", fx.statName == null ? "" : fx.statName).NormalizeName();
 		if(ctx == StatEffectContext.Action) {
-			GUILayout.BeginHorizontal();
-			GUILayout.BeginVertical(GUILayout.Width(Screen.width/2-32));
+			GUILayout.BeginVertical();
 			newFx.effectType = (StatEffectType)EditorGUILayout.EnumPopup("Effect Type:", fx.effectType);
 			newFx.target = (StatEffectTarget)EditorGUILayout.EnumPopup("Target:", fx.target);
 			GUILayout.EndVertical();
-			GUILayout.BeginVertical(GUILayout.Width(Screen.width/2-32));
+			GUILayout.BeginVertical();
 			newFx.reactableTypes = ArrayFoldout("Reactable Types", fx.reactableTypes, ref newFx.editorShowsReactableTypes, false, Screen.width/2-32, "attack");
 			GUILayout.EndVertical();
-			GUILayout.EndHorizontal();
 		} else {
 			newFx.effectType = (StatEffectType)EditorGUILayout.EnumPopup("Effect Type:", fx.effectType);
 		}
-		newFx.value = EditorGUIExt.FormulaField(fx.value, type, formulaOptions, lastFocusedControl, i);
+		newFx.value = EditorGUIExt.FormulaField("Formula:", fx.value, type, formulaOptions, lastFocusedControl, i);
 		GUILayout.BeginHorizontal();
-		if(fx.value.compilationError != null && fx.value.compilationError != "") {
-			GUILayout.Label(fx.value.compilationError);
-		} else {
-			GUILayout.Label("");
-		}
 		GUILayout.FlexibleSpace();
-		if(GUILayout.Button("Delete")) {
+		if(GUILayout.Button("Delete", GUILayout.Width(64))) {
 			newFx = null;
 		}
 		GUILayout.EndHorizontal();
@@ -224,7 +212,7 @@ public class EditorGUIExt
 		StatEffect[] newEffects = effects;
 		foldout = EditorGUILayout.Foldout(foldout, ""+effects.Length+" "+name+(!pluralize || effects.Length == 1 ? "" : "s"));
 		if(foldout) {
-			EditorGUILayout.BeginHorizontal(GUILayout.MaxWidth(Screen.width-16));
+			EditorGUILayout.BeginHorizontal();
 			EditorGUILayout.Space();
 			EditorGUILayout.BeginVertical();
 			List<StatEffect> toBeRemoved = null;
@@ -340,20 +328,21 @@ public class EditorGUIExt
 		}
 		StatChange[] newArray = changes;
 		if(foldout) {
-			if(width == -1) {
-				EditorGUILayout.BeginHorizontal();
-			} else {
-				EditorGUILayout.BeginHorizontal(GUILayout.Width(width));
-			}
+			EditorGUILayout.BeginHorizontal();
+			EditorGUILayout.Space();
 			EditorGUILayout.Space();
 			EditorGUILayout.BeginVertical();
-			int arraySize = EditorGUILayout.IntField("Size", newArray.Length);
-			if (arraySize != newArray.Length)
+			EditorGUILayout.BeginHorizontal();
+			GUILayout.Label("Size", GUILayout.Height(18));
+			GUILayout.FlexibleSpace();
+			int arraySize = EditorGUILayout.IntField(newArray.Length, EditorStyles.textField, GUILayout.Height(18));
+			EditorGUILayout.EndHorizontal();
+			if(arraySize != newArray.Length) {
 				newArray = new StatChange[arraySize];
-			for (int i = 0; i < arraySize; i++)
-			{
+			}
+			for(int i = 0; i < arraySize; i++)	{
 				StatChange entry = new StatChange("health", StatChangeType.Decrease);
-				if (i < changes.Length) {
+				if(i < changes.Length) {
 					entry = changes[i];
 				}
 				EditorGUILayout.BeginHorizontal();
@@ -380,16 +369,19 @@ public class EditorGUIExt
 		foldout = EditorGUILayout.Foldout(foldout, label);
 		T[] newArray = array;
 		if(foldout) {
-			if(width == -1) {
-				EditorGUILayout.BeginHorizontal();
-			} else {
-				EditorGUILayout.BeginHorizontal(GUILayout.Width(width));
-			}
+			EditorGUILayout.BeginHorizontal();
+			EditorGUILayout.Space();
 			EditorGUILayout.Space();
 			EditorGUILayout.BeginVertical();
-			int arraySize = EditorGUILayout.IntField("Size", array.Length);
-			if (arraySize != array.Length)
+			EditorGUILayout.BeginHorizontal();
+			GUILayout.Label("Size", GUILayout.Height(18));
+			GUILayout.FlexibleSpace();
+			if(newArray == null) { newArray = new T[0]; }
+			int arraySize = EditorGUILayout.IntField(newArray.Length, EditorStyles.textField, GUILayout.Height(18));
+			EditorGUILayout.EndHorizontal();
+			if (arraySize != newArray.Length) {
 				newArray = new T[arraySize];
+			}
 			for (int i = 0; i < arraySize; i++)
 			{
 				T entry = default(T);
@@ -406,15 +398,292 @@ public class EditorGUIExt
 		return newArray;
 	}
 
-	public static Region RegionGUI(Region reg, bool showEffect=true) {
+	static GUIContent[] regionTypes;
+	static GUIContent[] spaceTypes;
+	static GUIContent[] canCrossWallsFlags;
+	static GUIContent[] canCrossEnemiesFlags;
+	static GUIContent[] canHaltAtEnemiesFlags;
+	static GUIContent[] useAbsoluteDZFlags;
+	static GUIContent[] useArcRangeBonusFlags;
+	static GUIStyle _imageButtonGridStyle;
+	public static GUIStyle imageButtonGridStyle { get {
+		if(_imageButtonGridStyle == null) {
+			_imageButtonGridStyle = new GUIStyle(GUI.skin.GetStyle("Button"));
+			_imageButtonGridStyle.imagePosition = ImagePosition.ImageAbove;
+			_imageButtonGridStyle.alignment = TextAnchor.LowerCenter;
+			_imageButtonGridStyle.fixedWidth = buttonDim;
+			_imageButtonGridStyle.fixedHeight = buttonDim;
+			_imageButtonGridStyle.stretchWidth = false;
+			_imageButtonGridStyle.stretchHeight = false;
+			_imageButtonGridStyle.margin = new RectOffset(2,2,2,2);
+			_imageButtonGridStyle.padding = new RectOffset(0,0,0,6);
+		}
+		return _imageButtonGridStyle;
+	} }
+	public static float buttonDim = 88;
+
+	public static Region RegionGUI(
+		string label, string type,
+		ref bool open,
+		Region reg,
+		string[] formulaOptions,
+		float width,
+		int subregionIndex=-1
+	) {
+		if(regionTypes == null) {
+			regionTypes = new GUIContent[]{
+				new GUIContent("Cylinder", EditorGUIUtility.LoadRequired("rgn-cylinder.png") as Texture),
+				new GUIContent("Sphere", EditorGUIUtility.LoadRequired("rgn-sphere.png") as Texture),
+				new GUIContent("Line", EditorGUIUtility.LoadRequired("rgn-line.png") as Texture),
+				new GUIContent("Cone", EditorGUIUtility.LoadRequired("rgn-cone.png") as Texture),
+				new GUIContent("Self", EditorGUIUtility.LoadRequired("rgn-self.png") as Texture),
+				new GUIContent("Predicate", EditorGUIUtility.LoadRequired("rgn-predicate.png") as Texture),
+				new GUIContent("Compound", EditorGUIUtility.LoadRequired("rgn-compound.png") as Texture)
+			};
+		}
+		if(spaceTypes == null) {
+			spaceTypes = new GUIContent[]{
+				new GUIContent("Pick", EditorGUIUtility.LoadRequired("intv-pick.png") as Texture),
+				new GUIContent("Path", EditorGUIUtility.LoadRequired("intv-path.png") as Texture),
+				new GUIContent("Line", EditorGUIUtility.LoadRequired("intv-line.png") as Texture),
+				new GUIContent("Arc", EditorGUIUtility.LoadRequired("intv-arc.png") as Texture),
+			};
+		}
+		if(canCrossWallsFlags == null) {
+			canCrossWallsFlags = new GUIContent[]{
+				new GUIContent("Don't Cross", EditorGUIUtility.LoadRequired("cancross-walls-no.png") as Texture),
+				new GUIContent("Cross", EditorGUIUtility.LoadRequired("cancross-walls.png") as Texture)
+			};
+		}
+		if(canCrossEnemiesFlags == null) {
+			canCrossEnemiesFlags = new GUIContent[]{
+				new GUIContent("Don't Cross", EditorGUIUtility.LoadRequired("cancross-enemies-no.png") as Texture),
+				new GUIContent("Cross", EditorGUIUtility.LoadRequired("cancross-enemies.png") as Texture)
+			};
+		}
+		if(canHaltAtEnemiesFlags == null) {
+			canHaltAtEnemiesFlags = new GUIContent[]{
+				new GUIContent("Stop Before", EditorGUIUtility.LoadRequired("canstop-enemies-no.png") as Texture),
+				new GUIContent("Stop At", EditorGUIUtility.LoadRequired("canstop-enemies.png") as Texture)
+			};
+		}
+		if(useAbsoluteDZFlags == null) {
+			useAbsoluteDZFlags = new GUIContent[]{
+				new GUIContent("Relative", EditorGUIUtility.LoadRequired("dz-rel.png") as Texture),
+				new GUIContent("Absolute", EditorGUIUtility.LoadRequired("dz-abs.png") as Texture)
+			};
+		}
+		if(useArcRangeBonusFlags == null) {
+			useArcRangeBonusFlags = new GUIContent[]{
+				new GUIContent("No Bonus", EditorGUIUtility.LoadRequired("arc-bonus-off.png") as Texture),
+				new GUIContent("Height Bonus", EditorGUIUtility.LoadRequired("arc-bonus-on.png") as Texture)
+			};
+		}
 		Region newReg = reg;
-		GUILayout.BeginHorizontal();
-		newReg.canCrossWalls = !EditorGUILayout.Toggle("Walls Block Region", !reg.canCrossWalls);
-		GUILayout.EndHorizontal();
-		GUILayout.BeginHorizontal();
-		newReg.canCrossEnemies = !EditorGUILayout.Toggle("Enemies Block Region", !reg.canCrossEnemies);
-		GUILayout.EndHorizontal();
-		//TODO: formulae and region type and pathable!
+		if(newReg == null) { newReg = new Region(); }
+		if(subregionIndex == -1 &&
+		   !(open = EditorGUILayout.Foldout(open, label))) {
+			return reg;
+		}
+		int buttonsWide = (int)(width/buttonDim);
+		GUILayout.Label("Region Type");
+		newReg.type = (RegionType)GUILayout.SelectionGrid((int)newReg.type, regionTypes, buttonsWide, imageButtonGridStyle);
+		//intervening space type (gfx)
+		if(newReg.type == RegionType.Self) {
+			newReg.interveningSpaceType = InterveningSpaceType.Pick;
+			newReg.canCrossWalls = false;
+			newReg.canCrossEnemies = false;
+			newReg.canHaltAtEnemies = false;
+		} else {
+			if(subregionIndex == -1) {
+				GUILayout.Label("Intervening Space Type");
+				newReg.interveningSpaceType = (InterveningSpaceType)GUILayout.SelectionGrid((int)newReg.interveningSpaceType, spaceTypes, buttonsWide, imageButtonGridStyle);
+				if(newReg.interveningSpaceType != InterveningSpaceType.Pick) {
+					//can cross walls yes/no
+					GUILayout.Label("Can cross walls?");
+					newReg.canCrossWalls = GUILayout.SelectionGrid(newReg.canCrossWalls ? 1 : 0, canCrossWallsFlags, 2, imageButtonGridStyle) == 1 ? true : false;
+					//can cross enemies yes/no
+					GUILayout.Label("Can cross enemies?");
+					newReg.canCrossEnemies = GUILayout.SelectionGrid(newReg.canCrossEnemies ? 1 : 0, canCrossEnemiesFlags, 2, imageButtonGridStyle) == 1 ? true : false;
+				} else {
+					newReg.canCrossWalls = true;
+					newReg.canCrossEnemies = true;
+				}
+				//can halt on enemies yes/no
+				GUILayout.Label("Can halt on enemies?");
+				newReg.canHaltAtEnemies = GUILayout.SelectionGrid(newReg.canHaltAtEnemies ? 1 : 0, canHaltAtEnemiesFlags, 2, imageButtonGridStyle) == 1 ? true : false;
+				//abs dz yes/no
+				if(newReg.interveningSpaceType != InterveningSpaceType.Pick &&
+				   newReg.type != RegionType.Line &&
+				   newReg.type != RegionType.Cone) {
+					GUILayout.Label("Use absolute DZ?");
+					newReg.useAbsoluteDZ = GUILayout.SelectionGrid(newReg.useAbsoluteDZ ? 1 : 0, useAbsoluteDZFlags, 2, imageButtonGridStyle) == 1 ? true : false;
+				} else {
+					newReg.useAbsoluteDZ = true;
+				}
+				//arc bonus yes/no if intervening space is arc
+				if(newReg.interveningSpaceType == InterveningSpaceType.Arc) {
+					GUILayout.Label("Arc range bonus?");
+					newReg.useArcRangeBonus = GUILayout.SelectionGrid(newReg.useArcRangeBonus ? 1 : 0, useArcRangeBonusFlags, 2, imageButtonGridStyle) == 1 ? true : false;
+				} else {
+					newReg.useArcRangeBonus = false;
+				}
+			}
+			string prefix = type+".region."+label+".";
+			if(newReg.type == RegionType.Cylinder ||
+				 newReg.type == RegionType.Sphere   ||
+				 newReg.type == RegionType.Cone     ||
+				 newReg.type == RegionType.Line     ||
+				 newReg.type == RegionType.Predicate) {
+				//radius min, radius max
+			 	newReg.radiusMinF = EditorGUIExt.FormulaField(
+					"Radius Min",
+					newReg.radiusMinF,
+					prefix+"radiusMinF",
+					formulaOptions
+				);
+			 	newReg.radiusMaxF = EditorGUIExt.FormulaField(
+					"Radius Max",
+					newReg.radiusMaxF,
+					prefix+"radiusMaxF",
+					formulaOptions
+				);
+
+			  if(newReg.type != RegionType.Cone) {
+			  	//z up/down min/max
+				 	newReg.zUpMinF = EditorGUIExt.FormulaField(
+						"Z Up Min",
+						newReg.zUpMinF,
+						prefix+"zUpMinF",
+						formulaOptions
+					);
+				 	newReg.zUpMaxF = EditorGUIExt.FormulaField(
+						"Z Up Max",
+						newReg.zUpMaxF,
+						prefix+"zUpMax",
+						formulaOptions
+					);
+				 	newReg.zDownMinF = EditorGUIExt.FormulaField(
+						"Z Down Min",
+						newReg.zDownMinF,
+						prefix+"zDownMinF",
+						formulaOptions
+					);
+				 	newReg.zDownMaxF = EditorGUIExt.FormulaField(
+						"Z Down Max",
+						newReg.zDownMaxF,
+						prefix+"zDownMax",
+						formulaOptions
+					);
+			  }
+			}
+			if(newReg.type == RegionType.Cone ||
+				 newReg.type == RegionType.Line) {
+				//xyDirection, zDirection
+			 	newReg.xyDirectionF = EditorGUIExt.FormulaField(
+					"XY Direction",
+					newReg.xyDirectionF,
+					prefix+"xyDirectionF",
+					formulaOptions
+				);
+			 	newReg.zDirectionF = EditorGUIExt.FormulaField(
+					"Z Direction",
+					newReg.zDirectionF,
+					prefix+"zDirectionF",
+					formulaOptions
+				);
+			}
+			if(newReg.type == RegionType.Cone) {
+				//xyArcMin/Max
+			 	newReg.xyArcMinF = EditorGUIExt.FormulaField(
+					"XY Arc Min",
+					newReg.xyArcMinF,
+					prefix+"xyArcMinF",
+					formulaOptions
+				);
+			 	newReg.xyArcMaxF = EditorGUIExt.FormulaField(
+					"XY Arc Max",
+					newReg.xyArcMaxF,
+					prefix+"xyArcMax",
+					formulaOptions
+				);
+				//zArcMin/Max
+			 	newReg.zArcMinF = EditorGUIExt.FormulaField(
+					"Z Arc Min",
+					newReg.zArcMinF,
+					prefix+"zArcMinF",
+					formulaOptions
+				);
+			 	newReg.zArcMaxF = EditorGUIExt.FormulaField(
+					"Z Arc Max",
+					newReg.zArcMaxF,
+					prefix+"zArcMaxF",
+					formulaOptions
+				);
+				//rFwdClipMax
+			 	newReg.rFwdClipMaxF = EditorGUIExt.FormulaField(
+					"Forward Distance Max",
+					newReg.rFwdClipMaxF,
+					prefix+"rFwdClipMaxF",
+					formulaOptions
+				);
+			}
+			if(newReg.type == RegionType.Line) {
+				//line width min/max
+			 	newReg.lineWidthMinF = EditorGUIExt.FormulaField(
+					"Line Width Min",
+					newReg.lineWidthMinF,
+					prefix+"lineWidthMinF",
+					formulaOptions
+				);
+			 	newReg.lineWidthMaxF = EditorGUIExt.FormulaField(
+					"Line Width Max",
+					newReg.lineWidthMaxF,
+					prefix+"lineWidthMaxF",
+					formulaOptions
+				);
+			}
+			if(newReg.type == RegionType.Predicate) {
+				//predicateF
+			 	newReg.predicateF = EditorGUIExt.FormulaField(
+					"Predicate",
+					newReg.predicateF,
+					prefix+"predicateF",
+					formulaOptions
+				);
+				//TODO: info box with available bindings?
+			}
+			if(newReg.type == RegionType.Compound) {
+				//regions, but without UI for intervening space, cross/halt walls/enemies
+				//size
+				EditorGUILayout.Space();
+				GUILayout.BeginHorizontal();
+				if(newReg.regions == null) { newReg.regions = new Region[0]; }
+				int regionCount = newReg.regions.Length;
+				int newRegionCount = EditorGUILayout.IntField(regionCount, EditorStyles.textField, GUILayout.Height(18), GUILayout.Width(24));
+				GUILayout.Label("Subregion"+(newRegionCount > 1 ? "s" : ""));
+				GUILayout.EndHorizontal();
+				if(newRegionCount < 1) {
+					newRegionCount = 1;
+				}
+				if(newRegionCount != regionCount) {
+					System.Array.Resize(ref newReg.regions, newRegionCount);
+				}
+				for(int i = 0; i < newRegionCount; i++) {
+					EditorGUILayout.Space();
+					EditorGUILayout.Space();
+					EditorGUILayout.BeginHorizontal();
+					EditorGUILayout.Space();
+					EditorGUILayout.BeginVertical();
+				  //0...i regiongui(...,i)
+					bool ignoreFold = true;
+					newReg.regions[i] = RegionGUI(label+" subregion "+i, prefix, ref ignoreFold, newReg.regions[i], formulaOptions, width-64, i);
+					EditorGUILayout.EndVertical();
+					EditorGUILayout.EndHorizontal();
+					EditorGUILayout.Space();
+				}
+			}
+		}
 		return newReg;
 	}
 }

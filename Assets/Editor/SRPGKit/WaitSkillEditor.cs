@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 [CustomEditor(typeof(WaitSkill))]
-public class WaitSkillEditor : SRPGCKEditor {
+public class WaitSkillEditor : SkillEditor {
 	protected WaitSkill ws;
   public override void OnEnable() {
 		base.OnEnable();
@@ -13,9 +13,8 @@ public class WaitSkillEditor : SRPGCKEditor {
 	}
 	
 	public override void OnSRPGCKInspectorGUI () {
-		ws.skillName = EditorGUILayout.TextField("Name", ws.skillName).NormalizeName();
-		ws.skillGroup = EditorGUILayout.TextField("Group", ws.skillGroup).NormalizeName();
-		ws.skillSorting = EditorGUILayout.IntField("Sorting", ws.skillSorting);
+		CoreSkillGUI();
+		EditorGUILayout.Space();
 		ws.supportKeyboard = EditorGUILayout.Toggle("Support Keyboard", ws.supportKeyboard);
 		ws.supportMouse = EditorGUILayout.Toggle("Support Mouse", ws.supportMouse);
 		ws.requireConfirmation = EditorGUILayout.Toggle("Require Confirmation", ws.requireConfirmation);

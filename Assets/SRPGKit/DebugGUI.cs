@@ -13,6 +13,7 @@ public class DebugGUI : MonoBehaviour {
 	bool activeCharacterHasActed;
 	public bool permitMultipleMoves = false;
 	public bool permitMultipleActions = false;
+	GUIStyle bgStyle;
 
 	public void Start() {
 		areaBGTexture = new Texture2D(1,1);
@@ -31,8 +32,10 @@ public class DebugGUI : MonoBehaviour {
 	}
 
 	protected void OnGUIConfirmation(string msg, out bool yesButton, out bool noButton) {
-		GUIStyle bgStyle = new GUIStyle();
-		bgStyle.normal.background = areaBGTexture;
+		if(bgStyle == null) {
+			bgStyle = new GUIStyle();
+			bgStyle.normal.background = areaBGTexture;
+		}
 		GUILayout.BeginArea(new Rect(
 			Screen.width/2-64, Screen.height/2-32,
 			128, 64

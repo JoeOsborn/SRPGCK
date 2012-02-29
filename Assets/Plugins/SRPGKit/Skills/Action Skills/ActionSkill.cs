@@ -32,10 +32,8 @@ public class ActionSkill : Skill {
 
 	override public bool isPassive { get { return false; } }
 
-	//TODO: expose in editor
 	public TargetingMode targetingMode = TargetingMode.Pick;
 
-	//TODO: expose in editor
 	public Color overlayColor = new Color(0.6f, 0.3f, 0.2f, 0.7f);
 	public Color highlightColor = new Color(0.9f, 0.6f, 0.4f, 0.85f);
 
@@ -47,7 +45,6 @@ public class ActionSkill : Skill {
 
 	//tile generation region (line/range/cone/etc)
 	public Region targetRegion, effectRegion;
-	//TODO: put into editor!
 	public bool displayUnimpededTargetRegion=false;
 
 	//io
@@ -94,6 +91,7 @@ public class ActionSkill : Skill {
 	}
 	public float IndicatorCycleLength { get { return indicatorCycleLength; } }
 
+	[HideInInspector]
 	public PathNode[] targetTiles;
 
 	public CharacterController probePrefab;
@@ -106,6 +104,7 @@ public class ActionSkill : Skill {
 
 	public Material pathMaterial;
 
+	[HideInInspector]
 	public Vector3 selectedTile=Vector3.zero;
 	[HideInInspector]
 	[SerializeField]
@@ -145,6 +144,7 @@ public class ActionSkill : Skill {
 		return rotationSpeedXYF.GetValue(fdb, this, null, null);
 	} }
 
+	[HideInInspector]
 	public int selectedSubregion;
 
 	public override void Start() {
@@ -608,8 +608,6 @@ public class ActionSkill : Skill {
 	virtual protected PathNode[] GetValidActionTiles() {
 		return targetRegion.GetValidTiles();
 	}
-
-	//FIXME: crasher on presenting moves for grid-locked skill!
 
 	virtual protected void CreateOverlay() {
 		//TODO: let the region create the overlay

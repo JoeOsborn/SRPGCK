@@ -22,6 +22,7 @@ public class ArbiterEditor : SRPGCKEditor {
 		//fdb
 		arb.formulae = EditorGUILayout.ObjectField("Formulae", arb.formulae, typeof(Formulae), !EditorUtility.IsPersistent(arb)) as Formulae;
 		//teams
+		if(arb.teams == null) { arb.teams = new TeamLocation[2]{TeamLocation.Local, TeamLocation.Local}; }
 		int newTeamCount = EditorGUILayout.IntField("Teams", arb.teams.Length);
 		if(newTeamCount < 1) { newTeamCount = 1; }
 		if(newTeamCount != arb.teams.Length) {
