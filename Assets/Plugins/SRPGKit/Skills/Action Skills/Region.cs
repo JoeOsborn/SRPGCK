@@ -445,21 +445,21 @@ public class Region {
 		int tries = 0;
 		Color c = Color.red;
 		while(cur != null) {
-			Debug.Log("cur:"+cur);
+			// Debug.Log("cur:"+cur);
 			if(cur.prev != null) {
 				Debug.DrawLine(map.TransformPointWorld(cur.pos), map.TransformPointWorld(cur.prev.pos), c, 1.0f, false);
 			}
 			if(cur.isWall && !canCrossWalls) {
 				lastEnd = cur.prev;
-				if(cur.prev != null) { Debug.Log("block just before wall "+cur.prev.pos); }
+				// if(cur.prev != null) { Debug.Log("block just before wall "+cur.prev.pos); }
 			}
 			if(cur.isEnemy && !canCrossEnemies) {
 				if(canHaltAtEnemies) {
 					lastEnd = cur;
-					Debug.Log("block on top of enemy "+cur.pos);
+					// Debug.Log("block on top of enemy "+cur.pos);
 				} else {
 					lastEnd = cur.prev;
-					if(cur.prev != null) { Debug.Log("block just before enemy "+cur.prev.pos); }
+					// if(cur.prev != null) { Debug.Log("block just before enemy "+cur.prev.pos); }
 				}
 			}
 			cur = cur.prev;
@@ -558,34 +558,33 @@ public class Region {
 		Dictionary<Vector3, PathNode> pickables,
 		List<PathNode> ret,
 		float maxRadius, //max cost for path
-		float zDownMax, //apply to each step
-		float zUpMax, //apply to each step
+		float zDownMax,  //apply to each step
+		float zUpMax,    //apply to each step
 		bool provideAllTiles
 	) {
 		if(ret.Contains(destPn)) {
-			//Debug.Log("dest "+destPn.pos+" is already in ret");
+			// Debug.Log("dest "+destPn.pos+" is already in ret");
 			return true;
 		}
 		Vector3 dest = destPn.pos;
 		if(dest == start) {
-			//Debug.Log("ret gets "+dest+" which == "+start);
+			// Debug.Log("ret gets "+dest+" which == "+start);
 			ret.Add(destPn);
 			return true;
 		}
-//		Debug.Log("seek path to "+dest);
+		// Debug.Log("seek path to "+dest);
 		int jumpDistance = (int)(zDownMax/2);
 		int headroom = 1;
 		HashSet<PathNode> closed = new HashSet<PathNode>();
 		var queue = new PriorityQueue<float, PathNode>();
 		if(!pickables.ContainsKey(start)) { return false; }
 		PathNode startNode = pickables[start];
-		pickables[start] = startNode;
 		queue.Enqueue(startNode.distance, startNode);
 		int tries = 0;
 		while(!queue.IsEmpty && tries < 100) {
 			tries++;
 			PathNode pn = queue.Dequeue();
-//			Debug.Log("dequeue "+pn);
+			// Debug.Log("dequeue "+pn);
 			//skip stuff we've seen already
 			if(closed.Contains(pn)) {
 //				Debug.Log("closed");
@@ -596,9 +595,9 @@ public class Region {
 				//add all prevs to ret
 				PathNode cur = pn;
 //				Debug.Log("cur:"+cur.pos+" dest:"+dest+" con? "+ret.Contains(pn));
-//				Debug.Log("found path from "+start+" to "+dest+" through...");
+				// Debug.Log("found path from "+start+" to "+dest+":"+pn);
 				while(cur.prev != null) {
-					//Debug.Log(""+cur.pos);
+					// Debug.Log(""+cur.pos);
 					if(!ret.Contains(cur)) {
 						ret.Add(cur);
 					}
@@ -646,6 +645,10 @@ public class Region {
 						//skip stuff we've already examined
 						continue;
 					}
+					if(next.distance > 0 && next.distance <= pn.distance) {
+						//skip anything that's got a better path to it than we can offer
+						continue;
+					}
 					if(adjZ < pn.pos.z) {
 						//try to jump across me
 						TryAddingJumpPaths(queue, closed, pickables, ret, pn, (int)n2.x, (int)n2.y, maxRadius, zUpMax, zDownMax, jumpDistance, start, dest, provideAllTiles);
@@ -686,7 +689,7 @@ public class Region {
 		var sortedPickables = pickables.Values.
 			OrderBy(p => p.XYDistanceFrom(here)).
 			ThenBy(p => Mathf.Abs(p.SignedDZFrom(here)));
-			//TODO: cache and reuse partial search results
+		//TODO: cache and reuse partial search results
 		foreach(PathNode pn in sortedPickables) {
 			//find the path
 //			if(pn.prev != null) { Debug.Log("pos "+pn.pos+" has prev "+pn.prev.pos); continue; }

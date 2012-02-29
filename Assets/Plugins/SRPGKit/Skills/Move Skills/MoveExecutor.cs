@@ -53,12 +53,14 @@ public class MoveExecutor {
 	virtual protected void CreatePath(PathNode pn) {
 		if(animNodes == null) { animNodes = new List<PathNode>(); }
 		animNodes.Clear();
+		// Debug.Log("animate to "+pn);
 		PathNode cur = pn;
 		do {
 			if(animNodes.Any(p => Object.ReferenceEquals(p,cur))) { 
 				Debug.LogError("infinite node loop"); 
 				break; 
 			}
+			// Debug.Log("by "+cur);
 			animNodes.Add(cur);
 			cur = cur.prev;
 		} while(cur != null);

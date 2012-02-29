@@ -44,8 +44,8 @@ public class ActionSkillEditor : SkillEditor {
 		//FIXME: not showing probe for now
 		if((showIO = EditorGUILayout.Foldout(showIO, "I/O"))) {
 			EditorGUI.indentLevel++;
-			EditorGUILayout.ColorField("Target Overlay", atk.overlayColor);
-			EditorGUILayout.ColorField("Effect Highlight", atk.highlightColor);
+			atk.overlayColor = EditorGUILayout.ColorField("Target Overlay", atk.overlayColor);
+			atk.highlightColor = EditorGUILayout.ColorField("Effect Highlight", atk.highlightColor);
 			atk.supportKeyboard = EditorGUILayout.Toggle("Support Keyboard", atk.supportKeyboard);
 			if(atk.supportKeyboard) {
 				atk.keyboardMoveSpeed = EditorGUILayout.FloatField("Keyboard Move Speed", atk.keyboardMoveSpeed);
