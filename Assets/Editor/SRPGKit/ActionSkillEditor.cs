@@ -73,6 +73,9 @@ public class ActionSkillEditor : SkillEditor {
 				atk.immediatelyExecuteDrawnPath = EditorGUILayout.Toggle("Instantly Apply Path", atk.immediatelyExecuteDrawnPath);
 			}
 			if(atk.targetingMode != TargetingMode.Self) {
+				if(atk.targetRegion == null) {
+					atk.targetRegion = new Region();
+				}
 				if(atk.targetRegion.interveningSpaceType != InterveningSpaceType.Pick) {
 					GUILayout.Label("Show blocked tiles?");
 					atk.displayUnimpededTargetRegion = GUILayout.SelectionGrid(atk.displayUnimpededTargetRegion ? 1 : 0, displayUnimpededTargetRegionFlags, 2, EditorGUIExt.imageButtonGridStyle) == 1 ? true : false;

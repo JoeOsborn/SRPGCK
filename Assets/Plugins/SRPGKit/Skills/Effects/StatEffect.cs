@@ -19,7 +19,9 @@ public enum StatEffectType {
 
 	ChangeFacing,
 
-	EndTurn
+	EndTurn,
+		
+	Knockback
 };
 
 public enum StatChangeType {
@@ -43,7 +45,7 @@ public struct StatChange {
 public class StatEffect {
 	public string statName;
 	public StatEffectType effectType=StatEffectType.Augment;
-	public Formula value;
+	public Formula value, knockbackAngle;
 
 	//these two are only relevant for stateffects used in action and reaction skills
 	public string[] reactableTypes;
@@ -59,7 +61,7 @@ public class StatEffect {
 			case StatEffectType.Multiply: return stat*finalValue;
 			case StatEffectType.Replace: return finalValue;
 		}
-		Debug.LogError("unknown stat effect");
+		Debug.LogError("improper stat effect type "+effectType);
 		return -1;
 	}
 	public float ModifyStat(float stat, Skill scontext, Character ccontext, Equipment econtext) {
@@ -96,8 +98,17 @@ public class StatEffect {
 				break;
 			case StatEffectType.EndTurn:
 				effect = new StatEffectRecord(this, 0);
-				skill.scheduler.Deactivate(actualTarget, this);
+				skill.scheduler.DeactivateAfterSkillApplication(actualTarget, skill);
 				break;
+			case StatEffectType.Knockback: {
+				Debug.Log("try knockback; formula "+value+", dir form "+knockbackAngle);
+				float amount = value.GetValue(fdb, skill, targ);
+				float direction = knockbackAngle.GetValue(fdb, skill, targ);
+				effect = new StatEffectRecord(this, amount, direction);
+				Debug.Log("knockback "+actualTarget+" by "+amount+" in "+direction);
+				actualTarget.Knockback((int)amount, direction);
+				break;
+			}
 		}
 		return effect;
 	}
@@ -110,9 +121,11 @@ public class StatEffect {
 public class StatEffectRecord {
 	public StatEffect effect;
 	public float value;
-	public StatEffectRecord(StatEffect e, float v) {
+	public float knockbackAngle;
+	public StatEffectRecord(StatEffect e, float v, float a=0) {
 		effect = e;
 		value = v;
+		knockbackAngle = a;
 	}
 
 	public bool Matches(string[] statNames, StatChangeType[] changes, string[] reactableTypes) {

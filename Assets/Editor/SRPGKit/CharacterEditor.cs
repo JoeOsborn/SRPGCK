@@ -20,8 +20,12 @@ public class CharacterEditor : SRPGCKEditor {
 		c.characterName = EditorGUILayout.TextField("Name", c.characterName).NormalizeName();
 		c.teamID = EditorGUILayout.IntField("Team #", c.teamID);
 		EditorGUILayout.Space();
+		
 		c.transformOffset = EditorGUILayout.Vector3Field("Visual Offset:", c.transformOffset);
-
+		EditorGUILayout.Space();
+		
+		c.knockbackSpeedXY = EditorGUILayout.FloatField("Knockback Speed XY:", c.knockbackSpeedXY);
+		c.knockbackSpeedZ = EditorGUILayout.FloatField("Knockback Speed Z:", c.knockbackSpeedZ);		
 		EditorGUILayout.Space();
 
 		c.equipmentSlots = EditorGUIExt.ArrayFoldout("Equipment Slots", c.equipmentSlots, ref showSlots, false, 128, "body");

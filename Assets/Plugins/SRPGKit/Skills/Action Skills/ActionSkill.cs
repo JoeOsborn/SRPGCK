@@ -158,10 +158,6 @@ public class ActionSkill : Skill {
 			effectRegion.IsEffectRegion = true;
 		}
 		effectRegion.Owner = this;
-		/*
-		executor = new MoveExecutor();
-		executor.owner = this;
-		*/
 	}
 	public override void ResetSkill() {
 		skillName = "Attack";
@@ -175,14 +171,14 @@ public class ActionSkill : Skill {
 			AddParam("hitType", Formula.Constant(0));
 		}
 
-		if(targetEffects == null || targetEffects.Length == 0) {
-			StatEffect healthDamage = new StatEffect();
-			healthDamage.statName = "health";
-			healthDamage.effectType = StatEffectType.Augment;
-			healthDamage.reactableTypes = new[]{"attack"};
-			healthDamage.value = Formula.Lookup("damage", LookupType.ActorSkillParam);
-			targetEffects = new StatEffectGroup[]{new StatEffectGroup{effects=new StatEffect[]{healthDamage}}};
-		}
+		// if(targetEffects == null || targetEffects.Length == 0) {
+		// 	StatEffect healthDamage = new StatEffect();
+		// 	healthDamage.statName = "health";
+		// 	healthDamage.effectType = StatEffectType.Augment;
+		// 	healthDamage.reactableTypes = new[]{"attack"};
+		// 	healthDamage.value = Formula.Lookup("damage", LookupType.ActorSkillParam);
+		// 	targetEffects = new StatEffectGroup[]{new StatEffectGroup{effects=new StatEffect[]{healthDamage}}};
+		// }
 	}
 	public override void Reset() {
 		base.Reset();
@@ -743,9 +739,7 @@ public class ActionSkill : Skill {
 		ApplySkill();
 	}
 	//targeting facings, unlike character facings (for now at least!), may be arbitrary quaternions
-
-	//TODO: work with targeting region to select tiles for facing-picks
-
+	//FIXME: somehow involve target tiles!
 	public void TentativePickFacing(Quaternion f) {
 		targetTiles = effectRegion.GetValidTiles(f);
 		_GridOverlay.SetSelectedPoints(map.CoalesceTiles(targetTiles));

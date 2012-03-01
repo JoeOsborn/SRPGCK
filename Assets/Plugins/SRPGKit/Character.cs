@@ -12,6 +12,22 @@ public class Character : MonoBehaviour {
 		return _map;
 	} }
 
+	public float knockbackSpeedXY=20;
+	public float knockbackSpeedZ=20;
+
+	MoveExecutor _knockbackExecutor;
+	protected MoveExecutor knockbackExecutor { get {
+		if(_knockbackExecutor == null) {
+			_knockbackExecutor = new MoveExecutor();
+			_knockbackExecutor.lockToGrid = true;
+			_knockbackExecutor.character = this;
+			_knockbackExecutor.map = map;
+			_knockbackExecutor.XYSpeed = knockbackSpeedXY;
+			_knockbackExecutor.ZSpeedDown = knockbackSpeedZ;
+		}
+		return _knockbackExecutor;
+	} }
+
 	//I believe this is a stored property here in character,
 	//not merely a query to scheduler for whether active==this
 	//(what if you can have multiple active dudes?)
@@ -84,7 +100,8 @@ public class Character : MonoBehaviour {
 			this.moveSkill.Cancel();
 		}
 		if(this.waitSkill != null && this.waitSkill.isActive) {
-			this.waitSkill.Cancel();
+			//just let waitSkill get to its natural conclusion
+			//this.waitSkill.Cancel();
 		}
 		isActive = false;
 	}
@@ -95,6 +112,80 @@ public class Character : MonoBehaviour {
 			Debug.Log("triggering "+animType);
 			SendMessage("UseAnimation", animType, SendMessageOptions.DontRequireReceiver);
 		}
+	}
+
+	public void Knockback(int amount, float direction) {
+		//for now, assume grid lock
+		//build a path to the thing we should hit (ledge or character) or until we run out of stuff
+		Vector3 start = TilePosition;
+		Vector3 here = start;
+		PathNode cur = new PathNode(here, null, 0);
+		Vector2 offset = Vector2.zero;
+		switch(SRPGUtil.LockFacing(direction)) {
+			case LockedFacing.XP: offset = new Vector2(1,0); break;
+			case LockedFacing.YP: offset = new Vector2(0,1); break;
+			case LockedFacing.XN: offset = new Vector2(-1,0); break;
+			case LockedFacing.YN: offset = new Vector2(0,-1); break;
+		}
+		float maxDrop = here.z;
+		int soFar = 0;
+		float dropDistance = 0;
+		Character collidedCharacter = null;
+		while(soFar < amount) {
+			here.x += offset.x;
+			here.y += offset.y;
+			MapTile hereT = map.TileAt(here);
+			Debug.Log("knock into "+here+"?");
+			if(hereT == null) {
+				//try to fall
+				Debug.Log("no tile!");
+				int lower = map.PrevZLevel((int)here.x, (int)here.y, (int)here.z);
+				if(lower == -1) {
+					//bottomless pit, treat it like a wall
+					//FIXME: later, be able to get shoved across pits if enough distance is left
+					//to get me across the pit
+					Debug.Log("bottomless pit!");
+					break;
+				} else {
+					//drop down
+					//FIXME: later, be able to get shoved across pits if enough distance is left
+					//to get me across the pit
+					//FIXME: will not work properly with ramps
+					dropDistance += here.z - lower;
+					Vector3 oldHere = here;
+					here.z = lower;
+					cur = new PathNode(here, cur, cur.distance+1-0.01f*(maxDrop-(oldHere.z-lower)));
+					Debug.Log("fall down to "+here+"!");
+				}
+			} else {
+				//is it a wall? if so, break
+				//FIXME: will not work properly with ramps
+				Debug.Log("tile wall? "+(map.TileAt((int)here.x, (int)here.y, (int)here.z+1) != null));
+				if(map.TileAt((int)here.x, (int)here.y, (int)here.z+1) != null) {
+					//it's a wall, break
+					Debug.Log("wall!");
+					break;
+				} else if((collidedCharacter = map.CharacterAt(here)) != null) {
+					//store it and break
+					Debug.Log("character "+collidedCharacter.name);
+					break;
+				} else {
+					//keep going
+					Debug.Log("keep going");
+					cur = new PathNode(here, cur, cur.distance+1-0.01f*maxDrop);
+				}
+			}
+			Debug.Log("tick forward once");
+			soFar++;
+		}
+		//move executor knockback (path)
+		knockbackExecutor.Activate();
+		knockbackExecutor.KnockbackTo(cur, (src, endNode, finishedNicely) => {
+			//broadcast message with remaining velocity, incurred fall distance, collided character if any
+			Debug.Log("knocked back character "+this.name+" into "+(collidedCharacter==null?"nobody":collidedCharacter.name)+" left over "+(amount-soFar)+" dropped "+dropDistance);
+			map.BroadcastMessage("KnockedBackCharacter", new CharacterKnockbackReport(this, start, amount, direction, cur, amount-soFar, dropDistance, collidedCharacter), SendMessageOptions.DontRequireReceiver);
+			knockbackExecutor.Deactivate();
+		});
 	}
 
 	public virtual float Facing {
@@ -118,35 +209,11 @@ public class Character : MonoBehaviour {
 		if(!map.scheduler.ContainsCharacter(this)) {
 			map.scheduler.AddCharacter(this);
 		}
-		//Five things are going on here:
-		//we're ACTIVATING/DEACTIVATING
-		//we're CALCULATING WHERE WE CAN MOVE
-		//we're DISPLAYING WHERE WE CAN MOVE
-		//we're REQUESTING A MOVE DESTINATION
-		//and, eventually, we'll be MOVING in an animated way
-		//ideally, we will move as many of these as possible out of the Character script.
-		//ACTIVATING/DEACTIVATING should live in a "Scheduler" GameObject and script (though deactivation requests may be sent by other scripts to the scheduler)
-		//CALCULATING should live in an Region script on the Character gameobject
-		//DISPLAYING should live in a MoveFeedback script on the Character gameobject
-		//REQUESTING should live in a MoveInput script on the Character gameobject
-		//MOVING should live in a MoveExecutor script on the Character gameobject
-		//continuous movement (e.g. via keyboard) could be a MoveInput with a trivial Executor (pos=dest) and a collision-detecting region and any type of MoveFeedback
-		//  if it's timed continuous movement, the Scheduler might halt the move by its own prerogative.
-
-		//Region concerns the rules regarding "If I am character X in state Y at position Z, what tiles T[] can I reach?"
-		//  It also validates the move and returns a success status, for use in the MoveExecutor (consider FFT's "Teleport", which may fail)
-		//MoveIO concerns the rules and processes and state that display:
-			//"Reachable Tiles" T[], provided by Region
-			//"Candidate Tiles" Tc[], optionally requested by MoveInput
-			//"Decided Tiles" Td[], optionally requested by MoveExecutor. May or may not hide T[] and/or Tc[].
-		//MoveIO also interprets player input (by mouse/keyboard/etc), optionally requests the temporary display of Tc[] during the decision-making process, and once finished requests that the MoveExecutor perform the actual move.
-		//MoveExecutor optionally sets Td[] on the MoveFeedback while performing the actual move (pursuant to Region's success flag).
-		//  MoveExecutors may be reversible.
-		//  This is where the character's Unity transform is manipulated and the map is updated to reflect the character's new position.
-
-		//For example, an FFT character would have a Region that did a flood-fill on the map with Move and Jump calculations (or, if they had Fly or Teleport, other Regions), a MoveIO script using an Overlay and an update loop that's click-based, and a MoveExecutor that animates from pos to dest, taking jumps and so on into account -- all this wrapped in a CT-based scheduler.
-		//Valkyria Chronicles would use a phase-based scheduler with user-decided turns based on resource expenditure (rather than just "use all units"), a movement region that offers a circular radius around the player, movement feedback that shows that radius (or shows, in lighter tint, the terrain reachable before the player's action points expire; with a darker tint, the unreachable terrain), MoveInput that works off of keyboard, mouse, or controller, and a MoveExecutor that merely updates the character's position and lets the map know about it.
-		//This system is opt-in. Valkyria movement could work simply with a Scheduler and a custom script that moves the character according to keyboard input while it's active, updating the map (if any) as needed.
+	}
+	public void Update() {
+		if(knockbackExecutor.isActive) {
+			knockbackExecutor.Update();
+		}
 	}
 	void OnDestroy() {
 		if(map != null && map.scheduler != null) {

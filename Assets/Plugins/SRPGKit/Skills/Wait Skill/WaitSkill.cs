@@ -15,9 +15,9 @@ public class WaitSkill : ActionSkill {
 	[HideInInspector]
 	[SerializeField]
 	public Arrow currentArrow = Arrow.YP;
-	
+
 	public GameObject waitArrows;
-	
+
 	public override void ResetActionSkill() {
 		if(waitArrows == null) {
 			waitArrows = Resources.LoadAssetAtPath("Assets/SRPGKit/Prefabs/Wait Arrows.prefab", typeof(GameObject)) as GameObject;
@@ -38,12 +38,12 @@ public class WaitSkill : ActionSkill {
 			}}
 		};
 	}
-	
+
 	public override void ResetSkill() {
 		skillName = "Wait";
 		skillSorting = 100000;
 	}
-	
+
 	public override void ActivateSkill() {
 		if(isActive) { return; }
 		base.ActivateSkill();
@@ -52,7 +52,7 @@ public class WaitSkill : ActionSkill {
 		instantiatedWaitArrows.position = character.transform.position;
 		MoveToLayer(instantiatedWaitArrows, LayerMask.NameToLayer("Wait Arrows"));
 		WaitAtArrow(ArrowForFacing(character.Facing));
-	}	
+	}
 	public override void DeactivateSkill() {
 		if(!isActive) { return; }
 		instantiatedWaitArrows.Find("XP").localScale = new Vector3(1,1,1);
@@ -78,14 +78,14 @@ public class WaitSkill : ActionSkill {
 				if(hitArrow == instantiatedWaitArrows.Find("XP")) {
 					hitArrowValue = Arrow.XP;
 				} else if(hitArrow == instantiatedWaitArrows.Find("YP")) {
-					hitArrowValue = Arrow.YP;				
+					hitArrowValue = Arrow.YP;
 				} else if(hitArrow == instantiatedWaitArrows.Find("XN")) {
 					hitArrowValue = Arrow.XN;
 				} else if(hitArrow == instantiatedWaitArrows.Find("YN")) {
 					hitArrowValue = Arrow.YN;
 				} else {
 					anyHit = false;
-				}	
+				}
 			}
 			if(anyHit) {
 				WaitAtArrow(hitArrowValue);
@@ -111,24 +111,22 @@ public class WaitSkill : ActionSkill {
 		WaitAtArrow(ArrowForFacing(character.Facing));
 	}
 	public Arrow ArrowForFacing(float f) {
-		const float TAU = 360;
-		float mapY = map.transform.eulerAngles.y;
-		float localY = (f - mapY);
-		while(localY >= TAU) { localY -= TAU; }
-		while(localY < 0) { localY += TAU; }
-		if(localY < TAU/8 || localY >= 7*TAU/8) {
-			return Arrow.XP;
-		} else if(localY >= TAU/8 && localY < 3*TAU/8) {
-			return Arrow.YP;
-		} else if(localY >= 3*TAU/8 && localY < 5*TAU/8) {
-			return Arrow.XN;
-		} else if(localY >= 5*TAU/8 && localY < 7*TAU/8) {
-			return Arrow.YN;
+		LockedFacing l = SRPGUtil.LockFacing(f, map.transform.eulerAngles.y);
+		switch(l) {
+			case LockedFacing.XP:
+				return Arrow.XP;
+			case LockedFacing.YP:
+				return Arrow.YP;
+			case LockedFacing.XN:
+				return Arrow.XN;
+			case LockedFacing.YN:
+				return Arrow.YN;
+			default:
+				Debug.LogError("Bad locked facing "+l+" from "+f);
+				return (Arrow)(-1);
 		}
-		Debug.LogError("No matching direction for Q");
-		return Arrow.XN;
 	}
-	
+
 	protected Transform currentArrowTransform { get {
 		if(instantiatedWaitArrows == null) { return null; }
 		switch(currentArrow) {
@@ -139,7 +137,7 @@ public class WaitSkill : ActionSkill {
 		}
 		return null;
 	} }
-	
+
 	public void WaitAtArrow(Arrow a) {
 		const float TAU = 360.0f;
 		currentArrowTransform.localScale = new Vector3(1,1,1);
@@ -155,13 +153,13 @@ public class WaitSkill : ActionSkill {
 		}
 		FaceDirection(dir);
 	}
-	
+
 	void MoveToLayer(Transform root, int layer) {
 	  root.gameObject.layer = layer;
 	  foreach(Transform child in root) {
 	    MoveToLayer(child, layer);
 		}
 	}
-	
-	
+
+
 }

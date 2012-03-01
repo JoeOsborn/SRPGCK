@@ -67,8 +67,7 @@ public class DebugGUI : MonoBehaviour {
 		if(s.character == ac) {
 			if(s is MoveSkill) {
 				activeCharacterHasMoved = true;
-			}
-			if(s is ActionSkill) {
+			} else if(s is ActionSkill) {
 				activeCharacterHasActed = true;
 			}
 		}

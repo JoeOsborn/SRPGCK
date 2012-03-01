@@ -323,10 +323,12 @@ public class Region {
 					Region r = regions[i];
 					PathNode[] thesePickables = r.GetValidTiles(
 						here, q,
-						xyrmn, xyrmx,
-						zrdmn, zrdmx,
-						zrumn, zrumx,
-						lwmn, lwmx,
+						//pass the subregion's formulae for these so
+						//that our own, ignored formulae don't clobber them
+						r.radiusMin, r.radiusMax,
+						r.zDownMin, r.zDownMax,
+						r.zUpMin, r.zUpMax,
+						r.lineWidthMin, r.lineWidthMax,
 						InterveningSpaceType.Pick
 					);
 					foreach(PathNode p in thesePickables) {
@@ -971,7 +973,9 @@ public class Region {
 			//HACK: moves too fast and produces infinite loops
 			//when normalized d is too big relative to the actual distance
 			d = d.normalized;
-			PathNode cur = pickables[truncHere];
+			PathNode cur=null;
+			pickables.TryGetValue(truncHere, out cur);
+			if(cur == null) { cur = new PathNode(truncHere, null, 0); }
 			Vector3 prevTrunc = here;
 			int tries = 0;
 			while(truncHere != truncEnd) {

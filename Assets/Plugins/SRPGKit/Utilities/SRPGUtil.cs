@@ -1,6 +1,13 @@
 using UnityEngine;
 using System.Collections;
 
+public enum LockedFacing {
+	XP,
+	YP,
+	XN,
+	YN
+}
+
 public class SRPGUtil : MonoBehaviour {
 	static public Vector3 Trunc(Vector3 v) {
 		return new Vector3((int)v.x, (int)v.y, (int)v.z);
@@ -8,6 +15,24 @@ public class SRPGUtil : MonoBehaviour {
 
 	static public Vector3 Round(Vector3 v) {
 		return new Vector3(Mathf.Round(v.x), Mathf.Round(v.y), Mathf.Round(v.z));
+	}
+
+	static public LockedFacing LockFacing(float f, float mapY=0) {
+		const float TAU = 360;
+		float localY = (f - mapY);
+		while(localY >= TAU) { localY -= TAU; }
+		while(localY < 0) { localY += TAU; }
+		if(localY < TAU/8 || localY >= 7*TAU/8) {
+			return LockedFacing.XP;
+		} else if(localY >= TAU/8 && localY < 3*TAU/8) {
+			return LockedFacing.YP;
+		} else if(localY >= 3*TAU/8 && localY < 5*TAU/8) {
+			return LockedFacing.XN;
+		} else if(localY >= 5*TAU/8 && localY < 7*TAU/8) {
+			return LockedFacing.YN;
+		}
+		Debug.LogError("No matching direction for Q");
+		return LockedFacing.XN;
 	}
 
 	static public float WrapAngle(float f) {

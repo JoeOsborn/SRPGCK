@@ -150,7 +150,7 @@ public class EditorGUIExt
 			GUI.SetNextControlName(name);
 			bool priorWrap = EditorStyles.textField.wordWrap;
 			EditorStyles.textField.wordWrap = true;
-			f.text = EditorGUILayout.TextArea(f.text).RemoveControlCharacters();
+			f.text = EditorGUILayout.TextField(f.text).RemoveControlCharacters();
 			EditorStyles.textField.wordWrap = priorWrap;
 			if(GUI.GetNameOfFocusedControl() == name) {
 				FormulaCompiler.CompileInPlace(f);
@@ -183,19 +183,29 @@ public class EditorGUIExt
 	public static StatEffect StatEffectField(StatEffect fx, StatEffectContext ctx, string type, string[] formulaOptions, string lastFocusedControl=null, int i = 0) {
 		StatEffect newFx = fx;
 		GUILayout.BeginVertical();
-		newFx.statName = EditorGUILayout.TextField("Stat Name:", fx.statName == null ? "" : fx.statName).NormalizeName();
-		if(ctx == StatEffectContext.Action) {
-			GUILayout.BeginVertical();
-			newFx.effectType = (StatEffectType)EditorGUILayout.EnumPopup("Effect Type:", fx.effectType);
-			newFx.target = (StatEffectTarget)EditorGUILayout.EnumPopup("Target:", fx.target);
-			GUILayout.EndVertical();
-			GUILayout.BeginVertical();
-			newFx.reactableTypes = ArrayFoldout("Reactable Types", fx.reactableTypes, ref newFx.editorShowsReactableTypes, false, Screen.width/2-32, "attack");
-			GUILayout.EndVertical();
-		} else {
-			newFx.effectType = (StatEffectType)EditorGUILayout.EnumPopup("Effect Type:", fx.effectType);
+		newFx.effectType = (StatEffectType)EditorGUILayout.EnumPopup("Effect Type:", fx.effectType);
+		switch(newFx.effectType) {
+			case StatEffectType.Augment:
+			case StatEffectType.Multiply:
+			case StatEffectType.Replace:
+				newFx.statName = EditorGUILayout.TextField("Stat Name:", fx.statName == null ? "" : fx.statName).NormalizeName();
+				newFx.value = EditorGUIExt.FormulaField("Formula:", fx.value, type, formulaOptions, lastFocusedControl, i);
+			break;
+			case StatEffectType.ChangeFacing:
+				newFx.value = EditorGUIExt.FormulaField("Facing:", fx.value, type, formulaOptions, lastFocusedControl, i);
+			break;
+			case StatEffectType.EndTurn:
+			break;
+			case StatEffectType.Knockback:
+				newFx.knockbackAngle = EditorGUIExt.FormulaField("Angle:", fx.knockbackAngle, type, formulaOptions, lastFocusedControl, i);
+				EditorGUILayout.HelpBox("This angle formula can refer to c.facing, target.facing, or arg.angle.xy to find candidate directions!", MessageType.Info);
+				newFx.value = EditorGUIExt.FormulaField("Distance:", fx.value, type, formulaOptions, lastFocusedControl, i);
+			break;
 		}
-		newFx.value = EditorGUIExt.FormulaField("Formula:", fx.value, type, formulaOptions, lastFocusedControl, i);
+		if(ctx == StatEffectContext.Action) {
+			newFx.target = (StatEffectTarget)EditorGUILayout.EnumPopup("Target:", fx.target);
+			newFx.reactableTypes = ArrayFoldout("Reactable Types", fx.reactableTypes, ref newFx.editorShowsReactableTypes, false, Screen.width/2-32, "attack");
+		}
 		GUILayout.BeginHorizontal();
 		GUILayout.FlexibleSpace();
 		if(GUILayout.Button("Delete", GUILayout.Width(64))) {
@@ -677,7 +687,7 @@ public class EditorGUIExt
 					EditorGUILayout.BeginVertical();
 				  //0...i regiongui(...,i)
 					bool ignoreFold = true;
-					newReg.regions[i] = RegionGUI(label+" subregion "+i, prefix, ref ignoreFold, newReg.regions[i], formulaOptions, width-64, i);
+					newReg.regions[i] = RegionGUI(label+" subregion "+i, prefix, ref ignoreFold, newReg.regions[i], formulaOptions, width-16, i);
 					EditorGUILayout.EndVertical();
 					EditorGUILayout.EndHorizontal();
 					EditorGUILayout.Space();

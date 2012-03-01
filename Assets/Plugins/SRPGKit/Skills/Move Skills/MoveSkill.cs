@@ -17,7 +17,8 @@ public class MoveSkill : ActionSkill {
 		base.Start();
 		moveExecutor = new MoveExecutor();
 		Executor.lockToGrid = lockToGrid;
-		Executor.owner = this;
+		Executor.character = character;
+		Executor.map = map;
 	}
 
 	public override void ResetSkill() {
@@ -32,7 +33,8 @@ public class MoveSkill : ActionSkill {
 
 	public override void Update() {
 		if(!isActive) { return; }
-		Executor.owner = this;
+		Executor.character = character;
+		Executor.map = map;
 		base.Update();
 		Executor.Update();
 	}
@@ -109,7 +111,8 @@ public class MoveSkill : ActionSkill {
 	//checks to see if the overlay already existed -- caused horrible unity crashers.
 
 	override public void ActivateSkill() {
-		Executor.owner = this;
+		Executor.character = character;
+		Executor.map = map;
 		Executor.lockToGrid = lockToGrid;
 		Executor.animateTemporaryMovement = animateTemporaryMovement;
 		Executor.XYSpeed = XYSpeed;

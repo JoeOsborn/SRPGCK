@@ -211,7 +211,7 @@ public class Skill : MonoBehaviour {
 			float distance = Vector3.Distance(ttp, ctp);
 			float angle = currentTarget == character ?
 				character.Facing :
-				Mathf.Atan2(ttp.y-ctp.y, ttp.x-ctp.x);
+				Mathf.Atan2(ttp.y-ctp.y, ttp.x-ctp.x)*Mathf.Rad2Deg;
 			SetParam("arg.distance", distance);
 			SetParam("arg.mdistance", Mathf.Abs(ttp.x-ctp.x)+Mathf.Abs(ttp.y-ctp.y)+Mathf.Abs(ttp.z-ctp.z));
 			SetParam("arg.mdistance.xy", Mathf.Abs(ttp.x-ctp.x)+Mathf.Abs(ttp.y-ctp.y));

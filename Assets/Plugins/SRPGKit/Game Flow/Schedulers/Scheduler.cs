@@ -11,6 +11,10 @@ public class Scheduler : MonoBehaviour {
 	public Character activeCharacter;
 	[HideInInspector]
 	public bool begun=false;
+	
+	Skill pendingDeactivationSkill;
+	Character pendingDeactivationCharacter;
+	
 
 	Map _map;
 	protected Map map { get {
@@ -54,13 +58,30 @@ public class Scheduler : MonoBehaviour {
 
 	public virtual void Deactivate(Character c=null, object context=null) {
 		if(c == null) { c = activeCharacter; }
-		if(activeCharacter == c) { activeCharacter = null; }
-		c.SendMessage("Deactivate", context, SendMessageOptions.RequireReceiver);
-		map.BroadcastMessage(
-			"DeactivatedCharacter",
-			c,
-			SendMessageOptions.DontRequireReceiver
-		);
+		if(activeCharacter == c) { 
+			c.SendMessage("Deactivate", context, SendMessageOptions.RequireReceiver);
+			map.BroadcastMessage(
+				"DeactivatedCharacter",
+				c,
+				SendMessageOptions.DontRequireReceiver
+			);
+			activeCharacter = null; 
+			pendingDeactivationSkill = null;
+			pendingDeactivationCharacter = null;
+		}
+	}
+	public void SkillDeactivated(Skill s) {
+		if(s == pendingDeactivationSkill) {
+			if(pendingDeactivationCharacter == activeCharacter) {
+				Deactivate(pendingDeactivationCharacter, s);
+			}
+			pendingDeactivationSkill = null;
+			pendingDeactivationCharacter = null;
+		}
+	}
+	public virtual void DeactivateAfterSkillApplication(Character c, Skill skill) {
+		pendingDeactivationSkill = skill;
+		pendingDeactivationCharacter = c;
 	}
 
 	public virtual void Start () {

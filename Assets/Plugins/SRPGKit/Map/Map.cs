@@ -281,6 +281,18 @@ void Awake() {
 		return stacks[idx];
 	}
 
+	MapTile PrevTile(MapTile t) {
+		MapColumn stack = TileColumnAt(t.x, t.y);
+		if(stack == null) { return null; }
+		int tidx = stack.IndexOf(t);
+		if(tidx == -1) { return null; }
+		if(tidx-1 < 0) {
+			return null;
+		}
+/*		Debug.Log("next after "+t+" at "+tidx+" is "+stack.At(tidx+1)+" where count is "+stack.Count);*/
+		return stack.At(tidx-1);
+	}
+
 	MapTile NextTile(MapTile t) {
 		MapColumn stack = TileColumnAt(t.x, t.y);
 		if(stack == null) { return null; }
@@ -437,33 +449,52 @@ void Awake() {
 		return closest.avgZ;
 	}
 
-	public int NextZLevel(int x, int y, int z, bool wrap=false) {
+	public int PrevZLevel(int x, int y, int z, bool wrap=true) {
 		MapColumn mc = TileColumnAt(x,y);
-		if(mc == null) { return 0; }
-		int lowestValidZ = -1;
-		int lastValidZ = -1;
-
-		for(int i = 0; i < mc.Count; i++) {
-			bool valid = false;
+		if(mc == null) { return -1; }
+		MapTile ret = null;
+		for(int i = mc.Count-1; i >= 0; i--) {
 			MapTile t = mc.At(i);
 			if(MapTileIsNull(t)) {
-				if(wrap) { return lowestValidZ; }
-				return lastValidZ;
-			} else {
-				MapTile n = NextTile(t);
-				if(MapTileIsNull(n)) {
-					valid = true;
-				} else {
-					if(n.z > t.maxZ) { valid = true; }
-				}
-				if(valid) {
-					if(lowestValidZ == -1) { lowestValidZ = t.avgZ; }
-					lastValidZ = t.avgZ;
-					if(lastValidZ > z) { return lastValidZ; }
-				}
+				continue;
+			}
+			if(i < mc.Count-1 && mc.At(i+1).z == t.maxZ) {
+				//skip, we're in the middle of a stack
+				continue;
+			}
+			if(ret == null && wrap) { ret = t; } //get top
+			//if t's maxZ is below z, set ret to it and break
+			if(t.maxZ < z) {
+				ret = t;
+				break;
 			}
 		}
-		return lowestValidZ;
+		if(ret == null) { return -1; }
+		return ret.maxZ-1;
+	}
+
+	public int NextZLevel(int x, int y, int z, bool wrap=false) {
+		MapColumn mc = TileColumnAt(x,y);
+		if(mc == null) { return -1; }
+		MapTile ret = null;
+		for(int i = 0; i < mc.Count; i++) {
+			MapTile t = mc.At(i);
+			if(MapTileIsNull(t)) {
+				continue;
+			}
+			if(i < mc.Count-1 && mc.At(i+1).z == t.maxZ) {
+				//skip, we're in the middle of a stack
+				continue;
+			}
+			if(ret == null && wrap) { ret = t; } //get bottom
+			//if t's maxZ is above z, set ret to it and break
+			if(t.maxZ > z) {
+				ret = t;
+				break;
+			}
+		}
+		if(ret == null) { return -1; }
+		return ret.maxZ-1;
 	}
 
 	//TODO: include a direction argument for ramps
