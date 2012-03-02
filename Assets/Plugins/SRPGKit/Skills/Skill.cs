@@ -39,6 +39,7 @@ public class Skill : MonoBehaviour {
 	//tile validation region (line/range/cone/etc)
 	public Region reactionTargetRegion, reactionEffectRegion;
 	public StatEffectGroup[] reactionEffects;
+	public StatEffectGroup reactionApplicationEffects;
 
 	[HideInInspector]
 	public Skill currentReactedSkill = null;
@@ -113,32 +114,44 @@ public class Skill : MonoBehaviour {
 			s is ActionSkill && //only react against targeted skills
 			ReactionTypesMatch(se); //only react if masks match
 	}
+	protected void ClearLastEffects() {
+		if(lastEffects == null) {
+			lastEffects = new List<StatEffectRecord>();
+		} else {
+			lastEffects.Clear();
+		}
+	}
 	protected virtual void SkillApplied(Skill s) {
 		//react against each effect
 		currentReactedSkill = s;
 		List<StatEffectRecord> fx = s.lastEffects;
-
+		bool reacts = false;
 		foreach(StatEffectRecord se in fx) {
 			currentReactedEffect = se;
-			//TODO: should reactions get rolled up somehow so the skill doesn't get applied multiple times?
 			if(ReactsAgainst(s, se)) {
-				currentTarget = s.character;
-				int hitType = (int)GetParam("reaction.hitType", 0);
-				currentHitType = hitType;
-				if(reactionEffects[hitType].Length > 0) {
-					reactionTargetRegion.Owner = this;
-					reactionEffectRegion.Owner = this;
-					PathNode[] reactionTiles = reactionTargetRegion.GetValidTiles();
-					reactionTiles = reactionTargetRegion.ActualTilesForTargetedTiles(reactionTiles);
-					List<Character> tentativeTargets = reactionTargetRegion.CharactersForTargetedTiles(reactionTiles);
-					if(tentativeTargets.Contains(s.character)) {
-						reactionTiles = reactionEffectRegion.GetValidTiles(currentTarget.TilePosition);
-						targets = reactionEffectRegion.CharactersForTargetedTiles(reactionTiles);
-						ApplyEffectsTo(reactionEffects[hitType].effects, targets);
-					}
-				}
-				map.BroadcastMessage("SkillApplied", this, SendMessageOptions.DontRequireReceiver);
+				reacts = true;
+				break;
 			}
+		}
+		if(reacts) {
+			ClearLastEffects();
+			currentTarget = s.character;
+			int hitType = (int)GetParam("reaction.hitType", 0);
+			currentHitType = hitType;
+			ApplyEffectsTo(reactionApplicationEffects.effects, new List<Character>(){currentTarget});
+			if(reactionEffects[hitType].Length > 0) {
+				reactionTargetRegion.Owner = this;
+				reactionEffectRegion.Owner = this;
+				PathNode[] reactionTiles = reactionTargetRegion.GetValidTiles();
+				reactionTiles = reactionTargetRegion.ActualTilesForTargetedTiles(reactionTiles);
+				List<Character> tentativeTargets = reactionTargetRegion.CharactersForTargetedTiles(reactionTiles);
+				if(tentativeTargets.Contains(s.character)) {
+					reactionTiles = reactionEffectRegion.GetValidTiles(currentTarget.TilePosition);
+					targets = reactionEffectRegion.CharactersForTargetedTiles(reactionTiles);
+					ApplyEffectsTo(reactionEffects[hitType].effects, targets);
+				}
+			}
+			map.BroadcastMessage("SkillApplied", this, SendMessageOptions.DontRequireReceiver);
 		}
 		currentReactedSkill = null;
 		currentReactedEffect = null;
@@ -191,34 +204,44 @@ public class Skill : MonoBehaviour {
 			}
 		}
 	}
-	
+
 	public void AddParam(string pname, Formula f) {
 		MakeParametersIfNecessary();
 		runtimeParameters[pname] = f;
 		parameters = parameters.Concat(new Parameter[]{new Parameter(pname, f)}).ToList();
 	}
+	
+	protected virtual void SetArgsFrom(Vector3 ttp, bool isSelf) {
+		Vector3 ctp = character.TilePosition;
+		float distance = Vector3.Distance(ttp, ctp);
+		float angle = isSelf ?
+			character.Facing :
+			Mathf.Atan2(ttp.y-ctp.y, ttp.x-ctp.x)*Mathf.Rad2Deg;
+		SetParam("arg.distance", distance);
+		SetParam("arg.mdistance", Mathf.Abs(ttp.x-ctp.x)+Mathf.Abs(ttp.y-ctp.y)+Mathf.Abs(ttp.z-ctp.z));
+		SetParam("arg.mdistance.xy", Mathf.Abs(ttp.x-ctp.x)+Mathf.Abs(ttp.y-ctp.y));
+		SetParam("arg.dx", Mathf.Abs(ttp.x-ctp.x));
+		SetParam("arg.dy", Mathf.Abs(ttp.y-ctp.y));
+		SetParam("arg.dz", Mathf.Abs(ttp.z-ctp.z));
+		SetParam("arg.angle.xy", angle);
+	}
 
 	protected virtual void ApplyEffectsTo(StatEffect[] effects, List<Character> targs) {
-		if(lastEffects == null) {
-			lastEffects = new List<StatEffectRecord>();
-		} else {
-			lastEffects.Clear();
+		if(targs == null || targs.Count == 0) {
+			foreach(StatEffect se in effects) {
+				if(se.target == StatEffectTarget.Applied) {
+					Debug.LogError("Applied-facing ability used without target");
+					return;
+				}
+			}
+			foreach(StatEffect se in effects) {
+				lastEffects.Add(se.Apply(this, character, null));
+			}
+			return;
 		}
 		foreach(Character c in targs) {
 			currentTarget = c;
-			Vector3 ttp = c.TilePosition;
-			Vector3 ctp = character.TilePosition;
-			float distance = Vector3.Distance(ttp, ctp);
-			float angle = currentTarget == character ?
-				character.Facing :
-				Mathf.Atan2(ttp.y-ctp.y, ttp.x-ctp.x)*Mathf.Rad2Deg;
-			SetParam("arg.distance", distance);
-			SetParam("arg.mdistance", Mathf.Abs(ttp.x-ctp.x)+Mathf.Abs(ttp.y-ctp.y)+Mathf.Abs(ttp.z-ctp.z));
-			SetParam("arg.mdistance.xy", Mathf.Abs(ttp.x-ctp.x)+Mathf.Abs(ttp.y-ctp.y));
-			SetParam("arg.dx", Mathf.Abs(ttp.x-ctp.x));
-			SetParam("arg.dy", Mathf.Abs(ttp.y-ctp.y));
-			SetParam("arg.dz", Mathf.Abs(ttp.z-ctp.z));
-			SetParam("arg.angle.xy", angle);
+			SetArgsFrom(c.TilePosition, currentTarget == character);
 			foreach(StatEffect se in effects) {
 				lastEffects.Add(se.Apply(this, character, currentTarget));
 			}

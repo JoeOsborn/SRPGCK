@@ -28,6 +28,7 @@ public class ActionSkill : Skill {
 	//TODO: support for inverting grid-locked overlay
 	public bool invertOverlay = false;
 
+	public StatEffectGroup applicationEffects;
 	public StatEffectGroup[] targetEffects;
 
 	override public bool isPassive { get { return false; } }
@@ -578,13 +579,36 @@ public class ActionSkill : Skill {
 	}
 
 	public override void ApplySkill() {
-		//TODO: apply separately to each target
+		ClearLastEffects();
 		int hitType = (int)GetParam("hitType", 0);
 		currentHitType = hitType;
 /*		if(targetEffects.Length == 0) {
 			Debug.LogError("No effects in attack skill "+skillName+"!");
 		}
-*/
+		*/
+		targets = null;
+		switch(targetingMode) {
+			case TargetingMode.Self:
+			case TargetingMode.Pick:
+			case TargetingMode.Path:
+				Character c = map.CharacterAt(selectedTile);
+				if(c != null) {
+					targets = new List<Character>(){c};
+				} else {
+					SetArgsFrom(selectedTile, false);
+				}
+				break;
+			case TargetingMode.Cardinal:
+			case TargetingMode.Radial:
+			//FIXME: wrong for selectRegion
+			case TargetingMode.SelectRegion:
+				SetArgsFrom(character.TilePosition, true);
+				break;
+			default:
+				Debug.LogError("Unrecognized targeting mode");
+				break;
+		}
+		ApplyEffectsTo(applicationEffects.effects, targets);
 		if(targetEffects.Length > 0 && targetEffects[hitType].Length > 0) {
 			targets = effectRegion.CharactersForTargetedTiles(targetTiles);
 			ApplyEffectsTo(targetEffects[hitType].effects, targets);

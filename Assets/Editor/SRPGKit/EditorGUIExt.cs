@@ -253,6 +253,12 @@ public class EditorGUIExt
 		return newEffects;
 	}
 
+	public static StatEffectGroup StatEffectGroupGUI(string label, StatEffectGroup g, StatEffectContext ctx, string[] formulaOptions, string lastFocusedControl) {
+		if(g == null) { g = new StatEffectGroup(); }
+		g.effects = StatEffectFoldout(label, g.effects, ctx, formulaOptions, lastFocusedControl, ref g.editorDisplayEffects, false);
+		return g;
+	}
+
 	public static StatEffectGroup[] StatEffectGroupsGUI(string name, StatEffectGroup[] fxgs, StatEffectContext ctx, string[] formulaOptions, string lastFocusedControl) {
 		if(fxgs == null) { fxgs = new StatEffectGroup[0]; }
 		StatEffectGroup[] newFXGs = fxgs;

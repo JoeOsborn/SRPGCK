@@ -101,7 +101,8 @@ public class ActionSkillEditor : SkillEditor {
 		if(atk.targetEffects != null && atk.targetEffects.Length > 1) {
 			EditorGUILayout.HelpBox("Be sure that the hitType parameter is defined to provide a value from 0 to "+(atk.targetEffects.Length-1), (s.HasParam("hitType") ? MessageType.Info : MessageType.Error));
 		}
-		atk.targetEffects = EditorGUIExt.StatEffectGroupsGUI("Attack Effect Group", atk.targetEffects, StatEffectContext.Action, formulaOptions, lastFocusedControl);
+		atk.applicationEffects = EditorGUIExt.StatEffectGroupGUI("Per-Application Effect", atk.applicationEffects, StatEffectContext.Action, formulaOptions, lastFocusedControl);
+		atk.targetEffects = EditorGUIExt.StatEffectGroupsGUI("Application Effect Group", atk.targetEffects, StatEffectContext.Action, formulaOptions, lastFocusedControl);
 	}
 
 	public override void OnSRPGCKInspectorGUI () {

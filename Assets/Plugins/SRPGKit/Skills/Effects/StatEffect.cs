@@ -20,7 +20,7 @@ public enum StatEffectType {
 	ChangeFacing,
 
 	EndTurn,
-		
+
 	Knockback
 };
 

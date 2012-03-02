@@ -114,7 +114,7 @@ public class Character : MonoBehaviour {
 		}
 	}
 
-	public void Knockback(int amount, float direction) {
+	public void Knockback(int amount, float direction, Skill cause = null) {
 		//for now, assume grid lock
 		//build a path to the thing we should hit (ledge or character) or until we run out of stuff
 		Vector3 start = TilePosition;
@@ -183,7 +183,7 @@ public class Character : MonoBehaviour {
 		knockbackExecutor.KnockbackTo(cur, (src, endNode, finishedNicely) => {
 			//broadcast message with remaining velocity, incurred fall distance, collided character if any
 			Debug.Log("knocked back character "+this.name+" into "+(collidedCharacter==null?"nobody":collidedCharacter.name)+" left over "+(amount-soFar)+" dropped "+dropDistance);
-			map.BroadcastMessage("KnockedBackCharacter", new CharacterKnockbackReport(this, start, amount, direction, cur, amount-soFar, dropDistance, collidedCharacter), SendMessageOptions.DontRequireReceiver);
+			map.BroadcastMessage("KnockedBackCharacter", new CharacterKnockbackReport(this, cause, start, amount, direction, cur, amount-soFar, dropDistance, collidedCharacter), SendMessageOptions.DontRequireReceiver);
 			knockbackExecutor.Deactivate();
 		});
 	}

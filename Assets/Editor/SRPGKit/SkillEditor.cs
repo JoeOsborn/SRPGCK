@@ -65,7 +65,8 @@ public class SkillEditor : SRPGCKEditor {
 			if(s.reactionEffects != null && s.reactionEffects.Length > 1) {
 				EditorGUILayout.HelpBox("Be sure that the reaction.hitType parameter is defined to provide a value from 0 to "+(s.reactionEffects.Length-1), (s.HasParam("reaction.hitType") ? MessageType.Info : MessageType.Error));
 			}
-			s.reactionEffects = EditorGUIExt.StatEffectGroupsGUI("Effect Group", s.reactionEffects, StatEffectContext.Action, formulaOptions, lastFocusedControl);
+			s.reactionApplicationEffects = EditorGUIExt.StatEffectGroupGUI("Per-Reaction Effect", s.reactionApplicationEffects, StatEffectContext.Action, formulaOptions, lastFocusedControl);
+			s.reactionEffects = EditorGUIExt.StatEffectGroupsGUI("Per-Target Effect Group", s.reactionEffects, StatEffectContext.Action, formulaOptions, lastFocusedControl);
 			EditorGUILayout.Space();
 		}
 	}
