@@ -131,8 +131,9 @@ public class EditorGUIExt
 		int selection= 0;
 		int lastSelection = 0;
 		EditorGUILayout.BeginVertical();
-		if(f == null) {
+		if(f == null || f.text == null || f.text == "") {
 			f = Formula.Constant(0);
+			f.text = "0";
 		}
 		if(formulaOptions != null) {
 			if(f.formulaType == FormulaType.Lookup &&
@@ -197,15 +198,18 @@ public class EditorGUIExt
 			case StatEffectType.EndTurn:
 			break;
 			case StatEffectType.SpecialMove:
-				newFx.specialMoveAngle = EditorGUIExt.FormulaField("Angle:", fx.specialMoveAngle, type, formulaOptions, lastFocusedControl, i);
+				newFx.specialMoveAngle = EditorGUIExt.FormulaField("Angle", fx.specialMoveAngle, type, formulaOptions, lastFocusedControl, i);
 				EditorGUILayout.HelpBox("This angle formula can refer to c.facing, target.facing, or arg.angle.xy to find candidate directions!", MessageType.Info);
-				newFx.value = EditorGUIExt.FormulaField("Distance:", fx.value, type, formulaOptions, lastFocusedControl, i);
-				newFx.specialMoveType = EditorGUILayout.TextField("Move Type:", newFx.specialMoveType).NormalizeName();
-				newFx.specialMoveSpeedXY = EditorGUILayout.FloatField("Move Speed XY:", newFx.specialMoveSpeedXY);
-				newFx.specialMoveSpeedZ = EditorGUILayout.FloatField("Move Speed Z:", newFx.specialMoveSpeedZ);
+				newFx.value = EditorGUIExt.FormulaField("Distance", fx.value, type, formulaOptions, lastFocusedControl, i);
+				newFx.specialMoveType = EditorGUILayout.TextField("Move Type", newFx.specialMoveType).NormalizeName();
 				newFx.canCrossWalls = EditorGUILayout.Toggle("Can Cross Walls", newFx.canCrossWalls);
 				newFx.canCrossCharacters = EditorGUILayout.Toggle("Can Cross Characters", newFx.canCrossCharacters);
+				newFx.canGlide = EditorGUILayout.Toggle("Can Glide Over Gaps", newFx.canGlide);
+				newFx.specialMoveZUpMax = EditorGUIExt.FormulaField("Z Up Max", fx.specialMoveZUpMax, type, formulaOptions, lastFocusedControl, i);
+				newFx.specialMoveZDownMax = EditorGUIExt.FormulaField("Z Down Max", fx.specialMoveZDownMax, type, formulaOptions, lastFocusedControl, i);
 				newFx.facingLock = (FacingLock)EditorGUILayout.EnumPopup("Locking Mode", newFx.facingLock);
+				newFx.specialMoveSpeedXY = EditorGUILayout.FloatField("Move Speed XY", newFx.specialMoveSpeedXY);
+				newFx.specialMoveSpeedZ = EditorGUILayout.FloatField("Move Speed Z", newFx.specialMoveSpeedZ);
 			break;
 		}
 		if(ctx == StatEffectContext.Action) {

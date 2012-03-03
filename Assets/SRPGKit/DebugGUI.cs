@@ -274,7 +274,7 @@ public class DebugGUI : MonoBehaviour {
 			if(ac != null && a.IsLocalTeam(ac.EffectiveTeamID)) {
 				GUILayout.BeginArea(new Rect(
 					8, 8,
-					128, 180
+					128, 240
 				));
 				GUILayout.Label("Character:"+ac.gameObject.name);
 				GUILayout.Label("Health: "+Mathf.Ceil(ac.GetStat("health")));
@@ -305,7 +305,7 @@ public class DebugGUI : MonoBehaviour {
 			TeamRoundsPickAnyOnceScheduler tps = s as TeamRoundsPickAnyOnceScheduler;
 			GUILayout.BeginArea(new Rect(
 				8, 8,
-				110, 180
+				110, 240
 			));
 			GUILayout.Label("Current Team:"+tps.currentTeam);
 			if(ac != null) {
@@ -344,7 +344,7 @@ public class DebugGUI : MonoBehaviour {
 			if(a.IsLocalTeam(tps.currentTeam)) {
 				GUILayout.BeginArea(new Rect(
 					8, 8,
-					110, 180
+					110, 240
 				));
 				GUILayout.Label("Current Team: "+tps.currentTeam);
 				GUILayout.Label("Points Left: "+tps.pointsRemaining);
@@ -390,7 +390,7 @@ public class DebugGUI : MonoBehaviour {
 		} else if(s is TeamRoundsInitiativeScheduler || s is RoundsInitiativeScheduler) {
 			GUILayout.BeginArea(new Rect(
 				8, 8,
-				110, 180
+				110, 240
 			));
 			TeamRoundsInitiativeScheduler tis = s as TeamRoundsInitiativeScheduler;
 			if(tis != null) {

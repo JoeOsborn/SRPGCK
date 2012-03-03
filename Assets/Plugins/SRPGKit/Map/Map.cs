@@ -274,8 +274,11 @@ void Awake() {
 	}
 
 	MapColumn TileColumnAt(int x, int y) {
+		if(x < 0 || y < 0 || x >= (int)_size.x || y >= (int)_size.y) {
+			return null;
+		}
 		int idx = y*(int)_size.x+x;
-		if(idx >= stacks.Length) {
+		if(idx >= stacks.Length || idx < 0) {
 			return null;
 		}
 		return stacks[idx];
@@ -422,8 +425,8 @@ void Awake() {
 	}
 
 	public bool HasTileAt(int x, int y) {
-		MapColumn c = TileColumnAt(x,y);
-		return x >= 0 && x < size.x && y >= 0 && y < size.y && c != null && c.Count > 0;
+		MapColumn c = null;
+		return x >= 0 && x < size.x && y >= 0 && y < size.y && (c = TileColumnAt(x,y)) != null && c.Count > 0;
 	}
 
 	public bool HasTileAt(int x, int y, int z) {

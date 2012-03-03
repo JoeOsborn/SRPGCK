@@ -474,7 +474,8 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 						throw new SemanticException("Switch "+name+" case "+parser.Token.Id+" must be handled");
 					}
 					parser.Advance(":");
-					Formula thisFormula = parser.Parse(bindingPower) as Formula;
+					IFormulaElement fife = parser.Parse(bindingPower);
+					Formula thisFormula = fife as Formula;
 					if(expectingDefaultFormula) {
 						expectingDefaultFormula = false;
 						defaultFormula = thisFormula;
@@ -492,7 +493,10 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 				cases.Add(Formula.Constant(1));
 				forms.Add(defaultFormula);
 			}
-			return selector(cases as IEnumerable<IFormulaElement>, forms as IEnumerable<IFormulaElement>);
+			return selector(
+				cases.ConvertAll(f => f as IFormulaElement),
+				forms.ConvertAll(f => f as IFormulaElement)
+			);
 		};
 		return branchType;
 	}

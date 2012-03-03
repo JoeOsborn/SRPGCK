@@ -111,7 +111,7 @@ public class Character : MonoBehaviour {
 		}
 	}
 
-	public void SpecialMove(int amount, float direction, string moveType, float specialMoveSpeedXY, float specialMoveSpeedZ, bool canCrossWalls, bool canCrossCharacters, FacingLock lockType, Skill cause) {
+	public void SpecialMove(int amount, float direction, string moveType, float specialMoveSpeedXY, float specialMoveSpeedZ, bool canCrossWalls, bool canCrossCharacters, bool canGlide, float zUpMax, float zDownMax, FacingLock lockType, Skill cause) {
 		//for now, assume grid lock
 		//build a path to the thing we should hit (ledge or character) or until we run out of stuff
 		specialMoveType = moveType;
@@ -139,8 +139,9 @@ public class Character : MonoBehaviour {
 		float maxDrop = here.z;
 		int soFar = 0;
 		float dropDistance = 0;
-		Character collidedCharacter = null;
+		List<Character> collidedCharacters = new List<Character>();
 		while(soFar < amount) {
+			Vector3 lastHere = here;
 			here.x += offset.x;
 			here.y += offset.y;
 			MapTile hereT = map.TileAt(here);
@@ -149,34 +150,55 @@ public class Character : MonoBehaviour {
 				//try to fall
 				Debug.Log("no tile!");
 				int lower = map.PrevZLevel((int)here.x, (int)here.y, (int)here.z);
-				if(lower == -1) {
+				if(here.x < 0 || here.y < 0 || here.x >= map.size.x || here.y >= map.size.y) {
+					Debug.Log("Edge of map!");
+					here = lastHere;
+					break;
+				} else if(canGlide && (soFar+1) < amount) {
+					//FIXME: it's the client's responsibility to ensure that gliders
+					//don't end up falling into a bottomless pit or onto a character
+					cur = new PathNode(here, cur, cur.distance+1-0.01f*maxDrop);
+					Debug.Log("glide over "+here+"!");
+				} else if(lower == -1) {
 					//bottomless pit, treat it like a wall
-					//FIXME: later, be able to get shoved across pits if enough distance is left
-					//to get me across the pit
 					Debug.Log("bottomless pit!");
+					here = lastHere;
 					break;
 				} else {
 					//drop down
-					//FIXME: later, be able to get shoved across pits if enough distance is left
-					//to get me across the pit
-					//FIXME: will not work properly with ramps
-					dropDistance += here.z - lower;
-					Vector3 oldHere = here;
-					here.z = lower;
-					cur = new PathNode(here, cur, cur.distance+1-0.01f*(maxDrop-(oldHere.z-lower)));
-					Debug.Log("fall down to "+here+"!");
+					SpecialMoveFall(ref here, zDownMax, maxDrop, ref cur, collidedCharacters, ref dropDistance);
 				}
 			} else {
 				//is it a wall? if so, break
 				//FIXME: will not work properly with ramps
-				Debug.Log("tile wall? "+(map.TileAt((int)here.x, (int)here.y, (int)here.z+1) != null));
-				if(map.TileAt((int)here.x, (int)here.y, (int)here.z+1) != null && !canCrossWalls) {
+				int nextZ = map.NextZLevel((int)here.x, (int)here.y, (int)here.z);
+				MapTile t = map.TileAt((int)here.x, (int)here.y, nextZ);
+				if(t != null && t.z > here.z+1) {
+					//this tile is above us, sure, but it's way above
+					nextZ = (int)here.z;
+					t = map.TileAt(here);
+				} else {
+					here.z = nextZ;
+				}
+				Character hereChar = map.CharacterAt(here);
+				if(hereChar != null && hereChar != this &&
+				   !collidedCharacters.Contains(hereChar)) {
+					collidedCharacters.Add(hereChar);
+				}
+				Debug.Log("tile z "+nextZ);
+				if(!canCrossWalls && nextZ > zUpMax) {
+					//FIXME: it's the client's responsibility to ensure that wall-crossers
+					//don't end up stuck in a wall
 					//it's a wall, break
 					Debug.Log("wall!");
+					here = lastHere;
 					break;
-				} else if((collidedCharacter = map.CharacterAt(here)) != null && !canCrossCharacters) {
+				} else if(!canCrossCharacters && collidedCharacters.Count > 0) {
 					//break
-					Debug.Log("character "+collidedCharacter.name);
+					//FIXME: it's the client's responsibility to ensure that character-crossers
+					//don't end up stuck in a character
+					Debug.Log("character "+collidedCharacters[0].name);
+					here = lastHere;
 					break;
 				} else {
 					//keep going
@@ -187,17 +209,44 @@ public class Character : MonoBehaviour {
 			Debug.Log("tick forward once");
 			soFar++;
 		}
+		if(canGlide && map.TileAt(here) == null) {
+			//fall
+			Debug.Log("it's all over, end glide!");
+			SpecialMoveFall(ref here, zDownMax, maxDrop, ref cur, collidedCharacters, ref dropDistance);
+		}
 		//move executor special move (path)
 		specialMoveExecutor.Activate();
+		CharacterSpecialMoveReport rep = new CharacterSpecialMoveReport(this, moveType, cause, start, amount, direction, canCrossWalls, canCrossCharacters, canGlide, zUpMax, zDownMax, cur, amount-soFar, dropDistance, collidedCharacters);
+		map.BroadcastMessage("WillSpecialMoveCharacter", rep, SendMessageOptions.DontRequireReceiver);
 		specialMoveExecutor.SpecialMoveTo(cur, (src, endNode, finishedNicely) => {
 			//broadcast message with remaining velocity, incurred fall distance, collided character if any
-			Debug.Log("specially moved character "+this.name+" by "+moveType+" into "+(collidedCharacter==null?"nobody":collidedCharacter.name)+" left over "+(amount-soFar)+" dropped "+dropDistance);
+			Debug.Log("specially moved character "+this.name+" by "+moveType+" into "+(collidedCharacters.Count==0?"nobody":""+collidedCharacters.Count+" folks")+" left over "+(amount-soFar)+" dropped "+dropDistance);
 			// if(moveType == "knockback") {
 			// 	this.Facing = 180+this.Facing;
 			// }
-			map.BroadcastMessage("SpecialMovedCharacter", new CharacterSpecialMoveReport(this, moveType, cause, start, amount, direction, canCrossWalls, canCrossCharacters, cur, amount-soFar, dropDistance, collidedCharacter), SendMessageOptions.DontRequireReceiver);
+			map.BroadcastMessage("DidSpecialMoveCharacter", rep, SendMessageOptions.DontRequireReceiver);
 			specialMoveExecutor.Deactivate();
 		});
+	}
+	protected bool SpecialMoveFall(ref Vector3 here, float zDownMax, float maxDrop, ref PathNode cur, List<Character> collidedCharacters, ref float dropDistance) {
+		//FIXME: will not work properly with ramps
+		int lower = map.PrevZLevel((int)here.x, (int)here.y, (int)here.z);
+		if(lower != -1) {
+			if((cur.pos.z - lower) > zDownMax) {
+				dropDistance += here.z - lower;
+			}
+			Vector3 oldHere = here;
+			here.z = lower;
+			cur = new PathNode(here, cur, cur.distance+1-0.01f*(maxDrop-(oldHere.z-lower)));
+			Character c = map.CharacterAt(here);
+			if(c != null) {
+				collidedCharacters.Add(c);
+			}
+			Debug.Log("fall down to "+here+"!");
+			return true;
+		}
+		Debug.Log("trying to fall, but it's a bottomless pit!");
+		return false;
 	}
 
 	public virtual float Facing {

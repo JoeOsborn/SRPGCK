@@ -55,8 +55,10 @@ public class StatEffect {
 	//these ones are only relevant for special moves
 	public Formula specialMoveAngle;
 	public string specialMoveType="knockback";
+	public Formula specialMoveZUpMax; //to go up stairs
+	public Formula specialMoveZDownMax; //to avoid falling damage
 	public float specialMoveSpeedXY=20, specialMoveSpeedZ=25;
-	public bool canCrossWalls=false, canCrossCharacters=false;
+	public bool canCrossWalls=false, canCrossCharacters=false, canGlide=false;
 	public FacingLock facingLock=FacingLock.Cardinal;
 
 	public float ModifyStat(float stat, Skill scontext, Character ccontext, Equipment econtext, out StatEffectRecord rec) {
@@ -110,9 +112,15 @@ public class StatEffect {
 			case StatEffectType.SpecialMove: {
 				float amount = value.GetValue(fdb, skill, targ);
 				float direction = specialMoveAngle.GetValue(fdb, skill, targ);
+				if(specialMoveZUpMax == null) {
+					specialMoveZUpMax = Formula.Constant(0);
+				}
+				if(specialMoveZDownMax == null) {
+					specialMoveZDownMax = Formula.Constant(0);
+				}
 				effect = new StatEffectRecord(this, amount, direction);
 				Debug.Log("move "+actualTarget+" by "+amount+" in "+direction+" as "+specialMoveType);
-				actualTarget.SpecialMove((int)amount, direction, specialMoveType, specialMoveSpeedXY, specialMoveSpeedZ, canCrossWalls, canCrossCharacters, facingLock, skill);
+				actualTarget.SpecialMove((int)amount, direction, specialMoveType, specialMoveSpeedXY, specialMoveSpeedZ, canCrossWalls, canCrossCharacters, canGlide, specialMoveZUpMax.GetValue(fdb, skill, targ), specialMoveZDownMax.GetValue(fdb, skill, targ), facingLock, skill);
 				break;
 			}
 		}
