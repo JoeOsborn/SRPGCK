@@ -138,20 +138,20 @@ public class Skill : MonoBehaviour {
 			currentTarget = s.character;
 			int hitType = (int)GetParam("reaction.hitType", 0);
 			currentHitType = hitType;
-			ApplyEffectsTo(reactionApplicationEffects.effects, new List<Character>(){currentTarget});
 			if(reactionEffects[hitType].Length > 0) {
 				reactionTargetRegion.Owner = this;
 				reactionEffectRegion.Owner = this;
 				PathNode[] reactionTiles = reactionTargetRegion.GetValidTiles();
 				reactionTiles = reactionTargetRegion.ActualTilesForTargetedTiles(reactionTiles);
 				List<Character> tentativeTargets = reactionTargetRegion.CharactersForTargetedTiles(reactionTiles);
-				if(tentativeTargets.Contains(s.character)) {
+				if(tentativeTargets.Contains(currentTarget)) {
 					reactionTiles = reactionEffectRegion.GetValidTiles(currentTarget.TilePosition);
 					targets = reactionEffectRegion.CharactersForTargetedTiles(reactionTiles);
+					ApplyPerApplicationEffectsTo(reactionApplicationEffects.effects, new List<Character>(){currentTarget});
 					ApplyEffectsTo(reactionEffects[hitType].effects, targets);
+					map.BroadcastMessage("SkillApplied", this, SendMessageOptions.DontRequireReceiver);
 				}
 			}
-			map.BroadcastMessage("SkillApplied", this, SendMessageOptions.DontRequireReceiver);
 		}
 		currentReactedSkill = null;
 		currentReactedEffect = null;
@@ -210,7 +210,7 @@ public class Skill : MonoBehaviour {
 		runtimeParameters[pname] = f;
 		parameters = parameters.Concat(new Parameter[]{new Parameter(pname, f)}).ToList();
 	}
-	
+
 	protected virtual void SetArgsFrom(Vector3 ttp, bool isSelf) {
 		Vector3 ctp = character.TilePosition;
 		float distance = Vector3.Distance(ttp, ctp);
@@ -226,7 +226,7 @@ public class Skill : MonoBehaviour {
 		SetParam("arg.angle.xy", angle);
 	}
 
-	protected virtual void ApplyEffectsTo(StatEffect[] effects, List<Character> targs) {
+	protected virtual void ApplyPerApplicationEffectsTo(StatEffect[] effects, List<Character> targs) {
 		if(targs == null || targs.Count == 0) {
 			foreach(StatEffect se in effects) {
 				if(se.target == StatEffectTarget.Applied) {
@@ -239,6 +239,8 @@ public class Skill : MonoBehaviour {
 			}
 			return;
 		}
+	}
+	protected virtual void ApplyEffectsTo(StatEffect[] effects, List<Character> targs) {
 		foreach(Character c in targs) {
 			currentTarget = c;
 			SetArgsFrom(c.TilePosition, currentTarget == character);

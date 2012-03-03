@@ -608,7 +608,7 @@ public class ActionSkill : Skill {
 				Debug.LogError("Unrecognized targeting mode");
 				break;
 		}
-		ApplyEffectsTo(applicationEffects.effects, targets);
+		ApplyPerApplicationEffectsTo(applicationEffects.effects, targets);
 		if(targetEffects.Length > 0 && targetEffects[hitType].Length > 0) {
 			targets = effectRegion.CharactersForTargetedTiles(targetTiles);
 			ApplyEffectsTo(targetEffects[hitType].effects, targets);

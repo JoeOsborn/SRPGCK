@@ -12,21 +12,18 @@ public class Character : MonoBehaviour {
 		return _map;
 	} }
 
-	public float knockbackSpeedXY=20;
-	public float knockbackSpeedZ=20;
-
-	MoveExecutor _knockbackExecutor;
-	protected MoveExecutor knockbackExecutor { get {
-		if(_knockbackExecutor == null) {
-			_knockbackExecutor = new MoveExecutor();
-			_knockbackExecutor.lockToGrid = true;
-			_knockbackExecutor.character = this;
-			_knockbackExecutor.map = map;
-			_knockbackExecutor.XYSpeed = knockbackSpeedXY;
-			_knockbackExecutor.ZSpeedDown = knockbackSpeedZ;
+	MoveExecutor _specialMoveExecutor;
+	protected MoveExecutor specialMoveExecutor { get {
+		if(_specialMoveExecutor == null) {
+			_specialMoveExecutor = new MoveExecutor();
+			_specialMoveExecutor.lockToGrid = true;
+			_specialMoveExecutor.character = this;
+			_specialMoveExecutor.map = map;
 		}
-		return _knockbackExecutor;
+		return _specialMoveExecutor;
 	} }
+
+	public string specialMoveType=null;
 
 	//I believe this is a stored property here in character,
 	//not merely a query to scheduler for whether active==this
@@ -114,18 +111,30 @@ public class Character : MonoBehaviour {
 		}
 	}
 
-	public void Knockback(int amount, float direction, Skill cause = null) {
+	public void SpecialMove(int amount, float direction, string moveType, float specialMoveSpeedXY, float specialMoveSpeedZ, bool canCrossWalls, bool canCrossCharacters, FacingLock lockType, Skill cause) {
 		//for now, assume grid lock
 		//build a path to the thing we should hit (ledge or character) or until we run out of stuff
+		specialMoveType = moveType;
+		specialMoveExecutor.XYSpeed = specialMoveSpeedXY;
+		specialMoveExecutor.ZSpeedDown = specialMoveSpeedZ;
 		Vector3 start = TilePosition;
 		Vector3 here = start;
 		PathNode cur = new PathNode(here, null, 0);
 		Vector2 offset = Vector2.zero;
-		switch(SRPGUtil.LockFacing(direction)) {
-			case LockedFacing.XP: offset = new Vector2(1,0); break;
-			case LockedFacing.YP: offset = new Vector2(0,1); break;
-			case LockedFacing.XN: offset = new Vector2(-1,0); break;
-			case LockedFacing.YN: offset = new Vector2(0,-1); break;
+		LockedFacing f = SRPGUtil.LockFacing(direction, lockType);
+		switch(f) {
+			case LockedFacing.XP  : offset = new Vector2( 1, 0); break;
+			case LockedFacing.YP  : offset = new Vector2( 0, 1); break;
+			case LockedFacing.XN  : offset = new Vector2(-1, 0); break;
+			case LockedFacing.YN  : offset = new Vector2( 0,-1); break;
+			case LockedFacing.XPYP: offset = new Vector2( 1, 1); break;
+			case LockedFacing.XPYN: offset = new Vector2( 1,-1); break;
+			case LockedFacing.XNYP: offset = new Vector2(-1, 1); break;
+			case LockedFacing.XNYN: offset = new Vector2(-1,-1); break;
+			default:
+				float fRad = ((float)f)*Mathf.Deg2Rad;
+				offset = new Vector2(Mathf.Cos(fRad), Mathf.Sin(fRad));
+				break;
 		}
 		float maxDrop = here.z;
 		int soFar = 0;
@@ -161,12 +170,12 @@ public class Character : MonoBehaviour {
 				//is it a wall? if so, break
 				//FIXME: will not work properly with ramps
 				Debug.Log("tile wall? "+(map.TileAt((int)here.x, (int)here.y, (int)here.z+1) != null));
-				if(map.TileAt((int)here.x, (int)here.y, (int)here.z+1) != null) {
+				if(map.TileAt((int)here.x, (int)here.y, (int)here.z+1) != null && !canCrossWalls) {
 					//it's a wall, break
 					Debug.Log("wall!");
 					break;
-				} else if((collidedCharacter = map.CharacterAt(here)) != null) {
-					//store it and break
+				} else if((collidedCharacter = map.CharacterAt(here)) != null && !canCrossCharacters) {
+					//break
 					Debug.Log("character "+collidedCharacter.name);
 					break;
 				} else {
@@ -178,13 +187,16 @@ public class Character : MonoBehaviour {
 			Debug.Log("tick forward once");
 			soFar++;
 		}
-		//move executor knockback (path)
-		knockbackExecutor.Activate();
-		knockbackExecutor.KnockbackTo(cur, (src, endNode, finishedNicely) => {
+		//move executor special move (path)
+		specialMoveExecutor.Activate();
+		specialMoveExecutor.SpecialMoveTo(cur, (src, endNode, finishedNicely) => {
 			//broadcast message with remaining velocity, incurred fall distance, collided character if any
-			Debug.Log("knocked back character "+this.name+" into "+(collidedCharacter==null?"nobody":collidedCharacter.name)+" left over "+(amount-soFar)+" dropped "+dropDistance);
-			map.BroadcastMessage("KnockedBackCharacter", new CharacterKnockbackReport(this, cause, start, amount, direction, cur, amount-soFar, dropDistance, collidedCharacter), SendMessageOptions.DontRequireReceiver);
-			knockbackExecutor.Deactivate();
+			Debug.Log("specially moved character "+this.name+" by "+moveType+" into "+(collidedCharacter==null?"nobody":collidedCharacter.name)+" left over "+(amount-soFar)+" dropped "+dropDistance);
+			// if(moveType == "knockback") {
+			// 	this.Facing = 180+this.Facing;
+			// }
+			map.BroadcastMessage("SpecialMovedCharacter", new CharacterSpecialMoveReport(this, moveType, cause, start, amount, direction, canCrossWalls, canCrossCharacters, cur, amount-soFar, dropDistance, collidedCharacter), SendMessageOptions.DontRequireReceiver);
+			specialMoveExecutor.Deactivate();
 		});
 	}
 
@@ -211,8 +223,8 @@ public class Character : MonoBehaviour {
 		}
 	}
 	public void Update() {
-		if(knockbackExecutor.isActive) {
-			knockbackExecutor.Update();
+		if(specialMoveExecutor.isActive) {
+			specialMoveExecutor.Update();
 		}
 	}
 	void OnDestroy() {

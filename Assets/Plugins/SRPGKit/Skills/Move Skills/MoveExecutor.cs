@@ -24,7 +24,7 @@ public class MoveExecutor {
 	int pathIndex;
 
 	public bool animateTemporaryMovement=false;
-	public bool gettingKnockedBack=false;
+	public bool specialMoving=false;
 
 	public delegate void MoveFinished(Vector3 src, PathNode endNode, bool finishedNicely);
 
@@ -76,8 +76,8 @@ public class MoveExecutor {
 		}
 	}
 
-	virtual public void TemporaryMoveTo(PathNode pn, MoveFinished callback, float timeout=10.0f, bool knockedBack = false) {
-		gettingKnockedBack = knockedBack;
+	virtual public void TemporaryMoveTo(PathNode pn, MoveFinished callback, float timeout=10.0f, bool special = false) {
+		specialMoving = special;
 		temporaryDestNode = pn;
 		moveOrigin = temporaryPosition;
 		moveCallback = callback;
@@ -85,7 +85,7 @@ public class MoveExecutor {
 			temporaryPosition = temporaryDestination;
 			transformPosition = temporaryPosition;
 			moveCallback(map.InverseTransformPointWorld(moveOrigin), temporaryDestNode, true);
-			gettingKnockedBack = false;
+			specialMoving = false;
 			moveCallback = null;
 			ClearPath();
 		} else {
@@ -102,8 +102,8 @@ public class MoveExecutor {
 		get { return map.TransformPointWorld(destNode.pos); }
 	}
 
-	virtual public void IncrementalMoveTo(PathNode pn, MoveFinished callback, float timeout=10.0f, bool knockedBack=false) {
-		gettingKnockedBack = knockedBack;
+	virtual public void IncrementalMoveTo(PathNode pn, MoveFinished callback, float timeout=10.0f, bool special=false) {
+		specialMoving = special;
 		transformPosition = position;
 		destNode = pn;
 	  temporaryDestNode = pn;
@@ -120,11 +120,11 @@ public class MoveExecutor {
 			animNodes[0].pos != transformPosition;
 	} }
 
-	virtual public void MoveTo(PathNode pn, MoveFinished callback, float timeout=10.0f, bool knockedBack=false) {
-		IncrementalMoveTo(pn, callback, timeout, knockedBack);
+	virtual public void MoveTo(PathNode pn, MoveFinished callback, float timeout=10.0f, bool special=false) {
+		IncrementalMoveTo(pn, callback, timeout, special);
 	}
 
-	virtual public void KnockbackTo(PathNode pn, MoveFinished callback, float timeout=10.0f) {
+	virtual public void SpecialMoveTo(PathNode pn, MoveFinished callback, float timeout=10.0f) {
 		MoveTo(pn, callback, timeout, true);
 	}
 
@@ -142,8 +142,8 @@ public class MoveExecutor {
 		Fall,
 		Leap,
 
-		Knockback,
-		KnockbackFall
+		Special,
+		SpecialFall
 	};
 
 	/*animations:
@@ -153,17 +153,17 @@ public class MoveExecutor {
 		fall (dy < -2) (slide, then fall)
 		leap (|dx/dz| > 1) (slide with arc)
 
-		knockback (|dy| <= 1) (simultaneous slide)
-		knockback-fall (|dy| > 1) (slide, then fall)*/
+		special (|dy| <= 1) (simultaneous slide)
+		special-fall (|dy| > 1) (slide, then fall)*/
 
 	public MoveType MoveTypeForMove(Vector3 to, Vector3 from) {
 		float dx = to.x-from.x;
 		float dy = to.y-from.y;
 		float dz = map.AbsDZForMove(to, from);
 		float adz = Mathf.Abs(dz);
-		if(gettingKnockedBack) {
-			if(dz != 0) { return MoveType.KnockbackFall; }
-			if(dx != 0 || dy != 0) { return MoveType.Knockback; }
+		if(specialMoving) {
+			if(dz != 0) { return MoveType.SpecialFall; }
+			if(dx != 0 || dy != 0) { return MoveType.Special; }
 			return MoveType.None;
 		}
 		if(Mathf.Abs(dx)+Mathf.Abs(dy) > 1) { return MoveType.Leap; }
@@ -175,9 +175,6 @@ public class MoveExecutor {
 	}
 
 	public float FacingForMove(Vector3 to, Vector3 from) {
-		if(gettingKnockedBack) {
-			return 180+Mathf.Atan2(to.y-from.y, to.x-from.x)*Mathf.Rad2Deg;
-		}
 		return Mathf.Atan2(to.y-from.y, to.x-from.x)*Mathf.Rad2Deg;
 	}
 
@@ -227,7 +224,7 @@ public class MoveExecutor {
 				  temporaryPosition = temporaryDestination;
 			  	if(moveCallback != null) {
 			  		moveCallback(map.InverseTransformPointWorld(moveOrigin), temporaryDestNode, true);
-						gettingKnockedBack = false;
+						specialMoving = false;
 			  		moveCallback = null;
 			  	}
 					ClearPath();
@@ -242,11 +239,11 @@ public class MoveExecutor {
 						newPos.z = Mathf.MoveTowards(newPos.z, animDest.z, XYSpeed*2*dt);
 						character.TriggerAnimation("leaping");
 						break;
-					case MoveType.Knockback:
+					case MoveType.Special:
 						newPos.x = Mathf.MoveTowards(newPos.x, animDest.x, XYSpeed*dt);
 						newPos.y = Mathf.MoveTowards(newPos.y, animDest.y, zspeed*dt);
 						newPos.z = Mathf.MoveTowards(newPos.z, animDest.z, XYSpeed*dt);
-						character.TriggerAnimation("knockback");
+						character.TriggerAnimation("special");
 						break;
 					case MoveType.Step:
 						newPos.x = Mathf.MoveTowards(newPos.x, animDest.x, XYSpeed*dt);
@@ -280,14 +277,14 @@ public class MoveExecutor {
 							character.TriggerAnimation("falling");
 						}
 						break;
-					case MoveType.KnockbackFall:
+					case MoveType.SpecialFall:
 						if(d.x != 0 || d.z != 0) {
 							newPos.x = Mathf.MoveTowards(newPos.x, animDest.x, XYSpeed*dt);
 							newPos.z = Mathf.MoveTowards(newPos.z, animDest.z, XYSpeed*dt);
-							character.TriggerAnimation("knockbackfallsliding");
+							character.TriggerAnimation("special-fallsliding");
 						} else {
 							newPos.y = Mathf.MoveTowards(newPos.y, animDest.y, zspeed*dt);
-							character.TriggerAnimation("knockbackfalling");
+							character.TriggerAnimation("special");
 						}
 						break;
 				}
@@ -300,7 +297,7 @@ public class MoveExecutor {
 			transformPosition = position;
 			if(moveCallback != null) {
 				moveCallback(map.InverseTransformPointWorld(moveOrigin), temporaryDestNode, false);
-				gettingKnockedBack = false;
+				specialMoving = false;
 				moveCallback = null;
 			}
 			ClearPath();

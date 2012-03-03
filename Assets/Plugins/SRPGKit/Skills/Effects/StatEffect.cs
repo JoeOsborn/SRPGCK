@@ -21,7 +21,7 @@ public enum StatEffectType {
 
 	EndTurn,
 
-	Knockback
+	SpecialMove
 };
 
 public enum StatChangeType {
@@ -45,12 +45,19 @@ public struct StatChange {
 public class StatEffect {
 	public string statName;
 	public StatEffectType effectType=StatEffectType.Augment;
-	public Formula value, knockbackAngle;
+	public Formula value;
 
 	//these two are only relevant for stateffects used in action and reaction skills
 	public string[] reactableTypes;
 	//for characters, equipment, and passive skills, "self", "wielder", or "character" is implicit
 	public StatEffectTarget target = StatEffectTarget.Applied;
+
+	//these ones are only relevant for special moves
+	public Formula specialMoveAngle;
+	public string specialMoveType="knockback";
+	public float specialMoveSpeedXY=20, specialMoveSpeedZ=25;
+	public bool canCrossWalls=false, canCrossCharacters=false;
+	public FacingLock facingLock=FacingLock.Cardinal;
 
 	public float ModifyStat(float stat, Skill scontext, Character ccontext, Equipment econtext, out StatEffectRecord rec) {
 		Formulae fdb = scontext != null ? scontext.fdb : (ccontext != null ? ccontext.fdb : (econtext != null ? econtext.fdb : Formulae.DefaultFormulae));
@@ -100,19 +107,17 @@ public class StatEffect {
 				effect = new StatEffectRecord(this, 0);
 				skill.scheduler.DeactivateAfterSkillApplication(actualTarget, skill);
 				break;
-			case StatEffectType.Knockback: {
-				Debug.Log("try knockback; formula "+value+", dir form "+knockbackAngle);
+			case StatEffectType.SpecialMove: {
 				float amount = value.GetValue(fdb, skill, targ);
-				float direction = knockbackAngle.GetValue(fdb, skill, targ);
+				float direction = specialMoveAngle.GetValue(fdb, skill, targ);
 				effect = new StatEffectRecord(this, amount, direction);
-				Debug.Log("knockback "+actualTarget+" by "+amount+" in "+direction);
-				actualTarget.Knockback((int)amount, direction);
+				Debug.Log("move "+actualTarget+" by "+amount+" in "+direction+" as "+specialMoveType);
+				actualTarget.SpecialMove((int)amount, direction, specialMoveType, specialMoveSpeedXY, specialMoveSpeedZ, canCrossWalls, canCrossCharacters, facingLock, skill);
 				break;
 			}
 		}
 		return effect;
 	}
-
 	//editor only
 	public bool editorShowsReactableTypes=true;
 }
@@ -121,11 +126,11 @@ public class StatEffect {
 public class StatEffectRecord {
 	public StatEffect effect;
 	public float value;
-	public float knockbackAngle;
+	public float specialMoveAngle;
 	public StatEffectRecord(StatEffect e, float v, float a=0) {
 		effect = e;
 		value = v;
-		knockbackAngle = a;
+		specialMoveAngle = a;
 	}
 
 	public bool Matches(string[] statNames, StatChangeType[] changes, string[] reactableTypes) {

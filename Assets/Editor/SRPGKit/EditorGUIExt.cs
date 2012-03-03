@@ -196,10 +196,16 @@ public class EditorGUIExt
 			break;
 			case StatEffectType.EndTurn:
 			break;
-			case StatEffectType.Knockback:
-				newFx.knockbackAngle = EditorGUIExt.FormulaField("Angle:", fx.knockbackAngle, type, formulaOptions, lastFocusedControl, i);
+			case StatEffectType.SpecialMove:
+				newFx.specialMoveAngle = EditorGUIExt.FormulaField("Angle:", fx.specialMoveAngle, type, formulaOptions, lastFocusedControl, i);
 				EditorGUILayout.HelpBox("This angle formula can refer to c.facing, target.facing, or arg.angle.xy to find candidate directions!", MessageType.Info);
 				newFx.value = EditorGUIExt.FormulaField("Distance:", fx.value, type, formulaOptions, lastFocusedControl, i);
+				newFx.specialMoveType = EditorGUILayout.TextField("Move Type:", newFx.specialMoveType).NormalizeName();
+				newFx.specialMoveSpeedXY = EditorGUILayout.FloatField("Move Speed XY:", newFx.specialMoveSpeedXY);
+				newFx.specialMoveSpeedZ = EditorGUILayout.FloatField("Move Speed Z:", newFx.specialMoveSpeedZ);
+				newFx.canCrossWalls = EditorGUILayout.Toggle("Can Cross Walls", newFx.canCrossWalls);
+				newFx.canCrossCharacters = EditorGUILayout.Toggle("Can Cross Characters", newFx.canCrossCharacters);
+				newFx.facingLock = (FacingLock)EditorGUILayout.EnumPopup("Locking Mode", newFx.facingLock);
 			break;
 		}
 		if(ctx == StatEffectContext.Action) {

@@ -111,7 +111,7 @@ public class WaitSkill : ActionSkill {
 		WaitAtArrow(ArrowForFacing(character.Facing));
 	}
 	public Arrow ArrowForFacing(float f) {
-		LockedFacing l = SRPGUtil.LockFacing(f, map.transform.eulerAngles.y);
+		LockedFacing l = SRPGUtil.LockFacing(f, FacingLock.Cardinal, map.transform.eulerAngles.y);
 		switch(l) {
 			case LockedFacing.XP:
 				return Arrow.XP;

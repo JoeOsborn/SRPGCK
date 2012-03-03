@@ -1,11 +1,23 @@
 using UnityEngine;
 using System.Collections;
 
+public enum FacingLock {
+	FreeAngle=0,
+	Cardinal=1,
+	Ordinal=2,
+	CardinalAndOrdinal=3
+}
+
 public enum LockedFacing {
-	XP,
-	YP,
-	XN,
-	YN
+	XP=0,
+	YP=90,
+	XN=180,
+	YN=270,
+	XPYP=45,
+	XPYN=315,
+	XNYP=135,
+	XNYN=225,
+	Invalid=-1
 }
 
 public class SRPGUtil : MonoBehaviour {
@@ -17,22 +29,58 @@ public class SRPGUtil : MonoBehaviour {
 		return new Vector3(Mathf.Round(v.x), Mathf.Round(v.y), Mathf.Round(v.z));
 	}
 
-	static public LockedFacing LockFacing(float f, float mapY=0) {
+	static public LockedFacing LockFacing(float f, FacingLock lockType=FacingLock.Cardinal, float mapY=0) {
 		const float TAU = 360;
 		float localY = (f - mapY);
 		while(localY >= TAU) { localY -= TAU; }
 		while(localY < 0) { localY += TAU; }
-		if(localY < TAU/8 || localY >= 7*TAU/8) {
-			return LockedFacing.XP;
-		} else if(localY >= TAU/8 && localY < 3*TAU/8) {
-			return LockedFacing.YP;
-		} else if(localY >= 3*TAU/8 && localY < 5*TAU/8) {
-			return LockedFacing.XN;
-		} else if(localY >= 5*TAU/8 && localY < 7*TAU/8) {
-			return LockedFacing.YN;
+		switch(lockType) {
+			case FacingLock.FreeAngle:
+				return (LockedFacing)f;
+			case FacingLock.Cardinal:
+				if(localY < TAU/8 || localY >= 7*TAU/8) {
+					return LockedFacing.XP;
+				} else if(localY >= TAU/8 && localY < 3*TAU/8) {
+					return LockedFacing.YP;
+				} else if(localY >= 3*TAU/8 && localY < 5*TAU/8) {
+					return LockedFacing.XN;
+				} else if(localY >= 5*TAU/8 && localY < 7*TAU/8) {
+					return LockedFacing.YN;
+				}
+				break;
+			case FacingLock.Ordinal:
+				if(localY >= 0 && localY < TAU/4.0f) {
+					return LockedFacing.XPYP;
+				} else if(localY >= TAU/4.0f && localY < TAU/2.0f) {
+					return LockedFacing.XNYP;
+				} else if(localY >= TAU/2.0f && localY < 3*TAU/4.0f) {
+					return LockedFacing.XNYN;
+				} else if(localY >= 3*TAU/4.0f && localY < TAU) {
+					return LockedFacing.XPYN;
+				}
+				break;
+			case FacingLock.CardinalAndOrdinal:
+				if(localY < TAU/16 || localY >= 15*TAU/16) {
+					return LockedFacing.XP;
+				} else if(localY >=   TAU/16 && localY < 3*TAU/16) {
+					return LockedFacing.XPYP;
+				} else if(localY >= 3*TAU/16 && localY < 5*TAU/16) {
+					return LockedFacing.YP;
+				} else if(localY >= 5*TAU/16 && localY < 7*TAU/16) {
+					return LockedFacing.XNYP;
+				} else if(localY >= 7*TAU/16 && localY < 9*TAU/16) {
+					return LockedFacing.XN;
+				} else if(localY >= 9*TAU/16 && localY <11*TAU/16) {
+					return LockedFacing.XNYN;
+				} else if(localY >=11*TAU/16 && localY <13*TAU/16) {
+					return LockedFacing.YN;
+				} else if(localY >=13*TAU/16 && localY <15*TAU/16) {
+					return LockedFacing.XPYN;
+				}
+				break;
 		}
 		Debug.LogError("No matching direction for Q");
-		return LockedFacing.XN;
+		return LockedFacing.Invalid;
 	}
 
 	static public float WrapAngle(float f) {
