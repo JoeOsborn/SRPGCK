@@ -1054,9 +1054,9 @@ void Awake() {
 		foreach(PathNode sp in spots) {
 			Vector3 s = sp.pos;
 			MapTile t = TileAt((int)s.x, (int)s.y, (int)s.z);
-			float w = t.maxHeight;
-			float bottom = t.z-1;
-			float surface = t.z;
+			float w = t == null ? s.z : t.maxHeight;
+			float bottom = t == null ? s.z-1 : t.z-1;
+			float surface = t == null ? s.z : t.z;
 			float top = surface+w;
 			bool merged = false;
 			for(int i = 0; i < count; i++) {

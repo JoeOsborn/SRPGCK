@@ -7,6 +7,10 @@ public enum RegionType {
 	Cylinder,
 	Sphere,
 	Line,
+	LineMove,
+	//scans line of movement; can cross walls/enemies, can glide, radius, direction, z up max, z down max, width is always 1
+	//somehow queryable for distance remaining and amount dropped (map can be asked about characters collided using normal means)
+	//intervening space type is always LineMove, but LineMove is not allowed for other region types.
 	Cone,
 	Self,
 	Predicate, //actually "CylinderPredicate"--applies predicate to tiles within standard cylindrical region
@@ -17,11 +21,15 @@ public enum InterveningSpaceType {
 	Pick, //pick anywhere in 3d space
 	Path, //walkable path
 	Line, //straight line from source, possibly blocked by walls or enemies
-	Arc   //arced line from source, possibly blocked by walls or enemies
+	Arc,   //arced line from source, possibly blocked by walls or enemies
+	LineMove //N.B. iff region type is LineMove
 };
 
 [System.Serializable]
 public class Region {
+	//editor only
+	public bool editorShowContents=true;
+
 	protected Skill owner;
 	public Skill Owner {
 		get { return owner; }
@@ -52,6 +60,7 @@ public class Region {
 	//these mean the same for pathable and non-pathable regions
 	//they don't apply to self or predicate.
 	public bool canCrossWalls=true;
+	//means "can cross characters" for line move.
 	public bool canCrossEnemies=true;
 	//turn this off for move skills!
 	//it only has meaning if canCrossEnemies is false.
@@ -60,11 +69,15 @@ public class Region {
 	//ending BEFORE an enemy (as a move would)
 	public bool canHaltAtEnemies=true;
 
+	//linemove only
+	public bool canGlide=false;
+	public FacingLock facingLock;
+
 	//these apply to cylinder/predicate, sphere, cone, and line
 	public Formula radiusMinF, radiusMaxF;
 	//these apply to cylinder/predicate (define), sphere (clip), line (define up/down displacements from line)
 	public Formula zUpMinF, zUpMaxF, zDownMinF, zDownMaxF;
-	//these apply to cone and line
+	//these apply to cone and line, xy applies to lineMove
 	public Formula xyDirectionF, zDirectionF;
 	//these apply to cone
 	public Formula xyArcMinF, zArcMinF;
@@ -242,6 +255,197 @@ public class Region {
 		return PathDecision.Normal;
 	}
 
+	public Dictionary<Vector3, PathNode> LineMoveTilesAround(
+		Vector3 here, Quaternion q,
+		float xyrmx,
+		float zrdmx, float zrumx,
+		float xyDir
+	) {
+		Dictionary<Vector3, PathNode> pickables = new Dictionary<Vector3, PathNode>();
+		List<Character> collidedCharacters = new List<Character>();
+		float dir, amt, remaining, dd;
+		//FIXME: give clients a chance to filter or fix or modify this?
+		GetLineMove(
+			out dir, out amt, out remaining, out dd,
+			collidedCharacters,
+			pickables,
+			owner.character,
+			here, xyDir+q.eulerAngles.y,
+			xyrmx,
+			zrdmx,
+			zrumx
+		);
+		pickables.Remove(here);
+		return pickables;
+	}
+
+	public virtual PathNode GetLineMove(
+		out float dir,
+		out float amt,
+		out float remaining,
+		out float dd,
+		List<Character> collidedCharacters,
+		Character chara
+	) {
+		return GetLineMove(
+			out dir, out amt, out remaining, out dd,
+			collidedCharacters,
+			null,
+			chara,
+			chara.TilePosition, xyDirection,
+			radiusMax, zDownMax, zUpMax
+		);
+	}
+
+	public virtual PathNode GetLineMove(
+		out float dir,
+		out float amt,
+		out float remaining,
+		out float dd,
+		List<Character> collidedCharacters,
+		Dictionary<Vector3, PathNode> nodes,
+
+		Character chara,
+		Vector3 start, float direction,
+		float amount,
+		float zrdmx, float zrumx
+	) {
+		Vector3 here = start;
+		PathNode cur = new PathNode(here, null, 0);
+		if(nodes != null) {
+			nodes[here] = cur;
+		}
+		Vector2 offset = Vector2.zero;
+		LockedFacing f = SRPGUtil.LockFacing(direction, facingLock);
+		switch(f) {
+			case LockedFacing.XP  : offset = new Vector2( 1, 0); break;
+			case LockedFacing.YP  : offset = new Vector2( 0, 1); break;
+			case LockedFacing.XN  : offset = new Vector2(-1, 0); break;
+			case LockedFacing.YN  : offset = new Vector2( 0,-1); break;
+			case LockedFacing.XPYP: offset = new Vector2( 1, 1); break;
+			case LockedFacing.XPYN: offset = new Vector2( 1,-1); break;
+			case LockedFacing.XNYP: offset = new Vector2(-1, 1); break;
+			case LockedFacing.XNYN: offset = new Vector2(-1,-1); break;
+			default:
+				float fRad = ((float)f)*Mathf.Deg2Rad;
+				offset = new Vector2(Mathf.Cos(fRad), Mathf.Sin(fRad));
+				break;
+		}
+		float maxDrop = here.z;
+		int soFar = 0;
+		float dropDistance = 0;
+		Debug.Log("start at "+here+" with offset "+offset);
+		while(soFar < amount) {
+			Vector3 lastHere = here;
+			here.x += offset.x;
+			here.y += offset.y;
+			MapTile hereT = map.TileAt(here);
+			Debug.Log("knock into "+here+"?");
+			if(hereT == null) {
+				//try to fall
+				Debug.Log("no tile!");
+				int lower = map.PrevZLevel((int)here.x, (int)here.y, (int)here.z);
+				if(here.x < 0 || here.y < 0 || here.x >= map.size.x || here.y >= map.size.y) {
+					Debug.Log("Edge of map!");
+					here = lastHere;
+					break;
+				} else if(canGlide && (soFar+1) < amount) {
+					//FIXME: it's the client's responsibility to ensure that gliders
+					//don't end up falling into a bottomless pit or onto a character
+					cur = new PathNode(here, cur, cur.distance+1-0.01f*maxDrop);
+					if(nodes != null) {
+						nodes[here] = cur;
+					}
+					Debug.Log("glide over "+here+"!");
+				} else if(lower == -1) {
+					//bottomless pit, treat it like a wall
+					Debug.Log("bottomless pit!");
+					here = lastHere;
+					break;
+				} else {
+					//drop down
+					LineMoveFall(ref here, chara, zrdmx, maxDrop, ref cur, nodes, collidedCharacters, ref dropDistance);
+				}
+			} else {
+				//is it a wall? if so, break
+				//FIXME: will not work properly with ramps
+				int nextZ = map.NextZLevel((int)here.x, (int)here.y, (int)here.z);
+				MapTile t = map.TileAt((int)here.x, (int)here.y, nextZ);
+				if(t != null && map.TileAt((int)here.x, (int)here.y, (int)here.z+1) == null) {
+					//this tile is above us, sure, but it's way above
+					nextZ = (int)here.z;
+					t = map.TileAt(here);
+				} else {
+					here.z = nextZ;
+				}
+				Character hereChar = map.CharacterAt(here);
+				if(hereChar != null && hereChar != chara &&
+				   !collidedCharacters.Contains(hereChar)) {
+					collidedCharacters.Add(hereChar);
+				}
+				Debug.Log("tile z "+nextZ);
+				if(!canCrossWalls && nextZ > here.z+zrumx) {
+					//FIXME: it's the client's responsibility to ensure that wall-crossers
+					//don't end up stuck in a wall
+					//it's a wall, break
+					Debug.Log("wall!");
+					here = lastHere;
+					break;
+				} else if(!canCrossEnemies && collidedCharacters.Count > 0) {
+					//break
+					//FIXME: it's the client's responsibility to ensure that character-crossers
+					//don't end up stuck in a character
+					Debug.Log("character "+collidedCharacters[0].name);
+					here = lastHere;
+					break;
+				} else {
+					//keep going
+					Debug.Log("keep going");
+					cur = new PathNode(here, cur, cur.distance+1-0.01f*maxDrop);
+					if(nodes != null) {
+						nodes[here] = cur;
+					}
+				}
+			}
+			Debug.Log("tick forward once");
+			soFar++;
+		}
+		if(canGlide && map.TileAt(here) == null) {
+			//fall
+			Debug.Log("it's all over, end glide!");
+			LineMoveFall(ref here, chara, zrdmx, maxDrop, ref cur, nodes, collidedCharacters, ref dropDistance);
+		}
+		dir = direction;
+		amt = amount;
+		remaining = amount-soFar;
+		dd = dropDistance;
+		return cur;
+	}
+
+	protected virtual bool LineMoveFall(ref Vector3 here, Character chara, float zDownMax, float maxDrop, ref PathNode cur, Dictionary<Vector3, PathNode> nodes, List<Character> collidedCharacters, ref float dropDistance) {
+		//FIXME: will not work properly with ramps
+		int lower = map.PrevZLevel((int)here.x, (int)here.y, (int)here.z);
+		if(lower != -1) {
+			if((cur.pos.z - lower) > zDownMax) {
+				dropDistance += here.z - lower;
+			}
+			Vector3 oldHere = here;
+			here.z = lower;
+			cur = new PathNode(here, cur, cur.distance+1-0.01f*(maxDrop-(oldHere.z-lower)));
+			if(nodes != null) {
+				nodes[here] = cur;
+			}
+			Character c = map.CharacterAt(here);
+			if(c != null && c != chara) {
+				collidedCharacters.Add(c);
+			}
+			Debug.Log("fall down to "+here+"!");
+			return true;
+		}
+		Debug.Log("trying to fall, but it's a bottomless pit!");
+		return false;
+	}
+
 	public virtual PathNode[] GetValidTiles() {
 	  return GetValidTiles(
 			owner.character.TilePosition,
@@ -306,6 +510,9 @@ public class Region {
 			case RegionType.Line:
 				pickables = LineTilesAround(here, q, xyrmx, zrdmx, zrumx, xyDirection, zDirection, lwmn, lwmx, PathNodeIsValidRange);
 				break;
+			case RegionType.LineMove:
+				pickables = LineMoveTilesAround(here, q, xyrmx, zrdmx, zrumx, xyDirection);
+				break;
 			case RegionType.Cone:
 				pickables = ConeTilesAround(here, q, xyrmx, zrdmx, zrumx, xyDirection, zDirection, xyArcMin, xyArcMax, zArcMin, zArcMax, rFwdClipMax, PathNodeIsValidRange);
 				break;
@@ -359,6 +566,9 @@ public class Region {
 					returnAllTiles
 				);
 				break;
+			case InterveningSpaceType.LineMove:
+				picked = pickables.Values;
+				break;
 			case InterveningSpaceType.Pick:
 				picked = PickableTilesAround(
 					here,
@@ -404,6 +614,8 @@ public class Region {
 					  (signedDZ <= -zrdmn || signedDZ >= zrumn) &&
 					  signedDZ >= -zrdmx && signedDZ <= zrumx;
 				}).ToArray();
+			case RegionType.LineMove:
+				return picked.ToArray();
 			case RegionType.Cone:
 			//we've already filtered out stuff at bad angles and beyond maxima.
 				return picked.Where(delegate(PathNode n) {

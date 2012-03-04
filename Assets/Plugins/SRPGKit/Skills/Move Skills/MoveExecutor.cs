@@ -281,7 +281,11 @@ public class MoveExecutor {
 						if(d.x != 0 || d.z != 0) {
 							newPos.x = Mathf.MoveTowards(newPos.x, animDest.x, XYSpeed*dt);
 							newPos.z = Mathf.MoveTowards(newPos.z, animDest.z, XYSpeed*dt);
-							character.TriggerAnimation("special-fallsliding");
+							if(d.y < 0) {
+								character.TriggerAnimation("special-fallsliding");
+							} else if(d.y > 0) {
+								character.TriggerAnimation("special-jumpsliding");
+							}
 						} else {
 							newPos.y = Mathf.MoveTowards(newPos.y, animDest.y, zspeed*dt);
 							character.TriggerAnimation("special");

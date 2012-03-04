@@ -11,9 +11,6 @@ public class SkillEditor : SRPGCKEditor {
 	bool showReactionTypesApplied=true, showReactionTypesApplier=true;
 	bool showReactionStatChangesApplied=true, showReactionStatChangesApplier=true;
 
-	bool showReactionTargetRegion=true;
-	bool showReactionEffectRegion=true;
-
 	protected Skill s;
   public override void OnEnable() {
 		s = target as Skill;
@@ -60,8 +57,8 @@ public class SkillEditor : SRPGCKEditor {
 			s.reactionTypesApplier = EditorGUIExt.ArrayFoldout("Reactable Type (Applier)", s.reactionTypesApplier, ref showReactionTypesApplier, false, -1, "attack");
 			//reaction region
 			//reaction effects
-			s.reactionTargetRegion = EditorGUIExt.RegionGUI("Reaction Target", s.name+".reaction", ref showReactionTargetRegion, s.reactionTargetRegion, formulaOptions, Screen.width-32);
-			s.reactionEffectRegion = EditorGUIExt.RegionGUI("Reaction Effect", s.name+".reaction", ref showReactionEffectRegion, s.reactionEffectRegion, formulaOptions, Screen.width-32);
+			s.reactionTargetRegion = EditorGUIExt.RegionGUI("Reaction Target", s.name+".reaction", s.reactionTargetRegion, formulaOptions, Screen.width-32);
+			s.reactionEffectRegion = EditorGUIExt.RegionGUI("Reaction Effect", s.name+".reaction", s.reactionEffectRegion, formulaOptions, Screen.width-32);
 			if(s.reactionEffects != null && s.reactionEffects.Length > 1) {
 				EditorGUILayout.HelpBox("Be sure that the reaction.hitType parameter is defined to provide a value from 0 to "+(s.reactionEffects.Length-1), (s.HasParam("reaction.hitType") ? MessageType.Info : MessageType.Error));
 			}

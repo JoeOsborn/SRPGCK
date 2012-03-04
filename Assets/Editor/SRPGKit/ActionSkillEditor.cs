@@ -8,8 +8,6 @@ public class ActionSkillEditor : SkillEditor {
 	ActionSkill atk;
 	bool showIO=true;
 	bool showTargeting=true;
-	bool showTargetRegion=true;
-	bool showEffectRegion=true;
 
 	GUIContent[] targetingModes;
 	GUIContent[] displayUnimpededTargetRegionFlags;
@@ -92,12 +90,12 @@ public class ActionSkillEditor : SkillEditor {
 			EditorGUI.indentLevel--;
 			EditorGUILayout.Space();
 		}
-		atk.targetRegion = EditorGUIExt.RegionGUI("Target", atk.name, ref showTargetRegion, atk.targetRegion, formulaOptions, Screen.width-32);
+		atk.targetRegion = EditorGUIExt.RegionGUI("Target", atk.name, atk.targetRegion, formulaOptions, Screen.width-32);
 		EditorGUILayout.Space();
 	}
 
 	protected void EffectSkillGUI() {
-		atk.effectRegion = EditorGUIExt.RegionGUI("Effect", atk.name, ref showEffectRegion, atk.effectRegion, formulaOptions, Screen.width-32);
+		atk.effectRegion = EditorGUIExt.RegionGUI("Effect", atk.name, atk.effectRegion, formulaOptions, Screen.width-32);
 		if(atk.targetEffects != null && atk.targetEffects.Length > 1) {
 			EditorGUILayout.HelpBox("Be sure that the hitType parameter is defined to provide a value from 0 to "+(atk.targetEffects.Length-1), (s.HasParam("hitType") ? MessageType.Info : MessageType.Error));
 		}

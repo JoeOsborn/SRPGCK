@@ -111,142 +111,28 @@ public class Character : MonoBehaviour {
 		}
 	}
 
-	public void SpecialMove(int amount, float direction, string moveType, float specialMoveSpeedXY, float specialMoveSpeedZ, bool canCrossWalls, bool canCrossCharacters, bool canGlide, float zUpMax, float zDownMax, FacingLock lockType, Skill cause) {
-		//for now, assume grid lock
-		//build a path to the thing we should hit (ledge or character) or until we run out of stuff
+	public void SpecialMove(
+		string moveType,
+		Region lineMove,
+		float specialMoveSpeedXY,
+		float specialMoveSpeedZ,
+		Skill cause
+	) {
 		specialMoveType = moveType;
 		specialMoveExecutor.XYSpeed = specialMoveSpeedXY;
 		specialMoveExecutor.ZSpeedDown = specialMoveSpeedZ;
-		Vector3 start = TilePosition;
-		Vector3 here = start;
-		PathNode cur = new PathNode(here, null, 0);
-		Vector2 offset = Vector2.zero;
-		LockedFacing f = SRPGUtil.LockFacing(direction, lockType);
-		switch(f) {
-			case LockedFacing.XP  : offset = new Vector2( 1, 0); break;
-			case LockedFacing.YP  : offset = new Vector2( 0, 1); break;
-			case LockedFacing.XN  : offset = new Vector2(-1, 0); break;
-			case LockedFacing.YN  : offset = new Vector2( 0,-1); break;
-			case LockedFacing.XPYP: offset = new Vector2( 1, 1); break;
-			case LockedFacing.XPYN: offset = new Vector2( 1,-1); break;
-			case LockedFacing.XNYP: offset = new Vector2(-1, 1); break;
-			case LockedFacing.XNYN: offset = new Vector2(-1,-1); break;
-			default:
-				float fRad = ((float)f)*Mathf.Deg2Rad;
-				offset = new Vector2(Mathf.Cos(fRad), Mathf.Sin(fRad));
-				break;
-		}
-		float maxDrop = here.z;
-		int soFar = 0;
-		float dropDistance = 0;
 		List<Character> collidedCharacters = new List<Character>();
-		while(soFar < amount) {
-			Vector3 lastHere = here;
-			here.x += offset.x;
-			here.y += offset.y;
-			MapTile hereT = map.TileAt(here);
-			Debug.Log("knock into "+here+"?");
-			if(hereT == null) {
-				//try to fall
-				Debug.Log("no tile!");
-				int lower = map.PrevZLevel((int)here.x, (int)here.y, (int)here.z);
-				if(here.x < 0 || here.y < 0 || here.x >= map.size.x || here.y >= map.size.y) {
-					Debug.Log("Edge of map!");
-					here = lastHere;
-					break;
-				} else if(canGlide && (soFar+1) < amount) {
-					//FIXME: it's the client's responsibility to ensure that gliders
-					//don't end up falling into a bottomless pit or onto a character
-					cur = new PathNode(here, cur, cur.distance+1-0.01f*maxDrop);
-					Debug.Log("glide over "+here+"!");
-				} else if(lower == -1) {
-					//bottomless pit, treat it like a wall
-					Debug.Log("bottomless pit!");
-					here = lastHere;
-					break;
-				} else {
-					//drop down
-					SpecialMoveFall(ref here, zDownMax, maxDrop, ref cur, collidedCharacters, ref dropDistance);
-				}
-			} else {
-				//is it a wall? if so, break
-				//FIXME: will not work properly with ramps
-				int nextZ = map.NextZLevel((int)here.x, (int)here.y, (int)here.z);
-				MapTile t = map.TileAt((int)here.x, (int)here.y, nextZ);
-				if(t != null && t.z > here.z+1) {
-					//this tile is above us, sure, but it's way above
-					nextZ = (int)here.z;
-					t = map.TileAt(here);
-				} else {
-					here.z = nextZ;
-				}
-				Character hereChar = map.CharacterAt(here);
-				if(hereChar != null && hereChar != this &&
-				   !collidedCharacters.Contains(hereChar)) {
-					collidedCharacters.Add(hereChar);
-				}
-				Debug.Log("tile z "+nextZ);
-				if(!canCrossWalls && nextZ > zUpMax) {
-					//FIXME: it's the client's responsibility to ensure that wall-crossers
-					//don't end up stuck in a wall
-					//it's a wall, break
-					Debug.Log("wall!");
-					here = lastHere;
-					break;
-				} else if(!canCrossCharacters && collidedCharacters.Count > 0) {
-					//break
-					//FIXME: it's the client's responsibility to ensure that character-crossers
-					//don't end up stuck in a character
-					Debug.Log("character "+collidedCharacters[0].name);
-					here = lastHere;
-					break;
-				} else {
-					//keep going
-					Debug.Log("keep going");
-					cur = new PathNode(here, cur, cur.distance+1-0.01f*maxDrop);
-				}
-			}
-			Debug.Log("tick forward once");
-			soFar++;
-		}
-		if(canGlide && map.TileAt(here) == null) {
-			//fall
-			Debug.Log("it's all over, end glide!");
-			SpecialMoveFall(ref here, zDownMax, maxDrop, ref cur, collidedCharacters, ref dropDistance);
-		}
+		float direction=-1, amount=-1, remaining=-1, dropDistance=-1;
+		PathNode movePath = lineMove.GetLineMove(out direction, out amount, out remaining, out dropDistance, collidedCharacters, this);
 		//move executor special move (path)
 		specialMoveExecutor.Activate();
-		CharacterSpecialMoveReport rep = new CharacterSpecialMoveReport(this, moveType, cause, start, amount, direction, canCrossWalls, canCrossCharacters, canGlide, zUpMax, zDownMax, cur, amount-soFar, dropDistance, collidedCharacters);
+		CharacterSpecialMoveReport rep = new CharacterSpecialMoveReport(this, moveType, lineMove, cause, this.TilePosition, movePath, direction, amount, remaining, dropDistance, collidedCharacters);
 		map.BroadcastMessage("WillSpecialMoveCharacter", rep, SendMessageOptions.DontRequireReceiver);
-		specialMoveExecutor.SpecialMoveTo(cur, (src, endNode, finishedNicely) => {
-			//broadcast message with remaining velocity, incurred fall distance, collided character if any
-			Debug.Log("specially moved character "+this.name+" by "+moveType+" into "+(collidedCharacters.Count==0?"nobody":""+collidedCharacters.Count+" folks")+" left over "+(amount-soFar)+" dropped "+dropDistance);
-			// if(moveType == "knockback") {
-			// 	this.Facing = 180+this.Facing;
-			// }
+		specialMoveExecutor.SpecialMoveTo(movePath, (src, endNode, finishedNicely) => {
+			Debug.Log("specially moved character "+this.name+" by "+moveType+" in dir "+direction+" node "+movePath+" into "+(collidedCharacters.Count==0?"nobody":""+collidedCharacters.Count+" folks")+" left over "+remaining+" dropped "+dropDistance);
 			map.BroadcastMessage("DidSpecialMoveCharacter", rep, SendMessageOptions.DontRequireReceiver);
 			specialMoveExecutor.Deactivate();
 		});
-	}
-	protected bool SpecialMoveFall(ref Vector3 here, float zDownMax, float maxDrop, ref PathNode cur, List<Character> collidedCharacters, ref float dropDistance) {
-		//FIXME: will not work properly with ramps
-		int lower = map.PrevZLevel((int)here.x, (int)here.y, (int)here.z);
-		if(lower != -1) {
-			if((cur.pos.z - lower) > zDownMax) {
-				dropDistance += here.z - lower;
-			}
-			Vector3 oldHere = here;
-			here.z = lower;
-			cur = new PathNode(here, cur, cur.distance+1-0.01f*(maxDrop-(oldHere.z-lower)));
-			Character c = map.CharacterAt(here);
-			if(c != null) {
-				collidedCharacters.Add(c);
-			}
-			Debug.Log("fall down to "+here+"!");
-			return true;
-		}
-		Debug.Log("trying to fall, but it's a bottomless pit!");
-		return false;
 	}
 
 	public virtual float Facing {

@@ -4,41 +4,36 @@ using System.Collections.Generic;
 public class CharacterSpecialMoveReport {
 	public Character character;
 	public string moveType;
+	public Region lineMove;
 	public Skill cause;
 	public Vector3 start;
-	public int amount;
-	public float direction;
-	public bool canCrossWalls, canCrossCharacters, canGlide;
-	public float zUpMax, zDownMax;
 	public PathNode endOfPath;
-	public int remainingVelocity;
+	public float direction;
+	public float amount;
+	public float remainingVelocity;
 	public float dropDistance;
 	public List<Character> collidedCharacters;
 	public CharacterSpecialMoveReport(
 		Character c,
 		string mt,
+		Region lm,
 		Skill s,
 		Vector3 st,
-		int amt,
-		float dir,
-		bool crossWalls, bool crossChars, bool glide,
-		float zUp, float zDown,
 		PathNode path,
-		int remainingVel, float drop,
+		float dir,
+		float amt,
+		float remainingVel,
+		float drop,
 		List<Character> collided
 	) {
 		character = c;
 		moveType = mt;
+		lineMove = lm;
 		cause = s;
 		start = st;
-		amount = amt;
-		direction = dir;
-		canCrossWalls = crossWalls;
-		canCrossCharacters = crossChars;
-		canGlide = glide;
-		zUpMax = zUp;
-		zDownMax = zDown;
 		endOfPath = path;
+		direction = dir;
+		amount = amt;
 		remainingVelocity = remainingVel;
 		dropDistance = drop;
 		collidedCharacters = collided;

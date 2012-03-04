@@ -53,13 +53,9 @@ public class StatEffect {
 	public StatEffectTarget target = StatEffectTarget.Applied;
 
 	//these ones are only relevant for special moves
-	public Formula specialMoveAngle;
 	public string specialMoveType="knockback";
-	public Formula specialMoveZUpMax; //to go up stairs
-	public Formula specialMoveZDownMax; //to avoid falling damage
 	public float specialMoveSpeedXY=20, specialMoveSpeedZ=25;
-	public bool canCrossWalls=false, canCrossCharacters=false, canGlide=false;
-	public FacingLock facingLock=FacingLock.Cardinal;
+	public Region specialMoveLine;
 
 	public float ModifyStat(float stat, Skill scontext, Character ccontext, Equipment econtext, out StatEffectRecord rec) {
 		Formulae fdb = scontext != null ? scontext.fdb : (ccontext != null ? ccontext.fdb : (econtext != null ? econtext.fdb : Formulae.DefaultFormulae));
@@ -106,21 +102,16 @@ public class StatEffect {
 				effect = new StatEffectRecord(this, angle);
 				break;
 			case StatEffectType.EndTurn:
-				effect = new StatEffectRecord(this, 0);
+				effect = new StatEffectRecord(this);
 				skill.scheduler.DeactivateAfterSkillApplication(actualTarget, skill);
 				break;
 			case StatEffectType.SpecialMove: {
-				float amount = value.GetValue(fdb, skill, targ);
-				float direction = specialMoveAngle.GetValue(fdb, skill, targ);
-				if(specialMoveZUpMax == null) {
-					specialMoveZUpMax = Formula.Constant(0);
+				if(specialMoveLine == null) {
+					Debug.LogError("Undefined move line");
 				}
-				if(specialMoveZDownMax == null) {
-					specialMoveZDownMax = Formula.Constant(0);
-				}
-				effect = new StatEffectRecord(this, amount, direction);
-				Debug.Log("move "+actualTarget+" by "+amount+" in "+direction+" as "+specialMoveType);
-				actualTarget.SpecialMove((int)amount, direction, specialMoveType, specialMoveSpeedXY, specialMoveSpeedZ, canCrossWalls, canCrossCharacters, canGlide, specialMoveZUpMax.GetValue(fdb, skill, targ), specialMoveZDownMax.GetValue(fdb, skill, targ), facingLock, skill);
+				specialMoveLine.Owner = skill;
+				effect = new StatEffectRecord(this);
+				actualTarget.SpecialMove(specialMoveType, specialMoveLine, specialMoveSpeedXY, specialMoveSpeedZ, skill);
 				break;
 			}
 		}
@@ -134,11 +125,9 @@ public class StatEffect {
 public class StatEffectRecord {
 	public StatEffect effect;
 	public float value;
-	public float specialMoveAngle;
-	public StatEffectRecord(StatEffect e, float v, float a=0) {
+	public StatEffectRecord(StatEffect e, float v=0) {
 		effect = e;
 		value = v;
-		specialMoveAngle = a;
 	}
 
 	public bool Matches(string[] statNames, StatChangeType[] changes, string[] reactableTypes) {

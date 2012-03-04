@@ -198,18 +198,27 @@ public class EditorGUIExt
 			case StatEffectType.EndTurn:
 			break;
 			case StatEffectType.SpecialMove:
-				newFx.specialMoveAngle = EditorGUIExt.FormulaField("Angle", fx.specialMoveAngle, type, formulaOptions, lastFocusedControl, i);
-				EditorGUILayout.HelpBox("This angle formula can refer to c.facing, target.facing, or arg.angle.xy to find candidate directions!", MessageType.Info);
-				newFx.value = EditorGUIExt.FormulaField("Distance", fx.value, type, formulaOptions, lastFocusedControl, i);
-				newFx.specialMoveType = EditorGUILayout.TextField("Move Type", newFx.specialMoveType).NormalizeName();
-				newFx.canCrossWalls = EditorGUILayout.Toggle("Can Cross Walls", newFx.canCrossWalls);
-				newFx.canCrossCharacters = EditorGUILayout.Toggle("Can Cross Characters", newFx.canCrossCharacters);
-				newFx.canGlide = EditorGUILayout.Toggle("Can Glide Over Gaps", newFx.canGlide);
-				newFx.specialMoveZUpMax = EditorGUIExt.FormulaField("Z Up Max", fx.specialMoveZUpMax, type, formulaOptions, lastFocusedControl, i);
-				newFx.specialMoveZDownMax = EditorGUIExt.FormulaField("Z Down Max", fx.specialMoveZDownMax, type, formulaOptions, lastFocusedControl, i);
-				newFx.facingLock = (FacingLock)EditorGUILayout.EnumPopup("Locking Mode", newFx.facingLock);
-				newFx.specialMoveSpeedXY = EditorGUILayout.FloatField("Move Speed XY", newFx.specialMoveSpeedXY);
-				newFx.specialMoveSpeedZ = EditorGUILayout.FloatField("Move Speed Z", newFx.specialMoveSpeedZ);
+				//FIXME: mess with the stat effect's LineMove region. only show part of the
+				//region GUI -- maybe provide a special flag to prevent region type alteration
+				if(newFx.specialMoveLine == null || newFx.specialMoveLine.type != RegionType.LineMove) {
+					newFx.specialMoveLine = new Region();
+					newFx.specialMoveLine.type = RegionType.LineMove;
+					newFx.specialMoveLine.interveningSpaceType = InterveningSpaceType.LineMove;
+					newFx.specialMoveLine.radiusMinF = Formula.Constant(0);
+					newFx.specialMoveLine.radiusMaxF = Formula.Constant(1);
+					newFx.specialMoveLine.zUpMaxF = Formula.Constant(0);
+					newFx.specialMoveLine.zDownMaxF = Formula.Constant(0);
+					newFx.specialMoveLine.xyDirectionF = Formula.Constant(0);
+					newFx.specialMoveLine.canCrossWalls = false;
+					newFx.specialMoveLine.canCrossEnemies = false;
+					newFx.specialMoveLine.canHaltAtEnemies = false;
+					newFx.specialMoveLine.canGlide = false;
+					newFx.specialMoveLine.facingLock = FacingLock.Cardinal;
+				}
+				newFx.specialMoveType = EditorGUILayout.TextField("Move Type:", newFx.specialMoveType).NormalizeName();
+				newFx.specialMoveLine = EditorGUIExt.SimpleRegionGUI(type, newFx.specialMoveLine, formulaOptions, Screen.width, 0);
+				newFx.specialMoveSpeedXY = EditorGUILayout.FloatField("Move Speed XY:", newFx.specialMoveSpeedXY);
+				newFx.specialMoveSpeedZ = EditorGUILayout.FloatField("Move Speed Z:", newFx.specialMoveSpeedZ);
 			break;
 		}
 		if(ctx == StatEffectContext.Action) {
@@ -429,6 +438,8 @@ public class EditorGUIExt
 	static GUIContent[] canCrossWallsFlags;
 	static GUIContent[] canCrossEnemiesFlags;
 	static GUIContent[] canHaltAtEnemiesFlags;
+	static GUIContent[] canGlideFlags;
+	static GUIContent[] facingLockFlags;
 	static GUIContent[] useAbsoluteDZFlags;
 	static GUIContent[] useArcRangeBonusFlags;
 	static GUIStyle _imageButtonGridStyle;
@@ -448,33 +459,13 @@ public class EditorGUIExt
 	} }
 	public static float buttonDim = 88;
 
-	public static Region RegionGUI(
-		string label, string type,
-		ref bool open,
+	public static Region SimpleRegionGUI(
+		string type,
 		Region reg,
 		string[] formulaOptions,
 		float width,
 		int subregionIndex=-1
 	) {
-		if(regionTypes == null) {
-			regionTypes = new GUIContent[]{
-				new GUIContent("Cylinder", EditorGUIUtility.LoadRequired("rgn-cylinder.png") as Texture),
-				new GUIContent("Sphere", EditorGUIUtility.LoadRequired("rgn-sphere.png") as Texture),
-				new GUIContent("Line", EditorGUIUtility.LoadRequired("rgn-line.png") as Texture),
-				new GUIContent("Cone", EditorGUIUtility.LoadRequired("rgn-cone.png") as Texture),
-				new GUIContent("Self", EditorGUIUtility.LoadRequired("rgn-self.png") as Texture),
-				new GUIContent("Predicate", EditorGUIUtility.LoadRequired("rgn-predicate.png") as Texture),
-				new GUIContent("Compound", EditorGUIUtility.LoadRequired("rgn-compound.png") as Texture)
-			};
-		}
-		if(spaceTypes == null) {
-			spaceTypes = new GUIContent[]{
-				new GUIContent("Pick", EditorGUIUtility.LoadRequired("intv-pick.png") as Texture),
-				new GUIContent("Path", EditorGUIUtility.LoadRequired("intv-path.png") as Texture),
-				new GUIContent("Line", EditorGUIUtility.LoadRequired("intv-line.png") as Texture),
-				new GUIContent("Arc", EditorGUIUtility.LoadRequired("intv-arc.png") as Texture),
-			};
-		}
 		if(canCrossWallsFlags == null) {
 			canCrossWallsFlags = new GUIContent[]{
 				new GUIContent("Don't Cross", EditorGUIUtility.LoadRequired("cancross-walls-no.png") as Texture),
@@ -493,6 +484,20 @@ public class EditorGUIExt
 				new GUIContent("Stop At", EditorGUIUtility.LoadRequired("canstop-enemies.png") as Texture)
 			};
 		}
+		if(canGlideFlags == null) {
+			canGlideFlags = new GUIContent[]{
+				new GUIContent("Don't Glide", EditorGUIUtility.LoadRequired("canglide-no.png") as Texture),
+				new GUIContent("Glide", EditorGUIUtility.LoadRequired("canglide.png") as Texture)
+			};
+		}
+		if(facingLockFlags == null) {
+			facingLockFlags = new GUIContent[]{
+				new GUIContent("Free Angle", EditorGUIUtility.LoadRequired("lock-free.png") as Texture),
+				new GUIContent("Cardinal", EditorGUIUtility.LoadRequired("lock-cardinal.png") as Texture),
+				new GUIContent("Ordinal", EditorGUIUtility.LoadRequired("lock-ordinal.png") as Texture),
+				new GUIContent("Eight Way", EditorGUIUtility.LoadRequired("lock-8way.png") as Texture)
+			};
+		}
 		if(useAbsoluteDZFlags == null) {
 			useAbsoluteDZFlags = new GUIContent[]{
 				new GUIContent("Relative", EditorGUIUtility.LoadRequired("dz-rel.png") as Texture),
@@ -505,10 +510,268 @@ public class EditorGUIExt
 				new GUIContent("Height Bonus", EditorGUIUtility.LoadRequired("arc-bonus-on.png") as Texture)
 			};
 		}
+		int buttonsWide = (int)(width/buttonDim);
+		Region newReg = reg;
+		if(newReg.type == RegionType.Self) {
+			return newReg;
+		}
+		if(newReg.type == RegionType.LineMove) {
+			newReg.interveningSpaceType = InterveningSpaceType.LineMove;
+		}
+		if(subregionIndex == -1 || newReg.type == RegionType.LineMove) {
+			if(newReg.interveningSpaceType != InterveningSpaceType.Pick) {
+				//can cross walls yes/no
+				GUILayout.Label("Can cross walls?");
+				newReg.canCrossWalls = GUILayout.SelectionGrid(newReg.canCrossWalls ? 1 : 0, canCrossWallsFlags, 2, imageButtonGridStyle) == 1 ? true : false;
+				//can cross enemies yes/no
+				if(newReg.interveningSpaceType != InterveningSpaceType.LineMove) {
+					GUILayout.Label("Can cross enemies?");
+				} else {
+					GUILayout.Label("Can cross characters?");
+				}
+				newReg.canCrossEnemies = GUILayout.SelectionGrid(newReg.canCrossEnemies ? 1 : 0, canCrossEnemiesFlags, 2, imageButtonGridStyle) == 1 ? true : false;
+			} else {
+				newReg.canCrossWalls = true;
+				newReg.canCrossEnemies = true;
+			}
+			if(newReg.interveningSpaceType == InterveningSpaceType.LineMove) {
+				//can cross walls yes/no
+				GUILayout.Label("Can glide?");
+				newReg.canGlide = GUILayout.SelectionGrid(newReg.canGlide ? 1 : 0, canGlideFlags, 2, imageButtonGridStyle) == 1 ? true : false;
+				GUILayout.Label("Locking Mode");
+				newReg.facingLock = (FacingLock)GUILayout.SelectionGrid((int)newReg.facingLock, facingLockFlags, buttonsWide, imageButtonGridStyle);
+			}
+			if(newReg.interveningSpaceType != InterveningSpaceType.LineMove) {
+				//can halt on enemies yes/no
+				GUILayout.Label("Can halt on enemies?");
+				newReg.canHaltAtEnemies = GUILayout.SelectionGrid(newReg.canHaltAtEnemies ? 1 : 0, canHaltAtEnemiesFlags, 2, imageButtonGridStyle) == 1 ? true : false;
+			} else {
+				newReg.canHaltAtEnemies = true;
+			}
+			//abs dz yes/no
+			if(newReg.interveningSpaceType != InterveningSpaceType.Pick &&
+				 newReg.type != RegionType.LineMove &&
+			   newReg.type != RegionType.Line &&
+			   newReg.type != RegionType.Cone) {
+				GUILayout.Label("Use absolute DZ?");
+				newReg.useAbsoluteDZ = GUILayout.SelectionGrid(newReg.useAbsoluteDZ ? 1 : 0, useAbsoluteDZFlags, 2, imageButtonGridStyle) == 1 ? true : false;
+			} else if(newReg.interveningSpaceType != InterveningSpaceType.LineMove) {
+				newReg.useAbsoluteDZ = false;
+			} else {
+				newReg.useAbsoluteDZ = true;
+			}
+		}
+		//arc bonus yes/no if intervening space is arc
+		if(newReg.interveningSpaceType == InterveningSpaceType.Arc) {
+			GUILayout.Label("Arc range bonus?");
+			newReg.useArcRangeBonus = GUILayout.SelectionGrid(newReg.useArcRangeBonus ? 1 : 0, useArcRangeBonusFlags, 2, imageButtonGridStyle) == 1 ? true : false;
+		} else {
+			newReg.useArcRangeBonus = false;
+		}
+		string prefix = type+".region.";
+		if(newReg.type == RegionType.Cylinder ||
+			 newReg.type == RegionType.Sphere   ||
+			 newReg.type == RegionType.Cone     ||
+			 newReg.type == RegionType.Line     ||
+			 newReg.type == RegionType.LineMove     ||
+			 newReg.type == RegionType.Predicate) {
+			//radius min, radius max
+			if(newReg.type != RegionType.LineMove) {
+			 	newReg.radiusMinF = EditorGUIExt.FormulaField(
+					"Radius Min",
+					newReg.radiusMinF,
+					prefix+"radiusMinF",
+					formulaOptions
+				);
+			} else {
+				newReg.radiusMinF = Formula.Constant(0);
+			}
+		 	newReg.radiusMaxF = EditorGUIExt.FormulaField(
+				"Radius Max",
+				newReg.radiusMaxF,
+				prefix+"radiusMaxF",
+				formulaOptions
+			);
+
+		  if(newReg.type != RegionType.Cone) {
+		  	//z up/down min/max
+				if(newReg.type != RegionType.LineMove) {
+				 	newReg.zUpMinF = EditorGUIExt.FormulaField(
+						"Z Up Min",
+						newReg.zUpMinF,
+						prefix+"zUpMinF",
+						formulaOptions
+					);
+				} else {
+					newReg.zUpMinF = Formula.Constant(0);
+				}
+			 	newReg.zUpMaxF = EditorGUIExt.FormulaField(
+					"Z Up Max",
+					newReg.zUpMaxF,
+					prefix+"zUpMax",
+					formulaOptions
+				);
+				if(newReg.type != RegionType.LineMove) {
+				 	newReg.zDownMinF = EditorGUIExt.FormulaField(
+						"Z Down Min",
+						newReg.zDownMinF,
+						prefix+"zDownMinF",
+						formulaOptions
+					);
+				} else {
+					newReg.zDownMinF = Formula.Constant(0);
+				}
+			 	newReg.zDownMaxF = EditorGUIExt.FormulaField(
+					"Z Down Max",
+					newReg.zDownMaxF,
+					prefix+"zDownMax",
+					formulaOptions
+				);
+		  }
+		}
+		if(newReg.type == RegionType.Cone ||
+			 newReg.type == RegionType.Line ||
+	     newReg.type == RegionType.LineMove) {
+			//xyDirection, zDirection
+		 	newReg.xyDirectionF = EditorGUIExt.FormulaField(
+				"XY Direction",
+				newReg.xyDirectionF,
+				prefix+"xyDirectionF",
+				formulaOptions
+			);
+			if(newReg.type != RegionType.LineMove) {
+			 	newReg.zDirectionF = EditorGUIExt.FormulaField(
+					"Z Direction",
+					newReg.zDirectionF,
+					prefix+"zDirectionF",
+					formulaOptions
+				);
+			}
+			EditorGUILayout.HelpBox("These angle formulae can refer to c.facing, target.facing, or arg.angle.xy to find candidate directions!", MessageType.Info);
+		}
+		if(newReg.type == RegionType.Cone) {
+			//xyArcMin/Max
+		 	newReg.xyArcMinF = EditorGUIExt.FormulaField(
+				"XY Arc Min",
+				newReg.xyArcMinF,
+				prefix+"xyArcMinF",
+				formulaOptions
+			);
+		 	newReg.xyArcMaxF = EditorGUIExt.FormulaField(
+				"XY Arc Max",
+				newReg.xyArcMaxF,
+				prefix+"xyArcMax",
+				formulaOptions
+			);
+			//zArcMin/Max
+		 	newReg.zArcMinF = EditorGUIExt.FormulaField(
+				"Z Arc Min",
+				newReg.zArcMinF,
+				prefix+"zArcMinF",
+				formulaOptions
+			);
+		 	newReg.zArcMaxF = EditorGUIExt.FormulaField(
+				"Z Arc Max",
+				newReg.zArcMaxF,
+				prefix+"zArcMaxF",
+				formulaOptions
+			);
+			//rFwdClipMax
+		 	newReg.rFwdClipMaxF = EditorGUIExt.FormulaField(
+				"Forward Distance Max",
+				newReg.rFwdClipMaxF,
+				prefix+"rFwdClipMaxF",
+				formulaOptions
+			);
+		}
+		if(newReg.type == RegionType.Line) {
+			//line width min/max
+		 	newReg.lineWidthMinF = EditorGUIExt.FormulaField(
+				"Line Width Min",
+				newReg.lineWidthMinF,
+				prefix+"lineWidthMinF",
+				formulaOptions
+			);
+		 	newReg.lineWidthMaxF = EditorGUIExt.FormulaField(
+				"Line Width Max",
+				newReg.lineWidthMaxF,
+				prefix+"lineWidthMaxF",
+				formulaOptions
+			);
+		}
+		if(newReg.type == RegionType.Predicate) {
+			//predicateF
+		 	newReg.predicateF = EditorGUIExt.FormulaField(
+				"Predicate",
+				newReg.predicateF,
+				prefix+"predicateF",
+				formulaOptions
+			);
+			//TODO: info box with available bindings?
+		}
+		if(newReg.type == RegionType.Compound) {
+			//regions, but without UI for intervening space, cross/halt walls/enemies
+			//size
+			EditorGUILayout.Space();
+			GUILayout.BeginHorizontal();
+			if(newReg.regions == null) { newReg.regions = new Region[0]; }
+			int regionCount = newReg.regions.Length;
+			int newRegionCount = EditorGUILayout.IntField(regionCount, EditorStyles.textField, GUILayout.Height(18), GUILayout.Width(24));
+			GUILayout.Label("Subregion"+(newRegionCount > 1 ? "s" : ""));
+			GUILayout.EndHorizontal();
+			if(newRegionCount < 1) {
+				newRegionCount = 1;
+			}
+			if(newRegionCount != regionCount) {
+				System.Array.Resize(ref newReg.regions, newRegionCount);
+			}
+			for(int i = 0; i < newRegionCount; i++) {
+				EditorGUILayout.Space();
+				EditorGUILayout.Space();
+				EditorGUILayout.BeginHorizontal();
+				EditorGUILayout.Space();
+				EditorGUILayout.BeginVertical();
+			  //0...i regiongui(...,i)
+				newReg.regions[i] = RegionGUI("Subregion "+i, prefix, newReg.regions[i], formulaOptions, width-16, i);
+				EditorGUILayout.EndVertical();
+				EditorGUILayout.EndHorizontal();
+				EditorGUILayout.Space();
+			}
+		}
+		return newReg;
+	}
+
+	public static Region RegionGUI(
+		string label, string type,
+		Region reg,
+		string[] formulaOptions,
+		float width,
+		int subregionIndex=-1
+	) {
+		if(regionTypes == null) {
+			regionTypes = new GUIContent[]{
+				new GUIContent("Cylinder", EditorGUIUtility.LoadRequired("rgn-cylinder.png") as Texture),
+				new GUIContent("Sphere", EditorGUIUtility.LoadRequired("rgn-sphere.png") as Texture),
+				new GUIContent("Line", EditorGUIUtility.LoadRequired("rgn-line.png") as Texture),
+				new GUIContent("Line Move", EditorGUIUtility.LoadRequired("rgn-linemove.png") as Texture),
+				new GUIContent("Cone", EditorGUIUtility.LoadRequired("rgn-cone.png") as Texture),
+				new GUIContent("Self", EditorGUIUtility.LoadRequired("rgn-self.png") as Texture),
+				new GUIContent("Predicate", EditorGUIUtility.LoadRequired("rgn-predicate.png") as Texture),
+				new GUIContent("Compound", EditorGUIUtility.LoadRequired("rgn-compound.png") as Texture),
+			};
+		}
+		if(spaceTypes == null) {
+			spaceTypes = new GUIContent[]{
+				new GUIContent("Pick", EditorGUIUtility.LoadRequired("intv-pick.png") as Texture),
+				new GUIContent("Path", EditorGUIUtility.LoadRequired("intv-path.png") as Texture),
+				new GUIContent("Line", EditorGUIUtility.LoadRequired("intv-line.png") as Texture),
+				new GUIContent("Arc", EditorGUIUtility.LoadRequired("intv-arc.png") as Texture)
+			};
+		}
 		Region newReg = reg;
 		if(newReg == null) { newReg = new Region(); }
 		if(subregionIndex == -1 &&
-		   !(open = EditorGUILayout.Foldout(open, label))) {
+		   !(newReg.editorShowContents = EditorGUILayout.Foldout(newReg.editorShowContents, label))) {
 			return reg;
 		}
 		int buttonsWide = (int)(width/buttonDim);
@@ -522,194 +785,14 @@ public class EditorGUIExt
 			newReg.canHaltAtEnemies = false;
 		} else {
 			if(subregionIndex == -1) {
-				GUILayout.Label("Intervening Space Type");
-				newReg.interveningSpaceType = (InterveningSpaceType)GUILayout.SelectionGrid((int)newReg.interveningSpaceType, spaceTypes, buttonsWide, imageButtonGridStyle);
-				if(newReg.interveningSpaceType != InterveningSpaceType.Pick) {
-					//can cross walls yes/no
-					GUILayout.Label("Can cross walls?");
-					newReg.canCrossWalls = GUILayout.SelectionGrid(newReg.canCrossWalls ? 1 : 0, canCrossWallsFlags, 2, imageButtonGridStyle) == 1 ? true : false;
-					//can cross enemies yes/no
-					GUILayout.Label("Can cross enemies?");
-					newReg.canCrossEnemies = GUILayout.SelectionGrid(newReg.canCrossEnemies ? 1 : 0, canCrossEnemiesFlags, 2, imageButtonGridStyle) == 1 ? true : false;
+				if(newReg.type != RegionType.LineMove) {
+					GUILayout.Label("Intervening Space Type");
+					newReg.interveningSpaceType = (InterveningSpaceType)GUILayout.SelectionGrid((int)newReg.interveningSpaceType, spaceTypes, buttonsWide, imageButtonGridStyle);
 				} else {
-					newReg.canCrossWalls = true;
-					newReg.canCrossEnemies = true;
-				}
-				//can halt on enemies yes/no
-				GUILayout.Label("Can halt on enemies?");
-				newReg.canHaltAtEnemies = GUILayout.SelectionGrid(newReg.canHaltAtEnemies ? 1 : 0, canHaltAtEnemiesFlags, 2, imageButtonGridStyle) == 1 ? true : false;
-				//abs dz yes/no
-				if(newReg.interveningSpaceType != InterveningSpaceType.Pick &&
-				   newReg.type != RegionType.Line &&
-				   newReg.type != RegionType.Cone) {
-					GUILayout.Label("Use absolute DZ?");
-					newReg.useAbsoluteDZ = GUILayout.SelectionGrid(newReg.useAbsoluteDZ ? 1 : 0, useAbsoluteDZFlags, 2, imageButtonGridStyle) == 1 ? true : false;
-				} else {
-					newReg.useAbsoluteDZ = true;
-				}
-				//arc bonus yes/no if intervening space is arc
-				if(newReg.interveningSpaceType == InterveningSpaceType.Arc) {
-					GUILayout.Label("Arc range bonus?");
-					newReg.useArcRangeBonus = GUILayout.SelectionGrid(newReg.useArcRangeBonus ? 1 : 0, useArcRangeBonusFlags, 2, imageButtonGridStyle) == 1 ? true : false;
-				} else {
-					newReg.useArcRangeBonus = false;
-				}
-			}
-			string prefix = type+".region."+label+".";
-			if(newReg.type == RegionType.Cylinder ||
-				 newReg.type == RegionType.Sphere   ||
-				 newReg.type == RegionType.Cone     ||
-				 newReg.type == RegionType.Line     ||
-				 newReg.type == RegionType.Predicate) {
-				//radius min, radius max
-			 	newReg.radiusMinF = EditorGUIExt.FormulaField(
-					"Radius Min",
-					newReg.radiusMinF,
-					prefix+"radiusMinF",
-					formulaOptions
-				);
-			 	newReg.radiusMaxF = EditorGUIExt.FormulaField(
-					"Radius Max",
-					newReg.radiusMaxF,
-					prefix+"radiusMaxF",
-					formulaOptions
-				);
-
-			  if(newReg.type != RegionType.Cone) {
-			  	//z up/down min/max
-				 	newReg.zUpMinF = EditorGUIExt.FormulaField(
-						"Z Up Min",
-						newReg.zUpMinF,
-						prefix+"zUpMinF",
-						formulaOptions
-					);
-				 	newReg.zUpMaxF = EditorGUIExt.FormulaField(
-						"Z Up Max",
-						newReg.zUpMaxF,
-						prefix+"zUpMax",
-						formulaOptions
-					);
-				 	newReg.zDownMinF = EditorGUIExt.FormulaField(
-						"Z Down Min",
-						newReg.zDownMinF,
-						prefix+"zDownMinF",
-						formulaOptions
-					);
-				 	newReg.zDownMaxF = EditorGUIExt.FormulaField(
-						"Z Down Max",
-						newReg.zDownMaxF,
-						prefix+"zDownMax",
-						formulaOptions
-					);
-			  }
-			}
-			if(newReg.type == RegionType.Cone ||
-				 newReg.type == RegionType.Line) {
-				//xyDirection, zDirection
-			 	newReg.xyDirectionF = EditorGUIExt.FormulaField(
-					"XY Direction",
-					newReg.xyDirectionF,
-					prefix+"xyDirectionF",
-					formulaOptions
-				);
-			 	newReg.zDirectionF = EditorGUIExt.FormulaField(
-					"Z Direction",
-					newReg.zDirectionF,
-					prefix+"zDirectionF",
-					formulaOptions
-				);
-			}
-			if(newReg.type == RegionType.Cone) {
-				//xyArcMin/Max
-			 	newReg.xyArcMinF = EditorGUIExt.FormulaField(
-					"XY Arc Min",
-					newReg.xyArcMinF,
-					prefix+"xyArcMinF",
-					formulaOptions
-				);
-			 	newReg.xyArcMaxF = EditorGUIExt.FormulaField(
-					"XY Arc Max",
-					newReg.xyArcMaxF,
-					prefix+"xyArcMax",
-					formulaOptions
-				);
-				//zArcMin/Max
-			 	newReg.zArcMinF = EditorGUIExt.FormulaField(
-					"Z Arc Min",
-					newReg.zArcMinF,
-					prefix+"zArcMinF",
-					formulaOptions
-				);
-			 	newReg.zArcMaxF = EditorGUIExt.FormulaField(
-					"Z Arc Max",
-					newReg.zArcMaxF,
-					prefix+"zArcMaxF",
-					formulaOptions
-				);
-				//rFwdClipMax
-			 	newReg.rFwdClipMaxF = EditorGUIExt.FormulaField(
-					"Forward Distance Max",
-					newReg.rFwdClipMaxF,
-					prefix+"rFwdClipMaxF",
-					formulaOptions
-				);
-			}
-			if(newReg.type == RegionType.Line) {
-				//line width min/max
-			 	newReg.lineWidthMinF = EditorGUIExt.FormulaField(
-					"Line Width Min",
-					newReg.lineWidthMinF,
-					prefix+"lineWidthMinF",
-					formulaOptions
-				);
-			 	newReg.lineWidthMaxF = EditorGUIExt.FormulaField(
-					"Line Width Max",
-					newReg.lineWidthMaxF,
-					prefix+"lineWidthMaxF",
-					formulaOptions
-				);
-			}
-			if(newReg.type == RegionType.Predicate) {
-				//predicateF
-			 	newReg.predicateF = EditorGUIExt.FormulaField(
-					"Predicate",
-					newReg.predicateF,
-					prefix+"predicateF",
-					formulaOptions
-				);
-				//TODO: info box with available bindings?
-			}
-			if(newReg.type == RegionType.Compound) {
-				//regions, but without UI for intervening space, cross/halt walls/enemies
-				//size
-				EditorGUILayout.Space();
-				GUILayout.BeginHorizontal();
-				if(newReg.regions == null) { newReg.regions = new Region[0]; }
-				int regionCount = newReg.regions.Length;
-				int newRegionCount = EditorGUILayout.IntField(regionCount, EditorStyles.textField, GUILayout.Height(18), GUILayout.Width(24));
-				GUILayout.Label("Subregion"+(newRegionCount > 1 ? "s" : ""));
-				GUILayout.EndHorizontal();
-				if(newRegionCount < 1) {
-					newRegionCount = 1;
-				}
-				if(newRegionCount != regionCount) {
-					System.Array.Resize(ref newReg.regions, newRegionCount);
-				}
-				for(int i = 0; i < newRegionCount; i++) {
-					EditorGUILayout.Space();
-					EditorGUILayout.Space();
-					EditorGUILayout.BeginHorizontal();
-					EditorGUILayout.Space();
-					EditorGUILayout.BeginVertical();
-				  //0...i regiongui(...,i)
-					bool ignoreFold = true;
-					newReg.regions[i] = RegionGUI(label+" subregion "+i, prefix, ref ignoreFold, newReg.regions[i], formulaOptions, width-16, i);
-					EditorGUILayout.EndVertical();
-					EditorGUILayout.EndHorizontal();
-					EditorGUILayout.Space();
+					newReg.interveningSpaceType = InterveningSpaceType.LineMove;
 				}
 			}
 		}
-		return newReg;
+		return SimpleRegionGUI(type+"."+label, newReg, formulaOptions, width, subregionIndex);
 	}
 }
