@@ -33,7 +33,7 @@ public enum Corners {
 	Back  =3  //+xy
 };
 
-[System.Serializable]
+[AddComponentMenu("SRPGCK/Map")]
 public class Map : MonoBehaviour {
 	public bool usesBottomFace=true;
 

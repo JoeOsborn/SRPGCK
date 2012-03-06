@@ -1,7 +1,7 @@
 using UnityEngine;
 using System.Collections;
 
-[System.Serializable]
+[AddComponentMenu("SRPGCK/Character/Skills/Wait")]
 public class WaitSkill : ActionSkill {
 	[HideInInspector]
  	[System.NonSerialized]
@@ -95,7 +95,7 @@ public class WaitSkill : ActionSkill {
 						if(!requireConfirmation) {
 				    	WaitAtArrow(hitArrowValue);
 							awaitingConfirmation = false;
-							ApplySkill();
+							ApplySkill(target);
 						} else {
 				    	WaitAtArrow(hitArrowValue);
 							awaitingConfirmation = true;
@@ -151,6 +151,7 @@ public class WaitSkill : ActionSkill {
 			case Arrow.YN: dir = 3*TAU/4; break;
 			default: Debug.LogError("Not my arrow!"); return;
 		}
+		TentativePickFacing(dir);
 		FaceDirection(dir);
 	}
 

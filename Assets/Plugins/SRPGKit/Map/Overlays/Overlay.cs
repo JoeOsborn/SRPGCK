@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 
+[AddComponentMenu("")]
 public abstract class Overlay : MonoBehaviour {
 	public string category;
 	public int identifier;

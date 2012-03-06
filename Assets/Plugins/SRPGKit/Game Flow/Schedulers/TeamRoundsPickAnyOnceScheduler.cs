@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 
+[AddComponentMenu("SRPGCK/Arbiter/Scheduler/Team Rounds Pick Any Once")]
 public class TeamRoundsPickAnyOnceScheduler : Scheduler {
 	public int teamCount=2;
 

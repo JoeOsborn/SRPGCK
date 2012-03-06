@@ -8,6 +8,7 @@ public enum TeamLocation {
 	Network
 }
 
+[AddComponentMenu("SRPGCK/Arbiter/Arbiter")]
 public class Arbiter : MonoBehaviour {
 	//packages up game rules
 	//for now, just maps players (network, AI, local) to teamIDs

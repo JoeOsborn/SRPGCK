@@ -4,8 +4,17 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Linq;
 
+[AddComponentMenu("SRPGCK/Arbiter/Debug GUI")]
 public class DebugGUI : MonoBehaviour {
-	Texture2D areaBGTexture;
+	Texture2D _areaBGTexture;
+	Texture2D areaBGTexture { get {
+		if(_areaBGTexture == null) {
+			_areaBGTexture = new Texture2D(1,1);
+			_areaBGTexture.SetPixel(0, 0, new Color(0.3f, 0.3f, 0.8f, 0.5f));
+			_areaBGTexture.Apply();
+		}
+		return _areaBGTexture;
+	} }
 	[SerializeField]
 	List<string> selectedGroup;
 
@@ -13,12 +22,19 @@ public class DebugGUI : MonoBehaviour {
 	bool activeCharacterHasActed;
 	public bool permitMultipleMoves = false;
 	public bool permitMultipleActions = false;
-	GUIStyle bgStyle;
+	GUIStyle _bgStyle;
+	GUIStyle bgStyle { get {
+		if(_bgStyle == null) {
+			_bgStyle = new GUIStyle();
+			_bgStyle.normal.background = areaBGTexture;
+		}
+		return _bgStyle;
+	} }
+
+	public ActionSkill pendingTargetedSkill;
+	public Target pendingTargetedSkillTarget;
 
 	public void Start() {
-		areaBGTexture = new Texture2D(1,1);
-		areaBGTexture.SetPixel(0, 0, new Color(0.3f, 0.3f, 0.8f, 0.5f));
-		areaBGTexture.Apply();
 		selectedGroup = new List<string>();
 	}
 
@@ -31,11 +47,7 @@ public class DebugGUI : MonoBehaviour {
 		}
 	}
 
-	protected void OnGUIConfirmation(string msg, out bool yesButton, out bool noButton) {
-		if(bgStyle == null) {
-			bgStyle = new GUIStyle();
-			bgStyle.normal.background = areaBGTexture;
-		}
+	protected void OnGUIConfirmation(string msg, out bool yesButton, out bool noButton, string yesMsg = "Yes", string noMsg = "No") {
 		GUILayout.BeginArea(new Rect(
 			Screen.width/2-64, Screen.height/2-32,
 			128, 64
@@ -45,12 +57,12 @@ public class DebugGUI : MonoBehaviour {
 		    centeredStyle.alignment = TextAnchor.MiddleCenter;
 		    GUILayout.Label(msg, centeredStyle);
 		    GUILayout.BeginHorizontal(); {
-		      if(GUILayout.Button("No")) {
+		      if(GUILayout.Button(noMsg)) {
 						noButton = true;
 		      } else {
 						noButton = false;
 					}
-					if(GUILayout.Button("Yes")) {
+					if(GUILayout.Button(yesMsg)) {
 						yesButton = true;
 		      } else {
 						yesButton = false;
@@ -59,6 +71,29 @@ public class DebugGUI : MonoBehaviour {
 		  } GUILayout.EndVertical();
 		} GUILayout.EndArea();
 	}
+
+	protected int OnGUIChoices(string msg, string[] msgs) {
+		int chosen = -1;
+		float width = 256;
+		float height = 24+msgs.Length*36;
+		GUILayout.BeginArea(new Rect(
+			Screen.width/2-width/2, Screen.height/2-height/2,
+			width, height
+		), bgStyle); {
+		  GUILayout.BeginVertical(); {
+		    GUIStyle centeredStyle = GUI.skin.GetStyle("Label");
+		    centeredStyle.alignment = TextAnchor.MiddleCenter;
+		    GUILayout.Label(msg, centeredStyle);
+				for(int i = 0; i < msgs.Length; i++) {
+					if(GUILayout.Button(msgs[i])) {
+						chosen = i;
+					}
+				}
+			} GUILayout.EndVertical();
+		} GUILayout.EndArea();
+		return chosen;
+	}
+
 
 	void SkillApplied(Skill s) {
 		selectedGroup = null;
@@ -174,9 +209,44 @@ public class DebugGUI : MonoBehaviour {
 		return nextSelectedGroup == null ? null : nextSelectedGroup.ToList().AsEnumerable();
 	}
 	Map map;
+	void SkillNeedsCharacterTargetingOption(Skill s) {
+		Debug.Log("skill "+s.skillName+" wants delayed targeting");
+		pendingTargetedSkill = (ActionSkill)s;
+		pendingTargetedSkillTarget = pendingTargetedSkill.target.Clone();
+	}
+	string[] targetingChoices;
+	void SkillIncrementalCancel() {
+		pendingTargetedSkill = null;
+		pendingTargetedSkillTarget = null;
+	}
 	public void OnGUI() {
 		Scheduler s = GetComponent<Scheduler>();
 		Arbiter a = GetComponent<Arbiter>();
+		if(pendingTargetedSkill != null) {
+			if(targetingChoices == null || targetingChoices.Length == 0) {
+				targetingChoices = new string[]{
+					"Tile",
+					"Character",
+					"Cancel"
+				};
+			}
+			int choice = OnGUIChoices("Target tile or character?", targetingChoices);
+			if(choice != -1) {
+				if(choice == 0) {
+					pendingTargetedSkillTarget.character = null;
+					pendingTargetedSkill.ConfirmDelayedSkillTarget(pendingTargetedSkillTarget);
+				} else if(choice == 1) {
+					pendingTargetedSkillTarget.tile = null;
+					pendingTargetedSkillTarget.path = null;
+					pendingTargetedSkill.ConfirmDelayedSkillTarget(pendingTargetedSkillTarget);
+				} else if(choice == 2) {
+					pendingTargetedSkill.IncrementalCancel();
+				}
+				pendingTargetedSkill = null;
+				pendingTargetedSkillTarget = null;
+			}
+			return;
+		}
 		bool showAnySchedulerButtons = true;
 		bool showCancelButton = true;
 		Character ac = s.activeCharacter;
@@ -194,6 +264,7 @@ public class DebugGUI : MonoBehaviour {
 							OnGUIConfirmation("Move here?", out yesButton, out noButton);
 							if(yesButton) {
 								PathNode pn = ms.overlay.PositionAt(ms.selectedTile);
+								Debug.Log("seltile "+ms.selectedTile+" pn "+ms.overlay.PositionAt(ms.selectedTile));
 					      ms.PerformMoveToPathNode(pn);
 					      ms.AwaitingConfirmation = false;
 							}
@@ -238,8 +309,7 @@ public class DebugGUI : MonoBehaviour {
 							bool yesButton=false, noButton=false;
 							OnGUIConfirmation("Confirm?", out yesButton, out noButton);
 							if(yesButton) {
-					  		ask.AwaitingConfirmation = false;
-								ask.ApplySkill();
+								ask.ApplySkill(ask.target);
 							}
 							if(noButton) {
 					  		ask.AwaitingConfirmation = false;
@@ -257,8 +327,7 @@ public class DebugGUI : MonoBehaviour {
 						bool yesButton=false, noButton=false;
 						OnGUIConfirmation("Wait here?", out yesButton, out noButton);
 						if(yesButton) {
-			  	  	ws.AwaitingConfirmation = false;
-							ws.ApplySkill();
+							ws.ApplySkill(ws.target);
 						}
 						if(noButton) {
 			      	ws.AwaitingConfirmation = false;
@@ -374,7 +443,7 @@ public class DebugGUI : MonoBehaviour {
 							 activeSkill is MoveSkill &&
 							 !(activeSkill as MoveSkill).Executor.IsMoving) {
 							if(GUILayout.Button("End Move")) {
-								activeSkill.ApplySkill();
+								activeSkill.ApplySkill((activeSkill as MoveSkill).target);
 							}
 						}
 					}

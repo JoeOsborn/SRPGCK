@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections;
 
+[AddComponentMenu("SRPGCK/Movable Camera")]
 [ExecuteInEditMode]
 public class MovableCamera : MonoBehaviour {
 	//we can do camera shake here later, too

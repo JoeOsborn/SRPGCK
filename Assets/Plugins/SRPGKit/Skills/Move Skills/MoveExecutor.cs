@@ -28,7 +28,7 @@ public class MoveExecutor {
 
 	public delegate void MoveFinished(Vector3 src, PathNode endNode, bool finishedNicely);
 
-	protected Vector3 moveOrigin;
+	public Vector3 moveOrigin;
 	protected float moveTimeRemaining=0;
 	protected MoveFinished moveCallback;
 
@@ -77,6 +77,7 @@ public class MoveExecutor {
 	}
 
 	virtual public void TemporaryMoveTo(PathNode pn, MoveFinished callback, float timeout=10.0f, bool special = false) {
+		Debug.Log("temporary move to "+pn);
 		specialMoving = special;
 		temporaryDestNode = pn;
 		moveOrigin = temporaryPosition;
@@ -103,6 +104,7 @@ public class MoveExecutor {
 	}
 
 	virtual public void IncrementalMoveTo(PathNode pn, MoveFinished callback, float timeout=10.0f, bool special=false) {
+		Debug.Log("incremental move to "+pn);
 		specialMoving = special;
 		transformPosition = position;
 		destNode = pn;
@@ -121,10 +123,12 @@ public class MoveExecutor {
 	} }
 
 	virtual public void MoveTo(PathNode pn, MoveFinished callback, float timeout=10.0f, bool special=false) {
+		Debug.Log("move to "+pn);
 		IncrementalMoveTo(pn, callback, timeout, special);
 	}
 
 	virtual public void SpecialMoveTo(PathNode pn, MoveFinished callback, float timeout=10.0f) {
+		Debug.Log("special move to "+pn);
 		MoveTo(pn, callback, timeout, true);
 	}
 
@@ -188,6 +192,7 @@ public class MoveExecutor {
 		}
 		destNode = new PathNode(startPos, null, 0);
 		position = destination;
+		moveOrigin = position;
 		temporaryDestNode = destNode;
 		temporaryPosition = temporaryDestination;
 		transformPosition = position;

@@ -20,7 +20,7 @@ public enum LockedFacing {
 	Invalid=-1
 }
 
-public class SRPGUtil : MonoBehaviour {
+public static class SRPGUtil {
 	static public Vector3 Trunc(Vector3 v) {
 		return new Vector3((int)v.x, (int)v.y, (int)v.z);
 	}

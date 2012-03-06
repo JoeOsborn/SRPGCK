@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections;
 
+[AddComponentMenu("")]
 public class AI : MonoBehaviour {
 
 	// Use this for initialization

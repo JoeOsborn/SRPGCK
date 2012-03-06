@@ -3,6 +3,7 @@ using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 
+[AddComponentMenu("SRPGCK/Character/Character")]
 public class Character : MonoBehaviour {
 	Map _map;
 	public Map map { get {

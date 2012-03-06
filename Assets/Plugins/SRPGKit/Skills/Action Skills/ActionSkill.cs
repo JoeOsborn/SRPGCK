@@ -14,12 +14,14 @@ public enum TargetingMode {
 };
 //waypoints are orthogonal to targeting mode, but only work for Pick and Path.
 
+[AddComponentMenu("SRPGCK/Character/Skills/Action")]
 public class ActionSkill : Skill {
 	[HideInInspector]
 	public PathNode[] destinations;
 	public float keyboardMoveSpeed=10.0f;
 
 	public bool lockToGrid=true;
+	//FIXME: augment with facingLock
 
 	//if lockToGrid
 	protected float lastIndicatorKeyboardMove=0;
@@ -30,6 +32,7 @@ public class ActionSkill : Skill {
 
 	public StatEffectGroup applicationEffects;
 	public StatEffectGroup[] targetEffects;
+	public Formula delay;
 
 	override public bool isPassive { get { return false; } }
 
@@ -37,6 +40,9 @@ public class ActionSkill : Skill {
 
 	public Color overlayColor = new Color(0.6f, 0.3f, 0.2f, 0.7f);
 	public Color highlightColor = new Color(0.9f, 0.6f, 0.4f, 0.85f);
+
+	public Target target;
+	public bool allowsCharacterTargeting=false;
 
 	//cardinal/radial targeting mode
 	[HideInInspector]
@@ -122,15 +128,14 @@ public class ActionSkill : Skill {
 	public LineRenderer lines;
 
 	[HideInInspector]
-	[SerializeField]
-	PathNode endOfPath;
+	public PathNode endOfPath;
 
 	[HideInInspector]
 	public float radiusSoFar=0;
 
 	public bool waypointsAreIncremental=true;
-	public bool performTemporarySteps = false;
-
+	public bool performTemporaryStepsImmediately=false;
+	public bool performTemporaryStepsOnConfirmation=true;
 	public bool immediatelyExecuteDrawnPath=false;
 	public bool canCancelWaypoints=true;
 
@@ -144,9 +149,6 @@ public class ActionSkill : Skill {
 	public float rotationSpeedXY { get {
 		return rotationSpeedXYF.GetValue(fdb, this, null, null);
 	} }
-
-	[HideInInspector]
-	public int selectedSubregion;
 
 	public override void Start() {
 		base.Start();
@@ -313,7 +315,15 @@ public class ActionSkill : Skill {
 							} else {
 								if(overlay.ContainsPosition(hitSpot) &&
 									 overlay.PositionAt(hitSpot).canStop) {
-									ConfirmWaypoint();
+	 								if(requireConfirmation &&
+	 									!awaitingConfirmation) {
+	 									awaitingConfirmation = true;
+	 									if(performTemporaryStepsOnConfirmation) {
+	 										TemporaryExecutePathTo(endOfPath);
+	 									}
+	 								} else {
+	 									ConfirmWaypoint();
+	 								}
 								}
 							}
 						}
@@ -401,7 +411,7 @@ public class ActionSkill : Skill {
 			if(requireConfirmation &&
 				!awaitingConfirmation) {
 				awaitingConfirmation = true;
-				if(performTemporarySteps) {
+				if(performTemporaryStepsOnConfirmation) {
 					TemporaryExecutePathTo(endOfPath);
 				}
 			} else {
@@ -524,17 +534,19 @@ public class ActionSkill : Skill {
 		}
 	}
 
-	protected virtual void IncrementalCancel() {
+	public virtual void IncrementalCancel() {
+		map.BroadcastMessage("SkillIncrementalCancel", this, SendMessageOptions.DontRequireReceiver);
 		if(targetingMode == TargetingMode.Custom) {
 			CancelTargetCustom();
 		} else if(targetingMode == TargetingMode.Pick ||
 							targetingMode == TargetingMode.Path) {
 			if(canCancelWaypoints) {
-				if(requireConfirmation && awaitingConfirmation) {
+				if(AwaitingTargetOption || (requireConfirmation && awaitingConfirmation)) {
 					awaitingConfirmation = false;
+					target = null;
 					targetTiles = new PathNode[0];
-					if(performTemporarySteps) {
-						TemporaryExecutePathTo(new PathNode(Executor.position, null, 0));
+					if(Executor != null) {
+						TemporaryExecutePathTo(new PathNode(map.InverseTransformPointWorld(Executor.moveOrigin), null, 0));
 					}
 					ResetPosition();
 				} else if(waypoints.Count > 0 && !waypointsAreIncremental && !immediatelyExecuteDrawnPath) {
@@ -548,7 +560,9 @@ public class ActionSkill : Skill {
 				//we can assume we've already moved a bit,
 				//so we'll just finish up by stopping here.
 				//the semantic isn't exactly cancelling, but it's close enough.
-				ExecutePathTo(new PathNode(Executor.position, null, 0));
+				if(Executor != null) {
+					ExecutePathTo(new PathNode(map.InverseTransformPointWorld(Executor.position), null, 0));
+				}
 			}
 		} else if(targetingMode == TargetingMode.Self) {
 			//Back out of skill!
@@ -578,45 +592,88 @@ public class ActionSkill : Skill {
 		}
 	}
 
-	public override void ApplySkill() {
-		ClearLastEffects();
-		int hitType = (int)GetParam("hitType", 0);
-		currentHitType = hitType;
-/*		if(targetEffects.Length == 0) {
-			Debug.LogError("No effects in attack skill "+skillName+"!");
+	public void DelayedApply(Target t) {
+		Debug.Log("delayed apply skill "+skillName+" with tile "+t.tile+" and character "+t.character);
+		ApplySkillTo(t);
+	}
+
+	public void ConfirmDelayedSkillTarget(Target t) {
+		if(AwaitingTargetOption) {
+			ApplySkill(t);
+		} else {
+			Debug.LogError("ConfirmDelayedSkillTarget called when skill "+this+" was not expecting target changes");
 		}
-		*/
-		targets = null;
+	}
+
+	public bool AwaitingTargetOption { get {
+		return target != null &&
+			target.character != null &&
+	    (target.tile != null || target.path != null) &&
+	    allowsCharacterTargeting;
+	} }
+
+	public override void ApplySkill(Target t) {
+		if(t == null) { t = target; }
+		target = t;
+		ClearLastEffects();
+		float delayVal = delay == null ? 0 : delay.GetValue(fdb, this);
+		if(delayVal == 0) {
+			ApplySkillTo(t);
+			base.ApplySkill(t);
+		} else {
+			Debug.Log("using target with tile "+t.tile+" and character "+t.character);
+			if(AwaitingTargetOption) {
+			  target = t;
+				map.BroadcastMessage(
+					"SkillNeedsCharacterTargetingOption",
+					this,
+					SendMessageOptions.DontRequireReceiver
+				);
+			} else {
+				Debug.Log("apply after delay");
+				scheduler.ApplySkillAfterDelay(this, t, delayVal);
+				base.ApplySkill(t);
+			}
+			//FIXME: Move this delayed-application concept up into Skill,
+			//let it work with reactions too.
+		}
+	}
+	public override void ApplySkillTo(Target t) {
+		targetTiles = PathNodesForTarget(t, targetRegion, effectRegion);
 		switch(targetingMode) {
 			case TargetingMode.Self:
 			case TargetingMode.Pick:
 			case TargetingMode.Path:
-				Character c = map.CharacterAt(selectedTile);
+				Vector3 pos = t.Position;
+				Character c = map.CharacterAt(pos);
 				if(c != null) {
 					targets = new List<Character>(){c};
 				} else {
-					SetArgsFrom(selectedTile, false);
+					targets = null;
+					SetArgsFrom(pos, null);
 				}
 				break;
 			case TargetingMode.Cardinal:
 			case TargetingMode.Radial:
 			//FIXME: wrong for selectRegion
 			case TargetingMode.SelectRegion:
-				SetArgsFrom(character.TilePosition, true);
+				targets = null;
+				SetArgsFrom(character.TilePosition, t.facing);
 				break;
 			default:
 				Debug.LogError("Unrecognized targeting mode");
 				break;
 		}
 		ApplyPerApplicationEffectsTo(applicationEffects.effects, targets);
-		if(targetEffects.Length > 0 && targetEffects[hitType].Length > 0) {
-			targets = effectRegion.CharactersForTargetedTiles(targetTiles);
-			ApplyEffectsTo(targetEffects[hitType].effects, targets);
+		targets = effectRegion.CharactersForTargetedTiles(targetTiles);
+		if(targetEffects.Length > 0) {
+			ApplyEffectsTo(targetEffects, targets, "hitType");
 		}
-		base.ApplySkill();
+		map.BroadcastMessage("SkillEffectApplied", this, SendMessageOptions.DontRequireReceiver);
 	}
 
 	public void CancelPick() {
+		target = null;
 		Cancel();
 	}
 
@@ -717,13 +774,24 @@ public class ActionSkill : Skill {
 
 	public void TentativePick(Vector3 p) {
 		selectedTile = p;
+		Character c = map.CharacterAt(p);
+		target = (new Target()).Tile(selectedTile).Character(c);
 		targetTiles = effectRegion.GetValidTiles(p);
+		Debug.Log("tt count :"+targetTiles.Length);
 		_GridOverlay.SetSelectedPoints(map.CoalesceTiles(targetTiles));
 	}
 
 	public void TentativePick(PathNode pn) {
 		selectedTile = pn.pos;
+		Character c = map.CharacterAt(selectedTile);
+		target = (new Target()).Character(c);
+		if(targetingMode == TargetingMode.Path) {
+			target.Path(pn);
+		} else {
+			target.Tile(pn);
+		}
 		targetTiles = effectRegion.GetValidTiles(pn.pos);
+		Debug.Log("tt count :"+targetTiles.Length);
 		_GridOverlay.SetSelectedPoints(map.CoalesceTiles(targetTiles));
 	}
 
@@ -733,22 +801,30 @@ public class ActionSkill : Skill {
 
 	public void Pick(Vector3 p) {
 		selectedTile = p;
-		targetTiles = targetRegion.ActualTilesForTargetedTiles(new PathNode[]{endOfPath});
-		targetTiles = effectRegion.GetValidTiles(targetTiles);
-		ApplySkill();
+		Character c = map.CharacterAt(selectedTile);
+		target = (new Target()).Tile(selectedTile).Character(c);
+		Debug.Log("would-be tt count :"+PathNodesForTarget(target, targetRegion, effectRegion).Length);
+		ApplySkill(target);
 	}
 
 	public void Pick(PathNode pn) {
 		selectedTile = pn.pos;
-		targetTiles = targetRegion.ActualTilesForTargetedTiles(new PathNode[]{pn});
-		targetTiles = effectRegion.GetValidTiles(targetTiles);
-		ApplySkill();
+		Character c = map.CharacterAt(selectedTile);
+		target = (new Target()).Character(c);
+		if(targetingMode == TargetingMode.Path) {
+			target.Path(pn);
+		} else {
+			target.Tile(pn);
+		}
+		Debug.Log("would-be tt count :"+PathNodesForTarget(target, targetRegion, effectRegion).Length);
+		ApplySkill(target);
 	}
 
 	public void TentativePickSubregion(int subregionIndex) {
 		if(subregionIndex < 0 || subregionIndex >= targetRegion.regions.Length) {
 			Debug.LogError("Subregion "+subregionIndex+" out of bounds "+targetRegion.regions.Length);
 		}
+		target = (new Target()).Subregion(subregionIndex);
 		targetTiles = targetRegion.regions[subregionIndex].GetValidTiles();
 		targetTiles = effectRegion.GetValidTiles(targetTiles);
 		_GridOverlay.SetSelectedPoints(map.CoalesceTiles(targetTiles));
@@ -758,20 +834,20 @@ public class ActionSkill : Skill {
 		if(subregionIndex < 0 || subregionIndex >= targetRegion.regions.Length) {
 			Debug.LogError("Subregion "+subregionIndex+" out of bounds "+targetRegion.regions.Length);
 		}
-		targetTiles = targetRegion.ActualTilesForTargetedTiles(targetRegion.regions[subregionIndex].GetValidTiles());
-		targetTiles = effectRegion.GetValidTiles(targetTiles);
-		ApplySkill();
+		target = (new Target()).Subregion(subregionIndex);
+		ApplySkill(target);
 	}
 	//targeting facings, unlike character facings (for now at least!), may be arbitrary quaternions
-	//FIXME: somehow involve target tiles!
+	//FIXME: somehow involve target region?
 	public void TentativePickFacing(Quaternion f) {
+		target = (new Target()).Facing(f);
 		targetTiles = effectRegion.GetValidTiles(f);
 		_GridOverlay.SetSelectedPoints(map.CoalesceTiles(targetTiles));
 	}
 	public void PickFacing(Quaternion f) {
 		//TODO: wut???
-		targetTiles = effectRegion.GetValidTiles(f);
-		ApplySkill();
+		target = (new Target()).Facing(f);
+		ApplySkill(target);
 	}
 	public void TentativePickFacing(float angle) {
 		TentativePickFacing(Quaternion.Euler(0, angle, 0));
@@ -850,7 +926,7 @@ public class ActionSkill : Skill {
 			}
 			nodeCount -= 1;
 			selectedTile = endOfPath.pos;
-			if(performTemporarySteps) {
+			if(performTemporaryStepsImmediately || (requireConfirmation && performTemporaryStepsOnConfirmation)) {
 				TemporaryExecutePathTo(endOfPath);
 			}
 			if(probe != null) {
@@ -916,7 +992,7 @@ public class ActionSkill : Skill {
 			endOfPath = overlay.PositionAt(selectedTile);
 			radiusSoFar += endOfPath.xyDistanceFromStart;
 		}
-		if(performTemporarySteps) {
+		if(requireConfirmation && performTemporaryStepsOnConfirmation) {
 			TemporaryExecutePathTo(endOfPath);
 		}
 		awaitingConfirmation = false;
@@ -968,6 +1044,7 @@ public class ActionSkill : Skill {
 		return -1;
 	}
 	virtual protected void TemporaryExecutePathTo(PathNode pn) {
+		Debug.Log("tempexec "+pn.pos);
 		//pick? face? dunno?
 		if(targetingMode == TargetingMode.SelectRegion) {
 			int sr = SubregionContaining(pn.pos);
@@ -1041,27 +1118,24 @@ public class ActionSkill : Skill {
 			nodeCount += 1;
 			lines.SetVertexCount(nodeCount+1);
 			lines.SetPosition(nodeCount, map.TransformPointWorld(selectedTile));
-			if(performTemporarySteps) {
-				TemporaryExecutePathTo(endOfPath);
-			}
 		}
 		if(immediatelyExecuteDrawnPath) {
 			IncrementalExecutePathTo(new PathNode(newDest, null, 0));
-		}
-		if(targetingMode == TargetingMode.SelectRegion) {
+		} else if(performTemporaryStepsImmediately || targetingMode == TargetingMode.SelectRegion) {
 			TemporaryExecutePathTo(endOfPath);
-		} else {
+		}
+		if(targetingMode != TargetingMode.SelectRegion) {
 			if(ShouldDrawPath) {
 				//update the overlay
 				UpdateOverlayParameters();
-				if(lockToGrid) {
+				if(lockToGrid && !immediatelyExecuteDrawnPath && !performTemporaryStepsImmediately) {
 					Vector4[] selPts = _GridOverlay.selectedPoints ?? new Vector4[0];
 					_GridOverlay.SetSelectedPoints(selPts.Concat(
 						new Vector4[]{new Vector4(newDest.x, newDest.y, newDest.z, 1)}
 					).ToArray());
 				}
 			} else {
-				if(lockToGrid) {
+				if(lockToGrid && !immediatelyExecuteDrawnPath && !performTemporaryStepsImmediately) {
 					_GridOverlay.SetSelectedPoints(
 						new Vector4[]{new Vector4(newDest.x, newDest.y, newDest.z, 1)}
 					);

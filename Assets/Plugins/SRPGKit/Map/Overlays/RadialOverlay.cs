@@ -6,6 +6,7 @@ public enum RadialOverlayType {
 	Cylinder
 };
 
+[AddComponentMenu("")]
 public class RadialOverlay : Overlay {
 	//TODO: clip by walls -- reachability mask? but what about the outer volume?
 	

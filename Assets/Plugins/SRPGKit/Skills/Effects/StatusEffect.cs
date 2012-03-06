@@ -1,6 +1,7 @@
 using UnityEngine;
 
 //wraps stat effects, has a duration in clock ticks, can supersede others
+[AddComponentMenu("SRPGCK/Character/Status Effect")]
 public class StatusEffect : MonoBehaviour {
 	public StatEffect[] passiveEffects;
 	public float ticksRemaining=0;

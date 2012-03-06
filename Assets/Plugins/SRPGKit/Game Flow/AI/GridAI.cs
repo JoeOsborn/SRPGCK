@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 
+[AddComponentMenu("SRPGCK/Arbiter/AI/Grid")]
 public class GridAI : AI {
 	public void Start () {
 

@@ -6,7 +6,7 @@ using System.Collections;
 //handles movement using standard CharacterController- or physics-type techniques. In that case,
 //create a move skill that uses these proxies and calls FinishMove on the moveio when the move ends.
 //In many such cases, you will also want to use a ProxyMoveExecutor.
-[System.Serializable]
+[AddComponentMenu("SRPGCK/Character/Skills/Move (Proxy)")]
 public class ProxyMoveSkill : MoveSkill {	
 	
 	Vector3 lastPosition=Vector3.zero;

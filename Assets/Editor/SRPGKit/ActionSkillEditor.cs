@@ -54,8 +54,15 @@ public class ActionSkillEditor : SkillEditor {
 			if(atk.targetingMode == TargetingMode.Path) {
 				atk.pathMaterial = EditorGUILayout.ObjectField("Path Material", atk.pathMaterial, typeof(Material), false) as Material;
 			}
-			if(atk.targetingMode != TargetingMode.Self) {
-				atk.performTemporarySteps = EditorGUILayout.Toggle("Preview partial selections", atk.performTemporarySteps);
+			if(atk.targetingMode == TargetingMode.Pick ||
+			   atk.targetingMode == TargetingMode.Path) {
+ 				if(atk.requireConfirmation) {
+ 					atk.performTemporaryStepsOnConfirmation = EditorGUILayout.Toggle("Preview Before Confirming", atk.performTemporaryStepsOnConfirmation);
+ 				}
+				atk.performTemporaryStepsImmediately = EditorGUILayout.Toggle("Preview Immediately", atk.performTemporaryStepsImmediately);
+			} else {
+				atk.performTemporaryStepsImmediately = false;
+				atk.performTemporaryStepsOnConfirmation = true;
 			}
 			EditorGUI.indentLevel--;
 			EditorGUILayout.Space();
@@ -89,6 +96,13 @@ public class ActionSkillEditor : SkillEditor {
 			}
 			EditorGUI.indentLevel--;
 			EditorGUILayout.Space();
+		}
+		atk.delay = EditorGUIExt.FormulaField("Scheduled Delay", atk.delay, atk.name+".delay", formulaOptions);
+		if(atk.targetingMode == TargetingMode.Pick ||
+		   atk.targetingMode == TargetingMode.Path) {
+		  atk.allowsCharacterTargeting = EditorGUILayout.Toggle("Can Delay-Target Characters", atk.allowsCharacterTargeting);
+		} else {
+			atk.allowsCharacterTargeting = false;
 		}
 		atk.targetRegion = EditorGUIExt.RegionGUI("Target", atk.name, atk.targetRegion, formulaOptions, Screen.width-32);
 		EditorGUILayout.Space();

@@ -2,10 +2,12 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 
+[AddComponentMenu("SRPGCK/Arbiter/Scheduler/Team Rounds with Initiative")]
 public class TeamRoundsInitiativeScheduler : Scheduler {
 	public List<Initiative> order;
 	public int teamCount=2;
 	public int currentTeam=0;
+	public float activeInitiative=-1;
 
 	override public void Start () {
 		base.Start();
@@ -37,6 +39,10 @@ public class TeamRoundsInitiativeScheduler : Scheduler {
 		BeginRound();
 	}
 
+	public override void ApplySkillAfterDelay(Skill s, Target t, float delay) {
+		base.ApplySkillAfterDelay(s, t, activeInitiative - delay);
+	}
+
 	override public void SkillApplied(Skill s) {
 		base.SkillApplied(s);
 	}
@@ -53,12 +59,30 @@ public class TeamRoundsInitiativeScheduler : Scheduler {
 	override public void FixedUpdate () {
 		base.FixedUpdate();
 		if(activeCharacter == null) {
+			float highestInit = -1;
+			SkillActivation nowSA = null;
+			foreach(SkillActivation sa in pendingSkillActivations) {
+				if(sa.delay > highestInit) {
+					highestInit = sa.delay;
+					nowSA = sa;
+				}
+			}
+			if(order.Count > 0 && order[0].initiative > highestInit) {
+				highestInit = order[0].initiative;
+				nowSA = null;
+			}
+			activeInitiative = highestInit;
 			if(order.Count == 0) {
 				EndRound();
 			} else {
-				Initiative i = order[0];
-				order.RemoveAt(0);
-				Activate(i.character);
+				if(nowSA == null) {
+					Initiative i = order[0];
+					order.RemoveAt(0);
+					Activate(i.character);
+				} else {
+					nowSA.Apply();
+					pendingSkillActivations.Remove(nowSA);
+				}
 			}
 		}
 	}

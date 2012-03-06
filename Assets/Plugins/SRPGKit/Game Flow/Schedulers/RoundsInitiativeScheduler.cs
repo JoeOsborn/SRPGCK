@@ -2,8 +2,10 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 
+[AddComponentMenu("SRPGCK/Arbiter/Scheduler/Rounds with Initiative")]
 public class RoundsInitiativeScheduler : Scheduler {
 	public List<Initiative> order;
+	public float activeInitiative=-1;
 
 	override public void Start () {
 		base.Start();
@@ -12,6 +14,7 @@ public class RoundsInitiativeScheduler : Scheduler {
 
 	public void BeginRound() {
 		order.Clear();
+		activeInitiative=-1;
 		// Debug.Log("begin round with "+characters.Count+" characters");
 		for(int i = 0; i < characters.Count; i++) {
 			Character c = characters[i];
@@ -29,8 +32,13 @@ public class RoundsInitiativeScheduler : Scheduler {
 		BeginRound();
 	}
 
+	public override void ApplySkillAfterDelay(Skill s, Target t, float delay) {
+		base.ApplySkillAfterDelay(s, t, activeInitiative - delay);
+	}
+
 	override public void SkillApplied(Skill s) {
 		base.SkillApplied(s);
+		if(s.character != activeCharacter) { return; }
 		//FIXME: too eager, put something in the UI
 		Deactivate(s.character);
 	}
@@ -49,12 +57,30 @@ public class RoundsInitiativeScheduler : Scheduler {
 	override public void FixedUpdate () {
 		base.FixedUpdate();
 		if(activeCharacter == null) {
-			if(order.Count == 0) {
+			float highestInit = -1;
+			SkillActivation nowSA = null;
+			foreach(SkillActivation sa in pendingSkillActivations) {
+				if(sa.delay > highestInit) {
+					highestInit = sa.delay;
+					nowSA = sa;
+				}
+			}
+			if(order.Count > 0 && order[0].initiative > highestInit) {
+				highestInit = order[0].initiative;
+				nowSA = null;
+			}
+			activeInitiative = highestInit;
+			if(order.Count == 0 && nowSA == null) {
 				EndRound();
 			} else {
-				Initiative i = order[0];
-				order.RemoveAt(0);
-				Activate(i.character);
+				if(nowSA == null) {
+					Initiative i = order[0];
+					order.RemoveAt(0);
+					Activate(i.character);
+				} else {
+					nowSA.Apply();
+					pendingSkillActivations.Remove(nowSA);
+				}
 			}
 		}
 	}

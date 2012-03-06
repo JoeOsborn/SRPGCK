@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections;
 
+[AddComponentMenu("SRPGCK/Arbiter/Scheduler/CT")]
 public class CTScheduler : Scheduler {
 	public float defaultMaxCT = 100;
 	public float defaultPerTileCTCost = 0;
@@ -54,10 +55,10 @@ public class CTScheduler : Scheduler {
 			ctc.CT = Mathf.Max(ctc.CT-cost, 0);
 		}
 	}
-	//TODO: replace me with a "skill finished" callback
+
 	override public void SkillApplied(Skill s) {
 		base.SkillApplied(s);
-		if(s.character != null) {
+		if(s.character != null && s.character == activeCharacter) {
 			CTCharacter ctc = s.character.GetComponent<CTCharacter>();
 			if(s is MoveSkill) {
 				//reduce c's CT by any-movement cost (30)
@@ -82,6 +83,7 @@ public class CTScheduler : Scheduler {
 
 	override public void CharacterMoved(Character c, Vector3 src, Vector3 dest, PathNode endOfPath) {
 		base.CharacterMoved(c, src, dest, endOfPath);
+		if(c != activeCharacter) { return; }
 		//reduce c's CT by per-tile movement cost (0)
 		CTCharacter ctc = c.GetComponent<CTCharacter>();
 		float cost = ctc.PerTileCTCost*endOfPath.xyDistanceFromStart;
@@ -97,9 +99,15 @@ public class CTScheduler : Scheduler {
 		base.FixedUpdate();
 		//if there is no active unit
 		if(activeCharacter == null) {
-		  //TODO: take the first scheduled attack with CT > 100 and trigger it
-
-			//else, take the first unit with CT > 100, if any, and activate it
+			//else, take the first unit or action with CT > 100, if any, and activate it
+			for(int i = 0; i < pendingSkillActivations.Count; i++) {
+				SkillActivation sa = pendingSkillActivations[i];
+				if(sa.delayRemaining <= 0) {
+					sa.Apply();
+					pendingSkillActivations.RemoveAt(i);
+					return;
+				}
+			}
 			foreach(Character c in characters) {
 				CTCharacter ctc = c.GetComponent<CTCharacter>();
 				float maxCT = ctc.MaxCT;
@@ -109,9 +117,10 @@ public class CTScheduler : Scheduler {
 					return;
 				}
 			}
-			//TODO: else, tick up every attack by their effective speed
-
-			//and tick up CT on everybody by their effective speed
+			//and tick up CT on everything/body by their effective speed
+			foreach(SkillActivation sa in pendingSkillActivations) {
+				sa.delayRemaining = sa.delayRemaining - sa.skill.GetParam("speed", 1);
+			}
 			foreach(Character c in characters) {
 				CTCharacter ctc = c.GetComponent<CTCharacter>();
 /*				Debug.Log("Tick up by "+speed);*/

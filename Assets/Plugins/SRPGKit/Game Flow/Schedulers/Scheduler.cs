@@ -4,6 +4,7 @@ using System.Collections.Generic;
 //TODO: Schedulers may also need to be responsible for scheduling timed attacks,
 //      on seconds or on CT or end of turn or end of phase or whatever, according to the scheduler.
 
+[AddComponentMenu("")]
 public class Scheduler : MonoBehaviour {
 	[HideInInspector]
 	public List<Character> characters;
@@ -11,10 +12,11 @@ public class Scheduler : MonoBehaviour {
 	public Character activeCharacter;
 	[HideInInspector]
 	public bool begun=false;
-	
-	Skill pendingDeactivationSkill;
-	Character pendingDeactivationCharacter;
-	
+
+	public Skill pendingDeactivationSkill;
+	public Character pendingDeactivationCharacter;
+
+	public List<SkillActivation> pendingSkillActivations;
 
 	Map _map;
 	protected Map map { get {
@@ -58,14 +60,14 @@ public class Scheduler : MonoBehaviour {
 
 	public virtual void Deactivate(Character c=null, object context=null) {
 		if(c == null) { c = activeCharacter; }
-		if(activeCharacter == c) { 
+		if(activeCharacter == c) {
 			c.SendMessage("Deactivate", context, SendMessageOptions.RequireReceiver);
 			map.BroadcastMessage(
 				"DeactivatedCharacter",
 				c,
 				SendMessageOptions.DontRequireReceiver
 			);
-			activeCharacter = null; 
+			activeCharacter = null;
 			pendingDeactivationSkill = null;
 			pendingDeactivationCharacter = null;
 		}
@@ -85,7 +87,7 @@ public class Scheduler : MonoBehaviour {
 	}
 
 	public virtual void Start () {
-
+		pendingSkillActivations = new List<SkillActivation>();
 	}
 
 	public virtual void CharacterMoved(Character c, Vector3 src, Vector3 dest, PathNode endOfPath) {
@@ -108,6 +110,13 @@ public class Scheduler : MonoBehaviour {
 			new CharacterMoveReport(c, src, dest, endOfPath),
 			SendMessageOptions.DontRequireReceiver
 		);
+	}
+
+	public virtual void ApplySkillAfterDelay(Skill s, Target t, float delay) {
+		if(pendingSkillActivations == null) {
+			pendingSkillActivations = new List<SkillActivation>();
+		}
+		pendingSkillActivations.Add(new SkillActivation(s, t, delay));
 	}
 
 	protected virtual void Begin() {

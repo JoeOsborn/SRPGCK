@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 
+[AddComponentMenu("SRPGCK/Character/Equipment")]
 public class Equipment : MonoBehaviour {
 	[HideInInspector]
 	[System.NonSerialized]

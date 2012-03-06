@@ -6,6 +6,7 @@ public enum TurnLimitMode {
 	Time
 }
 
+[AddComponentMenu("SRPGCK/Arbiter/Scheduler/Team Rounds with Points")]
 public class TeamRoundsPointsScheduler : Scheduler {
 	public TurnLimitMode limitMode=TurnLimitMode.AP;
 

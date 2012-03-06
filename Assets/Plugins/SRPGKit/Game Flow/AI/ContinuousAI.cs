@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections;
 
+[AddComponentMenu("SRPGCK/Arbiter/AI/Continuous")]
 public class ContinuousAI : AI {
 	/*	public void CharacterActivated() {
 
@@ -37,7 +38,7 @@ public class ContinuousAI : AI {
 							case 3: dir = Quaternion.Euler(0, 3*TAU/4, 0); break;
 						}
 						c.waitSkill.FaceDirection(dir);
-						c.waitSkill.ApplySkill();
+						c.waitSkill.ApplySkill(c.waitSkill.target);
 					} else {
 						c.moveSkill.PerformMoveToPathNode(dests[(int)Mathf.Floor(Random.Range(0, dests.Length))]);
 					}
@@ -53,7 +54,7 @@ public class ContinuousAI : AI {
 					case 3: dir = Quaternion.Euler(0, 3*TAU/4, 0); break;
 				}
 				c.waitSkill.FaceDirection(dir);
-				c.waitSkill.ApplySkill();
+				c.waitSkill.ApplySkill(c.waitSkill.target);
 			}
 		}
 */

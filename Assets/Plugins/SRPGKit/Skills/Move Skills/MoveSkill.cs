@@ -1,6 +1,6 @@
 using UnityEngine;
 
-[System.Serializable]
+[AddComponentMenu("SRPGCK/Character/Skills/Move")]
 public class MoveSkill : ActionSkill {
 	override public MoveExecutor Executor { get { return moveExecutor; } }
 
@@ -58,6 +58,7 @@ public class MoveSkill : ActionSkill {
 	}
 
 	public virtual void TemporaryMoveToPathNode(PathNode pn) {
+		target = (new Target()).Path(pn);
 		MoveExecutor me = Executor;
 		me.TemporaryMoveTo(pn, delegate(Vector3 src, PathNode endNode, bool finishedNicely) {
 			scheduler.CharacterMovedTemporary(
@@ -70,6 +71,7 @@ public class MoveSkill : ActionSkill {
 	}
 
 	public virtual void IncrementalMoveToPathNode(PathNode pn) {
+		target = (new Target()).Path(pn);
 		MoveExecutor me = Executor;
 		me.IncrementalMoveTo(pn, delegate(Vector3 src, PathNode endNode, bool finishedNicely) {
 /*			Debug.Log("moved from "+src);*/
@@ -83,6 +85,7 @@ public class MoveSkill : ActionSkill {
 	}
 
 	public virtual void PerformMoveToPathNode(PathNode pn) {
+		target = (new Target()).Path(pn);
 		MoveExecutor me = Executor;
 		me.MoveTo(pn, delegate(Vector3 src, PathNode endNode, bool finishedNicely) {
 			scheduler.CharacterMoved(
@@ -91,7 +94,7 @@ public class MoveSkill : ActionSkill {
 				map.InverseTransformPointWorld(endNode.pos),
 				pn
 			);
-			ApplySkill();
+			ApplySkill(target);
 		});
 	}
 
@@ -132,7 +135,6 @@ public class MoveSkill : ActionSkill {
 	public override void ResetActionSkill() {
 		overlayColor = new Color(0.3f, 0.3f, 0.3f, 0.7f);
 		highlightColor = new Color(0.5f, 0.5f, 0.5f, 1.0f);
-		targetingMode = TargetingMode.Custom;
 	}
 
 	override protected void TemporaryExecutePathTo(PathNode p) {

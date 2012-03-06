@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
+[AddComponentMenu("")]
 public class RoundPointsCharacter : MonoBehaviour {	
 	
 	protected Character character;

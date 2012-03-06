@@ -230,7 +230,7 @@ public class Region {
 					return canHaltAtEnemies ? PathDecision.Normal : PathDecision.Invalid;
 				}
 			} else {
-				if(!IsEffectRegion) {
+				if(!(IsEffectRegion||canHaltAtEnemies)) {
 					return PathDecision.PassOnly;
 				}
 			}
@@ -424,6 +424,7 @@ public class Region {
 
 	protected virtual bool LineMoveFall(ref Vector3 here, Character chara, float zDownMax, float maxDrop, ref PathNode cur, Dictionary<Vector3, PathNode> nodes, List<Character> collidedCharacters, ref float dropDistance) {
 		//FIXME: will not work properly with ramps
+		//FIXME: client's responsibility to ensure we don't fall onto a character or into a bottomless pit here
 		int lower = map.PrevZLevel((int)here.x, (int)here.y, (int)here.z);
 		if(lower != -1) {
 			if((cur.pos.z - lower) > zDownMax) {
@@ -667,6 +668,7 @@ public class Region {
 				lastEnd = cur.prev;
 				// if(cur.prev != null) { Debug.Log("block just before wall "+cur.prev.pos); }
 			}
+			//FIXME: what about friendlies?
 			if(cur.isEnemy && !canCrossEnemies) {
 				if(canHaltAtEnemies) {
 					lastEnd = cur;
@@ -740,6 +742,7 @@ public class Region {
   					}
   					continue;
   				}
+						//FIXME: what about friendlies?
   				if(!provideAllTiles && jumpPn.isEnemy && !canCrossEnemies) {
   					if(jumpPos.z == pn.pos.z || jumpPos.z == pn.pos.z+1) {
   						canJumpNoFurther = true;
@@ -875,6 +878,7 @@ public class Region {
 					if(!provideAllTiles && next.isWall && !canCrossWalls) {
 						continue;
 					}
+					//FIXME: what about friendlies?
 					if(!provideAllTiles && next.isEnemy && !canCrossEnemies && !canHaltAtEnemies) {
 						continue;
 					}
@@ -1211,6 +1215,7 @@ public class Region {
 					//don't add this node or parents and break now
 					break;
 				}
+				//FIXME: what about friendlies?
 				if(herePn.isEnemy && !canCrossEnemies && !canHaltAtEnemies && !provideAllTiles) {
 					//don't add this node and break now
 					break;
@@ -1275,6 +1280,7 @@ public class Region {
 //				if(pos.x==1&&pos.y==0&&pos.z==0) Debug.Log("wall, can't cross at testpos "+testPos);
 				break;
 			}
+			//FIXME: what about friendlies?
 			if(pn.isEnemy && !canCrossEnemies && !canHaltAtEnemies && !provideAllTiles) {
 				//no good!
 //				if(pos.x==1&&pos.y==0&&pos.z==0) Debug.Log("enemy, can't cross, can't halt at testpos "+testPos);

@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections;
 
+[AddComponentMenu("SRPGCK/Arbiter/Network/State Sync")]
 public class StateSyncNetwork : Network {
 
 	// Use this for initialization

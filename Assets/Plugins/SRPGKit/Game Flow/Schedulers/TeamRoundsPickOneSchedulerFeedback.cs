@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections;
 
+[AddComponentMenu("")]
 public class TeamRoundsPickOneSchedulerFeedback : MonoBehaviour {
 	protected Map map;
 	

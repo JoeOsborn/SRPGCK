@@ -2,7 +2,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 
-[System.Serializable]
+[AddComponentMenu("SRPGCK/Character/Skills/Generic")]
 public class Skill : MonoBehaviour {
 	[HideInInspector]
 	public bool isActive=false;
@@ -92,11 +92,14 @@ public class Skill : MonoBehaviour {
 	public virtual void Reset() {
 		ResetSkill();
 	}
-	public virtual void ApplySkill() {
+	public virtual void ApplySkill(Target t) {
 		map.BroadcastMessage("SkillApplied", this, SendMessageOptions.DontRequireReceiver);
-		if(deactivatesOnApplication) {
+		if(deactivatesOnApplication && isActive) {
 			DeactivateSkill();
 		}
+	}
+	public virtual void ApplySkillTo(Target t) {
+
 	}
 
 	public virtual bool ReactionTypesMatch(StatEffectRecord se) {
@@ -121,6 +124,23 @@ public class Skill : MonoBehaviour {
 			lastEffects.Clear();
 		}
 	}
+	public virtual PathNode[] PathNodesForTarget(Target t, Region tr, Region efr) {
+		if(t.subregion != -1) {
+			return efr.GetValidTiles(tr.ActualTilesForTargetedTiles(tr.regions[t.subregion].GetValidTiles()));
+		} else if(t.tile != null) {
+			return efr.GetValidTiles(tr.ActualTilesForTargetedTiles(new PathNode[]{t.tile}));
+		} else if(t.path != null) {
+			return efr.GetValidTiles(tr.ActualTilesForTargetedTiles(new PathNode[]{t.path}));
+		} else if(t.character != null) {
+			return efr.GetValidTiles(tr.ActualTilesForTargetedTiles(new PathNode[]{new PathNode(t.character.TilePosition, null, 0)}));
+		} else if(t.facing != null) {
+			return efr.GetValidTiles(t.facing.Value);
+		}
+		Debug.LogError("Invalid target");
+		return null;
+	}
+
+
 	protected virtual void SkillApplied(Skill s) {
 		//react against each effect
 		currentReactedSkill = s;
@@ -136,21 +156,19 @@ public class Skill : MonoBehaviour {
 		if(reacts) {
 			ClearLastEffects();
 			currentTarget = s.character;
-			int hitType = (int)GetParam("reaction.hitType", 0);
-			currentHitType = hitType;
-			if(reactionEffects[hitType].Length > 0) {
-				reactionTargetRegion.Owner = this;
-				reactionEffectRegion.Owner = this;
-				PathNode[] reactionTiles = reactionTargetRegion.GetValidTiles();
-				reactionTiles = reactionTargetRegion.ActualTilesForTargetedTiles(reactionTiles);
-				List<Character> tentativeTargets = reactionTargetRegion.CharactersForTargetedTiles(reactionTiles);
-				if(tentativeTargets.Contains(currentTarget)) {
-					reactionTiles = reactionEffectRegion.GetValidTiles(currentTarget.TilePosition);
-					targets = reactionEffectRegion.CharactersForTargetedTiles(reactionTiles);
-					ApplyPerApplicationEffectsTo(reactionApplicationEffects.effects, new List<Character>(){currentTarget});
-					ApplyEffectsTo(reactionEffects[hitType].effects, targets);
-					map.BroadcastMessage("SkillApplied", this, SendMessageOptions.DontRequireReceiver);
+			Target target = (new Target()).Character(s.character);
+			reactionTargetRegion.Owner = this;
+			reactionEffectRegion.Owner = this;
+			PathNode[] reactionTiles = PathNodesForTarget(target, reactionTargetRegion, reactionEffectRegion);
+			targets = new List<Character>(){s.character};
+			SetArgsFrom(target.Position, null);
+			targets = reactionEffectRegion.CharactersForTargetedTiles(reactionTiles);
+			if(targets.Contains(currentTarget)) {
+				ApplyPerApplicationEffectsTo(reactionApplicationEffects.effects, new List<Character>(){currentTarget});
+				if(reactionEffects.Length > 0) {
+					ApplyEffectsTo(reactionEffects, targets, "reaction.hitType");
 				}
+				map.BroadcastMessage("SkillApplied", this, SendMessageOptions.DontRequireReceiver);
 			}
 		}
 		currentReactedSkill = null;
@@ -211,11 +229,11 @@ public class Skill : MonoBehaviour {
 		parameters = parameters.Concat(new Parameter[]{new Parameter(pname, f)}).ToList();
 	}
 
-	protected virtual void SetArgsFrom(Vector3 ttp, bool isSelf) {
+	protected virtual void SetArgsFrom(Vector3 ttp, Quaternion? facing=null) {
 		Vector3 ctp = character.TilePosition;
 		float distance = Vector3.Distance(ttp, ctp);
-		float angle = isSelf ?
-			character.Facing :
+		float angle = facing != null ?
+			facing.Value.eulerAngles.y :
 			Mathf.Atan2(ttp.y-ctp.y, ttp.x-ctp.x)*Mathf.Rad2Deg;
 		SetParam("arg.distance", distance);
 		SetParam("arg.mdistance", Mathf.Abs(ttp.x-ctp.x)+Mathf.Abs(ttp.y-ctp.y)+Mathf.Abs(ttp.z-ctp.z));
@@ -240,12 +258,19 @@ public class Skill : MonoBehaviour {
 			return;
 		}
 	}
-	protected virtual void ApplyEffectsTo(StatEffect[] effects, List<Character> targs) {
+	protected virtual void ApplyEffectsTo(StatEffectGroup[] effectGroups, List<Character> targs, string htp) {
 		foreach(Character c in targs) {
 			currentTarget = c;
-			SetArgsFrom(c.TilePosition, currentTarget == character);
-			foreach(StatEffect se in effects) {
-				lastEffects.Add(se.Apply(this, character, currentTarget));
+			int hitType = (int)GetParam(htp, 0);
+			currentHitType = hitType;
+			if(currentHitType < effectGroups.Length) {
+				StatEffect[] effects = effectGroups[hitType].effects;
+				SetArgsFrom(c.TilePosition, null);
+				foreach(StatEffect se in effects) {
+					lastEffects.Add(se.Apply(this, character, currentTarget));
+				}
+			} else {
+				Debug.LogError("Skill "+skillName+" has too few effect groups for hit type "+currentHitType);
 			}
 		}
 	}

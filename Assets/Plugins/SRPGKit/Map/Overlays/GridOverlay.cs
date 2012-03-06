@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections;
 
+[AddComponentMenu("")]
 public class GridOverlay : Overlay {
 	public Vector4[] positions;
 	public PathNode[] destinations;
