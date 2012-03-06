@@ -538,6 +538,10 @@ public class EditorGUIExt
 				//can cross walls yes/no
 				GUILayout.Label("Can glide?");
 				newReg.canGlide = GUILayout.SelectionGrid(newReg.canGlide ? 1 : 0, canGlideFlags, 2, imageButtonGridStyle) == 1 ? true : false;
+				newReg.preventStuckInAir = (StuckPrevention)EditorGUILayout.EnumPopup("Prevent Sticking in Air", newReg.preventStuckInAir);
+				if(newReg.canCrossWalls) {
+					newReg.preventStuckInWalls = (StuckPrevention)EditorGUILayout.EnumPopup("Prevent Sticking in Walls", newReg.preventStuckInWalls);
+				}
 				GUILayout.Label("Locking Mode");
 				newReg.facingLock = (FacingLock)GUILayout.SelectionGrid((int)newReg.facingLock, facingLockFlags, buttonsWide, imageButtonGridStyle);
 			}

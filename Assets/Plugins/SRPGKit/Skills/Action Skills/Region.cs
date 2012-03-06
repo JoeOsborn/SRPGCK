@@ -25,6 +25,12 @@ public enum InterveningSpaceType {
 	LineMove //N.B. iff region type is LineMove
 };
 
+public enum StuckPrevention {
+	None,
+	StopBefore,
+	KeepGoing
+}
+
 [System.Serializable]
 public class Region {
 	//editor only
@@ -68,6 +74,9 @@ public class Region {
 	//ending ON an enemy (as an attack would); and
 	//ending BEFORE an enemy (as a move would)
 	public bool canHaltAtEnemies=true;
+
+	public StuckPrevention preventStuckInAir  =StuckPrevention.StopBefore;
+	public StuckPrevention preventStuckInWalls=StuckPrevention.StopBefore;
 
 	//linemove only
 	public bool canGlide=false;
@@ -335,7 +344,14 @@ public class Region {
 		int soFar = 0;
 		float dropDistance = 0;
 		Debug.Log("start at "+here+" with offset "+offset);
-		while(soFar < amount) {
+		while((soFar < amount) ||
+			//stuck prevention: keep going if we would end up stuck
+			 ((canCrossWalls &&
+		     preventStuckInWalls == StuckPrevention.KeepGoing &&
+		     map.TileAt((int)here.x, (int)here.y, (int)here.z+1) != null) ||
+		    (!canGlide &&
+				 preventStuckInAir == StuckPrevention.KeepGoing &&
+		     map.TileAt(here) == null))) {
 			Vector3 lastHere = here;
 			here.x += offset.x;
 			here.y += offset.y;
@@ -358,10 +374,18 @@ public class Region {
 					}
 					Debug.Log("glide over "+here+"!");
 				} else if(lower == -1) {
-					//bottomless pit, treat it like a wall
+					//bottomless pit, sort of like a wall?
 					Debug.Log("bottomless pit!");
-					here = lastHere;
-					break;
+					if(canCrossWalls) {
+						here.z = lastHere.z;
+						cur = new PathNode(here, cur, cur.distance+1-0.01f*maxDrop);
+						if(nodes != null) {
+							nodes[here] = cur;
+						}
+					} else {
+						here = lastHere;
+						break;
+					}
 				} else {
 					//drop down
 					LineMoveFall(ref here, chara, zrdmx, maxDrop, ref cur, nodes, collidedCharacters, ref dropDistance);
@@ -383,14 +407,22 @@ public class Region {
 				   !collidedCharacters.Contains(hereChar)) {
 					collidedCharacters.Add(hereChar);
 				}
-				Debug.Log("tile z "+nextZ);
-				if(!canCrossWalls && nextZ > here.z+zrumx) {
+				Debug.Log("tile z "+nextZ+" vs..."+lastHere.z+"+"+zrumx+"="+(lastHere.z+zrumx));
+				if(nextZ > lastHere.z+zrumx) {
 					//FIXME: it's the client's responsibility to ensure that wall-crossers
 					//don't end up stuck in a wall
 					//it's a wall, break
 					Debug.Log("wall!");
-					here = lastHere;
-					break;
+					if(canCrossWalls) {
+						here.z = lastHere.z;
+						cur = new PathNode(here, cur, cur.distance+1-0.01f*maxDrop);
+						if(nodes != null) {
+							nodes[here] = cur;
+						}
+					} else {
+						here = lastHere;
+						break;
+					}
 				} else if(!canCrossEnemies && collidedCharacters.Count > 0) {
 					//break
 					//FIXME: it's the client's responsibility to ensure that character-crossers
@@ -415,9 +447,44 @@ public class Region {
 			Debug.Log("it's all over, end glide!");
 			LineMoveFall(ref here, chara, zrdmx, maxDrop, ref cur, nodes, collidedCharacters, ref dropDistance);
 		}
+		//while(in pit/in air || in wall)
+		Debug.Log("prev stuck air? "+preventStuckInAir+" null here? "+(map.TileAt(cur.pos) == null));
+		Debug.Log("prev stuck walls? "+preventStuckInWalls+" non-null here? "+(map.TileAt((int)cur.pos.x, (int)cur.pos.y, (int)cur.pos.z+1) != null));
+		//FIXME: "keep going" strategy in addition to "wind back" strategy
+		//if the strategy is Keep Going, then remain in the loop above until we're either in a safe place or at the end of the map; if we're at the end of the map, do the wind back strategy.
+		//if the strategy is Wind Back, just do this loop below.
+		//if the character strategy is Move Aside, then follow the correct rules... based on where the Wall strategy puts you
+		while((preventStuckInAir != StuckPrevention.None && map.TileAt(cur.pos) == null) ||
+		      (canCrossWalls && preventStuckInWalls != StuckPrevention.None && (map.TileAt((int)cur.pos.x, (int)cur.pos.y, (int)cur.pos.z+1) != null))) {
+			//beginning
+			Debug.Log("prev tick");
+			if(cur.prev == null) { break; }
+			//fall
+			if(preventStuckInAir != StuckPrevention.None && cur.prev.pos.x == cur.pos.x && cur.prev.pos.y == cur.pos.y) {
+				if(cur.prev.pos.z != cur.pos.z) {
+					float dz = Mathf.Abs(cur.pos.z - cur.prev.pos.z);
+					Debug.Log("reverse drop by "+(dz)+" dropDistance "+(dz-zrumx));
+					if(dz > zrumx) {
+						//if the drop is more than zrumx, reduce dropdistance by the delta
+						dropDistance -= (int)(dz - zrumx);
+					}
+				} else {
+					Debug.Log("reverse weird same-pos situation");
+				}
+				//pop
+				cur = cur.prev;
+			} else if(canCrossWalls && preventStuckInWalls != StuckPrevention.None) { //step
+				//reduce soFar
+				Debug.Log("reverse move into wall");
+				soFar -= (int)(Mathf.Abs(cur.pos.x - cur.prev.pos.x) + Mathf.Abs(cur.pos.y - cur.prev.pos.y));
+				//pop
+				cur = cur.prev;
+			}
+			Debug.Log("tick prev");
+		}
 		dir = direction;
 		amt = amount;
-		remaining = amount-soFar;
+		remaining = Mathf.Max(amount-soFar, 0);
 		dd = dropDistance;
 		return cur;
 	}
