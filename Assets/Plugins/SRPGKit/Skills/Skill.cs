@@ -232,9 +232,12 @@ public class Skill : MonoBehaviour {
 	protected virtual void SetArgsFrom(Vector3 ttp, Quaternion? facing=null) {
 		Vector3 ctp = character.TilePosition;
 		float distance = Vector3.Distance(ttp, ctp);
-		float angle = facing != null ?
-			facing.Value.eulerAngles.y :
-			Mathf.Atan2(ttp.y-ctp.y, ttp.x-ctp.x)*Mathf.Rad2Deg;
+		float angle = facing != null ? facing.Value.eulerAngles.y : character.Facing;
+		if(facing == null &&
+		   (!Mathf.Approximately(ttp.y,ctp.y) ||
+		    !Mathf.Approximately(ttp.x,ctp.x))) {
+			angle = Mathf.Atan2(ttp.y-ctp.y, ttp.x-ctp.x)*Mathf.Rad2Deg;
+		}
 		SetParam("arg.distance", distance);
 		SetParam("arg.mdistance", Mathf.Abs(ttp.x-ctp.x)+Mathf.Abs(ttp.y-ctp.y)+Mathf.Abs(ttp.z-ctp.z));
 		SetParam("arg.mdistance.xy", Mathf.Abs(ttp.x-ctp.x)+Mathf.Abs(ttp.y-ctp.y));

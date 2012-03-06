@@ -29,6 +29,7 @@ public class MoveSkill : ActionSkill {
 		effectRegion.IsEffectRegion = true;
 		effectRegion.radiusMinF = Formula.Constant(0);
 		effectRegion.radiusMaxF = Formula.Constant(0);
+		effectRegion.canTargetEnemies = false;
 	}
 
 	public override void Update() {

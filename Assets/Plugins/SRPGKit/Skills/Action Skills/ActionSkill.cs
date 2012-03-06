@@ -737,29 +737,15 @@ public class ActionSkill : Skill {
 			Physics.IgnoreCollision(probe.collider, character.collider);
 		}
 		waypoints = new List<PathNode>();
-		switch(targetingMode) {
-			case TargetingMode.Self:
-				break;
-			case TargetingMode.SelectRegion://??
-			case TargetingMode.Pick:
-				cycleIndicatorZ = false;
-				break;
-			case TargetingMode.Cardinal://??
-			case TargetingMode.Radial://??
-				TentativePickFacing(character.Facing);
-				break;
-			case TargetingMode.Path:
-				lines = probe.gameObject.AddComponent<LineRenderer>();
-				lines.materials = new Material[]{pathMaterial};
-				lines.useWorldSpace = true;
-				break;
-			case TargetingMode.Custom:
-				PresentMovesCustom();
-				break;
-		}
 		ResetPosition();
+		if(targetingMode == TargetingMode.Custom) {
+			PresentMovesCustom();
+		} else if(targetingMode == TargetingMode.Path) {
+			lines = probe.gameObject.AddComponent<LineRenderer>();
+			lines.materials = new Material[]{pathMaterial};
+			lines.useWorldSpace = true;
+		}
 	}
-
 
 	protected virtual void ActivateTargetCustom() {
 	}
@@ -770,6 +756,8 @@ public class ActionSkill : Skill {
 	protected virtual void DeactivateTargetCustom() {
 	}
 	protected virtual void CancelTargetCustom() {
+	}
+	protected virtual void ResetToInitialPositionCustom() {
 	}
 
 	public void TentativePick(Vector3 p) {
@@ -959,6 +947,24 @@ public class ActionSkill : Skill {
 		UpdateOverlayParameters();
 		if(overlay != null && overlay.IsReady && lockToGrid) {
 			_GridOverlay.SetSelectedPoints(new Vector4[0]);
+		}
+
+		switch(targetingMode) {
+			case TargetingMode.SelectRegion://??
+			case TargetingMode.Pick:
+				RegisterPathPoint(initialPosition);
+				cycleIndicatorZ = false;
+				break;
+			case TargetingMode.Cardinal://??
+			case TargetingMode.Radial://??
+				TentativePickFacing(character.Facing);
+				break;
+			case TargetingMode.Path:
+				RegisterPathPoint(initialPosition);
+				break;
+			case TargetingMode.Custom:
+				ResetToInitialPositionCustom();
+				break;
 		}
 	}
 

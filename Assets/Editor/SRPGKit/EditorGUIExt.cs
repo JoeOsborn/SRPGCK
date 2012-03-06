@@ -534,6 +534,7 @@ public class EditorGUIExt
 				newReg.canCrossWalls = true;
 				newReg.canCrossEnemies = true;
 			}
+
 			if(newReg.interveningSpaceType == InterveningSpaceType.LineMove) {
 				//can cross walls yes/no
 				GUILayout.Label("Can glide?");
@@ -795,6 +796,13 @@ public class EditorGUIExt
 				} else {
 					newReg.interveningSpaceType = InterveningSpaceType.LineMove;
 				}
+				if(newReg.type != RegionType.LineMove) {
+					newReg.canTargetSelf = EditorGUILayout.Toggle("Can Target Self", newReg.canTargetSelf);
+				} else {
+					newReg.canTargetSelf = true;	
+				}
+				newReg.canTargetFriends = EditorGUILayout.Toggle("Can Target Friends", newReg.canTargetFriends);
+				newReg.canTargetEnemies = EditorGUILayout.Toggle("Can Target Enemies", newReg.canTargetEnemies);
 			}
 		}
 		return SimpleRegionGUI(type+"."+label, newReg, formulaOptions, width, subregionIndex);

@@ -20,7 +20,7 @@ public class ActionSkillEditor : SkillEditor {
 
 	protected void TargetedSkillGUI() {
 		int buttonsWide = (int)(Screen.width/EditorGUIExt.buttonDim);
-		if(targetingModes == null) {
+		if(targetingModes == null || targetingModes.Length == 0) {
 			targetingModes = new GUIContent[]{
 				new GUIContent("Self", EditorGUIUtility.LoadRequired("skl-target-self.png") as Texture),
 				new GUIContent("Pick", EditorGUIUtility.LoadRequired("skl-target-pick.png") as Texture),
@@ -30,7 +30,7 @@ public class ActionSkillEditor : SkillEditor {
 				new GUIContent("Draw Path", EditorGUIUtility.LoadRequired("skl-target-path.png") as Texture)
 			};
 		}
-		if(displayUnimpededTargetRegionFlags == null) {
+		if(displayUnimpededTargetRegionFlags == null || displayUnimpededTargetRegionFlags.Length == 0) {
 			displayUnimpededTargetRegionFlags = new GUIContent[]{
 				new GUIContent("Hide", EditorGUIUtility.LoadRequired("skl-impeded-off.png") as Texture),
 				new GUIContent("Display", EditorGUIUtility.LoadRequired("skl-impeded-on.png") as Texture)

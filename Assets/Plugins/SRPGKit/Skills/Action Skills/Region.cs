@@ -66,15 +66,87 @@ public class Region {
 
 	//these mean the same for pathable and non-pathable regions
 	//they don't apply to self or predicate.
-	public bool canCrossWalls=true;
+	public bool _canCrossWalls=true;
+	public bool canCrossWalls {
+		get { return _canCrossWalls; }
+		set {
+			_canCrossWalls = value;
+			if(regions == null) { return; }
+			foreach(Region r in regions) {
+				if(r == null) { continue; }
+				r.canCrossWalls = value;
+			}
+		}
+	}
 	//means "can cross characters" for line move.
-	public bool canCrossEnemies=true;
+	public bool _canCrossEnemies=true;
+	public bool canCrossEnemies {
+		get { return _canCrossEnemies; }
+		set {
+			_canCrossEnemies = value;
+			if(regions == null) { return; }
+			foreach(Region r in regions) {
+				if(r == null) { continue; }
+				r.canCrossEnemies = value;
+			}
+		}
+	}
 	//turn this off for move skills!
 	//it only has meaning if canCrossEnemies is false.
 	//basically, it's the difference between:
 	//ending ON an enemy (as an attack would); and
 	//ending BEFORE an enemy (as a move would)
-	public bool canHaltAtEnemies=true;
+	public bool _canHaltAtEnemies=true;
+	public bool canHaltAtEnemies {
+		get { return _canHaltAtEnemies; }
+		set {
+			_canHaltAtEnemies = value;
+			if(regions == null) { return; }
+			foreach(Region r in regions) {
+				if(r == null) { continue; }
+				r.canHaltAtEnemies = value;
+			}
+		}
+	}
+
+	public bool _canTargetEnemies=true;
+	public bool canTargetEnemies {
+		get { return _canTargetEnemies; }
+		set {
+			_canTargetEnemies = value;
+			if(regions == null) { return; }
+			foreach(Region r in regions) {
+				if(r == null) { continue; }
+				r.canTargetEnemies = value;
+			}
+		}
+	}
+
+	public bool _canTargetFriends=true;
+	public bool canTargetFriends {
+		get { return _canTargetFriends; }
+		set {
+			_canTargetFriends = value;
+			if(regions == null) { return; }
+			foreach(Region r in regions) {
+				if(r == null) { continue; }
+				r.canTargetFriends = value;
+			}
+		}
+	}
+
+	public bool _canTargetSelf=true;
+	public bool canTargetSelf {
+		get { return _canTargetSelf; }
+		set {
+			_canTargetSelf = value;
+			if(regions == null) { return; }
+			foreach(Region r in regions) {
+				if(r == null) { continue; }
+				r.canTargetSelf = value;
+			}
+		}
+	}
 
 	public StuckPrevention preventStuckInAir  =StuckPrevention.StopBefore;
 	public StuckPrevention preventStuckInWalls=StuckPrevention.StopBefore;
@@ -235,12 +307,12 @@ public class Region {
 		if(c != null && c != owner.character) {
 			if(c.EffectiveTeamID != owner.character.EffectiveTeamID) {
 				if(canCrossEnemies) {
-					return (IsEffectRegion||canHaltAtEnemies) ? PathDecision.Normal : PathDecision.PassOnly;
+					return (IsEffectRegion||canHaltAtEnemies||canTargetEnemies) ? PathDecision.Normal : PathDecision.PassOnly;
 				} else {
-					return canHaltAtEnemies ? PathDecision.Normal : PathDecision.Invalid;
+					return canHaltAtEnemies||canTargetEnemies ? PathDecision.Normal : PathDecision.Invalid;
 				}
 			} else {
-				if(!(IsEffectRegion||canHaltAtEnemies)) {
+				if(!(IsEffectRegion||canHaltAtEnemies||canTargetEnemies)) {
 					return PathDecision.PassOnly;
 				}
 			}
@@ -655,6 +727,19 @@ public class Region {
 				);
 				break;
 		}
+		picked = picked.Where((n) => {
+			Character c = map.CharacterAt(n.pos);
+			if(c != null) {
+				if(c == owner.character) {
+					return canTargetSelf;
+				} else if(c.EffectiveTeamID == owner.character.EffectiveTeamID) {
+					return canTargetFriends;
+				} else {
+					return canTargetEnemies;
+				}
+			}
+			return true;
+		}).ToList().AsEnumerable();
 		switch(type) {
 			case RegionType.Predicate:
 			case RegionType.Cylinder:
