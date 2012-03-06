@@ -25,6 +25,7 @@ public enum InterveningSpaceType {
 	LineMove //N.B. iff region type is LineMove
 };
 
+//For linemove type
 public enum StuckPrevention {
 	None,
 	StopBefore,

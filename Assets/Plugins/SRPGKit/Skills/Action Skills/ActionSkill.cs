@@ -777,7 +777,6 @@ public class ActionSkill : Skill {
 		Character c = map.CharacterAt(p);
 		target = (new Target()).Tile(selectedTile).Character(c);
 		targetTiles = effectRegion.GetValidTiles(p);
-		Debug.Log("tt count :"+targetTiles.Length);
 		_GridOverlay.SetSelectedPoints(map.CoalesceTiles(targetTiles));
 	}
 
@@ -791,7 +790,6 @@ public class ActionSkill : Skill {
 			target.Tile(pn);
 		}
 		targetTiles = effectRegion.GetValidTiles(pn.pos);
-		Debug.Log("tt count :"+targetTiles.Length);
 		_GridOverlay.SetSelectedPoints(map.CoalesceTiles(targetTiles));
 	}
 
@@ -803,7 +801,6 @@ public class ActionSkill : Skill {
 		selectedTile = p;
 		Character c = map.CharacterAt(selectedTile);
 		target = (new Target()).Tile(selectedTile).Character(c);
-		Debug.Log("would-be tt count :"+PathNodesForTarget(target, targetRegion, effectRegion).Length);
 		ApplySkill(target);
 	}
 
@@ -816,7 +813,6 @@ public class ActionSkill : Skill {
 		} else {
 			target.Tile(pn);
 		}
-		Debug.Log("would-be tt count :"+PathNodesForTarget(target, targetRegion, effectRegion).Length);
 		ApplySkill(target);
 	}
 
@@ -1044,7 +1040,6 @@ public class ActionSkill : Skill {
 		return -1;
 	}
 	virtual protected void TemporaryExecutePathTo(PathNode pn) {
-		Debug.Log("tempexec "+pn.pos);
 		//pick? face? dunno?
 		if(targetingMode == TargetingMode.SelectRegion) {
 			int sr = SubregionContaining(pn.pos);

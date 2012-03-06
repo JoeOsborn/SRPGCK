@@ -25,18 +25,22 @@ public class WaitSkill : ActionSkill {
 		overlayColor = Color.clear;
 		highlightColor = Color.clear;
 		targetingMode = TargetingMode.Cardinal;
+		targetRegion = new Region();
+		targetRegion.type = RegionType.Self;
+		targetRegion.interveningSpaceType = InterveningSpaceType.Pick;
+		effectRegion = new Region();
+		effectRegion.type = RegionType.Self;
+		effectRegion.interveningSpaceType = InterveningSpaceType.Pick;
 		StatEffect facingEffect = new StatEffect();
 		facingEffect.effectType = StatEffectType.ChangeFacing;
 		facingEffect.target = StatEffectTarget.Applier;
-		facingEffect.value = Formula.Lookup("arg.angle.xy");
+		facingEffect.value = Formula.Lookup("arg.angle.xy", LookupType.SkillParam);
 		StatEffect endTurnEffect = new StatEffect();
 		endTurnEffect.effectType = StatEffectType.EndTurn;
 		endTurnEffect.target = StatEffectTarget.Applier;
-		targetEffects = new StatEffectGroup[]{
-			new StatEffectGroup{effects=new StatEffect[]{
-				facingEffect, endTurnEffect
-			}}
-		};
+		applicationEffects = new StatEffectGroup{effects=new StatEffect[]{
+			facingEffect, endTurnEffect
+		}};
 	}
 
 	public override void ResetSkill() {
@@ -95,7 +99,7 @@ public class WaitSkill : ActionSkill {
 						if(!requireConfirmation) {
 				    	WaitAtArrow(hitArrowValue);
 							awaitingConfirmation = false;
-							ApplySkill(target);
+							PickFacing(character.Facing);
 						} else {
 				    	WaitAtArrow(hitArrowValue);
 							awaitingConfirmation = true;

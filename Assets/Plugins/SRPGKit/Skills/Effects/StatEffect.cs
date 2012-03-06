@@ -99,10 +99,12 @@ public class StatEffect {
 			case StatEffectType.ChangeFacing:
 				float angle = value.GetValue(fdb, skill, targ, null);
 				actualTarget.Facing = angle;
+				Debug.Log("set facing to "+angle);
 				effect = new StatEffectRecord(this, angle);
 				break;
 			case StatEffectType.EndTurn:
 				effect = new StatEffectRecord(this);
+				Debug.Log("end turn");
 				skill.scheduler.DeactivateAfterSkillApplication(actualTarget, skill);
 				break;
 			case StatEffectType.SpecialMove: {
