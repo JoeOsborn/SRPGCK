@@ -133,14 +133,14 @@ public class Formulae : ScriptableObject {
 				if(ccontext != null) { return ccontext.HasStatusEffect(fname); }
 				return false;
 			case LookupType.TargetStat:
-				if(scontext != null) { return scontext.currentTarget.HasStat(fname); }
+				if(scontext != null) { return scontext.currentTargetCharacter.HasStat(fname); }
 				return false;
 			case LookupType.TargetStatusEffect:
-				if(scontext != null) { return scontext.currentTarget.HasStatusEffect(fname); }
+				if(scontext != null) { return scontext.currentTargetCharacter.HasStatusEffect(fname); }
 				return false;
 			case LookupType.TargetEquipmentParam:
 				if(scontext != null) {
-					ccontext = scontext.currentTarget;
+					ccontext = scontext.currentTargetCharacter;
 				} else {
 					ccontext = null;
 				}
@@ -203,14 +203,14 @@ public class Formulae : ScriptableObject {
 				Debug.LogError("Cannot find skill param "+fname);
 				return -1;
 			case LookupType.TargetStat:
-				if(scontext != null) { return scontext.currentTarget.GetStat(fname); }
+				if(scontext != null) { return scontext.currentTargetCharacter.GetStat(fname); }
 /*				if(econtext != null) { return econtext.wielder.GetStat(fname); }*/
 /*				if(ccontext != null) { return ccontext.GetStat(fname); }*/
 				Debug.LogError("Cannot find target stat "+fname);
 				return -1;
 			case LookupType.TargetEquipmentParam:
 				if(scontext != null) {
-					ccontext = scontext.currentTarget;
+					ccontext = scontext.currentTargetCharacter;
 				} else {
 					ccontext = null;
 				}

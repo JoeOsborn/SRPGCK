@@ -32,8 +32,8 @@ public class RoundsInitiativeScheduler : Scheduler {
 		BeginRound();
 	}
 
-	public override void ApplySkillAfterDelay(Skill s, Target t, float delay) {
-		base.ApplySkillAfterDelay(s, t, activeInitiative - delay);
+	public override void ApplySkillAfterDelay(Skill s, List<Target> ts, float delay) {
+		base.ApplySkillAfterDelay(s, ts, activeInitiative - delay);
 	}
 
 	override public void SkillApplied(Skill s) {

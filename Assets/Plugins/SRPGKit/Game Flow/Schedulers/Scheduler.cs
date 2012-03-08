@@ -112,11 +112,11 @@ public class Scheduler : MonoBehaviour {
 		);
 	}
 
-	public virtual void ApplySkillAfterDelay(Skill s, Target t, float delay) {
+	public virtual void ApplySkillAfterDelay(Skill s, List<Target> currentTs, float delay) {
 		if(pendingSkillActivations == null) {
 			pendingSkillActivations = new List<SkillActivation>();
 		}
-		pendingSkillActivations.Add(new SkillActivation(s, t, delay));
+		pendingSkillActivations.Add(new SkillActivation(s, currentTs, delay));
 	}
 
 	protected virtual void Begin() {

@@ -1,5 +1,6 @@
 using UnityEngine;
 
+[System.Serializable]
 public class CharacterMoveReport {
 	public Character character;
 	public Vector3 src;

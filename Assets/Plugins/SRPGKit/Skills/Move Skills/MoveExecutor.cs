@@ -76,20 +76,30 @@ public class MoveExecutor {
 		}
 	}
 
-	virtual public void TemporaryMoveTo(PathNode pn, MoveFinished callback, float timeout=10.0f, bool special = false) {
-		Debug.Log("temporary move to "+pn);
+	virtual public void ImmediatelyMoveTo(PathNode pn, MoveFinished callback=null, float timeout=10.0f, bool special = false) {
 		specialMoving = special;
 		temporaryDestNode = pn;
 		moveOrigin = temporaryPosition;
 		moveCallback = callback;
-		if(!animateTemporaryMovement) {
-			temporaryPosition = temporaryDestination;
-			transformPosition = temporaryPosition;
+		temporaryPosition = temporaryDestination;
+		transformPosition = temporaryPosition;
+		if(callback != null) {
 			moveCallback(map.InverseTransformPointWorld(moveOrigin), temporaryDestNode, true);
-			specialMoving = false;
-			moveCallback = null;
-			ClearPath();
+		}
+		specialMoving = false;
+		moveCallback = null;
+		ClearPath();
+	}
+
+	virtual public void TemporaryMoveTo(PathNode pn, MoveFinished callback, float timeout=10.0f, bool special = false) {
+		Debug.Log("temporary move to "+pn);
+		if(!animateTemporaryMovement) {
+			ImmediatelyMoveTo(pn, callback, timeout, special);
 		} else {
+			specialMoving = special;
+			temporaryDestNode = pn;
+			moveOrigin = temporaryPosition;
+			moveCallback = callback;
 			moveTimeRemaining = timeout;
 			CreatePath(pn);
 		}

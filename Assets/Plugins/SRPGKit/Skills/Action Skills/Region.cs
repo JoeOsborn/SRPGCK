@@ -42,8 +42,14 @@ public class Region {
 		get { return owner; }
 		set {
 			owner = value;
-			foreach(Region r in regions) {
-				r.Owner = owner;
+			if(regions == null) {
+				return;
+			}
+			for(int i = 0; i < regions.Length; i++) {
+				if(regions[i] == null) {
+					regions[i] = new Region();
+				}
+				regions[i].Owner = owner;
 			}
 		}
 	}
@@ -71,10 +77,12 @@ public class Region {
 		get { return _canCrossWalls; }
 		set {
 			_canCrossWalls = value;
-			if(regions == null) { return; }
-			foreach(Region r in regions) {
-				if(r == null) { continue; }
-				r.canCrossWalls = value;
+			if(regions == null || interveningSpaceType == InterveningSpaceType.Pick) { return; }
+			for(int i = 0; i < regions.Length; i++) {
+				if(regions[i] == null) {
+					regions[i] = new Region();
+				}
+				regions[i].canCrossWalls = _canCrossWalls;
 			}
 		}
 	}
@@ -84,10 +92,12 @@ public class Region {
 		get { return _canCrossEnemies; }
 		set {
 			_canCrossEnemies = value;
-			if(regions == null) { return; }
-			foreach(Region r in regions) {
-				if(r == null) { continue; }
-				r.canCrossEnemies = value;
+			if(regions == null || interveningSpaceType == InterveningSpaceType.Pick) { return; }
+			for(int i = 0; i < regions.Length; i++) {
+				if(regions[i] == null) {
+					regions[i] = new Region();
+				}
+				regions[i].canCrossEnemies = _canCrossEnemies;
 			}
 		}
 	}
@@ -102,9 +112,11 @@ public class Region {
 		set {
 			_canHaltAtEnemies = value;
 			if(regions == null) { return; }
-			foreach(Region r in regions) {
-				if(r == null) { continue; }
-				r.canHaltAtEnemies = value;
+			for(int i = 0; i < regions.Length; i++) {
+				if(regions[i] == null) {
+					regions[i] = new Region();
+				}
+				regions[i].canHaltAtEnemies = canHaltAtEnemies;
 			}
 		}
 	}
@@ -115,9 +127,11 @@ public class Region {
 		set {
 			_canTargetEnemies = value;
 			if(regions == null) { return; }
-			foreach(Region r in regions) {
-				if(r == null) { continue; }
-				r.canTargetEnemies = value;
+			for(int i = 0; i < regions.Length; i++) {
+				if(regions[i] == null) {
+					regions[i] = new Region();
+				}
+				regions[i].canTargetEnemies = canTargetEnemies;
 			}
 		}
 	}
@@ -128,9 +142,11 @@ public class Region {
 		set {
 			_canTargetFriends = value;
 			if(regions == null) { return; }
-			foreach(Region r in regions) {
-				if(r == null) { continue; }
-				r.canTargetFriends = value;
+			for(int i = 0; i < regions.Length; i++) {
+				if(regions[i] == null) {
+					regions[i] = new Region();
+				}
+				regions[i].canTargetFriends = canTargetFriends;
 			}
 		}
 	}
@@ -141,9 +157,11 @@ public class Region {
 		set {
 			_canTargetSelf = value;
 			if(regions == null) { return; }
-			foreach(Region r in regions) {
-				if(r == null) { continue; }
-				r.canTargetSelf = value;
+			for(int i = 0; i < regions.Length; i++) {
+				if(regions[i] == null) {
+					regions[i] = new Region();
+				}
+				regions[i].canTargetSelf = canTargetSelf;
 			}
 		}
 	}
@@ -278,8 +296,8 @@ public class Region {
 		Vector3 pos = pn.pos;
 		float distance = Vector3.Distance(pos, start);
 		float xyDistance = (new Vector2(pos.x-start.x, pos.y-start.y)).magnitude;
-		Character oldTarget = owner.currentTarget;
-		owner.currentTarget = c;
+		Character oldTarget = owner.currentTargetCharacter;
+		owner.currentTargetCharacter = c;
 		owner.SetParam("arg.region.distance", distance);
 		owner.SetParam("arg.region.distance.xy", xyDistance);
 		owner.SetParam("arg.region.mdistance", Mathf.Abs(pos.x-start.x)+Mathf.Abs(pos.y-start.y)+Mathf.Abs(pos.z-start.z));
@@ -295,7 +313,7 @@ public class Region {
 		owner.SetParam("arg.region.angle.between.xy", Mathf.Atan2(pos.y-start.y, pos.x-start.x)*Mathf.Rad2Deg - owner.GetParam("arg.region.angle.xy"));
 		owner.SetParam("arg.region.angle.between.z", Mathf.Atan2(pos.z-start.z, xyDistance)*Mathf.Rad2Deg - owner.GetParam("arg.region.angle.z"));
 		float ret = predicateF.GetValue(fdb, owner, null, null);
-		owner.currentTarget = oldTarget;
+		owner.currentTargetCharacter = oldTarget;
 		return (ret != 0) ? PathDecision.Normal : PathDecision.Invalid;
 	}
 
@@ -416,7 +434,7 @@ public class Region {
 		float maxDrop = here.z;
 		int soFar = 0;
 		float dropDistance = 0;
-		Debug.Log("start at "+here+" with offset "+offset);
+		Debug.Log("start at "+here+" with offset "+offset+" amount "+amount);
 		while((soFar < amount) ||
 			//stuck prevention: keep going if we would end up stuck
 			 ((canCrossWalls &&
@@ -586,20 +604,17 @@ public class Region {
 		Debug.Log("trying to fall, but it's a bottomless pit!");
 		return false;
 	}
-
-	public virtual PathNode[] GetValidTiles() {
+	
+	public virtual PathNode[] GetTilesInRegion(Vector3 pos, Quaternion q) {
 	  return GetValidTiles(
-			owner.character.TilePosition,
-			Quaternion.Euler(0, owner.character.Facing, 0)
+			pos, q,
+			radiusMin, radiusMax,
+			zDownMin, zDownMax,
+			zUpMin, zUpMax,
+			lineWidthMin, lineWidthMax,
+			interveningSpaceType,
+			true
 		);
-	}
-
-	public virtual PathNode[] GetValidTiles(Quaternion q) {
-		return GetValidTiles(owner.character.TilePosition, q);
-	}
-
-	public virtual PathNode[] GetValidTiles(Vector3 tc) {
-		return GetValidTiles(tc, Quaternion.Euler(0, owner.character.Facing, 0));
 	}
 
 	public virtual PathNode[] GetValidTiles(Vector3 tc, Quaternion q) {
@@ -610,19 +625,6 @@ public class Region {
 			zUpMin, zUpMax,
 			lineWidthMin, lineWidthMax,
 			interveningSpaceType
-		);
-	}
-
-	public virtual PathNode[] GetTilesInRegion() {
-	  return GetValidTiles(
-			owner.character.TilePosition,
-			Quaternion.Euler(0, owner.character.Facing, 0),
-			radiusMin, radiusMax,
-			zDownMin, zDownMax,
-			zUpMin, zUpMax,
-			lineWidthMin, lineWidthMax,
-			interveningSpaceType,
-			true
 		);
 	}
 
@@ -637,7 +639,10 @@ public class Region {
   ) {
 		//intervening space selection filters what goes into `nodes` and what
 		//nodes get picked next time around—i.e. how prevs get set up.
-
+		// Debug.Log("tc "+tc+" q "+q);
+		// Debug.Log("radmaxf "+radiusMaxF+" radmax "+radiusMax);
+		// Debug.Log("xyrmn "+xyrmn+" xyrmx "+xyrmx+" st "+spaceType+" rt "+type);
+		// Debug.Log("zrdmn "+zrdmn+" zrdmx "+zrdmx+" zrumn "+zrumn+" zrumx "+zrumx);
 		//TODO: all should operate with continuous generators as well as grid-based generators
 		Vector3 here = SRPGUtil.Trunc(tc);
 		Dictionary<Vector3, PathNode> pickables = null;
@@ -677,7 +682,7 @@ public class Region {
 						r.zDownMin, r.zDownMax,
 						r.zUpMin, r.zUpMax,
 						r.lineWidthMin, r.lineWidthMax,
-						InterveningSpaceType.Pick
+						InterveningSpaceType.LineMove
 					);
 					foreach(PathNode p in thesePickables) {
 						p.subregion = i;
@@ -690,6 +695,7 @@ public class Region {
 				pickables = null;
 				break;
 		}
+		// Debug.Log("pickables "+pickables.Count);
 		IEnumerable<PathNode> picked=null;
 		switch(spaceType) {
 			case InterveningSpaceType.Arc:
@@ -727,6 +733,7 @@ public class Region {
 				);
 				break;
 		}
+		// Debug.Log("b pickables "+picked.Count());
 		picked = picked.Where((n) => {
 			Character c = map.CharacterAt(n.pos);
 			if(c != null) {
@@ -740,6 +747,7 @@ public class Region {
 			}
 			return true;
 		}).ToList().AsEnumerable();
+		// Debug.Log("c pickables "+picked.Count());
 		switch(type) {
 			case RegionType.Predicate:
 			case RegionType.Cylinder:
@@ -783,12 +791,12 @@ public class Region {
 		}
 	}
 
-	public virtual PathNode[] GetValidTiles(PathNode[] allTiles) {
+	public virtual PathNode[] GetValidTiles(PathNode[] allTiles, Quaternion q) {
 		Dictionary<Vector3, PathNode> union = new Dictionary<Vector3, PathNode>();
 		foreach(PathNode start in allTiles) {
 			//take union of all valid tiles
 			//TODO: in many cases, this will just be the passed-in tiles. optimize!
-			PathNode[] theseValid = GetValidTiles(start.pos);
+			PathNode[] theseValid = GetValidTiles(start.pos, q);
 			foreach(PathNode v in theseValid) {
 				union[v.pos] = v;
 			}
@@ -800,7 +808,10 @@ public class Region {
 		List<Character> targets = new List<Character>();
 		foreach(PathNode pn in tiles) {
 			Character c = map.CharacterAt(pn.pos);
-			if(c != null) {
+			if(c != null &&
+			  !((!canTargetEnemies && c.EffectiveTeamID != owner.character.EffectiveTeamID) ||
+			    (!canTargetFriends && c.EffectiveTeamID == owner.character.EffectiveTeamID) ||
+			    (!canTargetSelf && c == owner.character))) {
 				targets.Add(c);
 			}
 		}
@@ -1100,15 +1111,19 @@ public class Region {
 				if(Mathf.Abs(i)+Mathf.Abs(j) > maxRadius+Mathf.Abs(maxBonus)) {
 					continue;
 				}
-//				Debug.Log("gen "+i+","+j);
-
 				Vector2 here = new Vector2(start.x+i, start.y+j);
+				// Debug.Log("gen "+i+","+j+" here:"+here);
+				if(here.x < 0 || here.y < 0 ||
+				   here.x >= map.size.x || here.y >= map.size.y) {
+					continue;
+				}
+
 				IEnumerable<int> levs = map.ZLevelsWithin((int)here.x, (int)here.y, (int)start.z, -1);
 				foreach(int adjZ in levs) {
 					Vector3 pos = new Vector3(here.x, here.y, adjZ);
 					//CHECK: is this right? should it just be the signed delta? or is there some kind of "signed delta between lowest/highest points for z- and highest/lowest points for z+" nonsense?
 					float signedDZ = map.SignedDZForMove(pos, start);
-//					Debug.Log("signed dz:"+signedDZ+" at "+pos.z+" from "+start.z);
+					// Debug.Log("signed dz:"+signedDZ+" at "+pos.z+" from "+start.z);
 					if(useAbsoluteDZ && (signedDZ < -zDownMax || signedDZ > zUpMax)) {
 						continue;
 					}
@@ -1133,6 +1148,7 @@ public class Region {
 					if(decision == PathDecision.PassOnly) {
 						newPn.canStop = false;
 					}
+					// Debug.Log("decision "+decision);
 					if(decision != PathDecision.Invalid) {
 						ret.Add(pos, newPn);
 					}

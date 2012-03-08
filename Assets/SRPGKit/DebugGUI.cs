@@ -32,7 +32,6 @@ public class DebugGUI : MonoBehaviour {
 	} }
 
 	public ActionSkill pendingTargetedSkill;
-	public Target pendingTargetedSkillTarget;
 
 	public void Start() {
 		selectedGroup = new List<string>();
@@ -212,12 +211,10 @@ public class DebugGUI : MonoBehaviour {
 	void SkillNeedsCharacterTargetingOption(Skill s) {
 		Debug.Log("skill "+s.skillName+" wants delayed targeting");
 		pendingTargetedSkill = (ActionSkill)s;
-		pendingTargetedSkillTarget = pendingTargetedSkill.target.Clone();
 	}
 	string[] targetingChoices;
 	void SkillIncrementalCancel() {
 		pendingTargetedSkill = null;
-		pendingTargetedSkillTarget = null;
 	}
 	public void OnGUI() {
 		Scheduler s = GetComponent<Scheduler>();
@@ -233,17 +230,13 @@ public class DebugGUI : MonoBehaviour {
 			int choice = OnGUIChoices("Target tile or character?", targetingChoices);
 			if(choice != -1) {
 				if(choice == 0) {
-					pendingTargetedSkillTarget.character = null;
-					pendingTargetedSkill.ConfirmDelayedSkillTarget(pendingTargetedSkillTarget);
+					pendingTargetedSkill.ConfirmDelayedSkillTarget(TargetOption.Path);
 				} else if(choice == 1) {
-					pendingTargetedSkillTarget.tile = null;
-					pendingTargetedSkillTarget.path = null;
-					pendingTargetedSkill.ConfirmDelayedSkillTarget(pendingTargetedSkillTarget);
+					pendingTargetedSkill.ConfirmDelayedSkillTarget(TargetOption.Character);
 				} else if(choice == 2) {
 					pendingTargetedSkill.IncrementalCancel();
 				}
 				pendingTargetedSkill = null;
-				pendingTargetedSkillTarget = null;
 			}
 			return;
 		}
@@ -263,9 +256,7 @@ public class DebugGUI : MonoBehaviour {
 							bool yesButton=false, noButton=false;
 							OnGUIConfirmation("Move here?", out yesButton, out noButton);
 							if(yesButton) {
-								PathNode pn = ms.overlay.PositionAt(ms.selectedTile);
-								Debug.Log("seltile "+ms.selectedTile+" pn "+ms.overlay.PositionAt(ms.selectedTile));
-					      ms.PerformMoveToPathNode(pn);
+								ms.ApplyCurrentTarget();
 					      ms.AwaitingConfirmation = false;
 							}
 							if(noButton) {
@@ -281,23 +272,7 @@ public class DebugGUI : MonoBehaviour {
 						showAnySchedulerButtons = false;
 						showCancelButton = false;
 					}
-				}/* else if(io is ContinuousWithinTilesMoveIO) {
-					ContinuousWithinTilesMoveIO mio = io as ContinuousWithinTilesMoveIO;
-					if(mio.character != null &&
-						mio.character.isActive &&
-						a.IsLocalTeam(mio.character.EffectiveTeamID) &&
-						mio.supportMouse) {
-						GUILayout.BeginArea(new Rect(
-							Screen.width/2-48, Screen.height-32,
-							96, 24
-						));
-						if(GUILayout.Button("End Move")) {
-							ms.PerformMove(mio.moveDest);
-						}
-						GUILayout.EndArea();
-						showAnySchedulerButtons = false;
-					}
-				}*/
+				}
 			}
 
 			foreach(Skill skill in skills) {
@@ -309,7 +284,7 @@ public class DebugGUI : MonoBehaviour {
 							bool yesButton=false, noButton=false;
 							OnGUIConfirmation("Confirm?", out yesButton, out noButton);
 							if(yesButton) {
-								ask.ApplySkill(ask.target);
+								ask.ApplyCurrentTarget();
 							}
 							if(noButton) {
 					  		ask.AwaitingConfirmation = false;
@@ -327,7 +302,7 @@ public class DebugGUI : MonoBehaviour {
 						bool yesButton=false, noButton=false;
 						OnGUIConfirmation("Wait here?", out yesButton, out noButton);
 						if(yesButton) {
-							ws.ApplySkill(ws.target);
+							ws.ApplyCurrentTarget();
 						}
 						if(noButton) {
 			      	ws.AwaitingConfirmation = false;
@@ -443,7 +418,8 @@ public class DebugGUI : MonoBehaviour {
 							 activeSkill is MoveSkill &&
 							 !(activeSkill as MoveSkill).Executor.IsMoving) {
 							if(GUILayout.Button("End Move")) {
-								activeSkill.ApplySkill((activeSkill as MoveSkill).target);
+								//??
+								activeSkill.ApplySkill();
 							}
 						}
 					}

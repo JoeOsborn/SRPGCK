@@ -84,7 +84,8 @@ public class TeamRoundsPointsScheduler : Scheduler {
 		if(limitMode == TurnLimitMode.AP) {
 			//???: Is it okay for the scheduler to determine the move region's max range?
 			//???: What about characters' intrinsic stats and so on?
-			Region ms = c.moveSkill.targetRegion;
+			//???: maybe better to pass this through a param instead...
+			Region ms = c.moveSkill.targetSettings[0].targetRegion;
 			ms.radiusMaxF = Formula.Constant(GetMaximumTraversalDistance(c));
 		}
 	 	//FIXME: can we do something here for time-based traversal distance limitation?

@@ -26,9 +26,9 @@ public class Skill : MonoBehaviour {
 
 	//only relevant to targeted skills, sadly
 	[HideInInspector]
-	public List<Character> targets;
+	public List<Character> targetCharacters;
 	[HideInInspector]
-	public Character currentTarget;
+	public Character currentTargetCharacter;
 	[HideInInspector]
 	public int currentHitType;
 
@@ -71,8 +71,8 @@ public class Skill : MonoBehaviour {
 		if(isPassive) { return; }
 		isActive = false;
 		map.BroadcastMessage("SkillDeactivated", this, SendMessageOptions.DontRequireReceiver);
-		targets = null;
-		currentTarget = null;
+		targetCharacters = null;
+		currentTargetCharacter = null;
 	}
 	public virtual void Update() {
 		if(reactionTargetRegion != null) {
@@ -92,14 +92,11 @@ public class Skill : MonoBehaviour {
 	public virtual void Reset() {
 		ResetSkill();
 	}
-	public virtual void ApplySkill(Target t) {
+	public virtual void ApplySkill() {
 		map.BroadcastMessage("SkillApplied", this, SendMessageOptions.DontRequireReceiver);
 		if(deactivatesOnApplication && isActive) {
 			DeactivateSkill();
 		}
-	}
-	public virtual void ApplySkillTo(Target t) {
-
 	}
 
 	public virtual bool ReactionTypesMatch(StatEffectRecord se) {
@@ -111,7 +108,7 @@ public class Skill : MonoBehaviour {
 	public virtual bool ReactsAgainst(Skill s, StatEffectRecord se) {
 		return s != this && //don't react against your own application
 			s.character != character && //don't react against your own character's skills
-			s.currentTarget == character && //only react to skills used against our character
+			s.currentTargetCharacter == character && //only react to skills used against our character
 			reactionSkill && //only react if you're a reaction skill
 			!s.reactionSkill && //don't react against reaction skills
 			s is ActionSkill && //only react against targeted skills
@@ -124,17 +121,15 @@ public class Skill : MonoBehaviour {
 			lastEffects.Clear();
 		}
 	}
-	public virtual PathNode[] PathNodesForTarget(Target t, Region tr, Region efr) {
+	public virtual PathNode[] PathNodesForTarget(Target t, Region tr, Region efr, Vector3 pos, Quaternion q) {
 		if(t.subregion != -1) {
-			return efr.GetValidTiles(tr.ActualTilesForTargetedTiles(tr.regions[t.subregion].GetValidTiles()));
-		} else if(t.tile != null) {
-			return efr.GetValidTiles(tr.ActualTilesForTargetedTiles(new PathNode[]{t.tile}));
+			return efr.GetValidTiles(tr.ActualTilesForTargetedTiles(tr.regions[t.subregion].GetValidTiles(pos, q)), q);
 		} else if(t.path != null) {
-			return efr.GetValidTiles(tr.ActualTilesForTargetedTiles(new PathNode[]{t.path}));
+			return efr.GetValidTiles(tr.ActualTilesForTargetedTiles(new PathNode[]{t.path}), q);
 		} else if(t.character != null) {
-			return efr.GetValidTiles(tr.ActualTilesForTargetedTiles(new PathNode[]{new PathNode(t.character.TilePosition, null, 0)}));
+			return efr.GetValidTiles(tr.ActualTilesForTargetedTiles(new PathNode[]{new PathNode(t.character.TilePosition, null, 0)}), q);
 		} else if(t.facing != null) {
-			return efr.GetValidTiles(t.facing.Value);
+			return efr.GetValidTiles(pos, t.facing.Value);
 		}
 		Debug.LogError("Invalid target");
 		return null;
@@ -155,18 +150,18 @@ public class Skill : MonoBehaviour {
 		}
 		if(reacts) {
 			ClearLastEffects();
-			currentTarget = s.character;
+			currentTargetCharacter = s.character;
 			Target target = (new Target()).Character(s.character);
 			reactionTargetRegion.Owner = this;
 			reactionEffectRegion.Owner = this;
-			PathNode[] reactionTiles = PathNodesForTarget(target, reactionTargetRegion, reactionEffectRegion);
-			targets = new List<Character>(){s.character};
-			SetArgsFrom(target.Position, null);
-			targets = reactionEffectRegion.CharactersForTargetedTiles(reactionTiles);
-			if(targets.Contains(currentTarget)) {
-				ApplyPerApplicationEffectsTo(reactionApplicationEffects.effects, new List<Character>(){currentTarget});
+			PathNode[] reactionTiles = PathNodesForTarget(target, reactionTargetRegion, reactionEffectRegion, character.TilePosition, Quaternion.Euler(0,character.Facing,0));
+			targetCharacters = new List<Character>(){s.character};
+			SetArgsFromTarget(target, null, "");
+			targetCharacters = reactionEffectRegion.CharactersForTargetedTiles(reactionTiles);
+			if(targetCharacters.Contains(currentTargetCharacter)) {
+				ApplyPerApplicationEffectsTo(reactionApplicationEffects.effects, new List<Character>(){currentTargetCharacter});
 				if(reactionEffects.Length > 0) {
-					ApplyEffectsTo(reactionEffects, targets, "reaction.hitType");
+					ApplyEffectsTo(target, null, reactionEffects, targetCharacters, "reaction.hitType");
 				}
 				map.BroadcastMessage("SkillApplied", this, SendMessageOptions.DontRequireReceiver);
 			}
@@ -190,7 +185,6 @@ public class Skill : MonoBehaviour {
 		return runtimeParameters.ContainsKey(pname);
 	}
 
-	[HideInInspector]
 	public Formulae fdb { get {
 		if(character != null) { return character.fdb; }
 		return Formulae.DefaultFormulae;
@@ -229,7 +223,7 @@ public class Skill : MonoBehaviour {
 		parameters = parameters.Concat(new Parameter[]{new Parameter(pname, f)}).ToList();
 	}
 
-	protected virtual void SetArgsFrom(Vector3 ttp, Quaternion? facing=null) {
+	protected virtual void SetArgsFrom(Vector3 ttp, Quaternion? facing=null, string prefix="") {
 		Vector3 ctp = character.TilePosition;
 		float distance = Vector3.Distance(ttp, ctp);
 		float angle = facing != null ? facing.Value.eulerAngles.y : character.Facing;
@@ -238,39 +232,78 @@ public class Skill : MonoBehaviour {
 		    !Mathf.Approximately(ttp.x,ctp.x))) {
 			angle = Mathf.Atan2(ttp.y-ctp.y, ttp.x-ctp.x)*Mathf.Rad2Deg;
 		}
-		SetParam("arg.distance", distance);
-		SetParam("arg.mdistance", Mathf.Abs(ttp.x-ctp.x)+Mathf.Abs(ttp.y-ctp.y)+Mathf.Abs(ttp.z-ctp.z));
-		SetParam("arg.mdistance.xy", Mathf.Abs(ttp.x-ctp.x)+Mathf.Abs(ttp.y-ctp.y));
-		SetParam("arg.dx", Mathf.Abs(ttp.x-ctp.x));
-		SetParam("arg.dy", Mathf.Abs(ttp.y-ctp.y));
-		SetParam("arg.dz", Mathf.Abs(ttp.z-ctp.z));
-		SetParam("arg.angle.xy", angle);
+		string infix = (prefix??"")+((prefix==""||prefix==null)?"":".");
+		SetParam("arg."+infix+"distance", distance);
+		SetParam("arg."+infix+"mdistance", Mathf.Abs(ttp.x-ctp.x)+Mathf.Abs(ttp.y-ctp.y)+Mathf.Abs(ttp.z-ctp.z));
+		SetParam("arg."+infix+"mdistance.xy", Mathf.Abs(ttp.x-ctp.x)+Mathf.Abs(ttp.y-ctp.y));
+		SetParam("arg."+infix+"dx", Mathf.Abs(ttp.x-ctp.x));
+		SetParam("arg."+infix+"dy", Mathf.Abs(ttp.y-ctp.y));
+		SetParam("arg."+infix+"dz", Mathf.Abs(ttp.z-ctp.z));
+		SetParam("arg."+infix+"angle.xy", angle);
+	}
+	public virtual void SetArgsFromTarget(Target t, TargetSettings ts, string prefix) {
+		TargetingMode tm = TargetingMode.Custom;
+		if(ts != null) {
+			tm = ts.targetingMode;
+		} else {
+			if(t.path != null) { tm = TargetingMode.Pick; }
+			else if(t.character != null) { tm = TargetingMode.Pick; }
+			else if(t.facing != null) { tm = TargetingMode.Radial; }
+			else if(t.subregion != -1) { tm = TargetingMode.SelectRegion; }
+		}
+		Vector3 pos = character.TilePosition;
+		switch(tm) {
+			case TargetingMode.Self:
+			case TargetingMode.Pick:
+			case TargetingMode.Path:
+				pos = t.Position;
+				SetArgsFrom(pos, t.facing, prefix);
+				break;
+			case TargetingMode.Cardinal:
+			case TargetingMode.Radial:
+			//FIXME: wrong for selectRegion
+			case TargetingMode.SelectRegion:
+				if(t.character != null) {
+					pos = t.character.TilePosition;
+				} else if(t.path != null) {
+					pos = t.Position;
+				}
+				SetArgsFrom(pos, t.facing, prefix);
+				break;
+			default:
+				Debug.LogError("Unrecognized targeting mode");
+				break;
+		}
 	}
 
 	protected virtual void ApplyPerApplicationEffectsTo(StatEffect[] effects, List<Character> targs) {
-		if(targs == null || targs.Count == 0) {
+		Character targ = (targs == null || targs.Count == 0) ? null : targs[0];
+		if(targ == null) {
 			foreach(StatEffect se in effects) {
 				if(se.target == StatEffectTarget.Applied) {
 					Debug.LogError("Applied-facing ability used without target");
 					return;
 				}
 			}
-			foreach(StatEffect se in effects) {
-				lastEffects.Add(se.Apply(this, character, null));
-			}
-			return;
+		}
+		foreach(StatEffect se in effects) {
+			lastEffects.Add(se.Apply(
+				this,
+				character,
+				targ
+			));
 		}
 	}
-	protected virtual void ApplyEffectsTo(StatEffectGroup[] effectGroups, List<Character> targs, string htp) {
+	protected virtual void ApplyEffectsTo(Target t, TargetSettings ts, StatEffectGroup[] effectGroups, List<Character> targs, string htp) {
 		foreach(Character c in targs) {
-			currentTarget = c;
+			currentTargetCharacter = c;
 			int hitType = (int)GetParam(htp, 0);
 			currentHitType = hitType;
 			if(currentHitType < effectGroups.Length) {
 				StatEffect[] effects = effectGroups[hitType].effects;
-				SetArgsFrom(c.TilePosition, null);
+				SetArgsFromTarget(t, ts, "");
 				foreach(StatEffect se in effects) {
-					lastEffects.Add(se.Apply(this, character, currentTarget));
+					lastEffects.Add(se.Apply(this, character, currentTargetCharacter));
 				}
 			} else {
 				Debug.LogError("Skill "+skillName+" has too few effect groups for hit type "+currentHitType);

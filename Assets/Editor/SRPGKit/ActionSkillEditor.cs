@@ -7,7 +7,6 @@ using System.Linq;
 public class ActionSkillEditor : SkillEditor {
 	ActionSkill atk;
 	bool showIO=true;
-	bool showTargeting=true;
 
 	GUIContent[] targetingModes;
 	GUIContent[] displayUnimpededTargetRegionFlags;
@@ -19,7 +18,6 @@ public class ActionSkillEditor : SkillEditor {
 	}
 
 	protected void TargetedSkillGUI() {
-		int buttonsWide = (int)(Screen.width/EditorGUIExt.buttonDim);
 		if(targetingModes == null || targetingModes.Length == 0) {
 			targetingModes = new GUIContent[]{
 				new GUIContent("Self", EditorGUIUtility.LoadRequired("skl-target-self.png") as Texture),
@@ -51,11 +49,11 @@ public class ActionSkillEditor : SkillEditor {
 			}
 			atk.supportMouse = EditorGUILayout.Toggle("Support Mouse", atk.supportMouse);
 			atk.requireConfirmation = EditorGUILayout.Toggle("Require Confirmation", atk.requireConfirmation);
-			if(atk.targetingMode == TargetingMode.Path) {
+			if(atk.HasTargetingMode(TargetingMode.Path)) {
 				atk.pathMaterial = EditorGUILayout.ObjectField("Path Material", atk.pathMaterial, typeof(Material), false) as Material;
 			}
-			if(atk.targetingMode == TargetingMode.Pick ||
-			   atk.targetingMode == TargetingMode.Path) {
+			if(atk.HasTargetingMode(TargetingMode.Pick) ||
+			   atk.HasTargetingMode(TargetingMode.Path)) {
  				if(atk.requireConfirmation) {
  					atk.performTemporaryStepsOnConfirmation = EditorGUILayout.Toggle("Preview Before Confirming", atk.performTemporaryStepsOnConfirmation);
  				}
@@ -67,49 +65,92 @@ public class ActionSkillEditor : SkillEditor {
 			EditorGUI.indentLevel--;
 			EditorGUILayout.Space();
 		}
-		if((showTargeting = EditorGUILayout.Foldout(showTargeting, "Targeting Mode"))) {
-			EditorGUI.indentLevel++;
-			atk.targetingMode = (TargetingMode)GUILayout.SelectionGrid((int)atk.targetingMode, targetingModes, buttonsWide, EditorGUIExt.imageButtonGridStyle);
-			if(atk.targetingMode == TargetingMode.SelectRegion) {
-				atk.targetRegion.type = RegionType.Compound;
-			}
-			if(atk.targetingMode == TargetingMode.Path) {
-				atk.newNodeThreshold = EditorGUILayout.FloatField("Min Path Distance", atk.newNodeThreshold);
-				atk.immediatelyExecuteDrawnPath = EditorGUILayout.Toggle("Instantly Apply Path", atk.immediatelyExecuteDrawnPath);
-			}
-			if(atk.targetingMode != TargetingMode.Self) {
-				if(atk.targetRegion == null) {
-					atk.targetRegion = new Region();
-				}
-				if(atk.targetRegion.interveningSpaceType != InterveningSpaceType.Pick) {
-					GUILayout.Label("Show blocked tiles?");
-					atk.displayUnimpededTargetRegion = GUILayout.SelectionGrid(atk.displayUnimpededTargetRegion ? 1 : 0, displayUnimpededTargetRegionFlags, 2, EditorGUIExt.imageButtonGridStyle) == 1 ? true : false;
-				}
-			}
-			if(atk.targetingMode == TargetingMode.Pick ||
-			   atk.targetingMode == TargetingMode.Path) {
- 				if(!(atk.useOnlyOneWaypoint = !EditorGUILayout.Toggle("Use Waypoints", !atk.useOnlyOneWaypoint))) {
- 					atk.waypointsAreIncremental = EditorGUILayout.Toggle("Instantly Apply Waypoints", atk.waypointsAreIncremental);
- 					atk.maxWaypointDistance = EditorGUIExt.FormulaField("Max Waypoint Distance", atk.maxWaypointDistance, atk.name+".targeting.maxWaypointDistance", formulaOptions);
- 					atk.canCancelWaypoints = EditorGUILayout.Toggle("Cancellable Waypoints", atk.canCancelWaypoints);
- 				}
-			}
-			EditorGUI.indentLevel--;
-			EditorGUILayout.Space();
-		}
 		atk.delay = EditorGUIExt.FormulaField("Scheduled Delay", atk.delay, atk.name+".delay", formulaOptions);
-		if(atk.targetingMode == TargetingMode.Pick ||
-		   atk.targetingMode == TargetingMode.Path) {
-		  atk.allowsCharacterTargeting = EditorGUILayout.Toggle("Can Delay-Target Characters", atk.allowsCharacterTargeting);
+		if((atk.multiTargetMode = (MultiTargetMode)EditorGUILayout.EnumPopup("Multi-Target Mode", atk.multiTargetMode)) != MultiTargetMode.Single) {
+			if(atk.multiTargetMode == MultiTargetMode.Chain) {
+				atk.maxWaypointDistanceF = EditorGUIExt.FormulaField("Max Waypoint Distance", atk.maxWaypointDistanceF, atk.name+".targeting.maxWaypointDistance", formulaOptions);
+			}
+			atk.waypointsAreIncremental = EditorGUILayout.Toggle("Instantly Apply Waypoints", atk.waypointsAreIncremental);
+			atk.canCancelWaypoints = EditorGUILayout.Toggle("Cancellable Waypoints", atk.canCancelWaypoints);
+			if(atk.targetSettings == null) { atk.targetSettings = new TargetSettings[0]; }
+			EditorGUILayout.BeginVertical();
+			EditorGUILayout.BeginHorizontal();
+			EditorGUILayout.Space();
+			int arraySize = EditorGUILayout.IntField(atk.targetSettings.Length, GUILayout.Width(32));
+			GUILayout.Label(" "+"Target"+(atk.targetSettings.Length == 1 ? "" : "s"));
+			GUILayout.FlexibleSpace();
+			EditorGUILayout.EndHorizontal();
+			if(arraySize != atk.targetSettings.Length) {
+				atk.targetSettings = new TargetSettings[arraySize];
+			}
+			EditorGUILayout.BeginHorizontal();
+			EditorGUILayout.Space();
+			EditorGUILayout.BeginVertical();
+	   	EditorGUIUtility.LookLikeControls();
+			for(int i = 0; i < atk.targetSettings.Length; i++)
+			{
+		   	EditorGUIUtility.LookLikeControls();
+				TargetSettings ts = atk.targetSettings[i];
+				if (ts == null) {
+					atk.targetSettings[i] = new TargetSettings();
+					ts = atk.targetSettings[i];
+				}
+				atk.targetSettings[i] = TargetSettingsGUI("Target "+i, atk.targetSettings[i], i);
+			}
+			EditorGUILayout.EndVertical();
+			EditorGUILayout.EndHorizontal();
+			EditorGUILayout.EndVertical();
+	   	EditorGUIUtility.LookLikeControls();
 		} else {
-			atk.allowsCharacterTargeting = false;
+			if(atk.targetSettings == null) {
+				atk.targetSettings = new TargetSettings[]{new TargetSettings()};
+			}
+			atk.targetSettings[0] = TargetSettingsGUI("Target", atk.targetSettings[0], -1);
 		}
-		atk.targetRegion = EditorGUIExt.RegionGUI("Target", atk.name, atk.targetRegion, formulaOptions, Screen.width-32);
+	}
+
+	protected virtual TargetSettings TargetSettingsGUI(string label, TargetSettings ts, int i=-1) {
+		//targeting modes
+		//FIXME: asset!
+		int buttonsWide = (int)(Screen.width/EditorGUIExt.buttonDim);
+		if(!(ts.showInEditor = EditorGUILayout.Foldout(ts.showInEditor, "Target "+(i==-1?"":""+i)))) {
+			return ts;
+		}
+		if(ts.targetingMode == TargetingMode.Pick ||
+		   ts.targetingMode == TargetingMode.Path) {
+		  ts.allowsCharacterTargeting = EditorGUILayout.Toggle("Can Delay-Target Characters", ts.allowsCharacterTargeting);
+		} else {
+			ts.allowsCharacterTargeting = false;
+		}
+		EditorGUI.indentLevel++;
+		ts.targetingMode = (TargetingMode)GUILayout.SelectionGrid((int)ts.targetingMode, targetingModes, buttonsWide, EditorGUIExt.imageButtonGridStyle);
+		if(ts.targetingMode == TargetingMode.SelectRegion) {
+			ts.targetRegion.type = RegionType.Compound;
+		}
+		if(ts.targetingMode == TargetingMode.Path) {
+			ts.newNodeThreshold = EditorGUILayout.FloatField("Min Path Distance", ts.newNodeThreshold);
+			ts.immediatelyExecuteDrawnPath = EditorGUILayout.Toggle("Instantly Apply Path", ts.immediatelyExecuteDrawnPath);
+		}
+		if(ts.targetingMode != TargetingMode.Self) {
+			if(ts.targetRegion == null) {
+				ts.targetRegion = new Region();
+			}
+			if(ts.targetRegion.interveningSpaceType != InterveningSpaceType.Pick) {
+				GUILayout.Label("Show blocked tiles?");
+				ts.displayUnimpededTargetRegion = GUILayout.SelectionGrid(ts.displayUnimpededTargetRegion ? 1 : 0, displayUnimpededTargetRegionFlags, 2, EditorGUIExt.imageButtonGridStyle) == 1 ? true : false;
+			}
+		}
+		EditorGUI.indentLevel--;
 		EditorGUILayout.Space();
+		ts.targetRegion = EditorGUIExt.RegionGUI("Target", atk.name+"."+i, ts.targetRegion, formulaOptions, Screen.width-32);
+		EditorGUILayout.Space();
+		if(!(atk is MoveSkill)) {
+			ts.effectRegion = EditorGUIExt.RegionGUI("Effect", atk.name+"."+i, ts.effectRegion, formulaOptions, Screen.width-32);
+		}
+		return ts;
 	}
 
 	protected void EffectSkillGUI() {
-		atk.effectRegion = EditorGUIExt.RegionGUI("Effect", atk.name, atk.effectRegion, formulaOptions, Screen.width-32);
 		if(atk.targetEffects != null && atk.targetEffects.Length > 1) {
 			EditorGUILayout.HelpBox("Be sure that the hitType parameter is defined to provide a value from 0 to "+(atk.targetEffects.Length-1), (s.HasParam("hitType") ? MessageType.Info : MessageType.Error));
 		}

@@ -22,15 +22,18 @@ public class WaitSkill : ActionSkill {
 		if(waitArrows == null) {
 			waitArrows = Resources.LoadAssetAtPath("Assets/SRPGKit/Prefabs/Wait Arrows.prefab", typeof(GameObject)) as GameObject;
 		}
+		if(targetSettings == null || targetSettings.Length == 0) {
+			targetSettings = new TargetSettings[]{new TargetSettings()};
+		}
 		overlayColor = Color.clear;
 		highlightColor = Color.clear;
-		targetingMode = TargetingMode.Cardinal;
-		targetRegion = new Region();
-		targetRegion.type = RegionType.Self;
-		targetRegion.interveningSpaceType = InterveningSpaceType.Pick;
-		effectRegion = new Region();
-		effectRegion.type = RegionType.Self;
-		effectRegion.interveningSpaceType = InterveningSpaceType.Pick;
+		currentSettings.targetingMode = TargetingMode.Cardinal;
+		currentSettings.targetRegion = new Region();
+		currentSettings.targetRegion.type = RegionType.Self;
+		currentSettings.targetRegion.interveningSpaceType = InterveningSpaceType.Pick;
+		currentSettings.effectRegion = new Region();
+		currentSettings.effectRegion.type = RegionType.Self;
+		currentSettings.effectRegion.interveningSpaceType = InterveningSpaceType.Pick;
 		StatEffect facingEffect = new StatEffect();
 		facingEffect.effectType = StatEffectType.ChangeFacing;
 		facingEffect.target = StatEffectTarget.Applier;
@@ -71,7 +74,9 @@ public class WaitSkill : ActionSkill {
 		base.UpdateTarget();
 		if(!isActive) { return; }
 		//look for clicks on our four arrows
-		if(supportMouse && Input.GetMouseButton(0) && (!awaitingConfirmation || !requireConfirmation)) {
+		if(supportMouse && 
+		   Input.GetMouseButton(0) && 
+		   (!awaitingConfirmation || !RequireConfirmation)) {
 			Ray r = Camera.main.ScreenPointToRay(Input.mousePosition);
 			RaycastHit hitInfo;
 			//irksome that I have to bitshift the layer here, but whatever
@@ -96,7 +101,7 @@ public class WaitSkill : ActionSkill {
 				if(Input.GetMouseButtonDown(0) && Time.time-firstClickTime < doubleClickThreshold) {
 					firstClickTime = -1;
 					if(anyHit) {
-						if(!requireConfirmation) {
+						if(!RequireConfirmation) {
 				    	WaitAtArrow(hitArrowValue);
 							awaitingConfirmation = false;
 							PickFacing(character.Facing);

@@ -339,7 +339,7 @@ public class Formula : IFormulaElement {
 			return -1;
 		}
 		Character applier = scontext.character;
-		Character applied = scontext.currentTarget;
+		Character applied = scontext.currentTargetCharacter;
 		CharacterPointing pointing = CharacterPointing.Front;
 		Character x = null, y = null;
 		if(target == StatEffectTarget.Applier) {

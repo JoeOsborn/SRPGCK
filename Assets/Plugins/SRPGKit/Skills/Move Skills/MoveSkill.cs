@@ -25,11 +25,18 @@ public class MoveSkill : ActionSkill {
 		skillName = "Move";
 		skillGroup = "";
 		skillSorting=-1;
-		effectRegion = new Region();
-		effectRegion.IsEffectRegion = true;
-		effectRegion.radiusMinF = Formula.Constant(0);
-		effectRegion.radiusMaxF = Formula.Constant(0);
-		effectRegion.canTargetEnemies = false;
+		if(targetSettings == null || targetSettings.Length == 0) {
+			TargetSettings ts = new TargetSettings();
+			targetSettings = new TargetSettings[]{ts};
+		}
+		foreach(TargetSettings ts in targetSettings) {
+			ts.effectRegion = new Region();
+			ts.effectRegion.IsEffectRegion = true;
+			ts.effectRegion.radiusMinF = Formula.Constant(0);
+			ts.effectRegion.radiusMaxF = Formula.Constant(0);
+			ts.effectRegion.canTargetEnemies = false;
+			ts.effectRegion.canHaltAtEnemies = false;
+		}
 	}
 
 	public override void Update() {
@@ -47,19 +54,19 @@ public class MoveSkill : ActionSkill {
 	}
 
 	public virtual void TemporaryMove(Vector3 tc) {
-		TemporaryMoveToPathNode(new PathNode(tc, null, 0));
+		TemporaryExecutePathTo(new PathNode(tc, null, 0));
 	}
 
 	public virtual void IncrementalMove(Vector3 tc) {
-		IncrementalMoveToPathNode(new PathNode(tc, null, 0));
+		IncrementalExecutePathTo(new PathNode(tc, null, 0));
 	}
 
 	public virtual void PerformMove(Vector3 tc) {
-		PerformMoveToPathNode(new PathNode(tc, null, 0));
+		ExecutePathTo(new PathNode(tc, null, 0));
 	}
 
-	public virtual void TemporaryMoveToPathNode(PathNode pn) {
-		target = (new Target()).Path(pn);
+	public virtual void TemporaryMoveToPathNode(PathNode pn, MoveExecutor.MoveFinished callback=null) {
+		currentTarget.Path(pn);
 		MoveExecutor me = Executor;
 		me.TemporaryMoveTo(pn, delegate(Vector3 src, PathNode endNode, bool finishedNicely) {
 			scheduler.CharacterMovedTemporary(
@@ -68,11 +75,14 @@ public class MoveSkill : ActionSkill {
 				map.InverseTransformPointWorld(endNode.pos),
 				pn
 			);
+			if(callback != null) {
+				callback(src, endNode, finishedNicely);
+			}
 		});
 	}
 
-	public virtual void IncrementalMoveToPathNode(PathNode pn) {
-		target = (new Target()).Path(pn);
+	public virtual void IncrementalMoveToPathNode(PathNode pn, MoveExecutor.MoveFinished callback=null) {
+		currentTarget.Path(pn);
 		MoveExecutor me = Executor;
 		me.IncrementalMoveTo(pn, delegate(Vector3 src, PathNode endNode, bool finishedNicely) {
 /*			Debug.Log("moved from "+src);*/
@@ -82,12 +92,22 @@ public class MoveSkill : ActionSkill {
 				endNode.pos,
 				pn
 			);
+			if(callback != null) {
+				callback(src, endNode, finishedNicely);
+			}
 		});
 	}
-
-	public virtual void PerformMoveToPathNode(PathNode pn) {
-		target = (new Target()).Path(pn);
+	
+	public virtual void PerformMoveToPathNode(PathNode pn, MoveExecutor.MoveFinished callback=null) {
+		currentTarget.Path(pn);
+		// Debug.Log("perform move to "+currentTarget);
 		MoveExecutor me = Executor;
+		// if(!(currentSettings.targetingMode == TargetingMode.Path && currentSettings.immediatelyExecuteDrawnPath)) {
+		// 	//FIXME: really? what about chained moves?
+		// 	Debug.Log("first, pop back to "+initialTarget.Position);
+		// 	me.ImmediatelyMoveTo(new PathNode(initialTarget.Position, null, 0));
+		// }
+		//FIXME: really? what about chained moves?
 		me.MoveTo(pn, delegate(Vector3 src, PathNode endNode, bool finishedNicely) {
 			scheduler.CharacterMoved(
 				character,
@@ -95,19 +115,22 @@ public class MoveSkill : ActionSkill {
 				map.InverseTransformPointWorld(endNode.pos),
 				pn
 			);
-			ApplySkill(target);
+			if(callback != null) {
+				callback(src, endNode, finishedNicely);
+			}
 		});
 	}
 
 	protected override PathNode[] GetValidActionTiles() {
 		if(!lockToGrid) { return null; }
-		return targetRegion.GetValidTiles(
-			selectedTile, Quaternion.Euler(0, character.Facing, 0),
-			targetRegion.radiusMin, targetRegion.radiusMax-radiusSoFar,
-			targetRegion.zDownMin, targetRegion.zDownMax,
-			targetRegion.zUpMin, targetRegion.zUpMax,
-			targetRegion.lineWidthMin, targetRegion.lineWidthMax,
-			targetRegion.interveningSpaceType
+		Debug.Log("ct:"+currentTarget);
+		return currentSettings.targetRegion.GetValidTiles(
+			TargetPosition, TargetFacing,
+			currentSettings.targetRegion.radiusMin, currentSettings.targetRegion.radiusMax-radiusSoFar,
+			currentSettings.targetRegion.zDownMin, currentSettings.targetRegion.zDownMax,
+			currentSettings.targetRegion.zUpMin, currentSettings.targetRegion.zUpMax,
+			currentSettings.targetRegion.lineWidthMin, currentSettings.targetRegion.lineWidthMax,
+			currentSettings.targetRegion.interveningSpaceType
 		);
 	}
 
@@ -139,14 +162,36 @@ public class MoveSkill : ActionSkill {
 	}
 
 	override protected void TemporaryExecutePathTo(PathNode p) {
-		TemporaryMoveToPathNode(p);
+		if(Executor.IsMoving) { return; }
+		currentTarget.Path(p);
+		// Debug.Log("temp path to "+p);
+		TemporaryMoveToPathNode(p, (src, endNode, finishedNicely) => {
+			TentativePick(endNode);
+		});
 	}
 
 	override protected void IncrementalExecutePathTo(PathNode p) {
-		IncrementalExecutePathTo(p);
+		if(Executor.IsMoving) { return; }
+		currentTarget.Path(p);
+		// Debug.Log("inc path to "+p);
+		IncrementalMoveToPathNode(p, (src, endNode, finishedNicely) => {
+			TentativePick(endNode);
+		});
 	}
 
 	override protected void ExecutePathTo(PathNode p) {
-		PerformMoveToPathNode(p);
+		currentTarget.Path(p);
+		// Debug.Log("ex path to "+p);
+		PerformMoveToPathNode(p, (src, endNode, finishedNicely) => {
+			Pick(endNode);
+		});
 	}
+	
+	override protected void LastTargetPushed() {
+//		PerformMoveToPathNode(currentTarget.path, (src, endNode, finishedNicely) => {
+			base.LastTargetPushed();
+//		});
+	}
+	
+	
 }
