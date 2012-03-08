@@ -109,7 +109,11 @@ public class Formula : IFormulaElement {
 
 	//everything else
 	public Formula[] arguments; //x+y+z or x*y*z or x^y (y default 2) or y√x (y default 2)
-
+	public Formula Clone() {
+		Formula f = new Formula();
+		f.CopyFrom(this);
+		return f;
+	}
 	public void CopyFrom(Formula f) {
 /*		Debug.Log("copy from "+f);*/
 		if(f == null) { return; }

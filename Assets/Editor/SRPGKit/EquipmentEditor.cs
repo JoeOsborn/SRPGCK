@@ -30,11 +30,11 @@ public class EquipmentEditor : SRPGCKEditor {
 
 		EditorGUILayout.Space();
 
-		e.parameters = EditorGUIExt.ParameterFoldout("Parameter", e.parameters, formulaOptions, lastFocusedControl, ref showParameters);
+		e.parameters = EditorGUIExt.ParameterFoldout("Parameter", e.parameters, ""+e.GetInstanceID(), formulaOptions, lastFocusedControl, ref showParameters);
 		
 		EditorGUILayout.Space();
 
-		e.passiveEffects = EditorGUIExt.StatEffectFoldout("Passive Effect", e.passiveEffects, StatEffectContext.Normal, formulaOptions, lastFocusedControl, ref showPassiveEffects);
+		e.passiveEffects = EditorGUIExt.StatEffectFoldout("Passive Effect", e.passiveEffects, StatEffectContext.Normal, ""+e.GetInstanceID(), formulaOptions, lastFocusedControl, ref showPassiveEffects);
 		
 		EditorGUILayout.Space();
 		

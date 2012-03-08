@@ -23,22 +23,22 @@ public class WaitSkill : ActionSkill {
 			waitArrows = Resources.LoadAssetAtPath("Assets/SRPGKit/Prefabs/Wait Arrows.prefab", typeof(GameObject)) as GameObject;
 		}
 		if(targetSettings == null || targetSettings.Length == 0) {
-			targetSettings = new TargetSettings[]{new TargetSettings()};
+			targetSettings = new TargetSettings[]{ScriptableObject.CreateInstance<TargetSettings>()};
 		}
 		overlayColor = Color.clear;
 		highlightColor = Color.clear;
 		currentSettings.targetingMode = TargetingMode.Cardinal;
-		currentSettings.targetRegion = new Region();
+		currentSettings.targetRegion = ScriptableObject.CreateInstance<Region>();
 		currentSettings.targetRegion.type = RegionType.Self;
 		currentSettings.targetRegion.interveningSpaceType = InterveningSpaceType.Pick;
-		currentSettings.effectRegion = new Region();
+		currentSettings.effectRegion = ScriptableObject.CreateInstance<Region>();
 		currentSettings.effectRegion.type = RegionType.Self;
 		currentSettings.effectRegion.interveningSpaceType = InterveningSpaceType.Pick;
-		StatEffect facingEffect = new StatEffect();
+		StatEffect facingEffect = ScriptableObject.CreateInstance<StatEffect>();
 		facingEffect.effectType = StatEffectType.ChangeFacing;
 		facingEffect.target = StatEffectTarget.Applier;
 		facingEffect.value = Formula.Lookup("arg.angle.xy", LookupType.SkillParam);
-		StatEffect endTurnEffect = new StatEffect();
+		StatEffect endTurnEffect = ScriptableObject.CreateInstance<StatEffect>();
 		endTurnEffect.effectType = StatEffectType.EndTurn;
 		endTurnEffect.target = StatEffectTarget.Applier;
 		applicationEffects = new StatEffectGroup{effects=new StatEffect[]{

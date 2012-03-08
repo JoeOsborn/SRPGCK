@@ -6,20 +6,15 @@ using System.Collections.Generic;
 
 public class EditorGUIExt
 {
-		/// <summary>
-		/// Creates an array foldout like in inspectors for SerializedProperty of array type.
-	/// Counterpart for standard EditorGUILayout.PropertyField which doesn't support SerializedProperty of array type.
-	/// </summary>
 	public static void ArrayField (SerializedProperty property)
 	{
 		EditorGUIUtility.LookLikeInspector ();
 		bool wasEnabled = GUI.enabled;
 		int prevIdentLevel = EditorGUI.indentLevel;
 
-		// Iterate over all child properties of array
 		bool childrenAreExpanded = true;
 		int propertyStartingDepth = property.depth;
-		while (property.NextVisible(childrenAreExpanded) && propertyStartingDepth < property.depth)
+		while(property.NextVisible(childrenAreExpanded) && propertyStartingDepth < property.depth)
 		{
 			childrenAreExpanded = EditorGUILayout.PropertyField(property);
 		}
@@ -29,15 +24,12 @@ public class EditorGUIExt
    	EditorGUIUtility.LookLikeControls();
 	}
 
-	/// <summary>
-	/// Creates a filepath textfield with a browse button. Opens the open file panel.
-	/// </summary>
 	public static string FileLabel(string name, float labelWidth, string path, string extension)
 	{
 		EditorGUILayout.BeginHorizontal();
 		GUILayout.Label(name, GUILayout.MaxWidth(labelWidth));
 		string filepath = EditorGUILayout.TextField(path);
-		if (GUILayout.Button("Browse"))
+		if(GUILayout.Button("Browse"))
 		{
 			filepath = EditorUtility.OpenFilePanel(name, path, extension);
 		}
@@ -45,14 +37,11 @@ public class EditorGUIExt
 		return filepath;
 	}
 
-	/// <summary>
-	/// Creates a folder path textfield with a browse button. Opens the save folder panel.
-	/// </summary>
 	public static string FolderLabel(string name, float labelWidth, string path)
 	{
 		EditorGUILayout.BeginHorizontal();
 		string filepath = EditorGUILayout.TextField(name, path);
-		if (GUILayout.Button("Browse", GUILayout.MaxWidth(60)))
+		if(GUILayout.Button("Browse", GUILayout.MaxWidth(60)))
 		{
 			filepath = EditorUtility.SaveFolderPanel(name, path, "Folder");
 		}
@@ -60,9 +49,6 @@ public class EditorGUIExt
 		return filepath;
 	}
 
-	/// <summary>
-	/// Creates an array foldout like in inspectors. Hand editable ftw!
-	/// </summary>
 	public static string[] ArrayFoldout(string label, string[] array, ref bool foldout, bool showElementName=true, float width=-1, string defaultString="")
 	{
 		if(width == -1) {
@@ -107,17 +93,14 @@ public class EditorGUIExt
 		return newArray;
 	}
 
-	/// <summary>
-	/// Creates a toolbar that is filled in from an Enum. Useful for setting tool modes.
-	/// </summary>
 	public static Enum EnumToolbar(Enum selected)
 	{
 		string[] toolbar = System.Enum.GetNames(selected.GetType());
 		Array values = System.Enum.GetValues(selected.GetType());
 		int selected_index = 0;
-		while (selected_index < values.Length)
+		while(selected_index < values.Length)
 		{
-			if (selected.ToString() == values.GetValue(selected_index).ToString())
+			if(selected.ToString() == values.GetValue(selected_index).ToString())
 			{
 				break;
 			}
@@ -127,7 +110,10 @@ public class EditorGUIExt
 		return (Enum) values.GetValue(selected_index);
 	}
 
-	public static Formula FormulaField(string label, Formula f, string type, string[] formulaOptions, string lastFocusedControl=null, int i=0) {
+	public const float compileInterval = 1.0f;
+	static float nextCompileTime = 0;
+
+	public static Formula FormulaField(string label, Formula f, string type, string[] formulaOptions, string lastFocusedControl, int i=0) {
 		int selection= 0;
 		int lastSelection = 0;
 		EditorGUILayout.BeginVertical();
@@ -152,9 +138,16 @@ public class EditorGUIExt
 			bool priorWrap = EditorStyles.textField.wordWrap;
 			EditorStyles.textField.wordWrap = true;
 			f.text = EditorGUILayout.TextField(f.text).RemoveControlCharacters();
+			GUI.SetNextControlName("");
 			EditorStyles.textField.wordWrap = priorWrap;
-			if(GUI.GetNameOfFocusedControl() == name) {
+			if(GUI.GetNameOfFocusedControl() != name && lastFocusedControl == name) {
 				FormulaCompiler.CompileInPlace(f);
+			} else if(GUI.GetNameOfFocusedControl() == name) {
+				float now = (float)EditorApplication.timeSinceStartup;
+				if(now >= nextCompileTime || lastFocusedControl != name) {
+					nextCompileTime = now + compileInterval;
+					FormulaCompiler.CompileInPlace(f);
+				}
 			}
 			if(f.compilationError != null && f.compilationError != "") {
 				EditorGUILayout.HelpBox(f.compilationError, MessageType.Error);
@@ -181,7 +174,7 @@ public class EditorGUIExt
 		return newP;
 	}
 
-	public static StatEffect StatEffectField(StatEffect fx, StatEffectContext ctx, string type, string[] formulaOptions, string lastFocusedControl=null, int i = 0) {
+	protected static StatEffect StatEffectFieldCore(StatEffect fx, StatEffectContext ctx, string type, string[] formulaOptions, string lastFocusedControl, int i = -1) {
 		StatEffect newFx = fx;
 		GUILayout.BeginVertical();
 		newFx.effectType = (StatEffectType)EditorGUILayout.EnumPopup("Effect Type:", fx.effectType);
@@ -198,10 +191,8 @@ public class EditorGUIExt
 			case StatEffectType.EndTurn:
 			break;
 			case StatEffectType.SpecialMove:
-				//FIXME: mess with the stat effect's LineMove region. only show part of the
-				//region GUI -- maybe provide a special flag to prevent region type alteration
-				if(newFx.specialMoveLine == null || newFx.specialMoveLine.type != RegionType.LineMove) {
-					newFx.specialMoveLine = new Region();
+			if(newFx.specialMoveLine == null || newFx.specialMoveLine.type != RegionType.LineMove) {
+					newFx.specialMoveLine = ScriptableObject.CreateInstance<Region>();
 					newFx.specialMoveLine.type = RegionType.LineMove;
 					newFx.specialMoveLine.interveningSpaceType = InterveningSpaceType.LineMove;
 					newFx.specialMoveLine.radiusMinF = Formula.Constant(0);
@@ -216,26 +207,42 @@ public class EditorGUIExt
 					newFx.specialMoveLine.facingLock = FacingLock.Cardinal;
 				}
 				newFx.specialMoveType = EditorGUILayout.TextField("Move Type:", newFx.specialMoveType).NormalizeName();
-				newFx.specialMoveLine = EditorGUIExt.SimpleRegionGUI(type, newFx.specialMoveLine, formulaOptions, Screen.width, 0);
+				newFx.specialMoveLine = EditorGUIExt.SimpleRegionGUI(type, newFx.specialMoveLine, formulaOptions, lastFocusedControl, Screen.width, 0);
 				newFx.specialMoveSpeedXY = EditorGUILayout.FloatField("Move Speed XY:", newFx.specialMoveSpeedXY);
 				newFx.specialMoveSpeedZ = EditorGUILayout.FloatField("Move Speed Z:", newFx.specialMoveSpeedZ);
 			break;
 		}
-		if(ctx == StatEffectContext.Action) {
+		if(ctx == StatEffectContext.Action || ctx == StatEffectContext.Any) {
 			newFx.target = (StatEffectTarget)EditorGUILayout.EnumPopup("Target:", fx.target);
 			newFx.reactableTypes = ArrayFoldout("Reactable Types", fx.reactableTypes, ref newFx.editorShowsReactableTypes, false, Screen.width/2-32, "attack");
 		}
-		GUILayout.BeginHorizontal();
-		GUILayout.FlexibleSpace();
-		if(GUILayout.Button("Delete", GUILayout.Width(64))) {
-			newFx = null;
+		return newFx;
+	}
+
+	public static StatEffect StatEffectField(StatEffect fx, StatEffectContext ctx, string type, string[] formulaOptions, string lastFocusedControl, int i = 0) {
+		StatEffect newFx = i != -1 ? PickAssetGUI<StatEffect>("Stat Effect", fx) : fx;
+		if(i != -1) {
+			if(!(newFx.editorShow = EditorGUILayout.Foldout(newFx.editorShow, "Customize"))) {
+				return newFx;
+			}
+			if(newFx.name != null && newFx.name != "") {
+				EditorGUILayout.HelpBox("Changes made here will NOT alter the attached StatEffect asset!", MessageType.Info);
+			}
 		}
-		GUILayout.EndHorizontal();
+		newFx = StatEffectFieldCore(newFx, ctx, type, formulaOptions, lastFocusedControl, i);
+		if(i != -1) {
+			GUILayout.BeginHorizontal();
+			GUILayout.FlexibleSpace();
+			if(GUILayout.Button("Delete", GUILayout.Width(64))) {
+				newFx = null;
+			}
+			GUILayout.EndHorizontal();
+		}
 		EditorGUILayout.EndVertical();
 		return newFx;
 	}
 
-	public static StatEffect[] StatEffectFoldout(string name, StatEffect[] effects, StatEffectContext ctx, string[] formulaOptions, string lastFocusedControl, ref bool foldout, bool pluralize=true) {
+	public static StatEffect[] StatEffectFoldout(string name, StatEffect[] effects, StatEffectContext ctx, string id, string[] formulaOptions, string lastFocusedControl, ref bool foldout, bool pluralize=true) {
 		EditorGUILayout.BeginVertical();
 		if(effects == null) { effects = new StatEffect[0]; }
 		StatEffect[] newEffects = effects;
@@ -247,7 +254,7 @@ public class EditorGUIExt
 			List<StatEffect> toBeRemoved = null;
 			for(int fxi = 0; fxi < effects.Length; fxi++) {
 				StatEffect fx = effects[fxi];
-				StatEffect newFx = StatEffectField(fx, ctx, name+fxi, formulaOptions, lastFocusedControl, fxi);
+				StatEffect newFx = StatEffectField(fx, ctx, id+name+fxi, formulaOptions, lastFocusedControl, fxi);
 				if(newFx == null) {
 					if(toBeRemoved == null) { toBeRemoved = new List<StatEffect>(); }
 					toBeRemoved.Add(fx);
@@ -262,7 +269,7 @@ public class EditorGUIExt
 			EditorGUILayout.BeginHorizontal();
 			GUILayout.FlexibleSpace();
 			if(GUILayout.Button("Add Effect")) {
-				newEffects = newEffects.Concat(new StatEffect[]{new StatEffect()}).ToArray();
+				newEffects = newEffects.Concat(new StatEffect[]{ScriptableObject.CreateInstance<StatEffect>()}).ToArray();
 			}
 			EditorGUILayout.EndHorizontal();
 			EditorGUILayout.EndVertical();
@@ -272,13 +279,13 @@ public class EditorGUIExt
 		return newEffects;
 	}
 
-	public static StatEffectGroup StatEffectGroupGUI(string label, StatEffectGroup g, StatEffectContext ctx, string[] formulaOptions, string lastFocusedControl) {
+	public static StatEffectGroup StatEffectGroupGUI(string label, StatEffectGroup g, StatEffectContext ctx, string id, string[] formulaOptions, string lastFocusedControl) {
 		if(g == null) { g = new StatEffectGroup(); }
-		g.effects = StatEffectFoldout(label, g.effects, ctx, formulaOptions, lastFocusedControl, ref g.editorDisplayEffects, false);
+		g.effects = StatEffectFoldout(label, g.effects, ctx, id, formulaOptions, lastFocusedControl, ref g.editorDisplayEffects, false);
 		return g;
 	}
 
-	public static StatEffectGroup[] StatEffectGroupsGUI(string name, StatEffectGroup[] fxgs, StatEffectContext ctx, string[] formulaOptions, string lastFocusedControl) {
+	public static StatEffectGroup[] StatEffectGroupsGUI(string name, StatEffectGroup[] fxgs, StatEffectContext ctx, string id, string[] formulaOptions, string lastFocusedControl) {
 		if(fxgs == null) { fxgs = new StatEffectGroup[0]; }
 		StatEffectGroup[] newFXGs = fxgs;
 		EditorGUILayout.BeginVertical();
@@ -288,33 +295,32 @@ public class EditorGUIExt
 		GUILayout.Label(" "+name+(fxgs.Length == 1 ? "" : "s"));
 		GUILayout.FlexibleSpace();
 		EditorGUILayout.EndHorizontal();
-		if (arraySize != fxgs.Length)
+		if(arraySize != fxgs.Length) {
 			newFXGs = new StatEffectGroup[arraySize];
-		EditorGUILayout.BeginHorizontal();
-		EditorGUILayout.Space();
+		}
+		EditorGUI.indentLevel++;
 		EditorGUILayout.BeginVertical();
    	EditorGUIUtility.LookLikeControls();
-		for (int i = 0; i < arraySize; i++)
+		for(int i = 0; i < arraySize; i++)
 		{
-	   	EditorGUIUtility.LookLikeControls();
 			StatEffectGroup entry = null;
-			if (i < fxgs.Length) {
+			if(i < fxgs.Length) {
 				entry = fxgs[i];
 			} else {
 				entry = new StatEffectGroup();
 			}
 			GUILayout.Label("Group "+i);
-			entry.effects = StatEffectFoldout("in "+name+" "+i, entry.effects, ctx, formulaOptions, lastFocusedControl, ref entry.editorDisplayEffects, false);
+			entry.effects = StatEffectFoldout("in "+name+" "+i, entry.effects, ctx, id, formulaOptions, lastFocusedControl, ref entry.editorDisplayEffects, false);
 			newFXGs[i] = entry;
 		}
 		EditorGUILayout.EndVertical();
-		EditorGUILayout.EndHorizontal();
+		EditorGUI.indentLevel--;
 		EditorGUILayout.EndVertical();
    	EditorGUIUtility.LookLikeControls();
 		return newFXGs;
 	}
 
-	public static List<Parameter> ParameterFoldout(string name, List<Parameter> parameters, string[] formulaOptions, string lastFocusedControl, ref bool foldout) {
+	public static List<Parameter> ParameterFoldout(string name, List<Parameter> parameters, string id, string[] formulaOptions, string lastFocusedControl, ref bool foldout) {
 		EditorGUILayout.BeginVertical();
 		if(parameters == null) { parameters = new List<Parameter>(); }
 		List<Parameter> newParams = parameters;
@@ -326,7 +332,7 @@ public class EditorGUIExt
 			List<Parameter> toBeRemoved = null;
 			for(int pi = 0; pi < parameters.Count; pi++) {
 				Parameter p = parameters[pi];
-				Parameter newP = ParameterField(p, name+pi, formulaOptions, lastFocusedControl, pi);
+				Parameter newP = ParameterField(p, id+name+pi, formulaOptions, lastFocusedControl, pi);
 				if(newP == null) {
 					if(toBeRemoved == null) { toBeRemoved = new List<Parameter>(); }
 					toBeRemoved.Add(p);
@@ -414,13 +420,13 @@ public class EditorGUIExt
 			if(newArray == null) { newArray = new T[0]; }
 			int arraySize = EditorGUILayout.IntField(newArray.Length, EditorStyles.textField, GUILayout.Height(18));
 			EditorGUILayout.EndHorizontal();
-			if (arraySize != newArray.Length) {
+			if(arraySize != newArray.Length) {
 				newArray = new T[arraySize];
 			}
-			for (int i = 0; i < arraySize; i++)
+			for(int i = 0; i < arraySize; i++)
 			{
 				T entry = default(T);
-				if (i < array.Length) {
+				if(i < array.Length) {
 					entry = array[i];
 				}
 				newArray[i] = EditorGUILayout.ObjectField(entry as UnityEngine.Object, typeof(T), false) as T;
@@ -463,6 +469,7 @@ public class EditorGUIExt
 		string type,
 		Region reg,
 		string[] formulaOptions,
+		string lastFocusedControl,
 		float width,
 		int subregionIndex=-1
 	) {
@@ -573,7 +580,7 @@ public class EditorGUIExt
 		} else {
 			newReg.useArcRangeBonus = false;
 		}
-		string prefix = type+".region.";
+		string prefix = type+".region."+newReg.GetInstanceID()+".";
 		if(newReg.type == RegionType.Cylinder ||
 			 newReg.type == RegionType.Sphere   ||
 			 newReg.type == RegionType.Cone     ||
@@ -586,7 +593,8 @@ public class EditorGUIExt
 					"Radius Min",
 					newReg.radiusMinF,
 					prefix+"radiusMinF",
-					formulaOptions
+					formulaOptions,
+					lastFocusedControl
 				);
 			} else {
 				newReg.radiusMinF = Formula.Constant(0);
@@ -595,7 +603,8 @@ public class EditorGUIExt
 				"Radius Max",
 				newReg.radiusMaxF,
 				prefix+"radiusMaxF",
-				formulaOptions
+				formulaOptions,
+				lastFocusedControl
 			);
 
 		  if(newReg.type != RegionType.Cone) {
@@ -605,7 +614,8 @@ public class EditorGUIExt
 						"Z Up Min",
 						newReg.zUpMinF,
 						prefix+"zUpMinF",
-						formulaOptions
+						formulaOptions,
+						lastFocusedControl
 					);
 				} else {
 					newReg.zUpMinF = Formula.Constant(0);
@@ -614,14 +624,16 @@ public class EditorGUIExt
 					"Z Up Max",
 					newReg.zUpMaxF,
 					prefix+"zUpMax",
-					formulaOptions
+					formulaOptions,
+					lastFocusedControl
 				);
 				if(newReg.type != RegionType.LineMove) {
 				 	newReg.zDownMinF = EditorGUIExt.FormulaField(
 						"Z Down Min",
 						newReg.zDownMinF,
 						prefix+"zDownMinF",
-						formulaOptions
+						formulaOptions,
+						lastFocusedControl
 					);
 				} else {
 					newReg.zDownMinF = Formula.Constant(0);
@@ -630,7 +642,8 @@ public class EditorGUIExt
 					"Z Down Max",
 					newReg.zDownMaxF,
 					prefix+"zDownMax",
-					formulaOptions
+					formulaOptions,
+					lastFocusedControl
 				);
 		  }
 		}
@@ -642,14 +655,16 @@ public class EditorGUIExt
 				"XY Direction",
 				newReg.xyDirectionF,
 				prefix+"xyDirectionF",
-				formulaOptions
+				formulaOptions,
+				lastFocusedControl
 			);
 			if(newReg.type != RegionType.LineMove) {
 			 	newReg.zDirectionF = EditorGUIExt.FormulaField(
 					"Z Direction",
 					newReg.zDirectionF,
 					prefix+"zDirectionF",
-					formulaOptions
+					formulaOptions,
+					lastFocusedControl
 				);
 			}
 			EditorGUILayout.HelpBox("These angle formulae can refer to c.facing, target.facing, or arg.angle.xy to find candidate directions!", MessageType.Info);
@@ -660,33 +675,38 @@ public class EditorGUIExt
 				"XY Arc Min",
 				newReg.xyArcMinF,
 				prefix+"xyArcMinF",
-				formulaOptions
+				formulaOptions,
+				lastFocusedControl
 			);
 		 	newReg.xyArcMaxF = EditorGUIExt.FormulaField(
 				"XY Arc Max",
 				newReg.xyArcMaxF,
 				prefix+"xyArcMax",
-				formulaOptions
+				formulaOptions,
+				lastFocusedControl
 			);
 			//zArcMin/Max
 		 	newReg.zArcMinF = EditorGUIExt.FormulaField(
 				"Z Arc Min",
 				newReg.zArcMinF,
 				prefix+"zArcMinF",
-				formulaOptions
+				formulaOptions,
+				lastFocusedControl
 			);
 		 	newReg.zArcMaxF = EditorGUIExt.FormulaField(
 				"Z Arc Max",
 				newReg.zArcMaxF,
 				prefix+"zArcMaxF",
-				formulaOptions
+				formulaOptions,
+				lastFocusedControl
 			);
 			//rFwdClipMax
 		 	newReg.rFwdClipMaxF = EditorGUIExt.FormulaField(
 				"Forward Distance Max",
 				newReg.rFwdClipMaxF,
 				prefix+"rFwdClipMaxF",
-				formulaOptions
+				formulaOptions,
+				lastFocusedControl
 			);
 		}
 		if(newReg.type == RegionType.Line) {
@@ -695,13 +715,15 @@ public class EditorGUIExt
 				"Line Width Min",
 				newReg.lineWidthMinF,
 				prefix+"lineWidthMinF",
-				formulaOptions
+				formulaOptions,
+				lastFocusedControl
 			);
 		 	newReg.lineWidthMaxF = EditorGUIExt.FormulaField(
 				"Line Width Max",
 				newReg.lineWidthMaxF,
 				prefix+"lineWidthMaxF",
-				formulaOptions
+				formulaOptions,
+				lastFocusedControl
 			);
 		}
 		if(newReg.type == RegionType.Predicate) {
@@ -710,7 +732,8 @@ public class EditorGUIExt
 				"Predicate",
 				newReg.predicateF,
 				prefix+"predicateF",
-				formulaOptions
+				formulaOptions,
+				lastFocusedControl
 			);
 			//TODO: info box with available bindings?
 		}
@@ -737,7 +760,8 @@ public class EditorGUIExt
 				EditorGUILayout.Space();
 				EditorGUILayout.BeginVertical();
 			  //0...i regiongui(...,i)
-				newReg.regions[i] = RegionGUI("Subregion "+i, prefix, newReg.regions[i], formulaOptions, width-16, i);
+				newReg.regions[i] = PickAssetGUI<Region>("Subregion "+i, newReg.regions[i]);
+				newReg.regions[i] = RegionGUI(null, prefix, newReg.regions[i], formulaOptions, lastFocusedControl, width-16, i);
 				EditorGUILayout.EndVertical();
 				EditorGUILayout.EndHorizontal();
 				EditorGUILayout.Space();
@@ -750,9 +774,11 @@ public class EditorGUIExt
 		string label, string type,
 		Region reg,
 		string[] formulaOptions,
+		string lastFocusedControl,
 		float width,
 		int subregionIndex=-1
 	) {
+		if(reg == null) { reg = ScriptableObject.CreateInstance<Region>(); }
 		if(regionTypes == null) {
 			regionTypes = new GUIContent[]{
 				new GUIContent("Cylinder", EditorGUIUtility.LoadRequired("rgn-cylinder.png") as Texture),
@@ -773,11 +799,15 @@ public class EditorGUIExt
 				new GUIContent("Arc", EditorGUIUtility.LoadRequired("intv-arc.png") as Texture)
 			};
 		}
-		Region newReg = reg;
-		if(newReg == null) { newReg = new Region(); }
-		if(subregionIndex == -1 &&
-		   !(newReg.editorShowContents = EditorGUILayout.Foldout(newReg.editorShowContents, label))) {
+		Region newReg = label == null ? reg : EditorGUIExt.PickAssetGUI<Region>(label, reg);
+		if(newReg == null) { newReg = ScriptableObject.CreateInstance<Region>(); }
+		if(label != null &&
+			 subregionIndex == -1 &&
+		   !(newReg.editorShowContents = EditorGUILayout.Foldout(newReg.editorShowContents, "Customize"))) {
 			return reg;
+		}
+		if(label != null && newReg.name != null && newReg.name != "") {
+			EditorGUILayout.HelpBox("Changes made here will NOT alter the attached Region asset!", MessageType.Info);
 		}
 		int buttonsWide = (int)(width/buttonDim);
 		GUILayout.Label("Region Type");
@@ -799,12 +829,132 @@ public class EditorGUIExt
 				if(newReg.type != RegionType.LineMove) {
 					newReg.canTargetSelf = EditorGUILayout.Toggle("Can Target Self", newReg.canTargetSelf);
 				} else {
-					newReg.canTargetSelf = true;	
+					newReg.canTargetSelf = true;
 				}
 				newReg.canTargetFriends = EditorGUILayout.Toggle("Can Target Friends", newReg.canTargetFriends);
 				newReg.canTargetEnemies = EditorGUILayout.Toggle("Can Target Enemies", newReg.canTargetEnemies);
 			}
 		}
-		return SimpleRegionGUI(type+"."+label, newReg, formulaOptions, width, subregionIndex);
+		return SimpleRegionGUI(type+"."+label, newReg, formulaOptions, lastFocusedControl, width, subregionIndex);
+	}
+
+
+	static GUIContent[] targetingModes;
+	static GUIContent[] displayUnimpededTargetRegionFlags;
+
+	public static T PickAssetGUI<T>(string label, T t) where T : ScriptableObject {
+		if(t == null) { t = ScriptableObject.CreateInstance<T>(); }
+		T newT = EditorGUILayout.ObjectField(
+			label,
+			t as UnityEngine.Object,
+			typeof(T),
+			false
+		) as T;
+		if(newT == null) {
+			t.name = null;
+		} else if(newT != t) {
+			EditorUtility.CopySerialized(newT, t);
+		}
+		return t;
+	}
+
+	public static TargetSettings TargetSettingsGUI(string label, TargetSettings oldTs, Skill atk, string[] formulaOptions, string lastFocusedControl, int i=-1) {
+		if(targetingModes == null || targetingModes.Length == 0) {
+			targetingModes = new GUIContent[]{
+				new GUIContent("Self", EditorGUIUtility.LoadRequired("skl-target-self.png") as Texture),
+				new GUIContent("Pick", EditorGUIUtility.LoadRequired("skl-target-pick.png") as Texture),
+				new GUIContent("Face", EditorGUIUtility.LoadRequired("skl-target-cardinal.png") as Texture),
+				new GUIContent("Turn", EditorGUIUtility.LoadRequired("skl-target-radial.png") as Texture),
+				new GUIContent("Select Region", EditorGUIUtility.LoadRequired("skl-target-selectregion.png") as Texture),
+				new GUIContent("Draw Path", EditorGUIUtility.LoadRequired("skl-target-path.png") as Texture)
+			};
+		}
+		if(displayUnimpededTargetRegionFlags == null || displayUnimpededTargetRegionFlags.Length == 0) {
+			displayUnimpededTargetRegionFlags = new GUIContent[]{
+				new GUIContent("Hide", EditorGUIUtility.LoadRequired("skl-impeded-off.png") as Texture),
+				new GUIContent("Display", EditorGUIUtility.LoadRequired("skl-impeded-on.png") as Texture)
+			};
+		}
+		int buttonsWide = (int)(Screen.width/buttonDim);
+		TargetSettings ts = label != null ? PickAssetGUI<TargetSettings>("Target "+(i==-1?"Settings":""+i), oldTs) : oldTs;
+		if(label != null) {
+			if(!(ts.showInEditor = EditorGUILayout.Foldout(ts.showInEditor, "Customize"))) {
+				return ts;
+			}
+			if(ts.name != null && ts.name != "") {
+				EditorGUILayout.HelpBox("Changes made here will NOT alter the attached TargetSettings asset!", MessageType.Info);
+			}
+		}
+		if(ts.targetingMode == TargetingMode.Pick ||
+		   ts.targetingMode == TargetingMode.Path) {
+		  ts.allowsCharacterTargeting = EditorGUILayout.Toggle("Can Delay-Target Characters", ts.allowsCharacterTargeting);
+		} else {
+			ts.allowsCharacterTargeting = false;
+		}
+		EditorGUI.indentLevel++;
+		ts.targetingMode = (TargetingMode)GUILayout.SelectionGrid((int)ts.targetingMode, targetingModes, buttonsWide, EditorGUIExt.imageButtonGridStyle);
+		if(ts.targetingMode == TargetingMode.SelectRegion) {
+			ts.targetRegion.type = RegionType.Compound;
+		}
+		if(ts.targetingMode == TargetingMode.Path) {
+			ts.newNodeThreshold = EditorGUILayout.FloatField("Min Path Distance", ts.newNodeThreshold);
+			ts.immediatelyExecuteDrawnPath = EditorGUILayout.Toggle("Instantly Apply Path", ts.immediatelyExecuteDrawnPath);
+		}
+		if(ts.targetingMode != TargetingMode.Self) {
+			if(ts.targetRegion == null) {
+				ts.targetRegion = ScriptableObject.CreateInstance<Region>();
+			}
+			if(ts.targetRegion.interveningSpaceType != InterveningSpaceType.Pick) {
+				GUILayout.Label("Show blocked tiles?");
+				ts.displayUnimpededTargetRegion = GUILayout.SelectionGrid(ts.displayUnimpededTargetRegion ? 1 : 0, displayUnimpededTargetRegionFlags, 2, EditorGUIExt.imageButtonGridStyle) == 1 ? true : false;
+			}
+		}
+		EditorGUI.indentLevel--;
+		EditorGUILayout.Space();
+		ts.targetRegion = EditorGUIExt.RegionGUI("Target Region", "target", ts.targetRegion, formulaOptions, lastFocusedControl, Screen.width-16);
+		EditorGUILayout.Space();
+		if(atk == null || !(atk is MoveSkill)) {
+			ts.effectRegion = EditorGUIExt.RegionGUI("Effect Region", "effect", ts.effectRegion, formulaOptions, lastFocusedControl, Screen.width-16);
+		}
+		return ts;
+	}
+	public static SkillIO SkillIOGUI(string label, SkillIO io, ActionSkill s, string[] formulaOptions, string lastFocusedControl) {
+		//FIXME: implicit assumption: lockToGrid=true;
+		//so, no invertOverlay, overlayType, drawOverlayRim, drawOverlayVolume, rotationSpeedXYF
+		//FIXME: not showing probe for now
+		SkillIO newIO = label == null ? io : PickAssetGUI<SkillIO>(label, io);
+		if(label != null) {
+			if(!(newIO.editorShow = EditorGUILayout.Foldout(newIO.editorShow, "Customize"))) {
+				return newIO;
+			}
+			if(newIO.name != null && newIO.name != "") {
+				EditorGUILayout.HelpBox("Changes made here will NOT alter the attached SkillIO asset!", MessageType.Info);
+			}
+		}
+		newIO.overlayColor = EditorGUILayout.ColorField("Target Overlay", newIO.overlayColor);
+		newIO.highlightColor = EditorGUILayout.ColorField("Effect Highlight", newIO.highlightColor);
+		newIO.supportKeyboard = EditorGUILayout.Toggle("Support Keyboard", newIO.supportKeyboard);
+		if(newIO.supportKeyboard) {
+			newIO.keyboardMoveSpeed = EditorGUILayout.FloatField("Keyboard Move Speed", newIO.keyboardMoveSpeed);
+			newIO.indicatorCycleLength = EditorGUILayout.FloatField("Z Cycle Time", newIO.indicatorCycleLength);
+		}
+		newIO.supportMouse = EditorGUILayout.Toggle("Support Mouse", newIO.supportMouse);
+		newIO.requireConfirmation = EditorGUILayout.Toggle("Require Confirmation", newIO.requireConfirmation);
+		if(s == null ||
+		   s.HasTargetingMode(TargetingMode.Path)) {
+			newIO.pathMaterial = EditorGUILayout.ObjectField("Path Material", newIO.pathMaterial, typeof(Material), false) as Material;
+		}
+		if(s == null ||
+			 (s.HasTargetingMode(TargetingMode.Pick) ||
+		    s.HasTargetingMode(TargetingMode.Path))) {
+			if(newIO.requireConfirmation) {
+				newIO.performTemporaryStepsOnConfirmation = EditorGUILayout.Toggle("Preview Before Confirming", newIO.performTemporaryStepsOnConfirmation);
+			}
+			newIO.performTemporaryStepsImmediately = EditorGUILayout.Toggle("Preview Immediately", newIO.performTemporaryStepsImmediately);
+		} else {
+			newIO.performTemporaryStepsImmediately = false;
+			newIO.performTemporaryStepsOnConfirmation = true;
+		}
+		return newIO;
 	}
 }

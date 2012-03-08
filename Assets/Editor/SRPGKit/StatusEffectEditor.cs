@@ -5,20 +5,20 @@ using System.Linq;
 
 [CustomEditor(typeof(StatusEffect))]
 
-public class StatusEffectEditor : SRPGCKEditor {	
+public class StatusEffectEditor : SRPGCKEditor {
 	bool showPassiveEffects=true;
-	
+
 	public override void OnEnable() {
-		//FIXME: fdb = What exactly? 
-		//status effects don't have owners in 
+		//FIXME: fdb = What exactly?
+		//status effects don't have owners in
 		//any meaningful data-lookup sense!
 		base.OnEnable();
 		name = "StatusEffect";
 	}
-	
+
 	public override void OnSRPGCKInspectorGUI () {
 		StatusEffect se = target as StatusEffect;
-		
+
 		se.effectType = EditorGUILayout.TextField("Effect Type", se.effectType).NormalizeName();
 		se.always = EditorGUILayout.Toggle("Unremovable", se.always);
 		if(se.always) { se.usesDuration = false; }
@@ -42,6 +42,6 @@ public class StatusEffectEditor : SRPGCKEditor {
 		GUILayout.EndHorizontal();
 		EditorGUILayout.Space();
 		//now, effects!
-		se.passiveEffects = EditorGUIExt.StatEffectFoldout("Passive Effect", se.passiveEffects, StatEffectContext.Normal, formulaOptions, lastFocusedControl, ref showPassiveEffects);		
+		se.passiveEffects = EditorGUIExt.StatEffectFoldout("Passive Effect", se.passiveEffects, StatEffectContext.Normal, ""+se.GetInstanceID(), formulaOptions, lastFocusedControl, ref showPassiveEffects);
 	}
 }

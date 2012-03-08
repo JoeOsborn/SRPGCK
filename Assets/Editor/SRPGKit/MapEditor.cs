@@ -67,6 +67,7 @@ public class MapEditor : Editor {
 			GUILayout.Height(64),
 			GUILayout.Width(64)
 		);
+		GUI.SetNextControlName("");
 		if(tex != nextTex) {
 			if(tex == specPlaceholderTexture && nextTex == null) {
 				//ignore, no real change

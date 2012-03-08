@@ -26,11 +26,11 @@ public class MoveSkill : ActionSkill {
 		skillGroup = "";
 		skillSorting=-1;
 		if(targetSettings == null || targetSettings.Length == 0) {
-			TargetSettings ts = new TargetSettings();
+			TargetSettings ts = ScriptableObject.CreateInstance<TargetSettings>();
 			targetSettings = new TargetSettings[]{ts};
 		}
 		foreach(TargetSettings ts in targetSettings) {
-			ts.effectRegion = new Region();
+			ts.effectRegion = ScriptableObject.CreateInstance<Region>();
 			ts.effectRegion.IsEffectRegion = true;
 			ts.effectRegion.radiusMinF = Formula.Constant(0);
 			ts.effectRegion.radiusMaxF = Formula.Constant(0);

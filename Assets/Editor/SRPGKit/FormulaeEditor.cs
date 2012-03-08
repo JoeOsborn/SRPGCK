@@ -6,7 +6,7 @@ using System.Linq;
 [CustomEditor(typeof(Formulae))]
 
 public class FormulaeEditor : SRPGCKEditor {
-  [MenuItem("SRPGCK/Create formula database")]
+  [MenuItem("SRPGCK/Create formula database", false, 1)]
   public static Formulae CreateFormulae()
   {
     Formulae asset = ScriptableObject.CreateInstance<Formulae>();
@@ -19,6 +19,8 @@ public class FormulaeEditor : SRPGCKEditor {
 		return asset;
   }
 
+	float nextCompileTime=0;
+
 	public override void OnEnable() {
 		useFormulae = false;
 		fdb = target as Formulae;
@@ -26,6 +28,7 @@ public class FormulaeEditor : SRPGCKEditor {
 		name = "Formulae";
 		newFormula = Formula.Constant(0);
 		newFormula.name = "";
+		nextCompileTime = (float)EditorApplication.timeSinceStartup + EditorGUIExt.compileInterval;
 	}
 
 	Formula newFormula;
@@ -34,12 +37,18 @@ public class FormulaeEditor : SRPGCKEditor {
 		string name = "formulae.formula."+i;
 		bool priorWrap = EditorStyles.textField.wordWrap;
 		EditorStyles.textField.wordWrap = true;
-		GUI.SetNextControlName(name);
+		GUI.SetNextControlName(""+fdb.GetInstanceID()+"."+i);
 		f.text = EditorGUILayout.TextArea(f.text, GUILayout.Height(32)).RemoveControlCharacters();
 		GUI.SetNextControlName("");
 		EditorStyles.textField.wordWrap = priorWrap;
-		if(GUI.GetNameOfFocusedControl() == name) {
+		if(GUI.GetNameOfFocusedControl() != name && lastFocusedControl == name) {
 			FormulaCompiler.CompileInPlace(f);
+		} else if(GUI.GetNameOfFocusedControl() == name) {
+			float now = (float)EditorApplication.timeSinceStartup;
+			if(now >= nextCompileTime || lastFocusedControl != name) {
+				nextCompileTime = now + EditorGUIExt.compileInterval;
+				FormulaCompiler.CompileInPlace(f);
+			}
 		}
 		if(f.compilationError != null && f.compilationError.Length > 0) {
 			EditorGUILayout.HelpBox(f.compilationError, MessageType.Error);
@@ -61,7 +70,7 @@ public class FormulaeEditor : SRPGCKEditor {
 		EditorGUILayout.Space();
 		EditorGUILayout.BeginHorizontal();
 		if(newFormula.name == null) { newFormula.name = ""; }
-		GUI.SetNextControlName("formulae.new.name");
+		GUI.SetNextControlName(fdb.GetInstanceID()+".formulae.new.name");
 		newFormula.name = EditorGUILayout.TextField(newFormula.name);
 		GUI.SetNextControlName("");
 		GUI.enabled = newFormula.name.Length > 0;

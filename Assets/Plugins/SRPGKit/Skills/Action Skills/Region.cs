@@ -33,9 +33,9 @@ public enum StuckPrevention {
 }
 
 [System.Serializable]
-public class Region {
+public class Region : ScriptableObject {
 	//editor only
-	public bool editorShowContents=true;
+	public bool editorShowContents=false;
 
 	protected Skill owner;
 	public Skill Owner {
@@ -47,7 +47,7 @@ public class Region {
 			}
 			for(int i = 0; i < regions.Length; i++) {
 				if(regions[i] == null) {
-					regions[i] = new Region();
+					regions[i] = ScriptableObject.CreateInstance<Region>();
 				}
 				regions[i].Owner = owner;
 			}
@@ -80,7 +80,7 @@ public class Region {
 			if(regions == null || interveningSpaceType == InterveningSpaceType.Pick) { return; }
 			for(int i = 0; i < regions.Length; i++) {
 				if(regions[i] == null) {
-					regions[i] = new Region();
+					regions[i] = ScriptableObject.CreateInstance<Region>();
 				}
 				regions[i].canCrossWalls = _canCrossWalls;
 			}
@@ -95,7 +95,7 @@ public class Region {
 			if(regions == null || interveningSpaceType == InterveningSpaceType.Pick) { return; }
 			for(int i = 0; i < regions.Length; i++) {
 				if(regions[i] == null) {
-					regions[i] = new Region();
+					regions[i] = ScriptableObject.CreateInstance<Region>();
 				}
 				regions[i].canCrossEnemies = _canCrossEnemies;
 			}
@@ -114,7 +114,7 @@ public class Region {
 			if(regions == null) { return; }
 			for(int i = 0; i < regions.Length; i++) {
 				if(regions[i] == null) {
-					regions[i] = new Region();
+					regions[i] = ScriptableObject.CreateInstance<Region>();
 				}
 				regions[i].canHaltAtEnemies = canHaltAtEnemies;
 			}
@@ -129,7 +129,7 @@ public class Region {
 			if(regions == null) { return; }
 			for(int i = 0; i < regions.Length; i++) {
 				if(regions[i] == null) {
-					regions[i] = new Region();
+					regions[i] = ScriptableObject.CreateInstance<Region>();
 				}
 				regions[i].canTargetEnemies = canTargetEnemies;
 			}
@@ -144,7 +144,7 @@ public class Region {
 			if(regions == null) { return; }
 			for(int i = 0; i < regions.Length; i++) {
 				if(regions[i] == null) {
-					regions[i] = new Region();
+					regions[i] = ScriptableObject.CreateInstance<Region>();
 				}
 				regions[i].canTargetFriends = canTargetFriends;
 			}
@@ -159,7 +159,7 @@ public class Region {
 			if(regions == null) { return; }
 			for(int i = 0; i < regions.Length; i++) {
 				if(regions[i] == null) {
-					regions[i] = new Region();
+					regions[i] = ScriptableObject.CreateInstance<Region>();
 				}
 				regions[i].canTargetSelf = canTargetSelf;
 			}
@@ -228,24 +228,22 @@ public class Region {
 		new Vector2( 0, 1)
 	};
 
-	public Region() {
-		type = RegionType.Cylinder;
-		interveningSpaceType = InterveningSpaceType.Pick;
-		radiusMinF = Formula.Constant(0);
-		radiusMaxF = Formula.Constant(0);
-		zUpMinF = Formula.Constant(0);
-		zUpMaxF = Formula.Constant(0);
-		zDownMinF = Formula.Constant(0);
-		zDownMaxF = Formula.Constant(0);
-		xyDirectionF = Formula.Constant(0);
-		zDirectionF = Formula.Constant(0);
-		xyArcMinF = Formula.Constant(0);
-		xyArcMaxF = Formula.Constant(0);
-		zArcMinF = Formula.Constant(0);
-		zArcMaxF = Formula.Constant(0);
-		lineWidthMinF = Formula.Constant(0);
-		lineWidthMaxF = Formula.Constant(0);
-		predicateF = Formula.Constant(0);
+	public void OnEnable() {
+		radiusMinF = radiusMinF ?? Formula.Constant(0);
+		radiusMaxF = radiusMaxF ?? Formula.Constant(0);
+		zUpMinF = zUpMinF ?? Formula.Constant(0);
+		zUpMaxF = zUpMaxF ?? Formula.Constant(0);
+		zDownMinF = zDownMinF ?? Formula.Constant(0);
+		zDownMaxF = zDownMaxF ?? Formula.Constant(0);
+		xyDirectionF = xyDirectionF ?? Formula.Constant(0);
+		zDirectionF = zDirectionF ?? Formula.Constant(0);
+		xyArcMinF = xyArcMinF ?? Formula.Constant(0);
+		xyArcMaxF = xyArcMaxF ?? Formula.Constant(0);
+		zArcMinF = zArcMinF ?? Formula.Constant(0);
+		zArcMaxF = zArcMaxF ?? Formula.Constant(0);
+		lineWidthMinF = lineWidthMinF ?? Formula.Constant(0);
+		lineWidthMaxF = lineWidthMaxF ?? Formula.Constant(0);
+		predicateF = predicateF ?? Formula.Constant(0);
 	}
 
 	protected bool isEffectRegion=false;
@@ -604,7 +602,7 @@ public class Region {
 		Debug.Log("trying to fall, but it's a bottomless pit!");
 		return false;
 	}
-	
+
 	public virtual PathNode[] GetTilesInRegion(Vector3 pos, Quaternion q) {
 	  return GetValidTiles(
 			pos, q,

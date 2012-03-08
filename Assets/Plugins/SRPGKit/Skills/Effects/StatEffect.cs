@@ -4,7 +4,8 @@ using System.Linq;
 
 public enum StatEffectContext {
 	Normal,
-	Action
+	Action,
+	Any
 };
 
 public enum StatEffectTarget {
@@ -42,7 +43,9 @@ public struct StatChange {
 }
 
 [System.Serializable]
-public class StatEffect {
+public class StatEffect : ScriptableObject {
+	public bool editorShow=false;
+	
 	public string statName;
 	public StatEffectType effectType=StatEffectType.Augment;
 	public Formula value;

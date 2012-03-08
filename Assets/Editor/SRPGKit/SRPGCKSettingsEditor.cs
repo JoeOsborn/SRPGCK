@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using UnityEditor;
 
 public class SRPGCKSettingsEditor : SRPGCKEditor {
-  [MenuItem("SRPGCK/Create global settings")]
+  [MenuItem("SRPGCK/Create global settings", false, 0)]
   public static SRPGCKSettings CreateSettings()
   {
     SRPGCKSettings asset = ScriptableObject.CreateInstance<SRPGCKSettings>();

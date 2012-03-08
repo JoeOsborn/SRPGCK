@@ -28,7 +28,7 @@ public class CharacterEditor : SRPGCKEditor {
 
 		EditorGUILayout.Space();
 
-		c.stats = EditorGUIExt.ParameterFoldout("Statistic", c.stats, formulaOptions, lastFocusedControl, ref showStats);
+		c.stats = EditorGUIExt.ParameterFoldout("Statistic", c.stats, ""+c.GetInstanceID(), formulaOptions, lastFocusedControl, ref showStats);
 
 		EditorGUILayout.Space();
 	}

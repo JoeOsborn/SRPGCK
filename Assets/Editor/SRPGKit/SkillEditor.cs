@@ -37,10 +37,10 @@ public class SkillEditor : SRPGCKEditor {
 
 		EditorGUILayout.Space();
 		//parameters LATER: group parameters by used component (e.g. reaction. params near reaction)
-		s.parameters = EditorGUIExt.ParameterFoldout("Parameter", s.parameters, formulaOptions, lastFocusedControl, ref showParameters);
+		s.parameters = EditorGUIExt.ParameterFoldout("Parameter", s.parameters, ""+s.GetInstanceID(), formulaOptions, lastFocusedControl, ref showParameters);
 		EditorGUILayout.Space();
 
-		s.passiveEffects = EditorGUIExt.StatEffectFoldout("Passive Effect", s.passiveEffects, StatEffectContext.Normal, formulaOptions, lastFocusedControl, ref showPassiveEffects);
+		s.passiveEffects = EditorGUIExt.StatEffectFoldout("Passive Effect", s.passiveEffects, StatEffectContext.Normal, ""+s.GetInstanceID(), formulaOptions, lastFocusedControl, ref showPassiveEffects);
 	}
 
 	protected void ReactionSkillGUI() {
@@ -57,13 +57,13 @@ public class SkillEditor : SRPGCKEditor {
 			s.reactionTypesApplier = EditorGUIExt.ArrayFoldout("Reactable Type (Applier)", s.reactionTypesApplier, ref showReactionTypesApplier, false, -1, "attack");
 			//reaction region
 			//reaction effects
-			s.reactionTargetRegion = EditorGUIExt.RegionGUI("Reaction Target", s.name+".reaction", s.reactionTargetRegion, formulaOptions, Screen.width-32);
-			s.reactionEffectRegion = EditorGUIExt.RegionGUI("Reaction Effect", s.name+".reaction", s.reactionEffectRegion, formulaOptions, Screen.width-32);
+			s.reactionTargetRegion = EditorGUIExt.RegionGUI("Reaction Target", s.name+".reaction", s.reactionTargetRegion, formulaOptions, lastFocusedControl, Screen.width-32);
+			s.reactionEffectRegion = EditorGUIExt.RegionGUI("Reaction Effect", s.name+".reaction", s.reactionEffectRegion, formulaOptions, lastFocusedControl, Screen.width-32);
 			if(s.reactionEffects != null && s.reactionEffects.Length > 1) {
 				EditorGUILayout.HelpBox("Be sure that the reaction.hitType parameter is defined to provide a value from 0 to "+(s.reactionEffects.Length-1), (s.HasParam("reaction.hitType") ? MessageType.Info : MessageType.Error));
 			}
-			s.reactionApplicationEffects = EditorGUIExt.StatEffectGroupGUI("Per-Reaction Effect", s.reactionApplicationEffects, StatEffectContext.Action, formulaOptions, lastFocusedControl);
-			s.reactionEffects = EditorGUIExt.StatEffectGroupsGUI("Per-Target Effect Group", s.reactionEffects, StatEffectContext.Action, formulaOptions, lastFocusedControl);
+			s.reactionApplicationEffects = EditorGUIExt.StatEffectGroupGUI("Per-Reaction Effect", s.reactionApplicationEffects, StatEffectContext.Action, ""+s.GetInstanceID(), formulaOptions, lastFocusedControl);
+			s.reactionEffects = EditorGUIExt.StatEffectGroupsGUI("Per-Target Effect Group", s.reactionEffects, StatEffectContext.Action, ""+s.GetInstanceID(), formulaOptions, lastFocusedControl);
 			EditorGUILayout.Space();
 		}
 	}

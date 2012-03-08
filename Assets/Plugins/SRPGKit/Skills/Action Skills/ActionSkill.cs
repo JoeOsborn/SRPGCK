@@ -30,30 +30,16 @@ public class ActionSkill : Skill {
 	override public bool isPassive { get { return false; } }
 	virtual public MoveExecutor Executor { get { return null; } }
 
-	//io
-	public bool supportKeyboard = true;
-	public bool supportMouse = true;
-	public bool requireConfirmation = true;
-	//if lockToGrid
-	public float keyboardMoveSpeed=10.0f;
-	public float indicatorCycleLength=1.0f;
-	//lines
-	public Material pathMaterial;
-	//probe
-	public CharacterController probePrefab;
-
-	//FIXME: augment with facingLock
-	public bool lockToGrid=true;
-
-	//TODO: support for inverting grid-locked overlay
-	public bool invertOverlay = false;
-
-	public Color overlayColor = new Color(0.6f, 0.3f, 0.2f, 0.7f);
-	public Color highlightColor = new Color(0.9f, 0.6f, 0.4f, 0.85f);
-	//TODO: infer from region
-	public RadialOverlayType overlayType = RadialOverlayType.Sphere;
-	public bool drawOverlayRim = false;
-	public bool drawOverlayVolume = false;
+	public SkillIO _io;
+	public SkillIO io { 
+		get { 
+			if(_io == null) {
+				_io = ScriptableObject.CreateInstance<SkillIO>(); 
+			} 
+			return _io; 
+		}
+		set { _io = value; }
+	}
 
 	public StatEffectGroup applicationEffects;
 	public StatEffectGroup[] targetEffects;
@@ -61,9 +47,8 @@ public class ActionSkill : Skill {
 
 	public MultiTargetMode multiTargetMode = MultiTargetMode.Single;
 	public bool waypointsAreIncremental=false;
-	public bool performTemporaryStepsImmediately=false;
-	public bool performTemporaryStepsOnConfirmation=true;
 	public bool canCancelWaypoints=true;
+
 	public TargetSettings[] _targetSettings;
 	public TargetSettings[] targetSettings {
 		get {
@@ -71,7 +56,7 @@ public class ActionSkill : Skill {
 				_targetSettings = new TargetSettings[1];
 			}
 			if(_targetSettings[0] == null) {
-				_targetSettings[0] = new TargetSettings();
+				_targetSettings[0] = ScriptableObject.CreateInstance<TargetSettings>();
 				_targetSettings[0].Owner = this;
 			}
 			return _targetSettings;
@@ -80,7 +65,7 @@ public class ActionSkill : Skill {
 			_targetSettings = value;
 			for(int i = 0; i < _targetSettings.Length; i++) {
 				TargetSettings ts = _targetSettings[i];
-				if(ts == null) { _targetSettings[i] = ts = new TargetSettings(); }
+				if(ts == null) { _targetSettings[i] = ts = ScriptableObject.CreateInstance<TargetSettings>(); }
 				ts.Owner = this;
 			}
 		}
@@ -126,6 +111,72 @@ public class ActionSkill : Skill {
 	public Map Map { get { return map; } }
 	public bool SupportKeyboard { get { return supportKeyboard; } }
 	public bool SupportMouse { get { return supportMouse; } }
+	
+	//io
+	public bool supportKeyboard { 
+		get { return io.supportKeyboard; }
+		set { io.supportKeyboard = value; }
+	}
+	public bool supportMouse { 
+		get { return io.supportMouse; }
+		set { io.supportMouse = value; }
+	}
+	public bool requireConfirmation { 
+		get { return io.requireConfirmation; }
+		set { io.requireConfirmation = value; }
+	}
+	public float keyboardMoveSpeed { 
+		get { return io.keyboardMoveSpeed; }
+		set { io.keyboardMoveSpeed = value; }
+	}
+	public float indicatorCycleLength { 
+		get { return io.indicatorCycleLength; }
+		set { io.indicatorCycleLength = value; }
+	}
+	public Material pathMaterial { 
+		get { return io.pathMaterial; }
+		set { io.pathMaterial = value; }
+	}
+	public CharacterController probePrefab { 
+		get { return io.probePrefab; }
+		set { io.probePrefab = value; }
+	}
+	public bool invertOverlay { 
+		get { return io.invertOverlay; }
+		set { io.invertOverlay = value; }
+	}
+	public bool lockToGrid { 
+		get { return io.lockToGrid; }
+		set { io.lockToGrid = value; }
+	}
+	public bool performTemporaryStepsImmediately { 
+		get { return io.performTemporaryStepsImmediately; }
+		set { io.performTemporaryStepsImmediately = value; }
+	}
+	public bool performTemporaryStepsOnConfirmation { 
+		get { return io.performTemporaryStepsOnConfirmation; }
+		set { io.performTemporaryStepsOnConfirmation = value; }
+	}
+	public Color overlayColor { 
+		get { return io.overlayColor; }
+		set { io.overlayColor = value; }
+	}
+	public Color highlightColor { 
+		get { return io.highlightColor; }
+		set { io.highlightColor = value; }
+	}
+	public RadialOverlayType overlayType { 
+		get { return io.overlayType; }
+		set { io.overlayType = value; }
+	}
+	public bool drawOverlayRim { 
+		get { return io.drawOverlayRim; }
+		set { io.drawOverlayRim = value; }
+	}
+	public bool drawOverlayVolume { 
+		get { return io.drawOverlayVolume; }
+		set { io.drawOverlayVolume = value; }
+	}
 
 	public bool RequireConfirmation { get {
 		return requireConfirmation &&
@@ -232,7 +283,7 @@ public class ActionSkill : Skill {
 		}
 
 		// if(targetEffects == null || targetEffects.Length == 0) {
-		// 	StatEffect healthDamage = new StatEffect();
+		// 	StatEffect healthDamage = ScriptableObject.CreateInstance<StatEffect>();
 		// 	healthDamage.statName = "health";
 		// 	healthDamage.effectType = StatEffectType.Augment;
 		// 	healthDamage.reactableTypes = new[]{"attack"};

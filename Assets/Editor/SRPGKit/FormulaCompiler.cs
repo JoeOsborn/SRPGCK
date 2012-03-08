@@ -70,7 +70,6 @@ public class Identifier : IFormulaElement {
 public class FormulaCompiler : Grammar<IFormulaElement> {
 
 	public static bool CompileInPlace(Formula f) {
-/*		Debug.Log("compile "+f.text);*/
 		FormulaCompiler fc = new FormulaCompiler();
 		try {
 			Formula newF = fc.Parse(f.text) as Formula;
