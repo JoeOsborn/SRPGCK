@@ -5,7 +5,6 @@ public class MoveSkill : ActionSkill {
 	override public MoveExecutor Executor { get { return moveExecutor; } }
 
 	//executor
-	[HideInInspector]
 	public MoveExecutor moveExecutor;
 	public bool animateTemporaryMovement=false;
 	public float XYSpeed = 12;

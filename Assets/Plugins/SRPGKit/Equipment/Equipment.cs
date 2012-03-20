@@ -4,7 +4,6 @@ using System.Linq;
 
 [AddComponentMenu("SRPGCK/Character/Equipment")]
 public class Equipment : MonoBehaviour {
-	[HideInInspector]
 	[System.NonSerialized]
 	public Character wielder;
 	
@@ -52,7 +51,6 @@ public class Equipment : MonoBehaviour {
 		return runtimeParameters.ContainsKey(pname);
 	}
 	
-	[HideInInspector]
 	public Formulae fdb { get {
 		if(wielder != null) { return wielder.fdb; }
 		return Formulae.DefaultFormulae;

@@ -1,0 +1,90 @@
+%with(term) { t(). t(a). t(a,b). }. ->
+%t(term). t(term, a). t(term, a, b).
+
+with(wrassle) {
+	skill().
+	skill_name("Wrassle").
+	skill_sorting(0).
+	skill_parameter("hitType", 0).
+	action_skill().
+	action_skill_io(standard_action_io).
+	action_skill_multi_target(chain).
+	action_skill_cancel_waypoints().
+	action_skill_target_setting(0, wrassle_pick_target).
+	action_skill_target_setting(1, wrassle_pick_direction).
+	action_skill_target_effect_group(0, wrassle_effects).
+}.
+with(wrassle_effects) {
+	stat_effect_group().
+	stat_effect_group_effect(0, wrassle_move_effect).
+}.
+with(wrassle_pick_target) {
+	target_settings().
+	target_settings_mode(pick).
+	target_settings_leave_origin_in_place().
+	target_settings_target_region(region_r2_v1_line).
+	target_settings_effect_region(region_r0).
+}.
+with(wrassle_pick_direction) {
+	target_settings().
+	target_settings_mode(cardinal).
+	target_settings_target_region(region_r2_v1_line).
+	target_settings_effect_region(region_r0).
+}.
+with(wrassle_move_effect) {
+	stat_effect().
+	stat_effect_type(special_move).
+	stat_effect_move_type("throw").
+	stat_effect_move_region(region_line_move_2_2_0).
+	stat_effect_move_start_x(formula(c.position.x)).
+	stat_effect_move_start_y(formula(c.position.y)).
+	stat_effect_move_start_z(formula(c.position.z)).
+	stat_effect_move_animate_to_start().
+	stat_effect_target(applied).
+}.
+
+with(region_r2_v1_line) {
+	region().
+	region_type(cylinder).
+	region_space(line).
+	~region_target_self().
+	region_target_friends().
+	region_target_enemies().
+	region_stop_at_enemies().
+	region_radius_max(2).
+	region_z_up_max(1).
+	region_z_down_max(1).
+}.
+
+with(region_r0) {
+	region().
+	region_type(cylinder).
+	region_target_self().
+	region_target_friends().
+	region_target_enemies().
+	region_stop_at_enemies().
+	region_radius_max(0).
+}.
+
+with(region_line_move_2_2_0) {
+	region().
+	region_type(line_move).
+	region_target_friends().
+	region_target_enemies().
+	~region_cross_characters().
+	~region_cross_walls().
+	region_glide().
+	region_prevent_air_stick(keep_going).
+	region_locking_mode(eight_way).
+	region_stop_at_enemies().
+	region_radius_max(2).
+	region_z_up_max(2).
+	region_z_down_max(0).
+	region_xy_direction(arg.angle.xy).
+}.
+
+with(region_line_move_2_2_0_display) {
+	region().
+	inherit(region_line_move_2_2_0).
+	region_cross_characters().
+}.

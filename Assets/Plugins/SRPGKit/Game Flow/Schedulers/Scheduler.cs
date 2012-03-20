@@ -6,11 +6,8 @@ using System.Collections.Generic;
 
 [AddComponentMenu("")]
 public class Scheduler : MonoBehaviour {
-	[HideInInspector]
 	public List<Character> characters;
-	[HideInInspector]
 	public Character activeCharacter;
-	[HideInInspector]
 	public bool begun=false;
 
 	public Skill pendingDeactivationSkill;

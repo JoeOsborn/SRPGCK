@@ -3,7 +3,6 @@ using System.Collections;
 
 [AddComponentMenu("SRPGCK/Character/Skills/Wait")]
 public class WaitSkill : ActionSkill {
-	[HideInInspector]
  	[System.NonSerialized]
 	public Transform instantiatedWaitArrows;
 	public enum Arrow {
@@ -12,7 +11,6 @@ public class WaitSkill : ActionSkill {
 		YN,
 		XN
 	};
-	[HideInInspector]
 	[SerializeField]
 	public Arrow currentArrow = Arrow.YP;
 

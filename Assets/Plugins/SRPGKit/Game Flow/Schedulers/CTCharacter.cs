@@ -4,10 +4,8 @@ using System.Collections.Generic;
 
 [AddComponentMenu("")]
 public class CTCharacter : MonoBehaviour {
-	[HideInInspector]
 	[SerializeField]
 	protected bool _hasMoved=false;
-	[HideInInspector]
 	[SerializeField]
 	protected bool _hasActed=false;
 

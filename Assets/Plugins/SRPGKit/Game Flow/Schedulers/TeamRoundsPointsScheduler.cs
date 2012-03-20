@@ -23,7 +23,6 @@ public class TeamRoundsPointsScheduler : Scheduler {
 
 	public int pointsPerRound=8;
 
-	[HideInInspector]
 	public int pointsRemaining=0;
 
 	override public void Start () {

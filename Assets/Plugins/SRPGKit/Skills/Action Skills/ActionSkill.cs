@@ -208,7 +208,7 @@ public class ActionSkill : Skill {
 	} }
 
 	public Target currentTarget { get {
-		return targets[targets.Count-1];
+		return targets.Count == 0 ? initialTarget : targets[targets.Count-1];
 	} }
 	public TargetSettings lastSettings { get {
 		if(targets.Count == 1) { return null; }
@@ -223,6 +223,7 @@ public class ActionSkill : Skill {
 		if(multiTargetMode == MultiTargetMode.Chain) {
 			for(int i = targets.Count-2; i >= 0; i--) {
 				Target t = targets[i];
+				if(targetSettings[i].doNotMoveChain) { continue; }
 				if(t.path != null) { return t.path.pos; }
 				if(t.character != null) { return t.character.TilePosition; }
 			}
@@ -371,6 +372,7 @@ public class ActionSkill : Skill {
 			targets = new List<Target>();
 		}
 		targets.Add(initialTarget.Clone());
+		SetArgsFromTarget(initialTarget, currentSettings, "");
 		nodeCount = 0;
 		radiusSoFar = 0;
 		if(currentSettings.targetingMode == TargetingMode.Custom) {
@@ -450,7 +452,7 @@ public class ActionSkill : Skill {
 							firstClickTime = -1;
 							if(!waypointsAreIncremental &&
 								 !currentSettings.immediatelyExecuteDrawnPath &&
-								 targets.Count > 0 &&
+								 targets.Count > 1 &&
 								 currentTarget.Position == hitSpot) {
 								UnwindToLastWaypoint();
 							} else {
@@ -490,7 +492,11 @@ public class ActionSkill : Skill {
 						lastIndicatorKeyboardMove = Time.time;
 						newDest.x += d.x;
 						newDest.y += d.y;
-						newDest.z = map.NearestZLevel((int)newDest.x, (int)newDest.y, (int)newDest.z);
+						newDest.z = map.NearestZLevel(
+							(int)newDest.x, 
+							(int)newDest.y, 
+							(int)newDest.z
+						);
 						if(DestIsBacktrack(newDest)) {
 							UnwindPath();
 						} else {
@@ -934,29 +940,49 @@ public class ActionSkill : Skill {
 		}
 	}
 
-	protected virtual void ActivateTargetCustom() {
-	}
-	protected virtual void UpdateTargetCustom() {
-	}
-	protected virtual void PresentMovesCustom() {
-	}
-	protected virtual void DeactivateTargetCustom() {
-	}
-	protected virtual void CancelTargetCustom() {
-	}
-	protected virtual void ResetToInitialPositionCustom() {
-	}
+	protected virtual void ActivateTargetCustom() {}
+	protected virtual void UpdateTargetCustom() {}
+	protected virtual void PresentMovesCustom() {}
+	protected virtual void DeactivateTargetCustom() {}
+	protected virtual void CancelTargetCustom() {}
+	protected virtual void ResetToInitialPositionCustom() {}
 
 	public void TentativePick(Vector3 p) {
 		Character c = map.CharacterAt(p);
 		currentTarget.Path(p).Character(c);
-		_GridOverlay.SetSelectedPoints(map.CoalesceTiles(currentSettings.effectRegion.GetValidTiles(p, TargetFacing)));
+		float angle = TargetFacing.eulerAngles.y;
+		Vector3 ep = EffectPosition;
+		Vector3 tp = TargetPosition;
+		if(!Mathf.Approximately(ep.y,tp.y) ||
+		   !Mathf.Approximately(ep.x,tp.x)) {
+			angle = Mathf.Atan2(ep.y-tp.y, ep.x-tp.x)*Mathf.Rad2Deg;
+		}
+		currentTarget.Facing(angle);
+		Debug.Log("show path from "+tp+" angle "+angle);
+		_GridOverlay.SetSelectedPoints(
+			map.CoalesceTiles(
+				currentSettings.effectRegion.GetValidTiles(tp, TargetFacing)
+			)
+		);
 	}
 
 	public void TentativePick(PathNode pn) {
 		Character c = map.CharacterAt(pn.pos);
 		currentTarget.Path(pn).Character(c);
-		_GridOverlay.SetSelectedPoints(map.CoalesceTiles(currentSettings.effectRegion.GetValidTiles(pn.pos, TargetFacing)));
+		float angle = TargetFacing.eulerAngles.y;
+		Vector3 ep = EffectPosition;
+		Vector3 tp = TargetPosition;
+		if(!Mathf.Approximately(ep.y,tp.y) ||
+		   !Mathf.Approximately(ep.x,tp.x)) {
+			angle = Mathf.Atan2(ep.y-tp.y, ep.x-tp.x)*Mathf.Rad2Deg;
+		}
+		currentTarget.Facing(angle);
+		Debug.Log("show path from node "+tp+" angle "+angle);
+		_GridOverlay.SetSelectedPoints(
+			map.CoalesceTiles(
+				currentSettings.effectRegion.GetValidTiles(tp, Quaternion.Euler(0,angle,0))
+			)
+		);
 	}
 
 	public void CancelEffectPreview() {
@@ -1039,7 +1065,7 @@ public class ActionSkill : Skill {
 	protected bool CanUnwindPath { get {
 		return !currentSettings.immediatelyExecuteDrawnPath &&
 		((currentTarget.path != null && currentTarget.path.prev != null) ||
-		 (!waypointsAreIncremental && targets.Count > 0));
+		 (!waypointsAreIncremental && targets.Count > 1));
 	} }
 	public void UnwindPath(int nodes=1) {
 		for(int i = 0; i < nodes && CanUnwindPath; i++) {
@@ -1068,7 +1094,7 @@ public class ActionSkill : Skill {
 				currentTarget.path = endOfPath;
 				if((endOfPath == null ||
 				    endOfPath.prev == null) &&
-				   targets.Count > 0 &&
+				   targets.Count > 1 &&
 				   !waypointsAreIncremental) {
 					if(endOfPath == null) {
 						PathNode wp=lastTarget.path, wpp=wp.prev;
@@ -1160,7 +1186,7 @@ public class ActionSkill : Skill {
 	protected bool DestIsBacktrack(Vector3 newDest) {
 		return !currentSettings.immediatelyExecuteDrawnPath && ShouldDrawPath && (
 		(currentTarget.path != null && currentTarget.path.prev != null && newDest == currentTarget.path.prev.pos) ||
-		(!waypointsAreIncremental && targets.Count > 0 &&
+		(!waypointsAreIncremental && targets.Count > 1 &&
 			(((currentTarget.path.prev == null) &&
 			(targets[targets.Count-1].path.pos == newDest)) ||
 
@@ -1203,7 +1229,15 @@ public class ActionSkill : Skill {
 			lastTargetPushed = true;
 			LastTargetPushed();
 		} else { //new target
-			map.BroadcastMessage("SkillWillPushIntermediateTarget", this, SendMessageOptions.DontRequireReceiver);
+			map.BroadcastMessage(
+				"SkillWillPushIntermediateTarget",
+				this,
+				SendMessageOptions.DontRequireReceiver
+			);
+			SetArgsFromTarget(currentTarget, currentSettings, ""+(targets.Count-1));
+			if(multiTargetMode == MultiTargetMode.Chain) {
+				SetArgsFromTarget(currentTarget, currentSettings, "");
+			}
 			if(currentSettings.targetingMode == TargetingMode.Path &&
 			   currentSettings.immediatelyExecuteDrawnPath) {
 				currentTarget.path = new PathNode(currentTarget.path.pos, null, 0);
@@ -1213,20 +1247,26 @@ public class ActionSkill : Skill {
 			} else {
 				TemporaryApplyCurrentTarget();
 			}
-			Target t = currentTarget;
-			for(int i = targets.Count-2;
-			    i >= -1 && t.path == null && t.character == null;
-					i--) {
-				if(i == -1) {
-					t = initialTarget;
-				} else {
-					t = targets[i];
-				}
-			}
 			//FIXME: is it ok to set up so much data?
-			targets.Add((new Target()).Path(new PathNode(currentSettings.doNotMoveChain ? TargetPosition : EffectPosition, null, radiusSoFar)).Facing(EffectFacing));
+			Debug.Log("targpos " + TargetPosition);
+
+			targets.Add((new Target()).
+				Path(
+					new PathNode(
+						currentSettings.doNotMoveChain ?
+							TargetPosition : EffectPosition,
+						null,
+						radiusSoFar
+					)
+				).
+				Facing(EffectFacing)
+			);
 			UpdateOverlayParameters();
-			map.BroadcastMessage("SkillDidPushIntermediateTarget", this, SendMessageOptions.DontRequireReceiver);
+			map.BroadcastMessage(
+				"SkillDidPushIntermediateTarget",
+				this,
+				SendMessageOptions.DontRequireReceiver
+			);
 		}
 	}
 	protected int SubregionContaining(Vector3 p) {

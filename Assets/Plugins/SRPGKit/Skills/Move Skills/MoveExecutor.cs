@@ -13,10 +13,8 @@ public class MoveExecutor {
 		return character.transformOffset;
 	} }
 
-	[HideInInspector]
 	public Vector3 position;
 	protected PathNode destNode;
-	[HideInInspector]
 	public Vector3 temporaryPosition;
 	protected PathNode temporaryDestNode;
 
@@ -42,7 +40,6 @@ public class MoveExecutor {
 
 	public bool isActive=false;
 
-	[HideInInspector]
 	public MoveType currentMoveType;
 
 	virtual protected void ClearPath() {

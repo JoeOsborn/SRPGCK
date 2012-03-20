@@ -435,6 +435,7 @@ public class Region : ScriptableObject {
 		float maxDrop = here.z;
 		int soFar = 0;
 		float dropDistance = 0;
+		Vector3 hereErr = here;
 		Debug.Log("start at "+here+" with offset "+offset+" amount "+amount);
 		while((soFar < amount) ||
 			//stuck prevention: keep going if we would end up stuck
@@ -445,8 +446,11 @@ public class Region : ScriptableObject {
 				 preventStuckInAir == StuckPrevention.KeepGoing &&
 		     map.TileAt(here) == null))) {
 			Vector3 lastHere = here;
-			here.x += offset.x;
-			here.y += offset.y;
+			hereErr.x += offset.x;
+			hereErr.y += offset.y;
+			here = hereErr;
+			here.x = Mathf.Round(hereErr.x);
+			here.y = Mathf.Round(hereErr.y);
 			MapTile hereT = map.TileAt(here);
 			Debug.Log("knock into "+here+"?");
 			if(hereT == null) {

@@ -4,7 +4,6 @@ using System.Linq;
 
 [AddComponentMenu("SRPGCK/Character/Skills/Generic")]
 public class Skill : MonoBehaviour {
-	[HideInInspector]
 	public bool isActive=false;
 	public string skillName;
 	public string skillGroup = "";
@@ -25,11 +24,8 @@ public class Skill : MonoBehaviour {
 	protected Dictionary<string, Formula> runtimeParameters;
 
 	//only relevant to targeted skills, sadly
-	[HideInInspector]
 	public List<Character> targetCharacters;
-	[HideInInspector]
 	public Character currentTargetCharacter;
-	[HideInInspector]
 	public int currentHitType;
 
 	//reaction
@@ -41,12 +37,9 @@ public class Skill : MonoBehaviour {
 	public StatEffectGroup[] reactionEffects;
 	public StatEffectGroup reactionApplicationEffects;
 
-	[HideInInspector]
 	public Skill currentReactedSkill = null;
-	[HideInInspector]
 	public StatEffectRecord currentReactedEffect = null;
 
-	[HideInInspector]
 	public List<StatEffectRecord> lastEffects;
 
 	public virtual void Start() {
@@ -231,6 +224,7 @@ public class Skill : MonoBehaviour {
 		    !Mathf.Approximately(ttp.x,ctp.x))) {
 			angle = Mathf.Atan2(ttp.y-ctp.y, ttp.x-ctp.x)*Mathf.Rad2Deg;
 		}
+		Debug.Log("ttp "+ttp+", ctp "+ttp+", f "+facing);
 		string infix = (prefix??"")+".";
 		SetParam("arg"+infix+"distance", distance);
 		SetParam("arg"+infix+"mdistance", Mathf.Abs(ttp.x-ctp.x)+Mathf.Abs(ttp.y-ctp.y)+Mathf.Abs(ttp.z-ctp.z));

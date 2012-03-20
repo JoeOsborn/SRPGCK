@@ -31,7 +31,6 @@ public class Character : MonoBehaviour {
 	//I believe this is a stored property here in character,
 	//not merely a query to scheduler for whether active==this
 	//(what if you can have multiple active dudes?)
-	[HideInInspector]
 	public bool isActive=false;
 
 	public string characterName;
@@ -42,10 +41,8 @@ public class Character : MonoBehaviour {
 
 	public string[] equipmentSlots;
 
-	[HideInInspector]
 	public Dictionary<string, Formula> runtimeStats;
 
-	[HideInInspector]
 	public Formulae fdb { get {
 		return
 			(map != null && map.arbiter != null && map.arbiter.formulae != null) ?
@@ -59,7 +56,6 @@ public class Character : MonoBehaviour {
 	//a skill group is a gameobject that contains a bunch of skills with the right configurations,
 	//and it can add (by duplication) or remove its component skills from a target gameobject.
 
-	[HideInInspector]
 	public string currentAnimation;
 
 	public MoveSkill moveSkill { get {
@@ -78,6 +74,7 @@ public class Character : MonoBehaviour {
 		for(int i = 0; i < equipmentSlots.Length; i++) {
 			equipmentSlots[i] = equipmentSlots[i].NormalizeName();
 		}
+		Facing = 0;
 	}
 
 	public virtual void Reset() {
