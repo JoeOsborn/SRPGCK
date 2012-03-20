@@ -25,18 +25,14 @@ public class MoveSkill : ActionSkill {
 		skillName = "Move";
 		skillGroup = "";
 		skillSorting=-1;
-		if(targetSettings == null || targetSettings.Length == 0) {
-			TargetSettings ts = ScriptableObject.CreateInstance<TargetSettings>();
-			targetSettings = new TargetSettings[]{ts};
-		}
-		foreach(TargetSettings ts in targetSettings) {
-			ts.effectRegion = ScriptableObject.CreateInstance<Region>();
-			ts.effectRegion.IsEffectRegion = true;
-			ts.effectRegion.radiusMinF = Formula.Constant(0);
-			ts.effectRegion.radiusMaxF = Formula.Constant(0);
-			ts.effectRegion.canTargetEnemies = false;
-			ts.effectRegion.canHaltAtEnemies = false;
-		}
+		TargetSettings ts = ScriptableObject.CreateInstance<TargetSettings>();
+		ts.effectRegion = ScriptableObject.CreateInstance<Region>();
+		ts.effectRegion.IsEffectRegion = true;
+		ts.effectRegion.radiusMinF = Formula.Constant(0);
+		ts.effectRegion.radiusMaxF = Formula.Constant(0);
+		ts.effectRegion.canTargetEnemies = false;
+		ts.effectRegion.canHaltAtEnemies = false;
+		targetSettings = new TargetSettings[]{ts};
 	}
 
 	public override void Update() {
@@ -97,7 +93,7 @@ public class MoveSkill : ActionSkill {
 			}
 		});
 	}
-	
+
 	public virtual void PerformMoveToPathNode(PathNode pn, MoveExecutor.MoveFinished callback=null) {
 		currentTarget.Path(pn);
 		// Debug.Log("perform move to "+currentTarget);
@@ -186,12 +182,12 @@ public class MoveSkill : ActionSkill {
 			Pick(endNode);
 		});
 	}
-	
+
 	override protected void LastTargetPushed() {
 //		PerformMoveToPathNode(currentTarget.path, (src, endNode, finishedNicely) => {
 			base.LastTargetPushed();
 //		});
 	}
-	
-	
+
+
 }

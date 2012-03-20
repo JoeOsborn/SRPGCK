@@ -12,8 +12,12 @@ public class TargetSettings : ScriptableObject {
 		get { return owner; }
 		set {
 			owner = value;
-			if(targetRegion == null) { targetRegion = ScriptableObject.CreateInstance<Region>(); }
-			if(effectRegion == null) { effectRegion = ScriptableObject.CreateInstance<Region>(); }
+			if(targetRegion == null) { 
+				targetRegion = ScriptableObject.CreateInstance<Region>(); 
+			}
+			if(effectRegion == null) { 
+				effectRegion = ScriptableObject.CreateInstance<Region>(); 
+			}
 			targetRegion.Owner = owner;
 			effectRegion.Owner = owner;
 			effectRegion.IsEffectRegion = true;
@@ -29,6 +33,7 @@ public class TargetSettings : ScriptableObject {
 	public Region targetRegion, effectRegion;
 	public bool displayUnimpededTargetRegion=false;
 
+	public bool doNotMoveChain=false;
 	public bool allowsCharacterTargeting=false;
 	public float newNodeThreshold=0.05f;
 	public bool immediatelyExecuteDrawnPath=false;
@@ -51,8 +56,4 @@ public class TargetSettings : ScriptableObject {
 	public bool DeferPathRegistration { get {
 		return !(ShouldDrawPath || immediatelyExecuteDrawnPath);
 	} }
-
-	public TargetSettings() {
-
-	}
 }

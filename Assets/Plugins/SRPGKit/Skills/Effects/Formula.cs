@@ -144,6 +144,49 @@ public class Formula : IFormulaElement {
 		f.formulaType = FormulaType.Lookup;
 		f.lookupReference = n;
 		f.lookupType = type;
+		f.text = n;
+		switch(type) {
+			case LookupType.Auto:
+				break;
+			case LookupType.SkillParam:
+				f.text = "skill."+f.text;
+				break;
+			case LookupType.ActorStat:
+				f.text = "c."+f.text;
+				break;
+			case LookupType.ActorSkillParam:
+				f.text = "c.skill."+f.text;
+				break;
+			case LookupType.TargetStat:
+				f.text = "t."+f.text;
+				break;
+			case LookupType.TargetSkillParam:
+				f.text = "t.skill."+f.text;
+				break;
+			case LookupType.NamedFormula:
+				f.text = "f."+f.text;
+				break;
+			case LookupType.ReactedSkillParam:
+				f.text = "reacted-skill."+f.text;
+				break;
+			//faked:...
+			case LookupType.ActorEquipmentParam:
+				f.text = "c.equip."+f.text;
+				break;
+			case LookupType.TargetEquipmentParam:
+				f.text = "t.equip."+f.text;
+				break;
+			case LookupType.ReactedEffectType:
+				f.text = "effect."+f.text;
+				break;
+			//TODO: AppliedEffectType?
+			case LookupType.ActorStatusEffect:
+				f.text = "c.status."+f.text;
+				break;
+			case LookupType.TargetStatusEffect:
+				f.text = "t.status."+f.text;
+				break;
+		}
 		return f;
 	}
 

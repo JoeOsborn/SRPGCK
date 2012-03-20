@@ -113,7 +113,16 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 
 		Builtin("exists", 1, 1, LookupSuccessful);
 
-		string[] sides = new string[]{"front", "left", "right", "back", "away", "sides", "towards", "default"};
+		string[] sides = new string[]{
+			"front",
+			"left",
+			"right",
+			"back",
+			"away",
+			"sides",
+			"towards",
+			"default"
+		};
 		Branch("targeted-side", sides, TargetedSide);
 		Branch("targeter-side", sides, TargeterSide);
 		BranchFormulae("random", RandomBranch);
@@ -271,15 +280,16 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 		var dot = Symbol(".", dotLBP);
 		dot.Led = (parser, left) => {
 			//we have left, now start chewing up the things to the right
+			// Debug.Log("dot left of "+parser.Token);
 			Formula f = CheckFormulaArg(left);
 			do {
-/*				Debug.Log("dot after "+f+" with right "+parser.Token);*/
+				// Debug.Log("dot after "+f+" with right "+parser.Token);
 				//definitely want just the next token
 				Identifier ident = parser.Parse(int.MaxValue) as Identifier;
 				if(ident == null) {
 					throw new SemanticException("Expected identifier after dot");
 				}
-/*				Debug.Log("right is "+ident.Name);*/
+				// Debug.Log("right is "+ident.Name);
 				if(ident.Name == "effect") {
 					throw new SemanticException("Scoped skill effect lookups unsupported");
 				} else if(ident.Name == "reacted-skill") {
@@ -331,7 +341,12 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 			return f;
 		};
 
-		Match("(identifier)", char.IsLetter, 0, name => new Identifier(name));
+		Match(
+			"(identifier)",
+			Regex("[a-zA-Z_][a-zA-Z0-9_]*"),
+			0,
+			name => new Identifier(name)
+		);
 
 		Match("(number)", c => char.IsDigit(c) || c == '.', 0, Number);
 //		Match("(identifier)", char.IsLetter, 1, Identifier);

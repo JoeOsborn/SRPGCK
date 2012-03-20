@@ -31,12 +31,12 @@ public class ActionSkill : Skill {
 	virtual public MoveExecutor Executor { get { return null; } }
 
 	public SkillIO _io;
-	public SkillIO io { 
-		get { 
+	public SkillIO io {
+		get {
 			if(_io == null) {
-				_io = ScriptableObject.CreateInstance<SkillIO>(); 
-			} 
-			return _io; 
+				_io = ScriptableObject.CreateInstance<SkillIO>();
+			}
+			return _io;
 		}
 		set { _io = value; }
 	}
@@ -111,69 +111,69 @@ public class ActionSkill : Skill {
 	public Map Map { get { return map; } }
 	public bool SupportKeyboard { get { return supportKeyboard; } }
 	public bool SupportMouse { get { return supportMouse; } }
-	
+
 	//io
-	public bool supportKeyboard { 
+	public bool supportKeyboard {
 		get { return io.supportKeyboard; }
 		set { io.supportKeyboard = value; }
 	}
-	public bool supportMouse { 
+	public bool supportMouse {
 		get { return io.supportMouse; }
 		set { io.supportMouse = value; }
 	}
-	public bool requireConfirmation { 
+	public bool requireConfirmation {
 		get { return io.requireConfirmation; }
 		set { io.requireConfirmation = value; }
 	}
-	public float keyboardMoveSpeed { 
+	public float keyboardMoveSpeed {
 		get { return io.keyboardMoveSpeed; }
 		set { io.keyboardMoveSpeed = value; }
 	}
-	public float indicatorCycleLength { 
+	public float indicatorCycleLength {
 		get { return io.indicatorCycleLength; }
 		set { io.indicatorCycleLength = value; }
 	}
-	public Material pathMaterial { 
+	public Material pathMaterial {
 		get { return io.pathMaterial; }
 		set { io.pathMaterial = value; }
 	}
-	public CharacterController probePrefab { 
+	public CharacterController probePrefab {
 		get { return io.probePrefab; }
 		set { io.probePrefab = value; }
 	}
-	public bool invertOverlay { 
+	public bool invertOverlay {
 		get { return io.invertOverlay; }
 		set { io.invertOverlay = value; }
 	}
-	public bool lockToGrid { 
+	public bool lockToGrid {
 		get { return io.lockToGrid; }
 		set { io.lockToGrid = value; }
 	}
-	public bool performTemporaryStepsImmediately { 
+	public bool performTemporaryStepsImmediately {
 		get { return io.performTemporaryStepsImmediately; }
 		set { io.performTemporaryStepsImmediately = value; }
 	}
-	public bool performTemporaryStepsOnConfirmation { 
+	public bool performTemporaryStepsOnConfirmation {
 		get { return io.performTemporaryStepsOnConfirmation; }
 		set { io.performTemporaryStepsOnConfirmation = value; }
 	}
-	public Color overlayColor { 
+	public Color overlayColor {
 		get { return io.overlayColor; }
 		set { io.overlayColor = value; }
 	}
-	public Color highlightColor { 
+	public Color highlightColor {
 		get { return io.highlightColor; }
 		set { io.highlightColor = value; }
 	}
-	public RadialOverlayType overlayType { 
+	public RadialOverlayType overlayType {
 		get { return io.overlayType; }
 		set { io.overlayType = value; }
 	}
-	public bool drawOverlayRim { 
+	public bool drawOverlayRim {
 		get { return io.drawOverlayRim; }
 		set { io.drawOverlayRim = value; }
 	}
-	public bool drawOverlayVolume { 
+	public bool drawOverlayVolume {
 		get { return io.drawOverlayVolume; }
 		set { io.drawOverlayVolume = value; }
 	}
@@ -220,39 +220,81 @@ public class ActionSkill : Skill {
 	} }
 
 	public Vector3 TargetPosition { get {
-		for(int i = targets.Count-2; i >= 0; i--) {
-			Target t = targets[i];
+		if(multiTargetMode == MultiTargetMode.Chain) {
+			for(int i = targets.Count-2; i >= 0; i--) {
+				Target t = targets[i];
+				if(t.path != null) { return t.path.pos; }
+				if(t.character != null) { return t.character.TilePosition; }
+			}
+		} else {
+			Target t = lastTarget;
 			if(t.path != null) { return t.path.pos; }
 			if(t.character != null) { return t.character.TilePosition; }
 		}
 		return initialTarget.Position;
 	} }
 	public Quaternion TargetFacing { get {
-		for(int i = targets.Count-2; i >= 0; i--) {
-			Target t = targets[i];
-			if(t.facing != null) { return t.facing.Value; }
-//			if(t.character != null) { return t.character.Facing; }
+		if(multiTargetMode == MultiTargetMode.Chain) {
+			for(int i = targets.Count-2; i >= 0; i--) {
+				Target t = targets[i];
+				if(t.facing != null) { return t.facing.Value; }
+	//			if(t.character != null) { return t.character.Facing; }
+			}
+		} else {
+			Target t = lastTarget;
+			if(t.facing != null) { return t.facing.Value;	}
 		}
 		return initialTarget.facing.Value;
 	} }
 
 	public Vector3 EffectPosition { get {
-		for(int i = targets.Count-1; i >= 0; i--) {
-			Target t = targets[i];
+		if(multiTargetMode == MultiTargetMode.Chain) {
+			for(int i = targets.Count-1; i >= 0; i--) {
+				Target t = targets[i];
+				if(t.path != null) { return t.path.pos; }
+				if(t.character != null) { return t.character.TilePosition; }
+			}
+		} else {
+			Target t = currentTarget;
 			if(t.path != null) { return t.path.pos; }
 			if(t.character != null) { return t.character.TilePosition; }
 		}
 		return initialTarget.Position;
 	} }
 	public Quaternion EffectFacing { get {
-		for(int i = targets.Count-1; i >= 0; i--) {
-			Target t = targets[i];
-			if(t.facing != null) { return t.facing.Value; }
-//			if(t.character != null) { return t.character.Facing; }
+		if(multiTargetMode == MultiTargetMode.Chain) {
+			for(int i = targets.Count-1; i >= 0; i--) {
+				Target t = targets[i];
+				if(t.facing != null) { return t.facing.Value; }
+	//			if(t.character != null) { return t.character.Facing; }
+			}
+		} else {
+			Target t = currentTarget;
+			if(t.facing != null) { return t.facing.Value;	}
 		}
 		return initialTarget.facing.Value;
 	} }
 
+	public Vector3 EffectPositionForTarget(Target t) {
+		if(t.path != null) { return t.path.pos; }
+		if(t.character != null) { return t.character.TilePosition; }
+		int idx = targets.IndexOf(t);
+		for(int i = idx; i >= 0; i--) {
+			Target ti = targets[i];
+			if(ti.path != null) { return ti.path.pos; }
+			if(ti.character != null) { return ti.character.TilePosition; }
+		}
+		return initialTarget.Position;
+	}
+	public Quaternion EffectFacingForTarget(Target t) {
+		if(t.facing != null) { return t.facing.Value; }
+		int idx = targets.IndexOf(t);
+		for(int i = idx; i >= 0; i--) {
+			Target ti = targets[i];
+			if(ti.facing != null) { return ti.facing.Value; }
+		}
+		return initialTarget.facing.Value;
+	}
 
 	public bool SingleTarget { get {
 		return multiTargetMode == MultiTargetMode.Single;
@@ -281,6 +323,7 @@ public class ActionSkill : Skill {
 		if(!HasParam("hitType")) {
 			AddParam("hitType", Formula.Constant(0));
 		}
+		targetSettings = new TargetSettings[]{ScriptableObject.CreateInstance<TargetSettings>()};
 
 		// if(targetEffects == null || targetEffects.Length == 0) {
 		// 	StatEffect healthDamage = ScriptableObject.CreateInstance<StatEffect>();
@@ -320,7 +363,9 @@ public class ActionSkill : Skill {
 		lastTargetPushed = false;
 		base.ActivateSkill();
 		awaitingConfirmation=false;
-		initialTarget = (new Target()).Path(character.TilePosition).Facing(character.Facing);
+		initialTarget = (new Target()).
+			Path(character.TilePosition).
+			Facing(character.Facing);
 		Debug.Log("activate with initial target "+initialTarget);
 		if(targets == null) {
 			targets = new List<Target>();
@@ -757,12 +802,13 @@ public class ActionSkill : Skill {
 	}
 	public virtual void ApplySkillToTargets() {
 		//set up all args
-
+		//FIXME: NEXT: see email
 		Debug.Log("ready the args");
 		for(int i = 0; i < targets.Count; i++) {
 			Target t = targets[i];
 			TargetSettings ts = targetSettings[i];
 			Debug.Log("set args at "+i+" from "+t);
+			//arg0... arg1...
 			SetArgsFromTarget(t, ts, ""+i);
 		}
 		Debug.Log("set default args from "+currentTarget);
@@ -782,7 +828,7 @@ public class ActionSkill : Skill {
 					//set up "current" args
 					Debug.Log("Apply vs target "+t);
 					SetArgsFromTarget(t, ts, "");
-					PathNode[] targetTiles = PathNodesForTarget(t, ts.targetRegion, ts.effectRegion, EffectPosition, EffectFacing);
+					PathNode[] targetTiles = PathNodesForTarget(t, ts.targetRegion, ts.effectRegion, EffectPositionForTarget(t), EffectFacingForTarget(t));
 					Debug.Log("tts:"+targetTiles.Length);
 					foreach(PathNode tt in targetTiles) {
 						Debug.Log(tt);
@@ -805,7 +851,7 @@ public class ActionSkill : Skill {
 					if(ts.IsPickOrPath && chars.Count > 1) {
 						Debug.LogError("Can't chain pick/path/select region after multitarget effect");
 					}
-					PathNode[] targetTiles = PathNodesForTarget(t, ts.targetRegion, ts.effectRegion, EffectPosition, EffectFacing);
+					PathNode[] targetTiles = PathNodesForTarget(t, ts.targetRegion, ts.effectRegion, EffectPositionForTarget(t), EffectFacingForTarget(t));
 					List<Character> hereChars = ts.effectRegion.CharactersForTargetedTiles(targetTiles);
 					foreach(Character c in hereChars) {
 						if(!chars.Contains(c)) {
@@ -1178,7 +1224,7 @@ public class ActionSkill : Skill {
 				}
 			}
 			//FIXME: is it ok to set up so much data?
-			targets.Add((new Target()).Path(new PathNode(EffectPosition, null, radiusSoFar)).Facing(EffectFacing));
+			targets.Add((new Target()).Path(new PathNode(currentSettings.doNotMoveChain ? TargetPosition : EffectPosition, null, radiusSoFar)).Facing(EffectFacing));
 			UpdateOverlayParameters();
 			map.BroadcastMessage("SkillDidPushIntermediateTarget", this, SendMessageOptions.DontRequireReceiver);
 		}

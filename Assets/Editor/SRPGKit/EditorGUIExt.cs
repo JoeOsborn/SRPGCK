@@ -178,20 +178,47 @@ public class EditorGUIExt
 		StatEffect newFx = fx;
 		GUILayout.BeginVertical();
 		newFx.effectType = (StatEffectType)EditorGUILayout.EnumPopup("Effect Type:", fx.effectType);
+		if(newFx.specialMoveGivenStartX == null || fx == null) {
+			newFx.specialMoveGivenStartX = Formula.Lookup("arg.x", LookupType.SkillParam);
+		}
+		if(newFx.specialMoveGivenStartY == null || fx == null) {
+			newFx.specialMoveGivenStartY = Formula.Lookup("arg.y", LookupType.SkillParam);
+		}
+		if(newFx.specialMoveGivenStartZ == null || fx == null) {
+			newFx.specialMoveGivenStartZ = Formula.Lookup("arg.z", LookupType.SkillParam);
+		}
 		switch(newFx.effectType) {
 			case StatEffectType.Augment:
 			case StatEffectType.Multiply:
 			case StatEffectType.Replace:
-				newFx.statName = EditorGUILayout.TextField("Stat Name:", fx.statName == null ? "" : fx.statName).NormalizeName();
-				newFx.value = EditorGUIExt.FormulaField("Formula:", fx.value, type, formulaOptions, lastFocusedControl, i);
-			break;
+				newFx.statName = EditorGUILayout.TextField(
+					"Stat Name:",
+					fx.statName == null ? "" : fx.statName
+				).NormalizeName();
+				newFx.value = EditorGUIExt.FormulaField(
+					"Formula:",
+					fx.value,
+					type+".value",
+					formulaOptions,
+					lastFocusedControl,
+					i
+				);
+				break;
 			case StatEffectType.ChangeFacing:
-				newFx.value = EditorGUIExt.FormulaField("Facing:", fx.value, type, formulaOptions, lastFocusedControl, i);
-			break;
+				newFx.value = EditorGUIExt.FormulaField(
+					"Facing:",
+					fx.value,
+					type+".value",
+					formulaOptions,
+					lastFocusedControl,
+					i
+				);
+				break;
 			case StatEffectType.EndTurn:
-			break;
+				break;
 			case StatEffectType.SpecialMove:
-			if(newFx.specialMoveLine == null || newFx.specialMoveLine.type != RegionType.LineMove) {
+				if(newFx.specialMoveLine == null ||
+				   newFx.specialMoveLine.type != RegionType.LineMove) {
 					newFx.specialMoveLine = ScriptableObject.CreateInstance<Region>();
 					newFx.specialMoveLine.type = RegionType.LineMove;
 					newFx.specialMoveLine.interveningSpaceType = InterveningSpaceType.LineMove;
@@ -206,15 +233,66 @@ public class EditorGUIExt
 					newFx.specialMoveLine.canGlide = false;
 					newFx.specialMoveLine.facingLock = FacingLock.Cardinal;
 				}
-				newFx.specialMoveType = EditorGUILayout.TextField("Move Type:", newFx.specialMoveType).NormalizeName();
-				newFx.specialMoveLine = EditorGUIExt.SimpleRegionGUI(type, newFx.specialMoveLine, formulaOptions, lastFocusedControl, Screen.width, 0);
-				newFx.specialMoveSpeedXY = EditorGUILayout.FloatField("Move Speed XY:", newFx.specialMoveSpeedXY);
-				newFx.specialMoveSpeedZ = EditorGUILayout.FloatField("Move Speed Z:", newFx.specialMoveSpeedZ);
-			break;
+				newFx.specialMoveType = EditorGUILayout.TextField(
+					"Move Type:",
+					newFx.specialMoveType
+				).NormalizeName();
+				newFx.specialMoveLine = EditorGUIExt.SimpleRegionGUI(
+					type+".specialMoveRegion",
+					newFx.specialMoveLine,
+					formulaOptions,
+					lastFocusedControl,
+					Screen.width,
+					0
+				);
+				newFx.specialMoveGivenStartX = EditorGUIExt.FormulaField(
+					"Start X:",
+					newFx.specialMoveGivenStartX,
+					type+".specialMoveStart.x",
+					formulaOptions,
+					lastFocusedControl,
+					i
+				);
+				newFx.specialMoveGivenStartY = EditorGUIExt.FormulaField(
+					"Start Y:",
+					newFx.specialMoveGivenStartY,
+					type+".specialMoveStart.y",
+					formulaOptions,
+					lastFocusedControl,
+					i
+				);
+				newFx.specialMoveGivenStartZ = EditorGUIExt.FormulaField(
+					"Start Z:",
+					newFx.specialMoveGivenStartZ,
+					type+".specialMoveStart.z",
+					formulaOptions,
+					lastFocusedControl,
+					i
+				);
+				newFx.specialMoveAnimateToStart = EditorGUILayout.Toggle(
+					"Animate to Start Position",
+					newFx.specialMoveAnimateToStart
+				);
+				newFx.specialMoveSpeedXY = EditorGUILayout.FloatField(
+					"Move Speed XY:",
+					newFx.specialMoveSpeedXY
+				);
+				newFx.specialMoveSpeedZ = EditorGUILayout.FloatField(
+					"Move Speed Z:",
+					newFx.specialMoveSpeedZ
+				);
+				break;
 		}
 		if(ctx == StatEffectContext.Action || ctx == StatEffectContext.Any) {
 			newFx.target = (StatEffectTarget)EditorGUILayout.EnumPopup("Target:", fx.target);
-			newFx.reactableTypes = ArrayFoldout("Reactable Types", fx.reactableTypes, ref newFx.editorShowsReactableTypes, false, Screen.width/2-32, "attack");
+			newFx.reactableTypes = ArrayFoldout(
+				"Reactable Types",
+				fx.reactableTypes,
+				ref newFx.editorShowsReactableTypes,
+				false,
+				Screen.width/2-32,
+				"attack"
+			);
 		}
 		return newFx;
 	}
@@ -223,6 +301,12 @@ public class EditorGUIExt
 		StatEffect newFx = i != -1 ? PickAssetGUI<StatEffect>("Stat Effect", fx) : fx;
 		if(i != -1) {
 			if(!(newFx.editorShow = EditorGUILayout.Foldout(newFx.editorShow, "Customize"))) {
+				GUILayout.BeginHorizontal();
+				GUILayout.FlexibleSpace();
+				if(GUILayout.Button("Delete", GUILayout.Width(64))) {
+					newFx = null;
+				}
+				GUILayout.EndHorizontal();
 				return newFx;
 			}
 			if(newFx.name != null && newFx.name != "") {
@@ -858,7 +942,7 @@ public class EditorGUIExt
 		return t;
 	}
 
-	public static TargetSettings TargetSettingsGUI(string label, TargetSettings oldTs, Skill atk, string[] formulaOptions, string lastFocusedControl, int i=-1) {
+	public static TargetSettings TargetSettingsGUI(string label, TargetSettings oldTs, ActionSkill atk, string[] formulaOptions, string lastFocusedControl, int i=-1) {
 		if(targetingModes == null || targetingModes.Length == 0) {
 			targetingModes = new GUIContent[]{
 				new GUIContent("Self", EditorGUIUtility.LoadRequired("skl-target-self.png") as Texture),
@@ -884,6 +968,9 @@ public class EditorGUIExt
 			if(ts.name != null && ts.name != "") {
 				EditorGUILayout.HelpBox("Changes made here will NOT alter the attached TargetSettings asset!", MessageType.Info);
 			}
+		}
+		if(atk == null || atk.multiTargetMode == MultiTargetMode.Chain) {
+			ts.doNotMoveChain = EditorGUILayout.Toggle("Chain: Leave Origin in Place", ts.doNotMoveChain);
 		}
 		if(ts.targetingMode == TargetingMode.Pick ||
 		   ts.targetingMode == TargetingMode.Path) {

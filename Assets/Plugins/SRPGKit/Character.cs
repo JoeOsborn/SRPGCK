@@ -8,7 +8,9 @@ public class Character : MonoBehaviour {
 	Map _map;
 	public Map map { get {
 		if(_map == null) {
-			_map = transform.parent == null ? null : transform.parent.GetComponent<Map>();
+			_map = transform.parent == null ?
+				null :
+				transform.parent.GetComponent<Map>();
 		}
 		return _map;
 	} }
@@ -45,7 +47,10 @@ public class Character : MonoBehaviour {
 
 	[HideInInspector]
 	public Formulae fdb { get {
-		return (map != null && map.arbiter != null && map.arbiter.formulae != null) ? map.arbiter.formulae : Formulae.DefaultFormulae;
+		return
+			(map != null && map.arbiter != null && map.arbiter.formulae != null) ?
+				map.arbiter.formulae :
+				Formulae.DefaultFormulae;
 	} }
 
 	//skills are monobehaviors (though I wish I could make them components)
@@ -86,7 +91,9 @@ public class Character : MonoBehaviour {
 	} }
 
 	public Vector3 TilePosition { get {
-		return map == null ? Vector3.zero : map.InverseTransformPointWorld(transform.position-transformOffset);
+		return map == null ?
+			Vector3.zero :
+			map.InverseTransformPointWorld(transform.position-transformOffset);
 	} }
 
 	public void Activate() {
@@ -108,11 +115,17 @@ public class Character : MonoBehaviour {
 		if(currentAnimation != animType || force) {
 			currentAnimation = animType;
 			Debug.Log("triggering "+animType);
-			SendMessage("UseAnimation", animType, SendMessageOptions.DontRequireReceiver);
+			SendMessage(
+				"UseAnimation",
+				animType,
+				SendMessageOptions.DontRequireReceiver
+			);
 		}
 	}
 
 	public void SpecialMove(
+		Vector3 start,
+		bool animateMoveToStart,
 		string moveType,
 		Region lineMove,
 		float specialMoveSpeedXY,
@@ -124,16 +137,82 @@ public class Character : MonoBehaviour {
 		specialMoveExecutor.ZSpeedDown = specialMoveSpeedZ;
 		List<Character> collidedCharacters = new List<Character>();
 		float direction=-1, amount=-1, remaining=-1, dropDistance=-1;
-		PathNode movePath = lineMove.GetLineMove(out direction, out amount, out remaining, out dropDistance, collidedCharacters, this);
+		PathNode movePath = lineMove.GetLineMove(
+			out direction,
+			out amount,
+			out remaining,
+			out dropDistance,
+			collidedCharacters,
+			this,
+			start
+		);
 		//move executor special move (path)
 		specialMoveExecutor.Activate();
-		CharacterSpecialMoveReport rep = new CharacterSpecialMoveReport(this, moveType, lineMove, cause, this.TilePosition, movePath, direction, amount, remaining, dropDistance, collidedCharacters);
-		map.BroadcastMessage("WillSpecialMoveCharacter", rep, SendMessageOptions.DontRequireReceiver);
-		specialMoveExecutor.SpecialMoveTo(movePath, (src, endNode, finishedNicely) => {
-			Debug.Log("specially moved character "+this.name+" by "+moveType+" in dir "+direction+" node "+movePath+" into "+(collidedCharacters.Count==0?"nobody":""+collidedCharacters.Count+" folks")+" left over "+remaining+" dropped "+dropDistance);
-			map.BroadcastMessage("DidSpecialMoveCharacter", rep, SendMessageOptions.DontRequireReceiver);
-			specialMoveExecutor.Deactivate();
-		});
+		CharacterSpecialMoveReport rep = new CharacterSpecialMoveReport(
+			this,
+			moveType,
+			lineMove,
+			cause,
+			start,
+			movePath,
+			direction,
+			amount,
+			remaining,
+			dropDistance,
+			collidedCharacters
+		);
+		map.BroadcastMessage(
+			"WillSpecialMoveCharacter",
+			rep,
+			SendMessageOptions.DontRequireReceiver
+		);
+		MoveExecutor.MoveFinished movedToStart =
+		(srcStart, srcEndNode, srcFinishedNicely) => {
+			Debug.Log("src finished nicely? "+srcFinishedNicely);
+			specialMoveExecutor.SpecialMoveTo(
+				movePath,
+				(src, endNode, finishedNicely) => {
+					Debug.Log(
+						"specially moved character "+this.name+
+						" by "+moveType+
+						" from "+start+
+						" in dir "+direction+
+						" node "+movePath+
+						" into "+(
+							collidedCharacters.Count==0 ?
+								"nobody":
+								""+collidedCharacters.Count+" folks"
+						)+
+						" left over "+remaining+
+						" dropped "+dropDistance
+					);
+					map.BroadcastMessage(
+						"DidSpecialMoveCharacter",
+						rep,
+						SendMessageOptions.DontRequireReceiver
+					);
+					specialMoveExecutor.Deactivate();
+				}
+			);
+		};
+
+		if(start != TilePosition) {
+			if(animateMoveToStart) {
+				specialMoveExecutor.SpecialMoveTo(
+					new PathNode(start, null, 0),
+					movedToStart,
+					1.0f
+				);
+			} else {
+				specialMoveExecutor.ImmediatelyMoveTo(
+					new PathNode(start, null, 0),
+					movedToStart,
+					1.0f
+				);
+			}
+		} else {
+			movedToStart(start, new PathNode(start, null, 0), true);
+		}
 	}
 
 	public virtual float Facing {
@@ -243,6 +322,13 @@ public class Character : MonoBehaviour {
 
 	public float GetBaseStat(string statName, float fallback=-1) {
 		MakeStatsIfNecessary();
+		if(statName == "position.x") {
+			return TilePosition.x;
+		} else if(statName == "position.y") {
+			return TilePosition.y;
+		} else if(statName == "position.z") {
+			return TilePosition.z;
+		}
 		if(!HasStat(statName)) {
 			if(fallback == -1) {
 				Debug.LogError("No fallback for missing stat "+statName);

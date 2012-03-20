@@ -303,6 +303,9 @@ public class Region : ScriptableObject {
 		owner.SetParam("arg.region.dx", Mathf.Abs(pos.x-start.x));
 		owner.SetParam("arg.region.dy", Mathf.Abs(pos.y-start.y));
 		owner.SetParam("arg.region.dz", Mathf.Abs(pos.z-start.z));
+		owner.SetParam("arg.region.x", start.x);
+		owner.SetParam("arg.region.y", start.y);
+		owner.SetParam("arg.region.z", start.z);
 		owner.SetParam("arg.region.target.x", pos.x);
 		owner.SetParam("arg.region.target.y", pos.y);
 		owner.SetParam("arg.region.target.z", pos.z);
@@ -383,14 +386,14 @@ public class Region : ScriptableObject {
 		out float remaining,
 		out float dd,
 		List<Character> collidedCharacters,
-		Character chara
+		Character chara, Vector3 start
 	) {
 		return GetLineMove(
 			out dir, out amt, out remaining, out dd,
 			collidedCharacters,
 			null,
 			chara,
-			chara.TilePosition, xyDirection,
+			start, xyDirection,
 			radiusMax, zDownMax, zUpMax
 		);
 	}

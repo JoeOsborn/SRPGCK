@@ -22,18 +22,17 @@ public class WaitSkill : ActionSkill {
 		if(waitArrows == null) {
 			waitArrows = Resources.LoadAssetAtPath("Assets/SRPGKit/Prefabs/Wait Arrows.prefab", typeof(GameObject)) as GameObject;
 		}
-		if(targetSettings == null || targetSettings.Length == 0) {
-			targetSettings = new TargetSettings[]{ScriptableObject.CreateInstance<TargetSettings>()};
-		}
+		TargetSettings ts = ScriptableObject.CreateInstance<TargetSettings>();
+		targetSettings = new TargetSettings[]{ts};
 		overlayColor = Color.clear;
 		highlightColor = Color.clear;
-		currentSettings.targetingMode = TargetingMode.Cardinal;
-		currentSettings.targetRegion = ScriptableObject.CreateInstance<Region>();
-		currentSettings.targetRegion.type = RegionType.Self;
-		currentSettings.targetRegion.interveningSpaceType = InterveningSpaceType.Pick;
-		currentSettings.effectRegion = ScriptableObject.CreateInstance<Region>();
-		currentSettings.effectRegion.type = RegionType.Self;
-		currentSettings.effectRegion.interveningSpaceType = InterveningSpaceType.Pick;
+		ts.targetingMode = TargetingMode.Cardinal;
+		ts.targetRegion = ScriptableObject.CreateInstance<Region>();
+		ts.targetRegion.type = RegionType.Self;
+		ts.targetRegion.interveningSpaceType = InterveningSpaceType.Pick;
+		ts.effectRegion = ScriptableObject.CreateInstance<Region>();
+		ts.effectRegion.type = RegionType.Self;
+		ts.effectRegion.interveningSpaceType = InterveningSpaceType.Pick;
 		StatEffect facingEffect = ScriptableObject.CreateInstance<StatEffect>();
 		facingEffect.effectType = StatEffectType.ChangeFacing;
 		facingEffect.target = StatEffectTarget.Applier;
@@ -74,8 +73,8 @@ public class WaitSkill : ActionSkill {
 		base.UpdateTarget();
 		if(!isActive) { return; }
 		//look for clicks on our four arrows
-		if(supportMouse && 
-		   Input.GetMouseButton(0) && 
+		if(supportMouse &&
+		   Input.GetMouseButton(0) &&
 		   (!awaitingConfirmation || !RequireConfirmation)) {
 			Ray r = Camera.main.ScreenPointToRay(Input.mousePosition);
 			RaycastHit hitInfo;

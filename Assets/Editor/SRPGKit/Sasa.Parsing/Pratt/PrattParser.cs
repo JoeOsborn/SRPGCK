@@ -103,10 +103,10 @@ public delegate int Scanner(string input, int start);
 /// match precedence-based lexer. Clients need only inherit from this class,
 /// specify the type of elements being parsed, and in the constructor function
 /// specifying the set of parsable operators with the associated semantic action.
-/// 
+///
 /// Pratt-parsers are effectively Turing complete, so they can parse any grammar imaginable,
 /// although the predefined combinators encourage context-free grammars.
-/// 
+///
 /// References:
 /// <ul>
 /// <li><a href="http://effbot.org/zone/simple-top-down-parsing.htm">http://effbot.org/zone/simple-top-down-parsing.htm</a></li>
@@ -128,7 +128,7 @@ public delegate int Scanner(string input, int start);
 ///         Match("(digit)", char.IsDigit, 1, Int);
 ///         SkipWhile(char.IsWhiteSpace);
 ///     }
-/// 
+///
 ///     int Int(string lit) { return int.Parse(lit); }
 ///     int Add(int lhs, int rhs) { return lhs + rhs; }
 ///     int Sub(int lhs, int rhs) { return lhs - rhs; }
@@ -183,6 +183,13 @@ public abstract class Grammar<T>
   {
       var lex = Symbol(id, bindingPower);
           lex.Scanner = While(pred);
+          lex.Parse = selector;
+      return lex;
+  }
+  protected Symbol<T> Match(string id, Scanner scanner, int bindingPower, Func<string, T> selector)
+  {
+      var lex = Symbol(id, bindingPower);
+          lex.Scanner = scanner;
           lex.Parse = selector;
       return lex;
   }
@@ -528,11 +535,10 @@ public abstract class Grammar<T>
   /// <returns>A scanner using a regular expression for matching.</returns>
   protected static Scanner Regex(string regex, RegexOptions options = RegexOptions.None)
   {
-      var r = new Regex(regex, options);
+      var r = new Regex(@"\G"+regex, options);
       return (input, start) =>
       {
-          // use \G to ensure regex matches at exactly 'start' looking forward
-          var match = r.Match(@"\G" + input, start);
+				  var match = r.Match(input, start);
           return match.Success ? start + match.Length : start;
       };
   }
@@ -665,8 +671,9 @@ public sealed class PrattParser<T>
               // check whether the given symbol matches at the current position
               int j = r.Scan(input, k);
               // save the longest match with the greatest binding power
-              if (j > pos || match != null && j == pos && r.LeftBindingPower > match.LeftBindingPower)
+              if (j > pos || (match != null && j == pos && r.LeftBindingPower > match.LeftBindingPower))
               {
+								// Debug.Log("match "+r.Id+" at "+j+" of " +input+" from "+k);
                   match = r;
                   pos = j;
               }
@@ -676,6 +683,8 @@ public sealed class PrattParser<T>
           {
               if (!match.Skip)
               {
+								// Debug.Log("pos is "+pos+", k is "+k+", string is "+input);
+								// Debug.Log("matched text is "+input.Substring(k, pos-k));
                   // return a token for the longest match
                   var tok = match.Matched(line, Column(input, k), input.Substring(k, pos - k));
                   yield return tok;

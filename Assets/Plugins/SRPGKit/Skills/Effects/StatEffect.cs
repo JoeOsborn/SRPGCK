@@ -45,7 +45,7 @@ public struct StatChange {
 [System.Serializable]
 public class StatEffect : ScriptableObject {
 	public bool editorShow=false;
-	
+
 	public string statName;
 	public StatEffectType effectType=StatEffectType.Augment;
 	public Formula value;
@@ -58,6 +58,8 @@ public class StatEffect : ScriptableObject {
 	//these ones are only relevant for special moves
 	public string specialMoveType="knockback";
 	public float specialMoveSpeedXY=20, specialMoveSpeedZ=25;
+	public bool specialMoveAnimateToStart=true;
+	public Formula specialMoveGivenStartX, specialMoveGivenStartY, specialMoveGivenStartZ;
 	public Region specialMoveLine;
 
 	public float ModifyStat(float stat, Skill scontext, Character ccontext, Equipment econtext, out StatEffectRecord rec) {
@@ -115,8 +117,21 @@ public class StatEffect : ScriptableObject {
 					Debug.LogError("Undefined move line");
 				}
 				specialMoveLine.Owner = skill;
-				effect = new StatEffectRecord(this);
-				actualTarget.SpecialMove(specialMoveType, specialMoveLine, specialMoveSpeedXY, specialMoveSpeedZ, skill);
+				Vector3 start = new Vector3(
+					specialMoveGivenStartX.GetValue(fdb, skill, targ, null),
+					specialMoveGivenStartY.GetValue(fdb, skill, targ, null),
+					specialMoveGivenStartZ.GetValue(fdb, skill, targ, null)
+				);
+				effect = new StatEffectRecord(this, start);
+				actualTarget.SpecialMove(
+					start,
+					specialMoveAnimateToStart,
+					specialMoveType,
+					specialMoveLine,
+					specialMoveSpeedXY,
+					specialMoveSpeedZ,
+					skill
+				);
 				break;
 			}
 		}
@@ -130,9 +145,14 @@ public class StatEffect : ScriptableObject {
 public class StatEffectRecord {
 	public StatEffect effect;
 	public float value;
+	public Vector3 specialMoveStart;
 	public StatEffectRecord(StatEffect e, float v=0) {
 		effect = e;
 		value = v;
+	}
+	public StatEffectRecord(StatEffect e, Vector3 start) {
+		effect = e;
+		specialMoveStart = start;
 	}
 
 	public bool Matches(string[] statNames, StatChangeType[] changes, string[] reactableTypes) {

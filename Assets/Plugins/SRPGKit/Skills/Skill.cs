@@ -222,7 +222,6 @@ public class Skill : MonoBehaviour {
 		runtimeParameters[pname] = f;
 		parameters = parameters.Concat(new Parameter[]{new Parameter(pname, f)}).ToList();
 	}
-
 	protected virtual void SetArgsFrom(Vector3 ttp, Quaternion? facing=null, string prefix="") {
 		Vector3 ctp = character.TilePosition;
 		float distance = Vector3.Distance(ttp, ctp);
@@ -232,14 +231,18 @@ public class Skill : MonoBehaviour {
 		    !Mathf.Approximately(ttp.x,ctp.x))) {
 			angle = Mathf.Atan2(ttp.y-ctp.y, ttp.x-ctp.x)*Mathf.Rad2Deg;
 		}
-		string infix = (prefix??"")+((prefix==""||prefix==null)?"":".");
-		SetParam("arg."+infix+"distance", distance);
-		SetParam("arg."+infix+"mdistance", Mathf.Abs(ttp.x-ctp.x)+Mathf.Abs(ttp.y-ctp.y)+Mathf.Abs(ttp.z-ctp.z));
-		SetParam("arg."+infix+"mdistance.xy", Mathf.Abs(ttp.x-ctp.x)+Mathf.Abs(ttp.y-ctp.y));
-		SetParam("arg."+infix+"dx", Mathf.Abs(ttp.x-ctp.x));
-		SetParam("arg."+infix+"dy", Mathf.Abs(ttp.y-ctp.y));
-		SetParam("arg."+infix+"dz", Mathf.Abs(ttp.z-ctp.z));
-		SetParam("arg."+infix+"angle.xy", angle);
+		string infix = (prefix??"")+".";
+		SetParam("arg"+infix+"distance", distance);
+		SetParam("arg"+infix+"mdistance", Mathf.Abs(ttp.x-ctp.x)+Mathf.Abs(ttp.y-ctp.y)+Mathf.Abs(ttp.z-ctp.z));
+		SetParam("arg"+infix+"mdistance.xy", Mathf.Abs(ttp.x-ctp.x)+Mathf.Abs(ttp.y-ctp.y));
+		SetParam("arg"+infix+"dx", Mathf.Abs(ttp.x-ctp.x));
+		SetParam("arg"+infix+"dy", Mathf.Abs(ttp.y-ctp.y));
+		SetParam("arg"+infix+"dz", Mathf.Abs(ttp.z-ctp.z));
+		SetParam("arg"+infix+"x", ttp.x);
+		SetParam("arg"+infix+"y", ttp.y);
+		SetParam("arg"+infix+"z", ttp.z);
+		SetParam("arg"+infix+"angle.xy", angle);
+		Debug.Log("set "+"arg"+infix+"angle.xy"+"="+angle);
 	}
 	public virtual void SetArgsFromTarget(Target t, TargetSettings ts, string prefix) {
 		TargetingMode tm = TargetingMode.Custom;

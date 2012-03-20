@@ -26,7 +26,11 @@ public class MoveExecutor {
 	public bool animateTemporaryMovement=false;
 	public bool specialMoving=false;
 
-	public delegate void MoveFinished(Vector3 src, PathNode endNode, bool finishedNicely);
+	public delegate void MoveFinished(
+		Vector3 src,
+		PathNode endNode,
+		bool finishedNicely
+	);
 
 	public Vector3 moveOrigin;
 	protected float moveTimeRemaining=0;
@@ -69,14 +73,25 @@ public class MoveExecutor {
 		} while(cur != null);
 		pathIndex = animNodes.Count-1;
 		if(animNodes.Count > 1) {
-			currentMoveType = MoveTypeForMove(animNodes[pathIndex-1].pos, animNodes[pathIndex].pos);
-			character.Facing = FacingForMove(animNodes[pathIndex-1].pos, animNodes[pathIndex].pos);
+			currentMoveType = MoveTypeForMove(
+				animNodes[pathIndex-1].pos,
+				animNodes[pathIndex].pos
+			);
+			character.Facing = FacingForMove(
+				animNodes[pathIndex-1].pos,
+				animNodes[pathIndex].pos
+			);
 		} else {
 			currentMoveType = MoveType.None;
 		}
 	}
 
-	virtual public void ImmediatelyMoveTo(PathNode pn, MoveFinished callback=null, float timeout=10.0f, bool special = false) {
+	virtual public void ImmediatelyMoveTo(
+		PathNode pn,
+		MoveFinished callback=null,
+		float timeout=10.0f,
+		bool special = false
+	) {
 		specialMoving = special;
 		temporaryDestNode = pn;
 		moveOrigin = temporaryPosition;
@@ -84,14 +99,23 @@ public class MoveExecutor {
 		temporaryPosition = temporaryDestination;
 		transformPosition = temporaryPosition;
 		if(callback != null) {
-			moveCallback(map.InverseTransformPointWorld(moveOrigin), temporaryDestNode, true);
+			moveCallback(
+				map.InverseTransformPointWorld(moveOrigin),
+				temporaryDestNode,
+				true
+			);
 		}
 		specialMoving = false;
 		moveCallback = null;
 		ClearPath();
 	}
 
-	virtual public void TemporaryMoveTo(PathNode pn, MoveFinished callback, float timeout=10.0f, bool special = false) {
+	virtual public void TemporaryMoveTo(
+		PathNode pn,
+		MoveFinished callback,
+		float timeout=10.0f,
+		bool special = false
+	) {
 		Debug.Log("temporary move to "+pn);
 		if(!animateTemporaryMovement) {
 			ImmediatelyMoveTo(pn, callback, timeout, special);
@@ -113,7 +137,12 @@ public class MoveExecutor {
 		get { return map.TransformPointWorld(destNode.pos); }
 	}
 
-	virtual public void IncrementalMoveTo(PathNode pn, MoveFinished callback, float timeout=10.0f, bool special=false) {
+	virtual public void IncrementalMoveTo(
+		PathNode pn,
+		MoveFinished callback,
+		float timeout=10.0f,
+		bool special=false
+	) {
 		Debug.Log("incremental move to "+pn);
 		specialMoving = special;
 		transformPosition = position;
@@ -132,12 +161,21 @@ public class MoveExecutor {
 			animNodes[0].pos != transformPosition;
 	} }
 
-	virtual public void MoveTo(PathNode pn, MoveFinished callback, float timeout=10.0f, bool special=false) {
+	virtual public void MoveTo(
+		PathNode pn,
+		MoveFinished callback,
+		float timeout=10.0f,
+		bool special=false
+	) {
 		Debug.Log("move to "+pn);
 		IncrementalMoveTo(pn, callback, timeout, special);
 	}
 
-	virtual public void SpecialMoveTo(PathNode pn, MoveFinished callback, float timeout=10.0f) {
+	virtual public void SpecialMoveTo(
+		PathNode pn,
+		MoveFinished callback,
+		float timeout=10.0f
+	) {
 		Debug.Log("special move to "+pn);
 		MoveTo(pn, callback, timeout, true);
 	}
@@ -221,7 +259,8 @@ public class MoveExecutor {
 			float dsquared = d.sqrMagnitude;
 			float dt = Time.deltaTime;
 			float zspeed = d.y < 0 ? ZSpeedDown : ZSpeedUp;
-			float AnimatedMoveSquareDistanceThreshold = (XYSpeed*dt)*(XYSpeed*dt)+(zspeed*dt)*(zspeed*dt);
+			float AnimatedMoveSquareDistanceThreshold =
+				(XYSpeed*dt)*(XYSpeed*dt)+(zspeed*dt)*(zspeed*dt);
 			if(dsquared < AnimatedMoveSquareDistanceThreshold) {
 				if(pathIndex > 0) {
 					pathIndex--;
@@ -238,7 +277,12 @@ public class MoveExecutor {
 					}
 				  temporaryPosition = temporaryDestination;
 			  	if(moveCallback != null) {
-			  		moveCallback(map.InverseTransformPointWorld(moveOrigin), temporaryDestNode, true);
+						Debug.Log("call callback in update");
+			  		moveCallback(
+							map.InverseTransformPointWorld(moveOrigin),
+							temporaryDestNode,
+							true
+						);
 						specialMoving = false;
 			  		moveCallback = null;
 			  	}
@@ -309,13 +353,20 @@ public class MoveExecutor {
 				}
 				transformPosition = newPos;
 			}
-		} else if(position != destination || temporaryPosition != temporaryDestination) {
+		} else if(
+			position != destination ||
+			temporaryPosition != temporaryDestination
+		) {
+			Debug.Log("failsafe, pos "+position+" dest "+destination+" temp pos "+temporaryPosition+" temp dest "+temporaryDestination+" moveTimeRemaining "+moveTimeRemaining+" animNodes "+animNodes+" ct "+animNodes.Count);
 			position = destination;
 			temporaryPosition = temporaryDestination;
-			Debug.Log("failsafe");
 			transformPosition = position;
 			if(moveCallback != null) {
-				moveCallback(map.InverseTransformPointWorld(moveOrigin), temporaryDestNode, false);
+				moveCallback(
+					map.InverseTransformPointWorld(moveOrigin),
+					temporaryDestNode,
+					false
+				);
 				specialMoving = false;
 				moveCallback = null;
 			}
