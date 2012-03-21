@@ -32,7 +32,7 @@ public class MoveSkill : ActionSkill {
 		ts.effectRegion.radiusMaxF = Formula.Constant(0);
 		ts.effectRegion.canTargetEnemies = false;
 		ts.effectRegion.canHaltAtEnemies = false;
-		targetSettings = new List<TargetSettings>{ts};
+		targetSettings = new TargetSettings[]{ts};
 	}
 
 	public override void Update() {

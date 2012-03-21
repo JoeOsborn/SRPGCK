@@ -20,7 +20,7 @@ public class WaitSkill : ActionSkill {
 			waitArrows = Resources.LoadAssetAtPath("Assets/SRPGKit/Prefabs/Wait Arrows.prefab", typeof(GameObject)) as GameObject;
 		}
 		TargetSettings ts = new TargetSettings();
-		targetSettings = new List<TargetSettings>{ts};
+		targetSettings = new TargetSettings[]{ts};
 		overlayColor = Color.clear;
 		highlightColor = Color.clear;
 		ts.targetingMode = TargetingMode.Cardinal;

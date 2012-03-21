@@ -45,7 +45,7 @@ public class Region {
 			if(regions == null) {
 				return;
 			}
-			for(int i = 0; i < regions.Count; i++) {
+			for(int i = 0; i < regions.Length; i++) {
 				if(regions[i] == null) {
 					regions[i] = new Region();
 				}
@@ -78,7 +78,7 @@ public class Region {
 		set {
 			_canCrossWalls = value;
 			if(regions == null || interveningSpaceType == InterveningSpaceType.Pick) { return; }
-			for(int i = 0; i < regions.Count; i++) {
+			for(int i = 0; i < regions.Length; i++) {
 				if(regions[i] == null) {
 					regions[i] = new Region();
 				}
@@ -93,7 +93,7 @@ public class Region {
 		set {
 			_canCrossEnemies = value;
 			if(regions == null || interveningSpaceType == InterveningSpaceType.Pick) { return; }
-			for(int i = 0; i < regions.Count; i++) {
+			for(int i = 0; i < regions.Length; i++) {
 				if(regions[i] == null) {
 					regions[i] = new Region();
 				}
@@ -112,7 +112,7 @@ public class Region {
 		set {
 			_canHaltAtEnemies = value;
 			if(regions == null) { return; }
-			for(int i = 0; i < regions.Count; i++) {
+			for(int i = 0; i < regions.Length; i++) {
 				if(regions[i] == null) {
 					regions[i] = new Region();
 				}
@@ -127,7 +127,7 @@ public class Region {
 		set {
 			_canTargetEnemies = value;
 			if(regions == null) { return; }
-			for(int i = 0; i < regions.Count; i++) {
+			for(int i = 0; i < regions.Length; i++) {
 				if(regions[i] == null) {
 					regions[i] = new Region();
 				}
@@ -142,7 +142,7 @@ public class Region {
 		set {
 			_canTargetFriends = value;
 			if(regions == null) { return; }
-			for(int i = 0; i < regions.Count; i++) {
+			for(int i = 0; i < regions.Length; i++) {
 				if(regions[i] == null) {
 					regions[i] = new Region();
 				}
@@ -157,7 +157,7 @@ public class Region {
 		set {
 			_canTargetSelf = value;
 			if(regions == null) { return; }
-			for(int i = 0; i < regions.Count; i++) {
+			for(int i = 0; i < regions.Length; i++) {
 				if(regions[i] == null) {
 					regions[i] = new Region();
 				}
@@ -197,7 +197,7 @@ public class Region {
 	//only used for compound regions. subregions of a compound region may only
 	//generate tiles, and may not apply their intervening space modes.
 	//more complex uses of compound spaces should subclass Skill or Region.
-	public List<Region> regions;
+	public Region[] regions;
 
 	public float radiusMin { get { return radiusMinF.GetValue(fdb, owner, null, null); } }
 	public float radiusMax { get { return radiusMaxF.GetValue(fdb, owner, null, null); } }
@@ -677,7 +677,7 @@ public class Region {
 				break;
 			case RegionType.Compound:
 				pickables =	new Dictionary<Vector3, PathNode>();
-				for(int i = 0; i < regions.Count; i++) {
+				for(int i = 0; i < regions.Length; i++) {
 					Region r = regions[i];
 					PathNode[] thesePickables = r.GetValidTiles(
 						here, q,

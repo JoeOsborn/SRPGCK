@@ -49,18 +49,18 @@ public class ActionSkill : Skill {
 	public bool waypointsAreIncremental=false;
 	public bool canCancelWaypoints=true;
 
-	public List<TargetSettings> _targetSettings;
-	public List<TargetSettings> targetSettings {
+	public TargetSettings[] _targetSettings;
+	public TargetSettings[] targetSettings {
 		get {
-			if(_targetSettings == null || _targetSettings.Count == 0) {
-				_targetSettings = new List<TargetSettings>{new TargetSettings()};
+			if(_targetSettings == null || _targetSettings.Length == 0) {
+				_targetSettings = new TargetSettings[]{new TargetSettings()};
 				_targetSettings[0].Owner = this;
 			}
 			return _targetSettings;
 		}
 		set {
 			_targetSettings = value;
-			for(int i = 0; i < _targetSettings.Count; i++) {
+			for(int i = 0; i < _targetSettings.Length; i++) {
 				TargetSettings ts = _targetSettings[i];
 				if(ts == null) { _targetSettings[i] = ts = new TargetSettings(); }
 				ts.Owner = this;
@@ -183,7 +183,7 @@ public class ActionSkill : Skill {
 
 	public bool RequireConfirmation { get {
 		return requireConfirmation &&
-			!(multiTargetMode == MultiTargetMode.Chain && targets.Count < targetSettings.Count);
+			!(multiTargetMode == MultiTargetMode.Chain && targets.Count < targetSettings.Length);
 	} }
 
 	public bool AwaitingConfirmation {
@@ -209,7 +209,7 @@ public class ActionSkill : Skill {
 	}
 
 	public TargetSettings currentSettings { get {
-		return targetSettings[Mathf.Min(targetSettings.Count-1, targets.Count-1)];
+		return targetSettings[Mathf.Min(targetSettings.Length-1, targets.Count-1)];
 	} }
 
 	public Target currentTarget { get {
@@ -329,7 +329,7 @@ public class ActionSkill : Skill {
 		if(!HasParam("hitType")) {
 			AddParam("hitType", Formula.Constant(0));
 		}
-		targetSettings = new List<TargetSettings>{new TargetSettings()};
+		targetSettings = new TargetSettings[]{new TargetSettings()};
 		targetSettings[0].Owner = this;
 
 		// if(targetEffects == null || targetEffects.Length == 0) {
@@ -1008,8 +1008,8 @@ public class ActionSkill : Skill {
 	}
 
 	public virtual void ImmediatelyPickSubregion(int subregionIndex) {
-		if(subregionIndex < 0 || subregionIndex >= currentSettings.targetRegion.regions.Count) {
-			Debug.LogError("Subregion "+subregionIndex+" out of bounds "+currentSettings.targetRegion.regions.Count);
+		if(subregionIndex < 0 || subregionIndex >= currentSettings.targetRegion.regions.Length) {
+			Debug.LogError("Subregion "+subregionIndex+" out of bounds "+currentSettings.targetRegion.regions.Length);
 		}
 		_GridOverlay.SetSelectedPoints(map.CoalesceTiles(currentSettings.effectRegion.GetValidTiles(currentSettings.targetRegion.regions[subregionIndex].GetValidTiles(TargetPosition, TargetFacing), EffectFacing)));
 	}
@@ -1020,8 +1020,8 @@ public class ActionSkill : Skill {
 	}
 
 	public virtual void PickSubregion(int subregionIndex) {
-		if(subregionIndex < 0 || subregionIndex >= currentSettings.targetRegion.regions.Count) {
-			Debug.LogError("Subregion "+subregionIndex+" out of bounds "+currentSettings.targetRegion.regions.Count);
+		if(subregionIndex < 0 || subregionIndex >= currentSettings.targetRegion.regions.Length) {
+			Debug.LogError("Subregion "+subregionIndex+" out of bounds "+currentSettings.targetRegion.regions.Length);
 		}
 		currentTarget.Subregion(subregionIndex);
 		PushTarget();
@@ -1203,7 +1203,7 @@ public class ActionSkill : Skill {
 	}
 
 	public bool PermitsNewWaypoints { get {
-		if(targetSettings.Count == targets.Count) { return false; }
+		if(targetSettings.Length == targets.Count) { return false; }
 		if(currentSettings.immediatelyExecuteDrawnPath) { return false; }
 		if(SingleTarget) { return false; }
 		return
@@ -1216,7 +1216,7 @@ public class ActionSkill : Skill {
 	}
 
 	protected void PushTarget() {
-		if(lastTargetPushed || targets.Count > targetSettings.Count) {
+		if(lastTargetPushed || targets.Count > targetSettings.Length) {
 			Debug.LogError("Too many targets being pushed");
 			return;
 		}
