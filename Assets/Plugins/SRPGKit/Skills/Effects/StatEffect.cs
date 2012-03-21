@@ -62,7 +62,7 @@ public class StatEffect {
 	public Formula specialMoveGivenStartX, specialMoveGivenStartY, specialMoveGivenStartZ;
 	public Region specialMoveLine;
 
-	public float ModifyStat(float stat, Skill scontext, Character ccontext, Equipment econtext, out StatEffectRecord rec) {
+	public float ModifyStat(float stat, SkillDef scontext, Character ccontext, Equipment econtext, out StatEffectRecord rec) {
 		Formulae fdb = scontext != null ? scontext.fdb : (ccontext != null ? ccontext.fdb : (econtext != null ? econtext.fdb : Formulae.DefaultFormulae));
 		float finalValue=value.GetValue(fdb, scontext, ccontext, econtext);
 		rec = new StatEffectRecord(this, stat);
@@ -74,12 +74,12 @@ public class StatEffect {
 		Debug.LogError("improper stat effect type "+effectType);
 		return -1;
 	}
-	public float ModifyStat(float stat, Skill scontext, Character ccontext, Equipment econtext) {
+	public float ModifyStat(float stat, SkillDef scontext, Character ccontext, Equipment econtext) {
 		StatEffectRecord ignore;
 		return ModifyStat(stat, scontext, ccontext, econtext, out ignore);
 	}
 
-	public StatEffectRecord Apply(Skill skill, Character character, Character targ) {
+	public StatEffectRecord Apply(SkillDef skill, Character character, Character targ) {
 		Formulae fdb = skill != null ? skill.fdb : (character != null ? character.fdb : (targ != null ? targ.fdb : Formulae.DefaultFormulae));
 		StatEffectRecord effect=null;
 		Character actualTarget=null;

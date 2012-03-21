@@ -196,7 +196,7 @@ public class Formula : IFormulaElement {
 	}
 
 	bool firstTime = true;
-	public float GetValue(Formulae fdb, Skill scontext=null, Character ccontext=null, Equipment econtext=null) {
+	public float GetValue(Formulae fdb, SkillDef scontext=null, Character ccontext=null, Equipment econtext=null) {
 		if(firstTime) {
 			lookupReference = lookupReference == null ? "" : lookupReference.NormalizeName();
 			firstTime = false;
@@ -384,7 +384,7 @@ public class Formula : IFormulaElement {
 	protected float FacingSwitch(
 		Formulae fdb, 
 		StatEffectTarget target, 
-		Skill scontext, 
+		SkillDef scontext, 
 		Character ccontext, 
 		Equipment econtext
 	) {

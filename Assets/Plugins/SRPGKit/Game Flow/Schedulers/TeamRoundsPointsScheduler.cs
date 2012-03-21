@@ -81,11 +81,11 @@ public class TeamRoundsPointsScheduler : Scheduler {
 		float downscaleFactor = ppc.TurnDiminishScale;
 		ppc.Limiter *= Mathf.Pow(downscaleFactor, uses);
 		if(limitMode == TurnLimitMode.AP) {
-			//???: Is it okay for the scheduler to determine the move region's max range?
+			//FIXME: Is it okay for the scheduler to determine the move region's max range?
 			//???: What about characters' intrinsic stats and so on?
-			//???: maybe better to pass this through a param instead...
-			Region ms = c.moveSkill.targetSettings[0].targetRegion;
-			ms.radiusMaxF = Formula.Constant(GetMaximumTraversalDistance(c));
+			//???: may be better to pass this through a param instead...
+			// Region ms = c.moveSkill.targetSettings[0].targetRegion;
+			// ms.radiusMaxF = Formula.Constant(GetMaximumTraversalDistance(c));
 		}
 	 	//FIXME: can we do something here for time-based traversal distance limitation?
 		//???: What about characters' intrinsic movement stats and so on?
@@ -144,7 +144,7 @@ public class TeamRoundsPointsScheduler : Scheduler {
 		return (float)(ppc.Limiter/moveAPCost);
 	}
 
-	override public void SkillApplied(Skill s) {
+	override public void SkillApplied(SkillDef s) {
 		base.SkillApplied(s);
 	}
 

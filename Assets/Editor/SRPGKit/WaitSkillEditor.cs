@@ -5,19 +5,17 @@ using System.Linq;
 
 [CustomEditor(typeof(WaitSkill))]
 public class WaitSkillEditor : SkillEditor {
-	protected WaitSkill ws;
-  public override void OnEnable() {
-		base.OnEnable();
-		name = "WaitSkill";
-		ws = target as WaitSkill;
+	protected override SkillDef MakeEmptySkillDef() {
+		return ScriptableObject.CreateInstance<WaitSkillDef>();
 	}
-	
-	public override void OnSRPGCKInspectorGUI () {
-		CoreSkillGUI();
-		EditorGUILayout.Space();
-		ws.supportKeyboard = EditorGUILayout.Toggle("Support Keyboard", ws.supportKeyboard);
-		ws.supportMouse = EditorGUILayout.Toggle("Support Mouse", ws.supportMouse);
-		ws.requireConfirmation = EditorGUILayout.Toggle("Require Confirmation", ws.requireConfirmation);
-		ws.waitArrows = EditorGUILayout.ObjectField("Wait Arrow Prefab", ws.waitArrows, typeof(GameObject), false) as GameObject;
+	protected override void ConvertSkill() {
+		EnsurePath("Assets/SRPGCK Data/Skills/Wait");
+		WaitSkillDef def = ScriptableObjectUtility.CreateAsset<WaitSkillDef>(
+			s.skillName,
+			"Assets/SRPGCK Data/Skills/Wait",
+			false
+		);
+		CopyFieldsTo<WaitSkill, WaitSkillDef>(s as WaitSkill, def);
+		s.def = def;
 	}
 }

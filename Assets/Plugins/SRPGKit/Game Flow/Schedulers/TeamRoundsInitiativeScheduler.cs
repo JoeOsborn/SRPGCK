@@ -39,11 +39,11 @@ public class TeamRoundsInitiativeScheduler : Scheduler {
 		BeginRound();
 	}
 
-	public override void ApplySkillAfterDelay(Skill s, List<Target> ts, float delay) {
+	public override void ApplySkillAfterDelay(SkillDef s, List<Target> ts, float delay) {
 		base.ApplySkillAfterDelay(s, ts, activeInitiative - delay);
 	}
 
-	override public void SkillApplied(Skill s) {
+	override public void SkillApplied(SkillDef s) {
 		base.SkillApplied(s);
 	}
 

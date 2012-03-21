@@ -36,7 +36,7 @@ public class TeamRoundsPickAnyOnceScheduler : Scheduler {
 		map.BroadcastMessage("RoundBegan", currentTeam, SendMessageOptions.DontRequireReceiver);
 	}
 
-	override public void SkillApplied(Skill s) {
+	override public void SkillApplied(SkillDef s) {
 		base.SkillApplied(s);
 	//	Deactivate(s.character);
 	}

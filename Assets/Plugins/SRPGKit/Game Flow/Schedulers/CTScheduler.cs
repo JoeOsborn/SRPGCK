@@ -56,11 +56,11 @@ public class CTScheduler : Scheduler {
 		}
 	}
 
-	override public void SkillApplied(Skill s) {
+	override public void SkillApplied(SkillDef s) {
 		base.SkillApplied(s);
 		if(s.character != null && s.character == activeCharacter) {
 			CTCharacter ctc = s.character.GetComponent<CTCharacter>();
-			if(s is MoveSkill) {
+			if(s is MoveSkillDef) {
 				//reduce c's CT by any-movement cost (30)
 				float cost = ctc.PerMoveCTCost;
 				if(coalesceCTDecrements) {

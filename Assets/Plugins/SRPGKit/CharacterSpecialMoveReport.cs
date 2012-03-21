@@ -5,7 +5,7 @@ public class CharacterSpecialMoveReport {
 	public Character character;
 	public string moveType;
 	public Region lineMove;
-	public Skill cause;
+	public SkillDef cause;
 	public Vector3 start;
 	public PathNode endOfPath;
 	public float direction;
@@ -17,7 +17,7 @@ public class CharacterSpecialMoveReport {
 		Character c,
 		string mt,
 		Region lm,
-		Skill s,
+		SkillDef s,
 		Vector3 st,
 		PathNode path,
 		float dir,

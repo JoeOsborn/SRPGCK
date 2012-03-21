@@ -928,7 +928,7 @@ public class EditorGUIExt
 	static GUIContent[] targetingModes;
 	static GUIContent[] displayUnimpededTargetRegionFlags;
 
-	public static TargetSettings TargetSettingsGUI(string label, TargetSettings oldTs, ActionSkill atk, string[] formulaOptions, string lastFocusedControl, int i=-1) {
+	public static TargetSettings TargetSettingsGUI(string label, TargetSettings oldTs, ActionSkillDef atk, string[] formulaOptions, string lastFocusedControl, int i=-1) {
 		if(targetingModes == null || targetingModes.Length == 0) {
 			targetingModes = new GUIContent[]{
 				new GUIContent("Self", EditorGUIUtility.LoadRequired("skl-target-self.png") as Texture),
@@ -983,12 +983,12 @@ public class EditorGUIExt
 		EditorGUILayout.Space();
 		ts.targetRegion = EditorGUIExt.RegionGUI("Target Region", label+"."+i+".target", ts.targetRegion, formulaOptions, lastFocusedControl, Screen.width-16);
 		EditorGUILayout.Space();
-		if(atk == null || !(atk is MoveSkill)) {
+		if(atk == null || !(atk is MoveSkillDef)) {
 			ts.effectRegion = EditorGUIExt.RegionGUI("Effect Region", label+"."+i+".effect", ts.effectRegion, formulaOptions, lastFocusedControl, Screen.width-16);
 		}
 		return ts;
 	}
-	public static SkillIO SkillIOGUI(string label, SkillIO io, ActionSkill s, string[] formulaOptions, string lastFocusedControl) {
+	public static SkillIO SkillIOGUI(string label, SkillIO io, ActionSkillDef s, string[] formulaOptions, string lastFocusedControl) {
 		//FIXME: implicit assumption: lockToGrid=true;
 		//so, no invertOverlay, overlayType, drawOverlayRim, drawOverlayVolume, rotationSpeedXYF
 		//FIXME: not showing probe for now

@@ -7,8 +7,8 @@ public class TargetSettings {
 	//editor only
 	public bool showInEditor=true;
 
-	public Skill owner;
-	public Skill Owner {
+	public SkillDef owner;
+	public SkillDef Owner {
 		get { return owner; }
 		set {
 			owner = value;

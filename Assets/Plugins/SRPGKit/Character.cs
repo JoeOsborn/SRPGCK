@@ -58,12 +58,12 @@ public class Character : MonoBehaviour {
 
 	public string currentAnimation;
 
-	public MoveSkill moveSkill { get {
-		return GetComponent<MoveSkill>();
+	public MoveSkillDef moveSkill { get {
+		return skills.FirstOrDefault(s => s is MoveSkillDef) as MoveSkillDef;
 	} }
 
-	public WaitSkill waitSkill { get {
-		return GetComponent<WaitSkill>();
+	public WaitSkillDef waitSkill { get {
+		return skills.FirstOrDefault(s => s is WaitSkillDef) as WaitSkillDef;
 	} }
 
 	public override string ToString() {
@@ -127,7 +127,7 @@ public class Character : MonoBehaviour {
 		Region lineMove,
 		float specialMoveSpeedXY,
 		float specialMoveSpeedZ,
-		Skill cause
+		SkillDef cause
 	) {
 		specialMoveType = moveType;
 		specialMoveExecutor.XYSpeed = specialMoveSpeedXY;
@@ -253,7 +253,7 @@ public class Character : MonoBehaviour {
 			}
 		}
 	}
-	IEnumerable<Skill> skills;
+	IEnumerable<SkillDef> skills;
 	IEnumerable<Equipment> equipment;
 	IEnumerable<StatusEffect> statusEffects;
 	public void ApplyStatusEffect(StatusEffect se) {
@@ -270,19 +270,23 @@ public class Character : MonoBehaviour {
 	public void InvalidateStatusEffects() {
 		statusEffects = null;
 	}
-	public IEnumerable<Skill> Skills { get {
+	public IEnumerable<SkillDef> Skills { get {
 		if(skills == null) {
 			//replace any skills that need replacing
-			Skill[] allSkills = GetComponentsInChildren<Skill>();
-			skills = allSkills.Where(delegate(Skill x) {
-				string replPath = x.skillGroup+"//"+x.skillName;
-				int replPri = x.replacementPriority;
-				return !allSkills.Any(y =>
-					y != x &&
-					y.replacesSkill &&
-					y.replacedSkill == replPath &&
-					y.replacementPriority > replPri);
-			}).ToArray().AsEnumerable();
+			SkillDef[] allSkills = GetComponentsInChildren<Skill>().
+				Select(s => s.def).
+				ToArray();
+			skills = allSkills.
+				Where(delegate(SkillDef x) {
+					string replPath = x.skillGroup+"//"+x.skillName;
+					int replPri = x.replacementPriority;
+					return !allSkills.Any(y =>
+						y != x &&
+						y.replacesSkill &&
+						y.replacedSkill == replPath &&
+						y.replacementPriority > replPri);
+				}).
+				ToArray().AsEnumerable();
 		}
 		return skills;
 	} }
@@ -370,7 +374,7 @@ public class Character : MonoBehaviour {
 				}
 			}
 		}
-		foreach(Skill s in Skills) {
+		foreach(SkillDef s in Skills) {
 			foreach(StatEffect se in s.passiveEffects) {
 				if(se.statName == statName) {
 					stat = se.ModifyStat(stat, s, null, null);

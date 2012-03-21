@@ -34,9 +34,10 @@ public abstract class SRPGCKEditor : Editor {
 	public virtual void OnEnable() {
 		guiChangedAtAll = false;
 		guiChanged = false;
-		if(!useFormulae) { return; }
-		if(fdb == null) { fdb = Formulae.DefaultFormulae; }
-		UpdateFormulae();
+		if(useFormulae) {
+			if(fdb == null) { fdb = Formulae.DefaultFormulae; }
+			UpdateFormulae();
+		}
 	}
 
 	public abstract void OnSRPGCKInspectorGUI();
@@ -44,14 +45,14 @@ public abstract class SRPGCKEditor : Editor {
 	public override void OnInspectorGUI() {
 		CheckFocus();
 	  CheckUndo();
-		if(useFormulae) {
-			GUILayout.BeginHorizontal();
-			GUILayout.Label("Formulae", GUILayout.Width(60));
-			GUI.enabled=false;
-			EditorGUILayout.TextField(fdb == null ? "null" : AssetDatabase.GetAssetPath(fdb));
-			GUI.enabled=true;
-			GUILayout.EndHorizontal();
-		}
+		// if(useFormulae) {
+		// 	GUILayout.BeginHorizontal();
+		// 	GUILayout.Label("Formulae", GUILayout.Width(60));
+		// 	GUI.enabled=false;
+		// 	EditorGUILayout.TextField(fdb == null ? "null" : AssetDatabase.GetAssetPath(fdb));
+		// 	GUI.enabled=true;
+		// 	GUILayout.EndHorizontal();
+		// }
 		OnSRPGCKInspectorGUI();
 		FinishOnGUI();
 		if((guiChangedAtAll || guiChanged) &&

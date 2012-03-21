@@ -10,7 +10,7 @@ public class Scheduler : MonoBehaviour {
 	public Character activeCharacter;
 	public bool begun=false;
 
-	public Skill pendingDeactivationSkill;
+	public SkillDef pendingDeactivationSkill;
 	public Character pendingDeactivationCharacter;
 
 	public List<SkillActivation> pendingSkillActivations;
@@ -37,7 +37,7 @@ public class Scheduler : MonoBehaviour {
 		return characters.Contains(c);
 	}
 
-	public virtual void SkillApplied(Skill s) {
+	public virtual void SkillApplied(SkillDef s) {
 
 	}
 
@@ -69,7 +69,7 @@ public class Scheduler : MonoBehaviour {
 			pendingDeactivationCharacter = null;
 		}
 	}
-	public void SkillDeactivated(Skill s) {
+	public void SkillDeactivated(SkillDef s) {
 		if(s == pendingDeactivationSkill) {
 			if(pendingDeactivationCharacter == activeCharacter) {
 				Deactivate(pendingDeactivationCharacter, s);
@@ -78,7 +78,7 @@ public class Scheduler : MonoBehaviour {
 			pendingDeactivationCharacter = null;
 		}
 	}
-	public virtual void DeactivateAfterSkillApplication(Character c, Skill skill) {
+	public virtual void DeactivateAfterSkillApplication(Character c, SkillDef skill) {
 		pendingDeactivationSkill = skill;
 		pendingDeactivationCharacter = c;
 	}
@@ -109,7 +109,7 @@ public class Scheduler : MonoBehaviour {
 		);
 	}
 
-	public virtual void ApplySkillAfterDelay(Skill s, List<Target> currentTs, float delay) {
+	public virtual void ApplySkillAfterDelay(SkillDef s, List<Target> currentTs, float delay) {
 		if(pendingSkillActivations == null) {
 			pendingSkillActivations = new List<SkillActivation>();
 		}

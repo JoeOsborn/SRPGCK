@@ -98,7 +98,7 @@ public class Formulae : ScriptableObject {
 
 	public bool CanLookup(
 		string fname, LookupType type,
-		Skill scontext=null, Character ccontext=null, Equipment econtext=null,
+		SkillDef scontext=null, Character ccontext=null, Equipment econtext=null,
 		Formula f=null
 	) {
 		switch(type) {
@@ -167,7 +167,7 @@ public class Formulae : ScriptableObject {
 	}
 	public float Lookup(
 		string fname, LookupType type,
-		Skill scontext=null, Character ccontext=null, Equipment econtext=null,
+		SkillDef scontext=null, Character ccontext=null, Equipment econtext=null,
 		Formula f=null
 	) {
 		switch(type) {

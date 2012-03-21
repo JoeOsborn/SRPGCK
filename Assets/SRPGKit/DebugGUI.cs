@@ -31,7 +31,7 @@ public class DebugGUI : MonoBehaviour {
 		return _bgStyle;
 	} }
 
-	public ActionSkill pendingTargetedSkill;
+	public ActionSkillDef pendingTargetedSkill;
 
 	public void Start() {
 		selectedGroup = new List<string>();
@@ -94,14 +94,14 @@ public class DebugGUI : MonoBehaviour {
 	}
 
 
-	void SkillApplied(Skill s) {
+	void SkillApplied(SkillDef s) {
 		selectedGroup = null;
 		Scheduler sch = GetComponent<Scheduler>();
 		Character ac = sch.activeCharacter;
 		if(s.character == ac) {
-			if(s is MoveSkill) {
+			if(s is MoveSkillDef) {
 				activeCharacterHasMoved = true;
-			} else if(s is ActionSkill) {
+			} else if(s is ActionSkillDef) {
 				activeCharacterHasActed = true;
 			}
 		}
@@ -112,9 +112,9 @@ public class DebugGUI : MonoBehaviour {
 		activeCharacterHasActed = false;
 	}
 
-	bool IsSkillEnabled(Skill s) {
-		return (!(s is MoveSkill) || (permitMultipleMoves || !activeCharacterHasMoved)) &&
-	  (((s is MoveSkill) || (s is WaitSkill)) || (permitMultipleActions || !activeCharacterHasActed));
+	bool IsSkillEnabled(SkillDef s) {
+		return (!(s is MoveSkillDef) || (permitMultipleMoves || !activeCharacterHasMoved)) &&
+	  (((s is MoveSkillDef) || (s is WaitSkillDef)) || (permitMultipleActions || !activeCharacterHasActed));
 	}
 
 	Character lastShownCharacter = null;
@@ -123,7 +123,7 @@ public class DebugGUI : MonoBehaviour {
 	string lastSegment=null;
 	int lastSegmentCount=0;
 
-	IEnumerable<string> OnGUISkillGroup(Character ac, IEnumerable<Skill> skills, IEnumerable<string> selectedGroup) {
+	IEnumerable<string> OnGUISkillGroup(Character ac, IEnumerable<SkillDef> skills, IEnumerable<string> selectedGroup) {
 		if(delimiter == null) { delimiter = new Regex("//"); }
 		IEnumerable<string> nextSelectedGroup = selectedGroup;
 		int segmentCount = selectedGroup == null ? 0 : selectedGroup.Count();
@@ -142,7 +142,7 @@ public class DebugGUI : MonoBehaviour {
 			//since each prefix ought to be unique across a number of groups, we can use
 			//set union semantics.
 			foreach(var group in groups.Where(x => x.Key == groupPath)) {
-				foreach(Skill s in group) {
+				foreach(SkillDef s in group) {
 					usedEntities.Add(s as object);
 				}
 			}
@@ -162,8 +162,8 @@ public class DebugGUI : MonoBehaviour {
 			}
 			//get it all ordered and sorted and interleaved and displayed nicely
 			sorted = usedEntities.OrderBy(delegate(object x) {
-				if(x is Skill) {
-					return (x as Skill).skillSorting;
+				if(x is SkillDef) {
+					return (x as SkillDef).skillSorting;
 				} else {
 					string key = x as string;
 					var deepGroupSkills = skills.Where(y => y.skillGroup != null && y.skillGroup.StartsWith(key));
@@ -172,8 +172,8 @@ public class DebugGUI : MonoBehaviour {
 			}).ToArray().AsEnumerable();
 		}
 		foreach(object o in sorted) {
-			if(o is Skill) {
-				Skill skill = o as Skill;
+			if(o is SkillDef) {
+				SkillDef skill = o as SkillDef;
 				GUI.enabled = IsSkillEnabled(skill);
 				if(GUILayout.Button(skill.skillName)) {
 					skill.ActivateSkill();
@@ -208,9 +208,9 @@ public class DebugGUI : MonoBehaviour {
 		return nextSelectedGroup == null ? null : nextSelectedGroup.ToList().AsEnumerable();
 	}
 	Map map;
-	void SkillNeedsCharacterTargetingOption(Skill s) {
+	void SkillNeedsCharacterTargetingOption(SkillDef s) {
 		Debug.Log("skill "+s.skillName+" wants delayed targeting");
-		pendingTargetedSkill = (ActionSkill)s;
+		pendingTargetedSkill = s as ActionSkillDef;
 	}
 	string[] targetingChoices;
 	void SkillIncrementalCancel() {
@@ -243,10 +243,10 @@ public class DebugGUI : MonoBehaviour {
 		bool showAnySchedulerButtons = true;
 		bool showCancelButton = true;
 		Character ac = s.activeCharacter;
-		var skills = ac == null ? new Skill[0] : ac.Skills;
+		var skills = ac == null ? new SkillDef[0] : ac.Skills;
 		if(ac != null) {
 			if(map == null) { map = transform.parent.GetComponent<Map>(); }
-			MoveSkill ms = ac.moveSkill;
+			MoveSkillDef ms = ac.moveSkill;
 			if(ms.isActive && ms != null) {
 				if(a.IsLocalTeam(ac.EffectiveTeamID)) {
 					MoveExecutor me = ms.Executor;
@@ -275,9 +275,9 @@ public class DebugGUI : MonoBehaviour {
 				}
 			}
 
-			foreach(Skill skill in skills) {
-				if(!skill.isPassive && skill.isActive && skill is ActionSkill && !(skill is MoveSkill || skill is WaitSkill)) {
-					ActionSkill ask = skill as ActionSkill;
+			foreach(SkillDef skill in skills) {
+				if(!skill.isPassive && skill.isActive && skill is ActionSkillDef && !(skill is MoveSkillDef || skill is WaitSkillDef)) {
+					ActionSkillDef ask = skill as ActionSkillDef;
 					if(a.IsLocalTeam(ac.EffectiveTeamID)) {
 						if(ask.RequireConfirmation &&
 							 ask.AwaitingConfirmation) {
@@ -294,7 +294,7 @@ public class DebugGUI : MonoBehaviour {
 					}
 				}
 			}
-			WaitSkill ws = ac.waitSkill as WaitSkill;
+			WaitSkillDef ws = ac.waitSkill;
 			if(ws != null && ws.isActive) {
 				if(a.IsLocalTeam(ac.EffectiveTeamID)) {
 					if(ws.RequireConfirmation &&
@@ -327,8 +327,8 @@ public class DebugGUI : MonoBehaviour {
 
 				//TODO:0: support skills
 				//show list of skills
-				Skill activeSkill = null;
-				foreach(Skill sk in skills) {
+				SkillDef activeSkill = null;
+				foreach(SkillDef sk in skills) {
 					if(sk.isActive) {
 						activeSkill = sk;
 						break;
@@ -356,8 +356,8 @@ public class DebugGUI : MonoBehaviour {
 				GUILayout.Label("Character:"+ac.gameObject.name);
 				GUILayout.Label("Health: "+Mathf.Ceil(ac.GetStat("health")));
 				//show list of skills
-				Skill activeSkill = null;
-				foreach(Skill sk in skills) {
+				SkillDef activeSkill = null;
+				foreach(SkillDef sk in skills) {
 					if(sk.isActive) {
 						activeSkill = sk;
 						break;
@@ -399,8 +399,8 @@ public class DebugGUI : MonoBehaviour {
 					GUILayout.Label("AP: "+Mathf.Floor(rpc.Limiter));
 
 					//show list of skills
-					Skill activeSkill = null;
-					foreach(Skill sk in skills) {
+					SkillDef activeSkill = null;
+					foreach(SkillDef sk in skills) {
 						if(sk.isActive) {
 							activeSkill = sk;
 							break;
@@ -415,8 +415,8 @@ public class DebugGUI : MonoBehaviour {
 							activeSkill.Cancel();
 						}
 						if(showAnySchedulerButtons &&
-							 activeSkill is MoveSkill &&
-							 !(activeSkill as MoveSkill).Executor.IsMoving) {
+							 activeSkill is MoveSkillDef &&
+							 !(activeSkill as MoveSkillDef).Executor.IsMoving) {
 							if(GUILayout.Button("End Move")) {
 								//??
 								activeSkill.ApplySkill();
@@ -445,8 +445,8 @@ public class DebugGUI : MonoBehaviour {
 				GUILayout.Label("Character:"+ac.gameObject.name);
 				GUILayout.Label("Health: "+Mathf.Ceil(ac.GetStat("health")));
 				//show list of skills
-				Skill activeSkill = null;
-				foreach(Skill sk in skills) {
+				SkillDef activeSkill = null;
+				foreach(SkillDef sk in skills) {
 					if(sk.isActive) {
 						activeSkill = sk;
 						break;

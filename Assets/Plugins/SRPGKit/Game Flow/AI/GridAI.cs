@@ -28,9 +28,9 @@ public class GridAI : AI {
 		if(c.GetComponent<CTCharacter>() != null) {
 			if(!c.GetComponent<CTCharacter>().HasMoved) {
 				c.moveSkill.ActivateSkill();
-				MoveSkill sptms = c.moveSkill as MoveSkill;
-				if(sptms.overlay != null) {
-					PathNode[] dests = (sptms.overlay as GridOverlay).destinations;
+				MoveSkillDef sptms = c.moveSkill;
+				if(sptms.Overlay != null) {
+					PathNode[] dests = (sptms.Overlay as GridOverlay).destinations;
 					if(dests.Length == 0) {
 						c.moveSkill.Cancel();
 						c.waitSkill.ActivateSkill();
@@ -61,13 +61,15 @@ public class GridAI : AI {
 			}
 		} else {
 			c.moveSkill.ActivateSkill();
-			MoveSkill ms = c.moveSkill as MoveSkill;
-			if(ms.overlay != null) {
-				PathNode[] dests = (ms.overlay as GridOverlay).destinations;
+			MoveSkillDef ms = c.moveSkill;
+			if(ms.Overlay != null) {
+				PathNode[] dests = (ms.Overlay as GridOverlay).destinations;
 				if(dests.Length == 0) {
 					c.moveSkill.Cancel();
 				} else {
-					c.moveSkill.PerformMoveToPathNode(dests[(int)Mathf.Floor(Random.Range(0, dests.Length))]);
+					c.moveSkill.PerformMoveToPathNode(
+						dests[(int)Mathf.Floor(Random.Range(0, dests.Length))]
+					);
 				}
 				c.waitSkill.ActivateSkill();
 				Quaternion dir=Quaternion.Euler(0,0,0);
