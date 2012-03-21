@@ -43,7 +43,7 @@ public struct StatChange {
 }
 
 [System.Serializable]
-public class StatEffect : ScriptableObject {
+public class StatEffect {
 	public bool editorShow=false;
 
 	public string statName;

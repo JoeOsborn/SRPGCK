@@ -74,7 +74,7 @@ public class Character : MonoBehaviour {
 		for(int i = 0; i < equipmentSlots.Length; i++) {
 			equipmentSlots[i] = equipmentSlots[i].NormalizeName();
 		}
-		Facing = 0;
+		Facing = transform.localRotation.eulerAngles.y;
 	}
 
 	public virtual void Reset() {

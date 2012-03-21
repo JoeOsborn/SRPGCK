@@ -21,13 +21,6 @@ public class Skill : MonoBehaviour {
 
 	public List<Parameter> parameters;
 
-	protected Dictionary<string, Formula> runtimeParameters;
-
-	//only relevant to targeted skills, sadly
-	public List<Character> targetCharacters;
-	public Character currentTargetCharacter;
-	public int currentHitType;
-
 	//reaction
 	public bool reactionSkill=false;
 	public string[] reactionTypesApplied, reactionTypesApplier;
@@ -37,8 +30,22 @@ public class Skill : MonoBehaviour {
 	public StatEffectGroup[] reactionEffects;
 	public StatEffectGroup reactionApplicationEffects;
 
+	//internals
+
+	protected Dictionary<string, Formula> runtimeParameters;
+
+	[System.NonSerialized]
 	public Skill currentReactedSkill = null;
+	[System.NonSerialized]
 	public StatEffectRecord currentReactedEffect = null;
+
+	//only relevant to targeted skills, sadly
+	[System.NonSerialized]
+	public List<Character> targetCharacters;
+	[System.NonSerialized]
+	public Character currentTargetCharacter;
+	[System.NonSerialized]
+	public int currentHitType;
 
 	public List<StatEffectRecord> lastEffects;
 
@@ -327,6 +334,7 @@ public class Skill : MonoBehaviour {
 	public Vector3 transformOffset { get {
 		return character.transformOffset;
 	} }
+
 	Character _character;
 	public Character character { get {
 		if(_character == null) {

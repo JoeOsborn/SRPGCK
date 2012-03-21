@@ -3,7 +3,7 @@ using UnityEngine;
 //for each waypoint
 //target settings:
 [System.Serializable]
-public class TargetSettings : ScriptableObject {
+public class TargetSettings {
 	//editor only
 	public bool showInEditor=true;
 
@@ -13,10 +13,10 @@ public class TargetSettings : ScriptableObject {
 		set {
 			owner = value;
 			if(targetRegion == null) { 
-				targetRegion = ScriptableObject.CreateInstance<Region>(); 
+				targetRegion = new Region();
 			}
 			if(effectRegion == null) { 
-				effectRegion = ScriptableObject.CreateInstance<Region>(); 
+				effectRegion = new Region(); 
 			}
 			targetRegion.Owner = owner;
 			effectRegion.Owner = owner;

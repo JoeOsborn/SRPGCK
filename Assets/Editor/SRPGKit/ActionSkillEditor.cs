@@ -16,7 +16,7 @@ public class ActionSkillEditor : SkillEditor {
 	protected void TargetedSkillGUI() {
 		atk.delay = EditorGUIExt.FormulaField("Scheduled Delay", atk.delay, atk.GetInstanceID()+"."+atk.name+".delay", formulaOptions, lastFocusedControl);
 		if(atk.targetSettings == null) {
-			atk.targetSettings = new TargetSettings[]{null};
+			atk.targetSettings = new List<TargetSettings>{new TargetSettings()};
 		}
 		if((atk.multiTargetMode = (MultiTargetMode)EditorGUILayout.EnumPopup("Multi-Target Mode", atk.multiTargetMode)) != MultiTargetMode.Single) {
 			if(atk.multiTargetMode == MultiTargetMode.Chain) {
@@ -27,24 +27,24 @@ public class ActionSkillEditor : SkillEditor {
 			EditorGUILayout.BeginVertical();
 			EditorGUILayout.BeginHorizontal();
 			EditorGUILayout.Space();
-			int arraySize = EditorGUILayout.IntField(atk.targetSettings.Length, GUILayout.Width(32));
-			GUILayout.Label(" "+"Target"+(atk.targetSettings.Length == 1 ? "" : "s"));
+			int arraySize = EditorGUILayout.IntField(atk.targetSettings.Count, GUILayout.Width(32));
+			GUILayout.Label(" "+"Target"+(atk.targetSettings.Count == 1 ? "" : "s"));
 			GUILayout.FlexibleSpace();
 			EditorGUILayout.EndHorizontal();
-			TargetSettings[] oldSettings = atk.targetSettings;
-			if(arraySize != atk.targetSettings.Length) {
-				atk.targetSettings = new TargetSettings[arraySize];
+			var oldSettings = atk.targetSettings;
+			if(arraySize != atk.targetSettings.Count) {
+				SRPGUtil.ResizeList<TargetSettings>(atk.targetSettings, arraySize);
 			}
 			EditorGUILayout.BeginHorizontal();
 			EditorGUILayout.Space();
 			EditorGUILayout.BeginVertical();
 	   	EditorGUIUtility.LookLikeControls();
-			for(int i = 0; i < atk.targetSettings.Length; i++)
+			for(int i = 0; i < atk.targetSettings.Count; i++)
 			{
 		   	EditorGUIUtility.LookLikeControls();
-				TargetSettings ts = i < oldSettings.Length ? oldSettings[i] : atk.targetSettings[i];
+				TargetSettings ts = i < oldSettings.Count ? oldSettings[i] : atk.targetSettings[i];
 				if (ts == null) {
-					atk.targetSettings[i] = ScriptableObject.CreateInstance<TargetSettings>();
+					atk.targetSettings[i] = new TargetSettings();
 					ts = atk.targetSettings[i];
 				}
 				atk.targetSettings[i] = EditorGUIExt.TargetSettingsGUI("Target "+i, atk.targetSettings[i], atk, formulaOptions, lastFocusedControl, i);

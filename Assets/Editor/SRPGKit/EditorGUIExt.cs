@@ -219,7 +219,7 @@ public class EditorGUIExt
 			case StatEffectType.SpecialMove:
 				if(newFx.specialMoveLine == null ||
 				   newFx.specialMoveLine.type != RegionType.LineMove) {
-					newFx.specialMoveLine = ScriptableObject.CreateInstance<Region>();
+					newFx.specialMoveLine = new Region();
 					newFx.specialMoveLine.type = RegionType.LineMove;
 					newFx.specialMoveLine.interveningSpaceType = InterveningSpaceType.LineMove;
 					newFx.specialMoveLine.radiusMinF = Formula.Constant(0);
@@ -298,9 +298,9 @@ public class EditorGUIExt
 	}
 
 	public static StatEffect StatEffectField(StatEffect fx, StatEffectContext ctx, string type, string[] formulaOptions, string lastFocusedControl, int i = 0) {
-		StatEffect newFx = i != -1 ? PickAssetGUI<StatEffect>("Stat Effect", fx) : fx;
+		StatEffect newFx = fx ?? new StatEffect();
 		if(i != -1) {
-			if(!(newFx.editorShow = EditorGUILayout.Foldout(newFx.editorShow, "Customize"))) {
+			if(!(newFx.editorShow = EditorGUILayout.Foldout(newFx.editorShow, "Stat Effect"))) {
 				GUILayout.BeginHorizontal();
 				GUILayout.FlexibleSpace();
 				if(GUILayout.Button("Delete", GUILayout.Width(64))) {
@@ -308,9 +308,6 @@ public class EditorGUIExt
 				}
 				GUILayout.EndHorizontal();
 				return newFx;
-			}
-			if(newFx.name != null && newFx.name != "") {
-				EditorGUILayout.HelpBox("Changes made here will NOT alter the attached StatEffect asset!", MessageType.Info);
 			}
 		}
 		newFx = StatEffectFieldCore(newFx, ctx, type, formulaOptions, lastFocusedControl, i);
@@ -353,7 +350,7 @@ public class EditorGUIExt
 			EditorGUILayout.BeginHorizontal();
 			GUILayout.FlexibleSpace();
 			if(GUILayout.Button("Add Effect")) {
-				newEffects = newEffects.Concat(new StatEffect[]{ScriptableObject.CreateInstance<StatEffect>()}).ToArray();
+				newEffects = newEffects.Concat(new StatEffect[]{new StatEffect()}).ToArray();
 			}
 			EditorGUILayout.EndHorizontal();
 			EditorGUILayout.EndVertical();
@@ -664,12 +661,12 @@ public class EditorGUIExt
 		} else {
 			newReg.useArcRangeBonus = false;
 		}
-		string prefix = type+".region."+newReg.GetInstanceID()+".";
+		string prefix = type+".region.";
 		if(newReg.type == RegionType.Cylinder ||
 			 newReg.type == RegionType.Sphere   ||
 			 newReg.type == RegionType.Cone     ||
 			 newReg.type == RegionType.Line     ||
-			 newReg.type == RegionType.LineMove     ||
+			 newReg.type == RegionType.LineMove ||
 			 newReg.type == RegionType.Predicate) {
 			//radius min, radius max
 			if(newReg.type != RegionType.LineMove) {
@@ -826,17 +823,20 @@ public class EditorGUIExt
 			//size
 			EditorGUILayout.Space();
 			GUILayout.BeginHorizontal();
-			if(newReg.regions == null) { newReg.regions = new Region[0]; }
-			int regionCount = newReg.regions.Length;
-			int newRegionCount = EditorGUILayout.IntField(regionCount, EditorStyles.textField, GUILayout.Height(18), GUILayout.Width(24));
+			if(newReg.regions == null) { newReg.regions = new List<Region>{new Region()}; }
+			int regionCount = newReg.regions.Count;
+			int newRegionCount = EditorGUILayout.IntField(
+				regionCount,
+				EditorStyles.textField,
+				GUILayout.Height(18),
+				GUILayout.Width(24)
+			);
 			GUILayout.Label("Subregion"+(newRegionCount > 1 ? "s" : ""));
 			GUILayout.EndHorizontal();
 			if(newRegionCount < 1) {
 				newRegionCount = 1;
 			}
-			if(newRegionCount != regionCount) {
-				System.Array.Resize(ref newReg.regions, newRegionCount);
-			}
+			SRPGUtil.ResizeList<Region>(newReg.regions, newRegionCount);
 			for(int i = 0; i < newRegionCount; i++) {
 				EditorGUILayout.Space();
 				EditorGUILayout.Space();
@@ -844,8 +844,15 @@ public class EditorGUIExt
 				EditorGUILayout.Space();
 				EditorGUILayout.BeginVertical();
 			  //0...i regiongui(...,i)
-				newReg.regions[i] = PickAssetGUI<Region>("Subregion "+i, newReg.regions[i]);
-				newReg.regions[i] = RegionGUI(null, prefix, newReg.regions[i], formulaOptions, lastFocusedControl, width-16, i);
+				newReg.regions[i] = RegionGUI(
+					null,
+					prefix+"."+i+".",
+					newReg.regions[i],
+					formulaOptions,
+					lastFocusedControl,
+					width-16,
+					i
+				);
 				EditorGUILayout.EndVertical();
 				EditorGUILayout.EndHorizontal();
 				EditorGUILayout.Space();
@@ -862,7 +869,7 @@ public class EditorGUIExt
 		float width,
 		int subregionIndex=-1
 	) {
-		if(reg == null) { reg = ScriptableObject.CreateInstance<Region>(); }
+		if(reg == null) { reg = new Region(); }
 		if(regionTypes == null) {
 			regionTypes = new GUIContent[]{
 				new GUIContent("Cylinder", EditorGUIUtility.LoadRequired("rgn-cylinder.png") as Texture),
@@ -883,15 +890,11 @@ public class EditorGUIExt
 				new GUIContent("Arc", EditorGUIUtility.LoadRequired("intv-arc.png") as Texture)
 			};
 		}
-		Region newReg = label == null ? reg : EditorGUIExt.PickAssetGUI<Region>(label, reg);
-		if(newReg == null) { newReg = ScriptableObject.CreateInstance<Region>(); }
+		Region newReg = reg ?? new Region();
 		if(label != null &&
 			 subregionIndex == -1 &&
-		   !(newReg.editorShowContents = EditorGUILayout.Foldout(newReg.editorShowContents, "Customize"))) {
+		   !(newReg.editorShowContents = EditorGUILayout.Foldout(newReg.editorShowContents, label))) {
 			return reg;
-		}
-		if(label != null && newReg.name != null && newReg.name != "") {
-			EditorGUILayout.HelpBox("Changes made here will NOT alter the attached Region asset!", MessageType.Info);
 		}
 		int buttonsWide = (int)(width/buttonDim);
 		GUILayout.Label("Region Type");
@@ -922,25 +925,8 @@ public class EditorGUIExt
 		return SimpleRegionGUI(type+"."+label, newReg, formulaOptions, lastFocusedControl, width, subregionIndex);
 	}
 
-
 	static GUIContent[] targetingModes;
 	static GUIContent[] displayUnimpededTargetRegionFlags;
-
-	public static T PickAssetGUI<T>(string label, T t) where T : ScriptableObject {
-		if(t == null) { t = ScriptableObject.CreateInstance<T>(); }
-		T newT = EditorGUILayout.ObjectField(
-			label,
-			t as UnityEngine.Object,
-			typeof(T),
-			false
-		) as T;
-		if(newT == null) {
-			t.name = null;
-		} else if(newT != t) {
-			EditorUtility.CopySerialized(newT, t);
-		}
-		return t;
-	}
 
 	public static TargetSettings TargetSettingsGUI(string label, TargetSettings oldTs, ActionSkill atk, string[] formulaOptions, string lastFocusedControl, int i=-1) {
 		if(targetingModes == null || targetingModes.Length == 0) {
@@ -960,13 +946,10 @@ public class EditorGUIExt
 			};
 		}
 		int buttonsWide = (int)(Screen.width/buttonDim);
-		TargetSettings ts = label != null ? PickAssetGUI<TargetSettings>("Target "+(i==-1?"Settings":""+i), oldTs) : oldTs;
+		TargetSettings ts = oldTs ?? new TargetSettings();
 		if(label != null) {
-			if(!(ts.showInEditor = EditorGUILayout.Foldout(ts.showInEditor, "Customize"))) {
+			if(!(ts.showInEditor = EditorGUILayout.Foldout(ts.showInEditor, label))) {
 				return ts;
-			}
-			if(ts.name != null && ts.name != "") {
-				EditorGUILayout.HelpBox("Changes made here will NOT alter the attached TargetSettings asset!", MessageType.Info);
 			}
 		}
 		if(atk == null || atk.multiTargetMode == MultiTargetMode.Chain) {
@@ -989,7 +972,7 @@ public class EditorGUIExt
 		}
 		if(ts.targetingMode != TargetingMode.Self) {
 			if(ts.targetRegion == null) {
-				ts.targetRegion = ScriptableObject.CreateInstance<Region>();
+				ts.targetRegion = new Region();
 			}
 			if(ts.targetRegion.interveningSpaceType != InterveningSpaceType.Pick) {
 				GUILayout.Label("Show blocked tiles?");
@@ -998,10 +981,10 @@ public class EditorGUIExt
 		}
 		EditorGUI.indentLevel--;
 		EditorGUILayout.Space();
-		ts.targetRegion = EditorGUIExt.RegionGUI("Target Region", "target", ts.targetRegion, formulaOptions, lastFocusedControl, Screen.width-16);
+		ts.targetRegion = EditorGUIExt.RegionGUI("Target Region", label+"."+i+".target", ts.targetRegion, formulaOptions, lastFocusedControl, Screen.width-16);
 		EditorGUILayout.Space();
 		if(atk == null || !(atk is MoveSkill)) {
-			ts.effectRegion = EditorGUIExt.RegionGUI("Effect Region", "effect", ts.effectRegion, formulaOptions, lastFocusedControl, Screen.width-16);
+			ts.effectRegion = EditorGUIExt.RegionGUI("Effect Region", label+"."+i+".effect", ts.effectRegion, formulaOptions, lastFocusedControl, Screen.width-16);
 		}
 		return ts;
 	}
@@ -1009,13 +992,10 @@ public class EditorGUIExt
 		//FIXME: implicit assumption: lockToGrid=true;
 		//so, no invertOverlay, overlayType, drawOverlayRim, drawOverlayVolume, rotationSpeedXYF
 		//FIXME: not showing probe for now
-		SkillIO newIO = label == null ? io : PickAssetGUI<SkillIO>(label, io);
+		SkillIO newIO = io ?? new SkillIO();
 		if(label != null) {
-			if(!(newIO.editorShow = EditorGUILayout.Foldout(newIO.editorShow, "Customize"))) {
+			if(!(newIO.editorShow = EditorGUILayout.Foldout(newIO.editorShow, label))) {
 				return newIO;
-			}
-			if(newIO.name != null && newIO.name != "") {
-				EditorGUILayout.HelpBox("Changes made here will NOT alter the attached SkillIO asset!", MessageType.Info);
 			}
 		}
 		newIO.overlayColor = EditorGUILayout.ColorField("Target Overlay", newIO.overlayColor);

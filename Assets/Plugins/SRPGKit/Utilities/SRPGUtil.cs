@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 public enum FacingLock {
 	FreeAngle=0,
@@ -104,5 +105,14 @@ public static class SRPGUtil {
 			return true;
 		}
 		return false;
+	}
+
+	static public void ResizeList<T>(List<T> l, int c) where T:new() {
+		while(c < l.Count) {
+			l.RemoveAt(l.Count-1);
+		}
+		while(c > l.Count) {
+			l.Add(new T());
+		}
 	}
 }

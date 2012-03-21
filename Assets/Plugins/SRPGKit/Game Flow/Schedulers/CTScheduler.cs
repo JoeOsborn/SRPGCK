@@ -19,7 +19,7 @@ public class CTScheduler : Scheduler {
 
 	override public void AddCharacter(Character c) {
 		if(!c.HasStat("ct")) {
-			Debug.LogError("CT-scheduled character "+c+" must have CT stat.");
+			Debug.LogError("CT-scheduled character "+c+" must have ct stat.");
 			return;
 		}
 		if(!c.HasStat("speed")) {

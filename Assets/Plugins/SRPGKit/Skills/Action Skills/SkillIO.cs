@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class SkillIO : ScriptableObject {
+public class SkillIO {
 	public bool editorShow=false;
 	
 	//io

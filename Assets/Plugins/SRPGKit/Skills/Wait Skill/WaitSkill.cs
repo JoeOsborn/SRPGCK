@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 [AddComponentMenu("SRPGCK/Character/Skills/Wait")]
 public class WaitSkill : ActionSkill {
@@ -11,31 +12,29 @@ public class WaitSkill : ActionSkill {
 		YN,
 		XN
 	};
-	[SerializeField]
 	public Arrow currentArrow = Arrow.YP;
-
 	public GameObject waitArrows;
 
 	public override void ResetActionSkill() {
 		if(waitArrows == null) {
 			waitArrows = Resources.LoadAssetAtPath("Assets/SRPGKit/Prefabs/Wait Arrows.prefab", typeof(GameObject)) as GameObject;
 		}
-		TargetSettings ts = ScriptableObject.CreateInstance<TargetSettings>();
-		targetSettings = new TargetSettings[]{ts};
+		TargetSettings ts = new TargetSettings();
+		targetSettings = new List<TargetSettings>{ts};
 		overlayColor = Color.clear;
 		highlightColor = Color.clear;
 		ts.targetingMode = TargetingMode.Cardinal;
-		ts.targetRegion = ScriptableObject.CreateInstance<Region>();
+		ts.targetRegion = new Region();
 		ts.targetRegion.type = RegionType.Self;
 		ts.targetRegion.interveningSpaceType = InterveningSpaceType.Pick;
-		ts.effectRegion = ScriptableObject.CreateInstance<Region>();
+		ts.effectRegion = new Region();
 		ts.effectRegion.type = RegionType.Self;
 		ts.effectRegion.interveningSpaceType = InterveningSpaceType.Pick;
-		StatEffect facingEffect = ScriptableObject.CreateInstance<StatEffect>();
+		StatEffect facingEffect = new StatEffect();
 		facingEffect.effectType = StatEffectType.ChangeFacing;
 		facingEffect.target = StatEffectTarget.Applier;
 		facingEffect.value = Formula.Lookup("arg.angle.xy", LookupType.SkillParam);
-		StatEffect endTurnEffect = ScriptableObject.CreateInstance<StatEffect>();
+		StatEffect endTurnEffect = new StatEffect();
 		endTurnEffect.effectType = StatEffectType.EndTurn;
 		endTurnEffect.target = StatEffectTarget.Applier;
 		applicationEffects = new StatEffectGroup{effects=new StatEffect[]{

@@ -34,7 +34,7 @@ public class ActionSkill : Skill {
 	public SkillIO io {
 		get {
 			if(_io == null) {
-				_io = ScriptableObject.CreateInstance<SkillIO>();
+				_io = new SkillIO();
 			}
 			return _io;
 		}
@@ -49,23 +49,20 @@ public class ActionSkill : Skill {
 	public bool waypointsAreIncremental=false;
 	public bool canCancelWaypoints=true;
 
-	public TargetSettings[] _targetSettings;
-	public TargetSettings[] targetSettings {
+	public List<TargetSettings> _targetSettings;
+	public List<TargetSettings> targetSettings {
 		get {
-			if(_targetSettings == null || _targetSettings.Length == 0) {
-				_targetSettings = new TargetSettings[1];
-			}
-			if(_targetSettings[0] == null) {
-				_targetSettings[0] = ScriptableObject.CreateInstance<TargetSettings>();
+			if(_targetSettings == null || _targetSettings.Count == 0) {
+				_targetSettings = new List<TargetSettings>{new TargetSettings()};
 				_targetSettings[0].Owner = this;
 			}
 			return _targetSettings;
 		}
 		set {
 			_targetSettings = value;
-			for(int i = 0; i < _targetSettings.Length; i++) {
+			for(int i = 0; i < _targetSettings.Count; i++) {
 				TargetSettings ts = _targetSettings[i];
-				if(ts == null) { _targetSettings[i] = ts = ScriptableObject.CreateInstance<TargetSettings>(); }
+				if(ts == null) { _targetSettings[i] = ts = new TargetSettings(); }
 				ts.Owner = this;
 			}
 		}
@@ -78,17 +75,20 @@ public class ActionSkill : Skill {
 
 	//internals
 
-	public bool lastTargetPushed=false;
+	[System.NonSerialized]
+	public bool lastTargetPushed = false;
 
+	[System.NonSerialized]
 	public Target initialTarget;
+	[System.NonSerialized]
 	public List<Target> targets;
 
-	public bool awaitingConfirmation = false;
+	[SerializeField]
+	protected bool awaitingConfirmation = false;
 
 	const float facingClosenessThreshold = 1;
 	bool cycleIndicatorZ = false;
-	float indicatorCycleT=0;
-	[SerializeField]
+	float indicatorCycleT = 0;
 	protected CharacterController probe;
 
 	protected float lastIndicatorKeyboardMove=0;
@@ -96,14 +96,17 @@ public class ActionSkill : Skill {
 	protected float firstClickTime = -1;
 	protected float doubleClickThreshold = 0.3f;
 
+	[System.NonSerialized]
 	public LineRenderer lines;
-	[SerializeField]
-	int nodeCount=0;
+	protected int nodeCount=0;
 
+	[System.NonSerialized]
 	public Overlay overlay;
 	//caching for overlay tiles, esp. for subregions
+	[System.NonSerialized]
 	public PathNode[] targetRegionTiles;
 
+	[System.NonSerialized]
 	public float radiusSoFar=0;
 
 	//properties and wrappers
@@ -180,8 +183,9 @@ public class ActionSkill : Skill {
 
 	public bool RequireConfirmation { get {
 		return requireConfirmation &&
-			!(multiTargetMode == MultiTargetMode.Chain && targets.Count < targetSettings.Length);
+			!(multiTargetMode == MultiTargetMode.Chain && targets.Count < targetSettings.Count);
 	} }
+
 	public bool AwaitingConfirmation {
 		get { return awaitingConfirmation; }
 		set {
@@ -191,6 +195,7 @@ public class ActionSkill : Skill {
 			awaitingConfirmation = value;
 		}
 	}
+
 	public float IndicatorCycleLength { get { return indicatorCycleLength; } }
 	protected bool ShouldDrawPath { get { return currentSettings.ShouldDrawPath; } }
 	protected bool DeferPathRegistration { get { return currentSettings.DeferPathRegistration; } }
@@ -204,7 +209,7 @@ public class ActionSkill : Skill {
 	}
 
 	public TargetSettings currentSettings { get {
-		return targetSettings[Mathf.Min(targetSettings.Length-1, targets.Count-1)];
+		return targetSettings[Mathf.Min(targetSettings.Count-1, targets.Count-1)];
 	} }
 
 	public Target currentTarget { get {
@@ -324,10 +329,11 @@ public class ActionSkill : Skill {
 		if(!HasParam("hitType")) {
 			AddParam("hitType", Formula.Constant(0));
 		}
-		targetSettings = new TargetSettings[]{ScriptableObject.CreateInstance<TargetSettings>()};
+		targetSettings = new List<TargetSettings>{new TargetSettings()};
+		targetSettings[0].Owner = this;
 
 		// if(targetEffects == null || targetEffects.Length == 0) {
-		// 	StatEffect healthDamage = ScriptableObject.CreateInstance<StatEffect>();
+		// 	StatEffect healthDamage = new StatEffect();
 		// 	healthDamage.statName = "health";
 		// 	healthDamage.effectType = StatEffectType.Augment;
 		// 	healthDamage.reactableTypes = new[]{"attack"};
@@ -493,8 +499,8 @@ public class ActionSkill : Skill {
 						newDest.x += d.x;
 						newDest.y += d.y;
 						newDest.z = map.NearestZLevel(
-							(int)newDest.x, 
-							(int)newDest.y, 
+							(int)newDest.x,
+							(int)newDest.y,
 							(int)newDest.z
 						);
 						if(DestIsBacktrack(newDest)) {
@@ -1002,8 +1008,8 @@ public class ActionSkill : Skill {
 	}
 
 	public virtual void ImmediatelyPickSubregion(int subregionIndex) {
-		if(subregionIndex < 0 || subregionIndex >= currentSettings.targetRegion.regions.Length) {
-			Debug.LogError("Subregion "+subregionIndex+" out of bounds "+currentSettings.targetRegion.regions.Length);
+		if(subregionIndex < 0 || subregionIndex >= currentSettings.targetRegion.regions.Count) {
+			Debug.LogError("Subregion "+subregionIndex+" out of bounds "+currentSettings.targetRegion.regions.Count);
 		}
 		_GridOverlay.SetSelectedPoints(map.CoalesceTiles(currentSettings.effectRegion.GetValidTiles(currentSettings.targetRegion.regions[subregionIndex].GetValidTiles(TargetPosition, TargetFacing), EffectFacing)));
 	}
@@ -1014,8 +1020,8 @@ public class ActionSkill : Skill {
 	}
 
 	public virtual void PickSubregion(int subregionIndex) {
-		if(subregionIndex < 0 || subregionIndex >= currentSettings.targetRegion.regions.Length) {
-			Debug.LogError("Subregion "+subregionIndex+" out of bounds "+currentSettings.targetRegion.regions.Length);
+		if(subregionIndex < 0 || subregionIndex >= currentSettings.targetRegion.regions.Count) {
+			Debug.LogError("Subregion "+subregionIndex+" out of bounds "+currentSettings.targetRegion.regions.Count);
 		}
 		currentTarget.Subregion(subregionIndex);
 		PushTarget();
@@ -1197,7 +1203,7 @@ public class ActionSkill : Skill {
 	}
 
 	public bool PermitsNewWaypoints { get {
-		if(targetSettings.Length == targets.Count) { return false; }
+		if(targetSettings.Count == targets.Count) { return false; }
 		if(currentSettings.immediatelyExecuteDrawnPath) { return false; }
 		if(SingleTarget) { return false; }
 		return
@@ -1210,7 +1216,7 @@ public class ActionSkill : Skill {
 	}
 
 	protected void PushTarget() {
-		if(lastTargetPushed || targets.Count > targetSettings.Length) {
+		if(lastTargetPushed || targets.Count > targetSettings.Count) {
 			Debug.LogError("Too many targets being pushed");
 			return;
 		}

@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 [AddComponentMenu("SRPGCK/Character/Skills/Move")]
 public class MoveSkill : ActionSkill {
@@ -24,14 +25,14 @@ public class MoveSkill : ActionSkill {
 		skillName = "Move";
 		skillGroup = "";
 		skillSorting=-1;
-		TargetSettings ts = ScriptableObject.CreateInstance<TargetSettings>();
-		ts.effectRegion = ScriptableObject.CreateInstance<Region>();
+		TargetSettings ts = new TargetSettings();
+		ts.effectRegion = new Region();
 		ts.effectRegion.IsEffectRegion = true;
 		ts.effectRegion.radiusMinF = Formula.Constant(0);
 		ts.effectRegion.radiusMaxF = Formula.Constant(0);
 		ts.effectRegion.canTargetEnemies = false;
 		ts.effectRegion.canHaltAtEnemies = false;
-		targetSettings = new TargetSettings[]{ts};
+		targetSettings = new List<TargetSettings>{ts};
 	}
 
 	public override void Update() {
