@@ -6,7 +6,7 @@ public abstract class SRPGCKEditor : Editor {
 	public Formulae fdb;
 
 	public bool listeningForGuiChanges;
-	public bool guiChanged;
+	public bool guiChanged, guiChangedAtAll;
 
 	public string[] formulaOptions;
 
@@ -28,6 +28,8 @@ public abstract class SRPGCKEditor : Editor {
 	}
 
 	public virtual void OnEnable() {
+		guiChangedAtAll = false;
+		guiChanged = false;
 		if(!useFormulae) { return; }
 		if(fdb == null) { fdb = Formulae.DefaultFormulae; }
 		UpdateFormulae();
@@ -36,8 +38,8 @@ public abstract class SRPGCKEditor : Editor {
 	public abstract void OnSRPGCKInspectorGUI();
 
 	public override void OnInspectorGUI() {
-	  CheckUndo();
 		CheckFocus();
+	  CheckUndo();
 		if(useFormulae) {
 			GUILayout.BeginHorizontal();
 			GUILayout.Label("Formulae", GUILayout.Width(60));
@@ -48,6 +50,11 @@ public abstract class SRPGCKEditor : Editor {
 		}
 		OnSRPGCKInspectorGUI();
 		FinishOnGUI();
+		if((guiChangedAtAll || guiChanged) &&
+		   (EditorApplication.isPlayingOrWillChangePlaymode && !EditorApplication.isPlaying)) {
+			// Debug.Log("save before playmode change");
+			EditorUtility.SetDirty(target);
+		}
 	}
 
 	public virtual bool FocusMovedFrom(string name) {
@@ -56,33 +63,41 @@ public abstract class SRPGCKEditor : Editor {
 
 	protected virtual void FinishOnGUI() {
 		if(GUI.changed) {
-			EditorUtility.SetDirty(target);
+			guiChanged = true;
+			guiChangedAtAll = true;
 		}
 		lastFocusedControl = newFocusedControl;
+	}
+
+	protected virtual void OnDisable() {
+		if(guiChanged || guiChangedAtAll) {
+			// Debug.Log("disable "+target.name);
+			EditorUtility.SetDirty(target);
+			guiChangedAtAll = false;
+		}
 	}
 
   private void CheckUndo()
   {
     Event e = Event.current;
 
-    if ( e.type == EventType.MouseDown && e.button == 0 || e.type == EventType.KeyUp && ( e.keyCode == KeyCode.Tab ) ) {
-      // When the LMB is pressed or the TAB key is released,
-      // store a snapshot, but don't register it as an undo
-      // ( so that if nothing changes we avoid storing a useless undo)
-      Undo.SetSnapshotTarget( target, name+"InspectorUndo" );
-      Undo.CreateSnapshot();
-      Undo.ClearSnapshotTarget();
-      listeningForGuiChanges = true;
-      guiChanged = false;
+    if((e.type == EventType.MouseDown) ||
+		   (e.type == EventType.KeyUp && e.keyCode == KeyCode.Tab) ||
+		   (newFocusedControl != lastFocusedControl)) {
+		 listeningForGuiChanges = true;
+ 			// Debug.Log("ready to store undo, changed="+guiChanged);
     }
 
-    if ( listeningForGuiChanges && guiChanged ) {
+    if(listeningForGuiChanges && guiChanged) {
+			// Debug.Log("store undo");
       // Some GUI value changed after pressing the mouse.
       // Register the previous snapshot as a valid undo.
-      Undo.SetSnapshotTarget( target, name+"InspectorUndo" );
-      Undo.RegisterSnapshot();
-      Undo.ClearSnapshotTarget();
+      // Undo.SetSnapshotTarget(target, name+"InspectorUndo");
+      // Undo.CreateSnapshot();
+      // Undo.RegisterSnapshot();
+      // Undo.ClearSnapshotTarget();
       listeningForGuiChanges = false;
+      guiChanged = false;
     }
   }
 
