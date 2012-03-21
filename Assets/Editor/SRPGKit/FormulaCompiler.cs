@@ -560,13 +560,13 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 	IFormulaElement TargetedSide(IEnumerable<IFormulaElement> forms) {
 		Formula f = new Formula();
 		f.formulaType = FormulaType.BranchAppliedSide;
-		f.arguments = forms.Select(cf => CheckFormulaArg(cf)).ToArray();
+		f.arguments = forms.Select(cf => CheckFormulaArg(cf)).ToList();
 		return f;
 	}
 	IFormulaElement TargeterSide(IEnumerable<IFormulaElement> forms) {
 		Formula f = new Formula();
 		f.formulaType = FormulaType.BranchApplierSide;
-		f.arguments = forms.Select(cf => CheckFormulaArg(cf)).ToArray();
+		f.arguments = forms.Select(cf => CheckFormulaArg(cf)).ToList();
 		return f;
 	}
 	IFormulaElement RandomBranch(IEnumerable<IFormulaElement> cases, IEnumerable<IFormulaElement> forms) {
@@ -575,7 +575,7 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 		if(cases.Count() != forms.Count()) {
 			throw new SemanticException("mismatched number of cases and formulae");
 		}
-		f.arguments = cases.Concat(forms).Select(form => CheckFormulaArg(form)).ToArray();
+		f.arguments = cases.Concat(forms).Select(form => CheckFormulaArg(form)).ToList();
 		return f;
 	}
 
@@ -583,74 +583,74 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 	IFormulaElement Abs(IEnumerable<IFormulaElement> forms) {
 		Formula f = new Formula();
 		f.formulaType = FormulaType.AbsoluteValue;
-		f.arguments = forms.Select(cf => CheckFormulaArg(cf)).ToArray();
+		f.arguments = forms.Select(cf => CheckFormulaArg(cf)).ToList();
 		return f;
 	}
 
 	IFormulaElement Root(IEnumerable<IFormulaElement> forms) {
 		Formula f = new Formula();
 		f.formulaType = FormulaType.Root;
-		f.arguments = forms.Select(cf => CheckFormulaArg(cf)).ToArray();
+		f.arguments = forms.Select(cf => CheckFormulaArg(cf)).ToList();
 		return f;
 	}
 
 	IFormulaElement Mean(IEnumerable<IFormulaElement> forms) {
 		Formula f = new Formula();
 		f.formulaType = FormulaType.Mean;
-		f.arguments = forms.Select(cf => CheckFormulaArg(cf)).ToArray();
+		f.arguments = forms.Select(cf => CheckFormulaArg(cf)).ToList();
 		return f;
 	}
 
 	IFormulaElement Min(IEnumerable<IFormulaElement> forms) {
 		Formula f = new Formula();
 		f.formulaType = FormulaType.Min;
-		f.arguments = forms.Select(cf => CheckFormulaArg(cf)).ToArray();
+		f.arguments = forms.Select(cf => CheckFormulaArg(cf)).ToList();
 		return f;
 	}
 
 	IFormulaElement Max(IEnumerable<IFormulaElement> forms) {
 		Formula f = new Formula();
 		f.formulaType = FormulaType.Max;
-		f.arguments = forms.Select(cf => CheckFormulaArg(cf)).ToArray();
+		f.arguments = forms.Select(cf => CheckFormulaArg(cf)).ToList();
 		return f;
 	}
 
 	IFormulaElement RandomRange(IEnumerable<IFormulaElement> forms) {
 		Formula f = new Formula();
 		f.formulaType = FormulaType.RandomRange;
-		f.arguments = forms.Select(cf => CheckFormulaArg(cf)).ToArray();
+		f.arguments = forms.Select(cf => CheckFormulaArg(cf)).ToList();
 		return f;
 	}
 
 	IFormulaElement ClampRange(IEnumerable<IFormulaElement> forms) {
 		Formula f = new Formula();
 		f.formulaType = FormulaType.ClampRange;
-		f.arguments = forms.Select(cf => CheckFormulaArg(cf)).ToArray();
+		f.arguments = forms.Select(cf => CheckFormulaArg(cf)).ToList();
 		return f;
 	}
 
 	IFormulaElement Floor(IEnumerable<IFormulaElement> forms) {
 		Formula f = new Formula();
 		f.formulaType = FormulaType.RoundDown;
-		f.arguments = forms.Select(cf => CheckFormulaArg(cf)).ToArray();
+		f.arguments = forms.Select(cf => CheckFormulaArg(cf)).ToList();
 		return f;
 	}
 	IFormulaElement Ceil(IEnumerable<IFormulaElement> forms) {
 		Formula f = new Formula();
 		f.formulaType = FormulaType.RoundUp;
-		f.arguments = forms.Select(cf => CheckFormulaArg(cf)).ToArray();
+		f.arguments = forms.Select(cf => CheckFormulaArg(cf)).ToList();
 		return f;
 	}
 	IFormulaElement Round(IEnumerable<IFormulaElement> forms) {
 		Formula f = new Formula();
 		f.formulaType = FormulaType.Round;
-		f.arguments = forms.Select(cf => CheckFormulaArg(cf)).ToArray();
+		f.arguments = forms.Select(cf => CheckFormulaArg(cf)).ToList();
 		return f;
 	}
 	IFormulaElement PickAny(IEnumerable<IFormulaElement> forms) {
 		Formula f = new Formula();
 		f.formulaType = FormulaType.Any;
-		f.arguments = forms.Select(cf => CheckFormulaArg(cf)).ToArray();
+		f.arguments = forms.Select(cf => CheckFormulaArg(cf)).ToList();
 		return f;
 	}
 
@@ -666,79 +666,79 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 	IFormulaElement Eq(IFormulaElement lhs, IFormulaElement rhs) {
 		Formula f = new Formula();
 		f.formulaType = FormulaType.Equal;
-		f.arguments = new Formula[]{CheckFormulaArg(lhs), CheckFormulaArg(rhs)};
+		f.arguments = new List<Formula>(){CheckFormulaArg(lhs), CheckFormulaArg(rhs)};
 		return f;
 	}
 	IFormulaElement Neq(IFormulaElement lhs, IFormulaElement rhs) {
 		Formula f = new Formula();
 		f.formulaType = FormulaType.NotEqual;
-		f.arguments = new Formula[]{CheckFormulaArg(lhs), CheckFormulaArg(rhs)};
+		f.arguments = new List<Formula>(){CheckFormulaArg(lhs), CheckFormulaArg(rhs)};
 		return f;
 	}
 	IFormulaElement GT(IFormulaElement lhs, IFormulaElement rhs) {
 		Formula f = new Formula();
 		f.formulaType = FormulaType.GreaterThan;
-		f.arguments = new Formula[]{CheckFormulaArg(lhs), CheckFormulaArg(rhs)};
+		f.arguments = new List<Formula>(){CheckFormulaArg(lhs), CheckFormulaArg(rhs)};
 		return f;
 	}
 	IFormulaElement GTE(IFormulaElement lhs, IFormulaElement rhs) {
 		Formula f = new Formula();
 		f.formulaType = FormulaType.GreaterThanOrEqual;
-		f.arguments = new Formula[]{CheckFormulaArg(lhs), CheckFormulaArg(rhs)};
+		f.arguments = new List<Formula>(){CheckFormulaArg(lhs), CheckFormulaArg(rhs)};
 		return f;
 	}
 	IFormulaElement LT(IFormulaElement lhs, IFormulaElement rhs) {
 		Formula f = new Formula();
 		f.formulaType = FormulaType.LessThan;
-		f.arguments = new Formula[]{CheckFormulaArg(lhs), CheckFormulaArg(rhs)};
+		f.arguments = new List<Formula>(){CheckFormulaArg(lhs), CheckFormulaArg(rhs)};
 		return f;
 	}
 	IFormulaElement LTE(IFormulaElement lhs, IFormulaElement rhs) {
 		Formula f = new Formula();
 		f.formulaType = FormulaType.LessThanOrEqual;
-		f.arguments = new Formula[]{CheckFormulaArg(lhs), CheckFormulaArg(rhs)};
+		f.arguments = new List<Formula>(){CheckFormulaArg(lhs), CheckFormulaArg(rhs)};
 		return f;
 	}
 	IFormulaElement Add(IFormulaElement lhs, IFormulaElement rhs) {
 		Formula f = new Formula();
 		f.formulaType = FormulaType.Add;
-		f.arguments = new Formula[]{CheckFormulaArg(lhs), CheckFormulaArg(rhs)};
+		f.arguments = new List<Formula>(){CheckFormulaArg(lhs), CheckFormulaArg(rhs)};
 		return f;
 	}
 	IFormulaElement Sub(IFormulaElement lhs, IFormulaElement rhs) {
 		Formula f = new Formula();
 		f.formulaType = FormulaType.Subtract;
-		f.arguments = new Formula[]{CheckFormulaArg(lhs), CheckFormulaArg(rhs)};
+		f.arguments = new List<Formula>(){CheckFormulaArg(lhs), CheckFormulaArg(rhs)};
 		return f;
 	}
 	IFormulaElement Mul(IFormulaElement lhs, IFormulaElement rhs) {
 		Formula f = new Formula();
 		f.formulaType = FormulaType.Multiply;
-		f.arguments = new Formula[]{CheckFormulaArg(lhs), CheckFormulaArg(rhs)};
+		f.arguments = new List<Formula>(){CheckFormulaArg(lhs), CheckFormulaArg(rhs)};
 		return f;
 	}
 	IFormulaElement Div(IFormulaElement lhs, IFormulaElement rhs) {
 		Formula f = new Formula();
 		f.formulaType = FormulaType.Divide;
-		f.arguments = new Formula[]{CheckFormulaArg(lhs), CheckFormulaArg(rhs)};
+		f.arguments = new List<Formula>(){CheckFormulaArg(lhs), CheckFormulaArg(rhs)};
 		return f;
 	}
 	IFormulaElement Rem(IFormulaElement lhs, IFormulaElement rhs) {
 		Formula f = new Formula();
 		f.formulaType = FormulaType.Remainder;
-		f.arguments = new Formula[]{CheckFormulaArg(lhs), CheckFormulaArg(rhs)};
+		f.arguments = new List<Formula>(){CheckFormulaArg(lhs), CheckFormulaArg(rhs)};
 		return f;
 	}
 	IFormulaElement Pow(IFormulaElement lhs, IFormulaElement rhs) {
 		Formula f = new Formula();
 		f.formulaType = FormulaType.Exponent;
-		f.arguments = new Formula[]{CheckFormulaArg(lhs), CheckFormulaArg(rhs)};
+		f.arguments = new List<Formula>(){CheckFormulaArg(lhs), CheckFormulaArg(rhs)};
 		return f;
 	}
 	IFormulaElement Neg(IFormulaElement arg) {
 		Formula outer = new Formula();
 		outer.formulaType = FormulaType.Multiply;
-		outer.arguments = new Formula[]{
+		outer.arguments = new List<Formula>(){
 			Formula.Constant(-1),
 			CheckFormulaArg(arg)
 		};
@@ -747,7 +747,7 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 	IFormulaElement If(IFormulaElement a, IFormulaElement b, IFormulaElement c) {
 		Formula outer = new Formula();
 		outer.formulaType = FormulaType.BranchIfNotZero;
-		outer.arguments = new Formula[]{CheckFormulaArg(a), CheckFormulaArg(b), CheckFormulaArg(c)};
+		outer.arguments = new List<Formula>(){CheckFormulaArg(a), CheckFormulaArg(b), CheckFormulaArg(c)};
 		return outer;
 	}
 }

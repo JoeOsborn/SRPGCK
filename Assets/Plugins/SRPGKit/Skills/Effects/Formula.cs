@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Linq;
+using System.Collections.Generic;
 
 public enum FormulaType {
 	Constant,
@@ -108,7 +109,7 @@ public class Formula : IFormulaElement {
 	public string[] searchReactedEffectCategories;
 
 	//everything else
-	public Formula[] arguments; //x+y+z or x*y*z or x^y (y default 2) or y√x (y default 2)
+	public List<Formula> arguments; //x+y+z or x*y*z or x^y (y default 2) or y√x (y default 2)
 	public Formula Clone() {
 		Formula f = new Formula();
 		f.CopyFrom(this);
@@ -221,50 +222,50 @@ public class Formula : IFormulaElement {
 				break;
 			case FormulaType.Add:
 				result = arguments[0].GetValue(fdb, scontext, ccontext, econtext);
-				for(int i = 1; i < arguments.Length; i++) {
+				for(int i = 1; i < arguments.Count; i++) {
 					result += arguments[i].GetValue(fdb, scontext, ccontext, econtext);
 				}
 				break;
 			case FormulaType.Subtract:
 				result = arguments[0].GetValue(fdb, scontext, ccontext, econtext);
-				for(int i = 1; i < arguments.Length; i++) {
+				for(int i = 1; i < arguments.Count; i++) {
 					result -= arguments[i].GetValue(fdb, scontext, ccontext, econtext);
 				}
 				break;
 			case FormulaType.Multiply:
 			  result = arguments[0].GetValue(fdb, scontext, ccontext, econtext);
-			  for(int i = 1; i < arguments.Length; i++) {
+			  for(int i = 1; i < arguments.Count; i++) {
 			  	result *= arguments[i].GetValue(fdb, scontext, ccontext, econtext);
 			  }
 				break;
 			case FormulaType.Divide:
 			  result = arguments[0].GetValue(fdb, scontext, ccontext, econtext);
-			  for(int i = 1; i < arguments.Length; i++) {
+			  for(int i = 1; i < arguments.Count; i++) {
 			  	result /= arguments[i].GetValue(fdb, scontext, ccontext, econtext);
 			  }
 				break;
 			case FormulaType.Remainder:
 			  result = arguments[0].GetValue(fdb, scontext, ccontext, econtext);
-			  for(int i = 1; i < arguments.Length; i++) {
+			  for(int i = 1; i < arguments.Count; i++) {
 			  	result = result % arguments[i].GetValue(fdb, scontext, ccontext, econtext);
 			  }
 				break;
 			case FormulaType.Exponent:
 			  result = arguments[0].GetValue(fdb, scontext, ccontext, econtext);
-				if(arguments.Length == 1) {
+				if(arguments.Count == 1) {
 					result = result * result;
 				} else {
-			  	for(int i = 1; i < arguments.Length; i++) {
+			  	for(int i = 1; i < arguments.Count; i++) {
 			  		result = Mathf.Pow(result, arguments[i].GetValue(fdb, scontext, ccontext, econtext));
 			  	}
 				}
 				break;
 			case FormulaType.Root:
 			  result = arguments[0].GetValue(fdb, scontext, ccontext, econtext);
-				if(arguments.Length == 1) {
+				if(arguments.Count == 1) {
 					result = Mathf.Sqrt(result);
 				} else {
-			  	for(int i = 1; i < arguments.Length; i++) {
+			  	for(int i = 1; i < arguments.Count; i++) {
 			  		result = Mathf.Pow(result, 1.0f/arguments[i].GetValue(fdb, scontext, ccontext, econtext));
 			  	}
 				}
@@ -280,10 +281,10 @@ public class Formula : IFormulaElement {
 				break;
 			case FormulaType.RandomRange: {
 				float low=0, high=1;
-				if(arguments.Length >= 2) {
+				if(arguments.Count >= 2) {
 					low = arguments[0].GetValue(fdb, scontext, ccontext, econtext);
 					high = arguments[1].GetValue(fdb, scontext, ccontext, econtext);
-				} else if(arguments.Length == 1) {
+				} else if(arguments.Count == 1) {
 					high = arguments[0].GetValue(fdb, scontext, ccontext, econtext);
 				}
 				result = Random.Range(low, high);
@@ -292,10 +293,10 @@ public class Formula : IFormulaElement {
 			case FormulaType.ClampRange: {
 				float r = arguments[0].GetValue(fdb, scontext, ccontext, econtext);
 				float low=0, high=1;
-				if(arguments.Length >= 2) {
+				if(arguments.Count >= 2) {
 					low = arguments[1].GetValue(fdb, scontext, ccontext, econtext);
 				}
-				if(arguments.Length >= 3) {
+				if(arguments.Count >= 3) {
 					high = arguments[2].GetValue(fdb, scontext, ccontext, econtext);
 				}
 				result = Mathf.Clamp(r, low, high);
@@ -335,7 +336,7 @@ public class Formula : IFormulaElement {
 				result = arguments[0].GetValue(fdb, scontext, ccontext, econtext) <= arguments[1].GetValue(fdb, scontext, ccontext, econtext) ? 1 : 0;
 				break;
 			case FormulaType.Any:
-				result = arguments[Random.Range(0, arguments.Length)].GetValue(fdb, scontext, ccontext, econtext);
+				result = arguments[Random.Range(0, arguments.Count)].GetValue(fdb, scontext, ccontext, econtext);
 				break;
 			case FormulaType.LookupSuccessful:
 				result = fdb.CanLookup(lookupReference, lookupType, scontext, ccontext, econtext, this) ? 1 : 0;
@@ -355,7 +356,7 @@ public class Formula : IFormulaElement {
 				result = -1;
 				float rval = Random.value;
 				float val = 0;
-				int halfLen = arguments.Length/2;
+				int halfLen = arguments.Count/2;
 				for(int i = 0; i < halfLen; i++) {
 					val += arguments[i].GetValue(fdb, scontext, ccontext, econtext);
 					if(val >= rval) {
@@ -380,7 +381,13 @@ public class Formula : IFormulaElement {
 		Towards
 	};
 
-	protected float FacingSwitch(Formulae fdb, StatEffectTarget target, Skill scontext, Character ccontext, Equipment econtext) {
+	protected float FacingSwitch(
+		Formulae fdb, 
+		StatEffectTarget target, 
+		Skill scontext, 
+		Character ccontext, 
+		Equipment econtext
+	) {
 		if(scontext == null) {
 			Debug.LogError("Relative facing not available for non-attack/reaction skill effects.");
 			return -1;
@@ -424,7 +431,7 @@ public class Formula : IFormulaElement {
 		//order:
 		//front, left, right, back, away, sides, towards, default
 		//must have null entries
-		if(arguments.Length != 8) {
+		if(arguments.Count != 8) {
 			Debug.Log("Bad facing switch in skill "+scontext.skillName);
 		}
 		if(pointing == CharacterPointing.Front && arguments[0] != null) {
