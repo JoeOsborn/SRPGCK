@@ -1024,4 +1024,14 @@ public class EditorGUIExt
 		}
 		return newIO;
 	}
+
+	public static T PickAssetGUI<T>(string label, T t) where T : ScriptableObject {
+	  T newT = EditorGUILayout.ObjectField(
+	    label,
+	    t as UnityEngine.Object,
+	    typeof(T),
+	    false
+	  ) as T;
+	  return newT;
+	}
 }

@@ -4,7 +4,6 @@ using System.Linq;
 
 [AddComponentMenu("SRPGCK/Character/Skills/Generic")]
 public class Skill : MonoBehaviour {
-	public bool isActive=false;
 	public string skillName;
 	public string skillGroup = "";
 	public int skillSorting = 0;
@@ -12,8 +11,6 @@ public class Skill : MonoBehaviour {
 	public bool replacesSkill = false;
 	public string replacedSkill = "";
 	public int replacementPriority=0;
-
-	virtual public bool isPassive { get { return true; } }
 
 	public bool deactivatesOnApplication=true;
 
@@ -30,10 +27,16 @@ public class Skill : MonoBehaviour {
 	public StatEffectGroup[] reactionEffects;
 	public StatEffectGroup reactionApplicationEffects;
 
+	//later, replace all of the above with me
+	public SkillDef def;
+
+	//properties for overriding
+	virtual public bool isPassive { get { return true; } }
+
 	//internals
-
+	//runtime
+	public bool isActive=false;
 	protected Dictionary<string, Formula> runtimeParameters;
-
 	[System.NonSerialized]
 	public Skill currentReactedSkill = null;
 	[System.NonSerialized]
@@ -48,6 +51,13 @@ public class Skill : MonoBehaviour {
 	public int currentHitType;
 
 	public List<StatEffectRecord> lastEffects;
+
+	public virtual void Awake() {
+		//make sure we don't mess with the real asset
+		if(def != null && def.reallyDefined) {
+			def = Instantiate(def) as SkillDef;
+		}
+	}
 
 	public virtual void Start() {
 		if(reactionTargetRegion!=null) {
@@ -175,7 +185,7 @@ public class Skill : MonoBehaviour {
 			runtimeParameters = new Dictionary<string, Formula>();
 			if(parameters == null) { parameters = new List<Parameter>(); }
 			for(int i = 0; i < parameters.Count; i++) {
-				runtimeParameters.Add(parameters[i].Name.NormalizeName(), parameters[i].Formula);
+				runtimeParameters.Add(parameters[i].Name, parameters[i].Formula);
 			}
 		}
 	}

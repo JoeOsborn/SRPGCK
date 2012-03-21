@@ -1,6 +1,10 @@
 using UnityEngine;
 using UnityEditor;
+using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 
 public abstract class SRPGCKEditor : Editor {
 	public Formulae fdb;
@@ -53,10 +57,14 @@ public abstract class SRPGCKEditor : Editor {
 		if((guiChangedAtAll || guiChanged) &&
 		   EditorApplication.isPlayingOrWillChangePlaymode) {
 			// Debug.Log("save before playmode change");
-			EditorUtility.SetDirty(target);
-			guiChanged = false;
-			guiChangedAtAll = false;
+			SaveAsset();
 		}
+	}
+
+	protected virtual void SaveAsset() {
+		EditorUtility.SetDirty(target);
+		guiChanged = false;
+		guiChangedAtAll = false;
 	}
 
 	public virtual bool FocusMovedFrom(string name) {
@@ -74,9 +82,7 @@ public abstract class SRPGCKEditor : Editor {
 	protected virtual void OnDisable() {
 		if(guiChanged || guiChangedAtAll) {
 			// Debug.Log("disable "+target.name);
-			EditorUtility.SetDirty(target);
-			guiChanged = false;
-			guiChangedAtAll = false;
+			SaveAsset();
 		}
 	}
 
@@ -103,5 +109,52 @@ public abstract class SRPGCKEditor : Editor {
       guiChanged = false;
     }
   }
-
+	protected static void EnsurePath(string p) {
+		if(!Directory.Exists(p)) {
+			Directory.CreateDirectory(p);
+			AssetDatabase.Refresh();
+		}
+	}
+	protected static void CopyFieldsTo<TA, TB>(TA s, TB def) {
+		FieldInfo[] fields = typeof(TA).
+			GetFields(BindingFlags.Public |
+								BindingFlags.Instance |
+                BindingFlags.NonPublic).
+			Where(info =>
+			  (info.IsPublic && !info.IsNotSerialized) ||
+			  info.GetCustomAttributes(typeof(SerializeField),true).Length != 0
+			).ToArray();
+		FieldInfo[] defFields = typeof(TB).
+			GetFields(BindingFlags.Public |
+								BindingFlags.Instance |
+                BindingFlags.NonPublic).
+			Where(info =>
+			  (info.IsPublic && !info.IsNotSerialized) ||
+			  info.GetCustomAttributes(typeof(SerializeField),true).Length != 0
+			).ToArray();
+		for(int i = 0; i < defFields.Length; i++) {
+			FieldInfo sdf = defFields[i];
+			string sdfn = sdf.Name;
+			Debug.Log("copy "+sdfn+"?");
+			FieldInfo sf = fields.FirstOrDefault(fi => fi.Name == sdfn);
+			if(sf == null) { Debug.Log("no field!"); continue; }
+			Debug.Log("src "+(sf.GetValue(s) != null ? sf.GetValue(s).ToString() : "(null)"));
+			if(sf.FieldType.IsValueType) {
+				sdf.SetValue(def, sf.GetValue(s));
+				Debug.Log("byval");
+			} else if(sf.FieldType.IsSubclassOf(typeof(ScriptableObject))) {
+				ScriptableObject oldO = sf.GetValue(s) as ScriptableObject;
+				if(oldO == null) { Debug.Log("null SO"); continue; }
+				ScriptableObject newO = Instantiate(oldO) as ScriptableObject;
+				Debug.Log("byscopy");
+				sdf.SetValue(def, newO);
+			} else {
+				object oldO = sf.GetValue(s);
+				if(oldO == null) { Debug.Log("null O"); continue; }
+				object newO = oldO.Copy();
+				sdf.SetValue(def, newO);
+				Debug.Log("bycopy");
+			}
+		}
+	}
 }

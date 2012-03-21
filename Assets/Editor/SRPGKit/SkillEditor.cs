@@ -2,6 +2,8 @@ using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
 using System.Linq;
+using System;
+using System.Reflection;
 
 [CustomEditor(typeof(Skill))]
 public class SkillEditor : SRPGCKEditor {
@@ -160,11 +162,44 @@ public class SkillEditor : SRPGCKEditor {
 		}
 	}
 
+	protected override void SaveAsset() {
+		if(s.def != null && s.def.reallyDefined) {
+			CopyFieldsTo<SkillDef, Skill>(s.def, s);
+		}
+		base.SaveAsset();
+		if(s.def != null && s.def.reallyDefined) {
+			EditorUtility.SetDirty(s.def);
+		}
+	}
+
 	public override void OnSRPGCKInspectorGUI () {
-		GUILayout.BeginVertical();
-		BasicSkillGUI();
-		EditorGUILayout.Space();
-		ReactionSkillGUI();
-		GUILayout.EndVertical();
+		s.def = EditorGUIExt.PickAssetGUI<SkillDef>("Skill Definition", s.def);
+		if(s.def == null || !s.def.reallyDefined) {
+			if(GUILayout.Button("Convert to Skill Definition")) {
+				EnsurePath("Assets/SRPGCK Data/Skills");
+				SkillDef def = ScriptableObjectUtility.CreateAsset<SkillDef>(
+					s.skillName,
+					"Assets/SRPGCK Data/Skills",
+					false
+				);
+				CopyFieldsTo<Skill, SkillDef>(s, def);
+				s.def = def;
+				def.reallyDefined = true;
+			}
+			GUILayout.BeginVertical();
+			BasicSkillGUI();
+			EditorGUILayout.Space();
+			ReactionSkillGUI();
+			GUILayout.EndVertical();
+		} else {
+			//edit the sdef!
+			// GUILayout.BeginVertical();
+			// SkillDefEditor.BasicSkillGUI(s.def, fdb);
+			// EditorGUILayout.Space();
+			// SkillDefEditor.ReactionSkillGUI(s.def, fdb);
+			// GUILayout.EndVertical();
+			//set it to dirty!
+		}
 	}
 }
+
