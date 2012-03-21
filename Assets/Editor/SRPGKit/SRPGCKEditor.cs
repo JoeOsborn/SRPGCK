@@ -51,9 +51,11 @@ public abstract class SRPGCKEditor : Editor {
 		OnSRPGCKInspectorGUI();
 		FinishOnGUI();
 		if((guiChangedAtAll || guiChanged) &&
-		   (EditorApplication.isPlayingOrWillChangePlaymode && !EditorApplication.isPlaying)) {
+		   EditorApplication.isPlayingOrWillChangePlaymode) {
 			// Debug.Log("save before playmode change");
 			EditorUtility.SetDirty(target);
+			guiChanged = false;
+			guiChangedAtAll = false;
 		}
 	}
 
@@ -73,6 +75,7 @@ public abstract class SRPGCKEditor : Editor {
 		if(guiChanged || guiChangedAtAll) {
 			// Debug.Log("disable "+target.name);
 			EditorUtility.SetDirty(target);
+			guiChanged = false;
 			guiChangedAtAll = false;
 		}
 	}
