@@ -823,8 +823,8 @@ public class EditorGUIExt
 			//size
 			EditorGUILayout.Space();
 			GUILayout.BeginHorizontal();
-			if(newReg.regions == null) { newReg.regions = new List<Region>{new Region()}; }
-			int regionCount = newReg.regions.Count;
+			if(newReg.regions == null) { newReg.regions = new Region[]{new Region()}; }
+			int regionCount = newReg.regions.Length;
 			int newRegionCount = EditorGUILayout.IntField(
 				regionCount,
 				EditorStyles.textField,
@@ -836,7 +836,7 @@ public class EditorGUIExt
 			if(newRegionCount < 1) {
 				newRegionCount = 1;
 			}
-			SRPGUtil.ResizeList<Region>(newReg.regions, newRegionCount);
+			Array.Resize(ref newReg.regions, newRegionCount);
 			for(int i = 0; i < newRegionCount; i++) {
 				EditorGUILayout.Space();
 				EditorGUILayout.Space();
