@@ -37,8 +37,8 @@ public class Region {
 	//editor only
 	public bool editorShowContents=false;
 
-	protected Skill owner;
-	public Skill Owner {
+	protected SkillDef owner;
+	public SkillDef Owner {
 		get { return owner; }
 		set {
 			owner = value;
@@ -967,10 +967,11 @@ public class Region {
 		PathNode startNode = pickables[start];
 		queue.Enqueue(startNode.distance, startNode);
 		int tries = 0;
-		while(!queue.IsEmpty && tries < 100) {
+		const int tryLimit = 200;
+		while(!queue.IsEmpty && tries < tryLimit) {
 			tries++;
 			PathNode pn = queue.Dequeue();
-			// 	Debug.Log("dequeue "+pn);
+				// Debug.Log("dequeue "+pn);
 			//skip stuff we've seen already
 			if(closed.Contains(pn)) {
 //				Debug.Log("closed");
@@ -1052,11 +1053,12 @@ public class Region {
 						continue;
 					}
 					queue.Enqueue(next.distance+Mathf.Abs(pos.x-dest.x)+Mathf.Abs(pos.y-dest.y)+Mathf.Abs(pos.z-dest.z), next);
-					//Debug.Log("enqueue "+next.pos+" with cost "+next.distance);
+					// Debug.Log("enqueue "+next.pos+" with cost "+next.distance);
 				}
       }
 		}
-		if(tries >= 100) {
+		// Debug.Log("tries: "+tries);
+		if(tries >= tryLimit) {
 			Debug.LogError("escape infinite loop in pathing from "+start+" to "+destPn.pos);
 		}
 		return false;

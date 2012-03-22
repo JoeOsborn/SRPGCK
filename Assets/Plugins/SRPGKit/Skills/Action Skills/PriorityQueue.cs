@@ -12,7 +12,9 @@ class PriorityQueue<P, V>
             q = new Queue<V>();
             list.Add(priority, q);
         }
-        q.Enqueue(value);
+				if(!q.Contains(value)) {
+	        q.Enqueue(value);
+				}
     }
     public V Dequeue()
     {
