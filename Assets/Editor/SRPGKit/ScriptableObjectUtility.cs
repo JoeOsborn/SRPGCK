@@ -26,11 +26,11 @@ public static class ScriptableObjectUtility
     }
 
 		SRPGCKEditor.EnsurePath(path);
-		
+
     string assetPathAndName = AssetDatabase.GenerateUniqueAssetPath(
 			path + "/" + (tentativeName ?? ("New " + typeof(T).ToString())) + ".asset"
 		);
-		Debug.Log("given "+givenPath+" actual "+path+" tent "+tentativeName+" path "+assetPathAndName);
+		// Debug.Log("given "+givenPath+" actual "+path+" tent "+tentativeName+" path "+assetPathAndName);
 
     AssetDatabase.CreateAsset(asset, assetPathAndName);
 
