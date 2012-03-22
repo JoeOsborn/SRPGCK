@@ -110,7 +110,7 @@ public abstract class SRPGCKEditor : Editor {
       guiChanged = false;
     }
   }
-	protected static void EnsurePath(string p) {
+	public static void EnsurePath(string p) {
 		if(!Directory.Exists(p)) {
 			Directory.CreateDirectory(p);
 			AssetDatabase.Refresh();

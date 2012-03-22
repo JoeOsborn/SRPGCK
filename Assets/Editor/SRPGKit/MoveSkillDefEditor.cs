@@ -29,7 +29,7 @@ public class MoveSkillDefEditor : ActionSkillDefEditor {
 		//normal skill
 		BasicSkillGUI();
 		EditorGUILayout.Space();
-		ms.io = EditorGUIExt.SkillIOGUI("I/O", ms.io, ms, formulaOptions, lastFocusedControl);
+		ms.io = EditorGUIExt.PickAssetGUI<SkillIO>("I/O", ms.io);
 		EditorGUILayout.Space();
 		//move skill stuff
 		MoveSkillGUI();

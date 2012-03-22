@@ -1,8 +1,8 @@
 using UnityEngine;
 
-public class SkillIO {
+public class SkillIO : ScriptableObject {
 	public bool editorShow=false;
-	
+
 	//io
 	public bool supportKeyboard = true;
 	public bool supportMouse = true;

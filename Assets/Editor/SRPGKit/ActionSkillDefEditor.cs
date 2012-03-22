@@ -78,7 +78,7 @@ public class ActionSkillDefEditor : SkillDefEditor {
 	public override void OnSRPGCKInspectorGUI () {
 		BasicSkillGUI();
 		EditorGUILayout.Space();
-		atk.io = EditorGUIExt.SkillIOGUI("I/O", atk.io, atk, formulaOptions, lastFocusedControl);
+		atk.io = EditorGUIExt.PickAssetGUI<SkillIO>("I/O", atk.io);
 		EditorGUILayout.Space();
 		TargetedSkillGUI();
 		EditorGUILayout.Space();

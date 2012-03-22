@@ -34,7 +34,7 @@ public class ActionSkillDef : SkillDef {
 	public SkillIO io {
 		get {
 			if(_io == null) {
-				_io = new SkillIO();
+				_io = ScriptableObject.CreateInstance<SkillIO>();
 			}
 			return _io;
 		}
