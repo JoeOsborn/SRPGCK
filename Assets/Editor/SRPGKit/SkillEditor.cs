@@ -26,6 +26,8 @@ public class SkillEditor : SRPGCKEditor {
 			if(GUILayout.Button("Convert to Skill Definition")) {
 				ConvertSkill();
 				s.def.reallyDefined = true;
+				EditorUtility.SetDirty(s.def);
+				EditorUtility.SetDirty(s);
 			}
 		}
 	}
