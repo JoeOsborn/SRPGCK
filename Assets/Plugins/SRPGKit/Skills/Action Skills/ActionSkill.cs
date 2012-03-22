@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
-[AddComponentMenu("SRPGCK/Character/Skills/Action")]
 public class ActionSkill : Skill {
 	//def properties, remove after upgrading
 	public SkillIO _io;

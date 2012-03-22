@@ -17,5 +17,6 @@ public class MoveSkillEditor : ActionSkillEditor {
 		);
 		CopyFieldsTo<MoveSkill, MoveSkillDef>(s as MoveSkill, def);
 		s.def = def;
+		(s.def as MoveSkillDef).io = SRPGCKSettings.Settings.defaultMoveIO;
 	}
 }

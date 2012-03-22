@@ -6,10 +6,15 @@ using System;
 
 [CustomEditor(typeof(ActionSkillDef))]
 public class ActionSkillDefEditor : SkillDefEditor {
-	[MenuItem("SRPGCK/Create action skill", false, 21)]
+	[MenuItem("SRPGCK/Create action skill", false, 22)]
 	public static ActionSkillDef CreateActionSkillDef()
 	{
-		ActionSkillDef sd = ScriptableObjectUtility.CreateAsset<ActionSkillDef>();
+		ActionSkillDef sd = ScriptableObjectUtility.CreateAsset<ActionSkillDef>(
+			null,
+			"Assets/SRPGCK Data/Skills/Action",
+			true
+		);
+		sd.io = SRPGCKSettings.Settings.defaultActionIO;
 		sd.reallyDefined = true;
 		return sd;
 	}

@@ -6,12 +6,12 @@ using System;
 
 [CustomEditor(typeof(SkillIO))]
 public class SkillIOEditor : SRPGCKEditor {
-	[MenuItem("SRPGCK/Create Skill IO", false, 23)]
+	[MenuItem("SRPGCK/Create skill io", false, 24)]
 	public static SkillIO CreateSkillIO()
 	{
 		SkillIO sio = ScriptableObjectUtility.CreateAsset<SkillIO>(
-			null, 
-			"Assets/SRPGCK Data/Skill IO/", 
+			null,
+			"Assets/SRPGCK Data/Skill IO/",
 			true
 		);
 		return sio;

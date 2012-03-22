@@ -17,5 +17,6 @@ public class ActionSkillEditor : SkillEditor {
 		);
 		CopyFieldsTo<ActionSkill, ActionSkillDef>(s as ActionSkill, def);
 		s.def = def;
+		(s.def as ActionSkillDef).io = SRPGCKSettings.Settings.defaultActionIO;
 	}
 }

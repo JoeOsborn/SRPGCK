@@ -1,7 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-[AddComponentMenu("SRPGCK/Character/Skills/Move")]
 public class MoveSkill : ActionSkill {
 
 	//def properties, remove after upgrade

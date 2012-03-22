@@ -5,6 +5,17 @@ using System.Linq;
 
 [CustomEditor(typeof(WaitSkillDef))]
 public class WaitSkillDefEditor : SkillDefEditor {
+	[MenuItem("SRPGCK/Create wait skill", false, 23)]
+	public static WaitSkillDef CreateWaitSkillDef()
+	{
+		WaitSkillDef sd = ScriptableObjectUtility.CreateAsset<WaitSkillDef>(
+			null,
+			"Assets/SRPGCK Data/Skills/Wait",
+			true
+		);
+		sd.reallyDefined = true;
+		return sd;
+	}
 	protected WaitSkillDef ws;
   public override void OnEnable() {
 		base.OnEnable();

@@ -5,10 +5,13 @@ using System.Linq;
 
 [CustomEditor(typeof(SkillDef))]
 public class SkillDefEditor : SRPGCKEditor {
-	[MenuItem("SRPGCK/Create skill", false, 20)]
-	public static SkillDef CreateSkillDef()
-	{
-		SkillDef sd = ScriptableObjectUtility.CreateAsset<SkillDef>();
+	[MenuItem("SRPGCK/Create generic skill", false, 20)]
+	public static SkillDef CreateSkillDef() {
+		SkillDef sd = ScriptableObjectUtility.CreateAsset<SkillDef>(
+			null,
+			"Assets/SRPGCK Data/Skills/Generic",
+			true
+		);
 		sd.reallyDefined = true;
 		return sd;
 	}

@@ -5,6 +5,18 @@ using System.Linq;
 
 [CustomEditor(typeof(MoveSkillDef))]
 public class MoveSkillDefEditor : ActionSkillDefEditor {
+	[MenuItem("SRPGCK/Create move skill", false, 21)]
+	public static MoveSkillDef CreateMoveSkillDef()
+	{
+		MoveSkillDef sd = ScriptableObjectUtility.CreateAsset<MoveSkillDef>(
+			null,
+			"Assets/SRPGCK Data/Skills/Move",
+			true
+		);
+		sd.io = SRPGCKSettings.Settings.defaultMoveIO;
+		sd.reallyDefined = true;
+		return sd;
+	}
 	protected MoveSkillDef ms;
 
 	public override void OnEnable() {

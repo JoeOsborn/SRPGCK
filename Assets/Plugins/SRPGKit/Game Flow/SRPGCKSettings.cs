@@ -18,4 +18,5 @@ public class SRPGCKSettings : ScriptableObject {
 	} }
 
 	public Formulae defaultFormulae;
+	public SkillIO defaultActionIO, defaultMoveIO;
 }

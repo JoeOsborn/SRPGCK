@@ -7,16 +7,13 @@ using System.Linq;
 
 public class FormulaeEditor : SRPGCKEditor {
   [MenuItem("SRPGCK/Create formula database", false, 1)]
-  public static Formulae CreateFormulae()
-  {
-    Formulae asset = ScriptableObject.CreateInstance<Formulae>();
-		asset.formulaNames = new List<string>();
-		asset.formulae = new List<Formula>();
-		AssetDatabase.CreateAsset(asset, AssetDatabase.GenerateUniqueAssetPath("Assets/Resources/Formulae.asset"));
-    AssetDatabase.SaveAssets();
-    EditorUtility.FocusProjectWindow();
-    Selection.activeObject = asset;
-		return asset;
+  public static Formulae CreateFormulae() {
+		Formulae fdb = ScriptableObjectUtility.CreateAsset<Formulae>(
+			"Formulae",
+			"Assets/Resources/",
+			true
+		);
+		return fdb;
   }
 
 	float nextCompileTime=0;
