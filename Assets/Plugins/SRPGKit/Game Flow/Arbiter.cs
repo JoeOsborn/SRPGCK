@@ -16,7 +16,7 @@ public class Arbiter : MonoBehaviour {
 	public TeamLocation[] teams;
 
 	public void Awake() {
-		teams = new TeamLocation[]{TeamLocation.Local, TeamLocation.Local};
+		if(teams == null) { teams = new TeamLocation[]{TeamLocation.Local, TeamLocation.Local}; }
 	}
 
 	public Formulae formulae;

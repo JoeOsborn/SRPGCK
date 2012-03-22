@@ -14,14 +14,13 @@ public enum StatEffectTarget {
 };
 
 public enum StatEffectType {
+	//active or passive
 	Augment,
 	Multiply,
 	Replace,
-
+	//active only
 	ChangeFacing,
-
 	EndTurn,
-
 	SpecialMove
 };
 

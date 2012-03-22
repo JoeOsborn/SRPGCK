@@ -5,6 +5,9 @@ using System.Collections.Generic;
 
 [AddComponentMenu("SRPGCK/Character/Character")]
 public class Character : MonoBehaviour {
+	//FIXME: deprecated, remove later
+	public int teamID;
+
 	Map _map;
 	public Map map { get {
 		if(_map == null) {
@@ -34,7 +37,6 @@ public class Character : MonoBehaviour {
 	public bool isActive=false;
 
 	public string characterName;
-	public int teamID;
 	public Vector3 transformOffset = new Vector3(0, 5, 0);
 
 	public List<Parameter> stats;
@@ -84,7 +86,7 @@ public class Character : MonoBehaviour {
 
 	//can be modulated by charm, etc
 	public int EffectiveTeamID { get {
-		return teamID;
+		return (int)GetStat("team", teamID);
 	} }
 
 	public Vector3 TilePosition { get {
@@ -337,6 +339,26 @@ public class Character : MonoBehaviour {
 			return fallback;
 		}
 		return runtimeStats[statName].GetCharacterValue(fdb, this);
+	}
+
+	public Formula EditorGetBaseStat(string statName) {
+		string nStatName = statName.NormalizeName();
+		Parameter p = stats.FirstOrDefault(pr => pr.Name == nStatName);
+		if(p == null) {
+			return null;
+		} else {
+			return p.Formula;
+		}
+	}
+
+	public void EditorSetBaseStat(string statName, Formula f) {
+		string nStatName = statName.NormalizeName();
+		Parameter p = stats.FirstOrDefault(pr => pr.Name == nStatName);
+		if(p == null) {
+			stats.Add(new Parameter(statName.NormalizeName(), f));
+		} else {
+			p.Formula = f;
+		}
 	}
 
 	public void SetBaseStat(string statName, float amt) {

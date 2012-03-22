@@ -159,10 +159,13 @@ public class EditorGUIExt
 		return f;
 	}
 
-	public static Parameter ParameterField(Parameter p, string type, string[] formulaOptions, string lastFocusedControl=null, int i = 0) {
+	public static Parameter ParameterField(Parameter p, string type, string[] formulaOptions, string lastFocusedControl=null, int i = 0, string[] skipParams=null) {
 		Parameter newP = p;
 		EditorGUILayout.BeginVertical();
-		newP.Name = EditorGUILayout.TextField("Name:", p.Name == null ? "" : p.Name).NormalizeName();
+		string newName = EditorGUILayout.TextField("Name:", p.Name == null ? "" : p.Name).NormalizeName();
+		if(skipParams == null || !skipParams.Contains(newName)) {
+			newP.Name = newName;
+		}
 		newP.Formula = EditorGUIExt.FormulaField("Formula:", p.Formula, type, formulaOptions, lastFocusedControl, i);
 		EditorGUILayout.BeginHorizontal();
 		GUILayout.FlexibleSpace();
@@ -401,11 +404,12 @@ public class EditorGUIExt
 		return newFXGs;
 	}
 
-	public static List<Parameter> ParameterFoldout(string name, List<Parameter> parameters, string id, string[] formulaOptions, string lastFocusedControl, ref bool foldout) {
+	public static List<Parameter> ParameterFoldout(string name, List<Parameter> parameters, string id, string[] formulaOptions, string lastFocusedControl, ref bool foldout, string[] skipParams=null) {
 		EditorGUILayout.BeginVertical();
 		if(parameters == null) { parameters = new List<Parameter>(); }
 		List<Parameter> newParams = parameters;
-		foldout = EditorGUILayout.Foldout(foldout, ""+parameters.Count+" "+name+(parameters.Count == 1 ? "" : "s"));
+		int shownCount = parameters.Count-(skipParams != null ? skipParams.Length : 0);
+		foldout = EditorGUILayout.Foldout(foldout, ""+shownCount+" "+name+(shownCount == 1 ? "" : "s"));
 		if(foldout) {
 			EditorGUILayout.BeginHorizontal(GUILayout.MaxWidth(Screen.width-16));
 			EditorGUILayout.Space();
@@ -413,7 +417,10 @@ public class EditorGUIExt
 			List<Parameter> toBeRemoved = null;
 			for(int pi = 0; pi < parameters.Count; pi++) {
 				Parameter p = parameters[pi];
-				Parameter newP = ParameterField(p, id+name+pi, formulaOptions, lastFocusedControl, pi);
+				if(skipParams != null && skipParams.Contains(p.Name)) { 
+					continue; 
+				}
+				Parameter newP = ParameterField(p, id+name+pi, formulaOptions, lastFocusedControl, pi, skipParams);
 				if(newP == null) {
 					if(toBeRemoved == null) { toBeRemoved = new List<Parameter>(); }
 					toBeRemoved.Add(p);
