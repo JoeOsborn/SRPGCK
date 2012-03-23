@@ -14,7 +14,8 @@ public enum RegionType {
 	Cone,
 	Self,
 	Predicate, //actually "CylinderPredicate"--applies predicate to tiles within standard cylindrical region
-	Compound //merges subregions based on their types, ignoring their intervening space types.
+	Compound, //merges subregions based on their types, ignoring their intervening space types.
+	NWay //retries subregions N times around circle, evenly spaced, with a given angle offset from start.
 };
 
 public enum InterveningSpaceType {
@@ -177,7 +178,7 @@ public class Region {
 	public Formula radiusMinF, radiusMaxF;
 	//these apply to cylinder/predicate (define), sphere (clip), line (define up/down displacements from line)
 	public Formula zUpMinF, zUpMaxF, zDownMinF, zDownMaxF;
-	//these apply to cone and line, xy applies to lineMove
+	//these apply to cone and line, xy applies to lineMove & nways
 	public Formula xyDirectionF, zDirectionF;
 	//these apply to cone
 	public Formula xyArcMinF, zArcMinF;
@@ -194,10 +195,12 @@ public class Region {
 	//it should return 0 (false) or non-0 (true)
 	public Formula predicateF;
 
-	//only used for compound regions. subregions of a compound region may only
+	//only used for compound/nway regions. subregions of a compound region may only
 	//generate tiles, and may not apply their intervening space modes.
 	//more complex uses of compound spaces should subclass Skill or Region.
 	public Region[] regions;
+	//only used for nways region
+	public Formula nWaysF;
 
 	public float radiusMin { get { return radiusMinF.GetValue(fdb, owner, null, null); } }
 	public float radiusMax { get { return radiusMaxF.GetValue(fdb, owner, null, null); } }
@@ -216,6 +219,8 @@ public class Region {
 	public float zArcMax { get { return zArcMaxF.GetValue(fdb, owner, null, null); } }
 
 	public float rFwdClipMax { get { return rFwdClipMaxF.GetValue(fdb, owner, null, null); } }
+
+	public float nWays { get { return nWaysF.GetValue(fdb, owner, null, null); } }
 
 	protected Map map { get { return owner.map; } }
 
@@ -244,6 +249,7 @@ public class Region {
 		lineWidthMinF = lineWidthMinF ?? Formula.Constant(0);
 		lineWidthMaxF = lineWidthMaxF ?? Formula.Constant(0);
 		predicateF = predicateF ?? Formula.Constant(0);
+		nWaysF = nWaysF ?? Formula.Constant(1);
 	}
 
 	protected bool isEffectRegion=false;
@@ -687,11 +693,38 @@ public class Region {
 						r.zDownMin, r.zDownMax,
 						r.zUpMin, r.zUpMax,
 						r.lineWidthMin, r.lineWidthMax,
-						InterveningSpaceType.LineMove
+						InterveningSpaceType.Pick
 					);
 					foreach(PathNode p in thesePickables) {
 						p.subregion = i;
 						pickables[p.pos] = p;
+					}
+				}
+				break;
+			case RegionType.NWay:
+				pickables =	new Dictionary<Vector3, PathNode>();
+				int thisNWays = (int)nWays;
+				float offset = q.eulerAngles.y+xyDirection;
+				float degreesPerN = 360.0f/thisNWays;
+				for(int n = 0; n < thisNWays; n++) {
+					float thisAng = SRPGUtil.WrapAngle(offset+degreesPerN*n);
+					for(int i = 0; i < regions.Length; i++) {
+						Region r = regions[i];
+						PathNode[] thesePickables = r.GetValidTiles(
+							here, Quaternion.Euler(q.eulerAngles.x, thisAng, q.eulerAngles.z),
+							//pass the subregion's formulae for these so
+							//that our own, ignored formulae don't clobber them
+							r.radiusMin, r.radiusMax,
+							r.zDownMin, r.zDownMax,
+							r.zUpMin, r.zUpMax,
+							r.lineWidthMin, r.lineWidthMax,
+							InterveningSpaceType.Pick
+						);
+						foreach(PathNode p in thesePickables) {
+							//FIXME: won't work properly with subregion targeting mode
+							p.subregion = i;
+							pickables[p.pos] = p;
+						}
 					}
 				}
 				break;

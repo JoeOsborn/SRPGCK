@@ -2,7 +2,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 
-[AddComponentMenu("SRPGCK/Character/Skills/Generic")]
+[AddComponentMenu("SRPGCK/Character/Skill")]
 public class Skill : MonoBehaviour {
 	//def properties, remove after upgrading
 	public string skillName;

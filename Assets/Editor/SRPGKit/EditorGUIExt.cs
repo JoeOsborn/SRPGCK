@@ -825,9 +825,25 @@ public class EditorGUIExt
 			);
 			//TODO: info box with available bindings?
 		}
-		if(newReg.type == RegionType.Compound) {
+		if(newReg.type == RegionType.Compound || newReg.type == RegionType.NWay) {
 			//regions, but without UI for intervening space, cross/halt walls/enemies
 			//size
+			if(newReg.type == RegionType.NWay) {
+			 	newReg.nWaysF = EditorGUIExt.FormulaField(
+					"Number of Ways",
+					newReg.nWaysF,
+					prefix+"nWaysF",
+					formulaOptions,
+					lastFocusedControl
+				);
+			 	newReg.xyDirectionF = EditorGUIExt.FormulaField(
+					"XY Direction Offset",
+					newReg.xyDirectionF,
+					prefix+"xyDirectionF",
+					formulaOptions,
+					lastFocusedControl
+				);
+			}
 			EditorGUILayout.Space();
 			GUILayout.BeginHorizontal();
 			if(newReg.regions == null) { newReg.regions = new Region[]{new Region()}; }
@@ -838,7 +854,7 @@ public class EditorGUIExt
 				GUILayout.Height(18),
 				GUILayout.Width(24)
 			);
-			GUILayout.Label("Subregion"+(newRegionCount > 1 ? "s" : ""));
+			GUILayout.Label("Subregion"+(newRegionCount != 1 ? "s" : ""));
 			GUILayout.EndHorizontal();
 			if(newRegionCount < 1) {
 				newRegionCount = 1;
@@ -887,6 +903,7 @@ public class EditorGUIExt
 				new GUIContent("Self", EditorGUIUtility.LoadRequired("rgn-self.png") as Texture),
 				new GUIContent("Predicate", EditorGUIUtility.LoadRequired("rgn-predicate.png") as Texture),
 				new GUIContent("Compound", EditorGUIUtility.LoadRequired("rgn-compound.png") as Texture),
+				new GUIContent("N-Way", EditorGUIUtility.LoadRequired("rgn-nway.png") as Texture),
 			};
 		}
 		if(spaceTypes == null) {
