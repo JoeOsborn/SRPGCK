@@ -162,6 +162,14 @@ public class Formulae : ScriptableObject {
 						Count() > 0;
 				}
 				return false;
+			case LookupType.SkillEffectType:
+				if(scontext != null) {
+					string[] fnames = f.searchReactedStatNames;
+					return scontext.lastEffects.
+						Where(fx => fx.Matches(fnames, f.searchReactedStatChanges, f.searchReactedEffectCategories)).
+						Count() > 0;
+				}
+				return false;
 		}
 		return false;
 	}
@@ -260,6 +268,33 @@ public class Formulae : ScriptableObject {
 					return -1;
 				}
 				Debug.LogError("Cannot find reacted effects for "+f);
+				return -1;
+			case LookupType.SkillEffectType:
+				if(scontext != null) {
+					//ignore lookupRef
+					string[] fnames = f.searchReactedStatNames;
+					var results = scontext.lastEffects.
+						Where(fx => fx.Matches(fnames, f.searchReactedStatChanges, f.searchReactedEffectCategories)).
+						Select(fx => fx.value);
+					switch(f.mergeMode) {
+						case FormulaMergeMode.Sum:
+							return results.Sum();
+						case FormulaMergeMode.Mean:
+							return results.Average(x => x);
+						case FormulaMergeMode.Min:
+							return results.Min(x => x);
+						case FormulaMergeMode.Max:
+							return results.Max(x => x);
+						case FormulaMergeMode.First:
+							return results.First();
+						case FormulaMergeMode.Last:
+							return results.Last();
+					}
+				} else {
+					Debug.LogError("Skill effect lookups require a skill context.");
+					return -1;
+				}
+				Debug.LogError("Cannot find effects for "+f);
 				return -1;
 		}
 		Debug.LogError("failed to look up "+type+" "+fname+" with context s:"+scontext+", c:"+ccontext+", e:"+econtext+" and formula "+f);

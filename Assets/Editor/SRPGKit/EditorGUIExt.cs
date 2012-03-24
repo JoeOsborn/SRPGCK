@@ -162,11 +162,48 @@ public class EditorGUIExt
 	public static Parameter ParameterField(Parameter p, string type, string[] formulaOptions, string lastFocusedControl=null, int i = 0, string[] skipParams=null) {
 		Parameter newP = p;
 		EditorGUILayout.BeginVertical();
-		string newName = EditorGUILayout.TextField("Name:", p.Name == null ? "" : p.Name).NormalizeName();
+		string newName = EditorGUILayout.TextField(
+			"Name:",
+			p.Name == null ? "" : p.Name
+		).NormalizeName();
 		if(skipParams == null || !skipParams.Contains(newName)) {
 			newP.Name = newName;
 		}
-		newP.Formula = EditorGUIExt.FormulaField("Formula:", p.Formula, type, formulaOptions, lastFocusedControl, i);
+		newP.Formula = FormulaField(
+			"Formula:",
+			p.Formula,
+			type,
+			formulaOptions,
+			lastFocusedControl,
+			i
+		);
+		if((newP.limitMinimum = EditorGUILayout.Toggle(
+			"Limit Min",
+			newP.limitMinimum
+		))) {
+			newP.minF = FormulaField(
+				"Minimum:",
+				p.minF,
+				type+".limit.min",
+				formulaOptions,
+				lastFocusedControl,
+				i
+			);
+		}
+		if((newP.limitMaximum = EditorGUILayout.Toggle(
+			"Limit Max",
+			newP.limitMaximum
+		))) {
+			newP.maxF = FormulaField(
+				"Maximum:",
+				p.maxF,
+				type+".limit.max",
+				formulaOptions,
+				lastFocusedControl,
+				i
+			);
+		}
+
 		EditorGUILayout.BeginHorizontal();
 		GUILayout.FlexibleSpace();
 		if(GUILayout.Button("Delete", GUILayout.Width(64))) {
@@ -182,13 +219,22 @@ public class EditorGUIExt
 		GUILayout.BeginVertical();
 		newFx.effectType = (StatEffectType)EditorGUILayout.EnumPopup("Effect Type:", fx.effectType);
 		if(newFx.specialMoveGivenStartX == null || fx == null) {
-			newFx.specialMoveGivenStartX = Formula.Lookup("arg.x", LookupType.SkillParam);
+			newFx.specialMoveGivenStartX = Formula.Lookup(
+				"arg.x",
+				LookupType.SkillParam
+			);
 		}
 		if(newFx.specialMoveGivenStartY == null || fx == null) {
-			newFx.specialMoveGivenStartY = Formula.Lookup("arg.y", LookupType.SkillParam);
+			newFx.specialMoveGivenStartY = Formula.Lookup(
+				"arg.y",
+				LookupType.SkillParam
+			);
 		}
 		if(newFx.specialMoveGivenStartZ == null || fx == null) {
-			newFx.specialMoveGivenStartZ = Formula.Lookup("arg.z", LookupType.SkillParam);
+			newFx.specialMoveGivenStartZ = Formula.Lookup(
+				"arg.z",
+				LookupType.SkillParam
+			);
 		}
 		switch(newFx.effectType) {
 			case StatEffectType.Augment:
@@ -205,6 +251,14 @@ public class EditorGUIExt
 					formulaOptions,
 					lastFocusedControl,
 					i
+				);
+				newFx.respectLimits = EditorGUILayout.Toggle(
+					"Respect Limits:",
+					newFx.respectLimits
+				);
+				newFx.constrainValueToLimits = EditorGUILayout.Toggle(
+					"Constrain Value to Limits:",
+					newFx.constrainValueToLimits
 				);
 				break;
 			case StatEffectType.ChangeFacing:
@@ -417,8 +471,8 @@ public class EditorGUIExt
 			List<Parameter> toBeRemoved = null;
 			for(int pi = 0; pi < parameters.Count; pi++) {
 				Parameter p = parameters[pi];
-				if(skipParams != null && skipParams.Contains(p.Name)) { 
-					continue; 
+				if(skipParams != null && skipParams.Contains(p.Name)) {
+					continue;
 				}
 				Parameter newP = ParameterField(p, id+name+pi, formulaOptions, lastFocusedControl, pi, skipParams);
 				if(newP == null) {

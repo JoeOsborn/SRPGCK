@@ -45,7 +45,9 @@ public enum FormulaType {
 	BranchAppliedSide,
 	//even number of arguments: cases, then formulae
 	BranchPDF,
-	Undefined
+	Undefined,
+		//...
+	SkillEffectValue
 }
 
 public enum LookupType {
@@ -67,7 +69,9 @@ public enum LookupType {
 	//TODO: AppliedEffectType?
 	//lookupReference is the status effect type
 	ActorStatusEffect,
-	TargetStatusEffect
+	TargetStatusEffect,
+	//lookupReference is unused
+	SkillEffectType
 }
 
 public enum FormulaMergeMode {
@@ -104,6 +108,7 @@ public class Formula : IFormulaElement {
 	//eq
 	public string[] equipmentSlots, equipmentCategories;
 	//effect lookup (e.g. "this reaction skill recovers MP equal to the amount used by the attacker")
+	//"reacted" is in the names, but it's also used for SkillEffectType.
 	public string[] searchReactedStatNames; //we ignore lookupRef in this case
 	public StatChangeType[] searchReactedStatChanges;
 	public string[] searchReactedEffectCategories;
@@ -219,6 +224,17 @@ public class Formula : IFormulaElement {
 					return -1;
 				}
 				result = scontext.currentReactedEffect.value;
+				break;
+			case FormulaType.SkillEffectValue:
+				if(scontext == null) {
+					Debug.LogError("No skill context.");
+					return -1;
+				}
+				if(scontext.lastEffects == null || scontext.lastEffects.Count == 0) {
+					Debug.LogError("Skill context has no prior effects.");
+					return -1;
+				}
+				result = scontext.lastEffects[scontext.lastEffects.Count-1].value;
 				break;
 			case FormulaType.Add:
 				result = arguments[0].GetValue(fdb, scontext, ccontext, econtext);
@@ -382,10 +398,10 @@ public class Formula : IFormulaElement {
 	};
 
 	protected float FacingSwitch(
-		Formulae fdb, 
-		StatEffectTarget target, 
-		SkillDef scontext, 
-		Character ccontext, 
+		Formulae fdb,
+		StatEffectTarget target,
+		SkillDef scontext,
+		Character ccontext,
 		Equipment econtext
 	) {
 		if(scontext == null) {

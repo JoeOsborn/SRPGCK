@@ -43,7 +43,7 @@ public class Character : MonoBehaviour {
 
 	public string[] equipmentSlots;
 
-	public Dictionary<string, Formula> runtimeStats;
+	public Dictionary<string, Parameter> runtimeStats;
 
 	public Formulae fdb { get {
 		return
@@ -249,9 +249,9 @@ public class Character : MonoBehaviour {
 
 	void MakeStatsIfNecessary() {
 		if(runtimeStats == null) {
-			runtimeStats = new Dictionary<string, Formula>();
+			runtimeStats = new Dictionary<string, Parameter>();
 			for(int i = 0; i < stats.Count; i++) {
-				runtimeStats.Add(stats[i].Name, stats[i].Formula);
+				runtimeStats.Add(stats[i].Name, stats[i]);
 			}
 		}
 	}
@@ -323,6 +323,13 @@ public class Character : MonoBehaviour {
 		return StatusEffects.Any(se => se.effectType == statName);
 	}
 
+	protected Parameter GetStatParam(string statName) {
+		MakeStatsIfNecessary();
+		Parameter p = null;
+		runtimeStats.TryGetValue(statName, out p);
+		return p;
+	}
+
 	public float GetBaseStat(string statName, float fallback=-1) {
 		MakeStatsIfNecessary();
 		if(statName == "position.x") {
@@ -361,37 +368,43 @@ public class Character : MonoBehaviour {
 		}
 	}
 
-	public void SetBaseStat(string statName, float amt) {
+	public float SetBaseStat(string statName, float amt, bool constrain=true) {
 		MakeStatsIfNecessary();
+		if(statName == "position.x") {
+			Debug.LogError("Setting position.x from stat effect not currently supported");
+			return TilePosition.x;
+		} else if(statName == "position.y") {
+			Debug.LogError("Setting position.y from stat effect not currently supported");
+			return TilePosition.y;
+		} else if(statName == "position.z") {
+			Debug.LogError("Setting position.z from stat effect not currently supported");
+			return TilePosition.z;
+		}
 		if(!HasStat(statName)) {
-			runtimeStats[statName] = Formula.Constant(amt);
+			runtimeStats[statName] = new Parameter(statName, Formula.Constant(amt));
+			return amt;
 		} else {
-			Formula f = runtimeStats[statName];
-			if(f.formulaType == FormulaType.Constant) {
-				f.constantValue = amt;
-			} else {
-				Debug.LogError("Can't set value of non-constant base stat "+statName);
-			}
+			Parameter p = runtimeStats[statName];
+			return p.SetCharacterValue(fdb, this, amt, constrain);
 		}
 	}
 
-	public void AdjustBaseStat(string statName, float amt) {
-		MakeStatsIfNecessary();
-		Formula f = runtimeStats[statName];
-		if(f.formulaType == FormulaType.Constant) {
-			f.constantValue += amt;
-		} else {
-			Debug.LogError("Can't adjust value of non-constant base stat "+statName);
-		}
+	public float AdjustBaseStat(string statName, float amt) {
+		return SetBaseStat(statName, GetBaseStat(statName, 0)+amt);
 	}
 
 	public float GetStat(string statName, float fallback=-1) {
 		float stat = GetBaseStat(statName, fallback);
+		Parameter p = GetStatParam(statName);
 /*		Debug.Log("base "+statName+":"+stat);*/
 		foreach(Equipment e in Equipment) {
 			foreach(StatEffect se in e.passiveEffects) {
 				if(se.statName == statName) {
+					float lastStat = stat;
 					stat = se.ModifyStat(stat, null, null, e);
+					if(p != null && se.respectLimits) {
+						stat = p.ConstrainCharacterValue(fdb, this, stat, lastStat);
+					}
 /*					Debug.Log("equip modify to "+stat);*/
 				}
 			}
@@ -399,7 +412,11 @@ public class Character : MonoBehaviour {
 		foreach(SkillDef s in Skills) {
 			foreach(StatEffect se in s.passiveEffects) {
 				if(se.statName == statName) {
+					float lastStat = stat;
 					stat = se.ModifyStat(stat, s, null, null);
+					if(p != null && se.respectLimits) {
+						stat = p.ConstrainCharacterValue(fdb, this, stat, lastStat);
+					}
 /*					Debug.Log("skill modify to "+stat);*/
 				}
 			}
@@ -407,14 +424,18 @@ public class Character : MonoBehaviour {
 		foreach(StatusEffect s in StatusEffects) {
 			foreach(StatEffect se in s.passiveEffects) {
 				if(se.statName == statName) {
+					float lastStat = stat;
 					//todo: pass status effect as context
 					stat = se.ModifyStat(stat, null, this, null);
+					if(p != null && se.respectLimits) {
+						stat = p.ConstrainCharacterValue(fdb, this, stat, lastStat);
+					}
 /*					Debug.Log("status modify to "+stat);*/
 				}
 			}
 		}
-//		Debug.Log("final "+statName+":"+stat);
 		return stat;
+//		Debug.Log("final "+statName+":"+stat);
 	}
 
 	public bool IsEquipmentSlotFull(int equipmentSlot) {

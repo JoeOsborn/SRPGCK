@@ -245,7 +245,7 @@ public class SkillDef : ScriptableObject {
 		SetParam("arg"+infix+"y", ttp.y);
 		SetParam("arg"+infix+"z", ttp.z);
 		SetParam("arg"+infix+"angle.xy", angle);
-		Debug.Log("set "+"arg"+infix+"angle.xy"+"="+angle);
+		// Debug.Log("set "+"arg"+infix+"angle.xy"+"="+angle);
 	}
 	protected virtual void SetArgsFromTarget(Target t, TargetSettings ts, string prefix) {
 		TargetingMode tm = TargetingMode.Custom;

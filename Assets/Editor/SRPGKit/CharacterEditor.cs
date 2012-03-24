@@ -13,7 +13,7 @@ public class CharacterEditor : SRPGCKEditor {
 	string[] skipStats;
   public override void OnEnable() {
 		c = target as Character;
-		skipStats = new string[]{"team"};
+		skipStats = new string[]{"team", "facing"};
 		fdb = c.fdb;
 		base.OnEnable();
 		name = "Character";

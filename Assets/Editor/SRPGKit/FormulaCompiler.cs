@@ -29,7 +29,6 @@ PrefixExpression <-
 IfExpression <- 'if' Condition ':' Phrase [';' Phrase]?.
 SideResponse <- SIDE_CHOICE ':' Phrase.
 Term <- CONSTANT | Lookup.
-//Lookup is wrong, wrong, wrong -- think about it more
 Lookup <- CharacterLookup | SkillLookup | EffectLookup | FormulaLookup.
 FormulaLookup <- 'f' '.' LookupTerminal.
 SkillLookup <- [SKILL_SCOPE '.'] LookupTerminal.
@@ -72,7 +71,11 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 	public static bool CompileInPlace(Formula f) {
 		FormulaCompiler fc = new FormulaCompiler();
 		try {
-			Formula newF = fc.Parse(f.text) as Formula;
+			IFormulaElement ife = fc.Parse(f.text);
+			Formula newF = ife as Formula;
+			if(ife is Identifier) {
+				newF = Formula.Lookup((ife as Identifier).Name);
+			}
 			if(newF != null) {
 				newF.text = f.text;
 			}
@@ -147,86 +150,11 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 		//lookup reacted effect
 		var effectLookup = Symbol("effect", 10);
 		effectLookup.Nud = (parser) => {
-			if(parser.Token.Id != "(") {
-				Formula f = new Formula();
-				f.formulaType = FormulaType.ReactedEffectValue;
-				return f;
-			} else {
-				parser.Advance("(");
-				//a, b, c in x, y, z as w
-				List<StatChangeType> changes = new List<StatChangeType>{StatChangeType.Change};
-				List<string> stats = new List<string>();
-				List<string> categories = new List<string>();
-				FormulaMergeMode mergeMode = FormulaMergeMode.First;
-				while(true) {
-					if(parser.Token.Id == "any") {
-          	changes.Add(StatChangeType.Any);
-					} else if(parser.Token.Id == "change") {
-          	changes.Add(StatChangeType.Change);
-					} else if(parser.Token.Id == "increase") {
-          	changes.Add(StatChangeType.Increase);
-					} else if(parser.Token.Id == "decrease") {
-          	changes.Add(StatChangeType.Decrease);
-					} else if(parser.Token.Id == "no-change") {
-          	changes.Add(StatChangeType.NoChange);
-					} else {
-						break;
-					}
-					parser.Advance(null);
-					if(parser.Token.Id != ",") {
-						break;
-					}
-					parser.Advance(",");
-				}
-				if(parser.Token.Id == "in") {
-					parser.Advance("in");
-					while(true) {
-						Identifier ident = parser.Parse(0) as Identifier;
-						stats.Add(ident.Name);
-						if(parser.Token.Id != ",") {
-							break;
-						}
-						parser.Advance(",");
-					}
-				}
-				if(parser.Token.Id == "by") {
-					parser.Advance("by");
-					while(true) {
-						Identifier ident = parser.Parse(0) as Identifier;
-						categories.Add(ident.Name);
-						if(parser.Token.Id != ",") {
-							break;
-						}
-						parser.Advance(",");
-					}
-				}
-				if(parser.Token.Id == "get") {
-					parser.Advance("get");
-					if(parser.Token.Id == "first") {
-						mergeMode = FormulaMergeMode.First;
-					} else if(parser.Token.Id == "last") {
-						mergeMode = FormulaMergeMode.Last;
-					} else if(parser.Token.Id == "min") {
-						mergeMode = FormulaMergeMode.Min;
-					} else if(parser.Token.Id == "max") {
-						mergeMode = FormulaMergeMode.Max;
-					} else if(parser.Token.Id == "mean") {
-						mergeMode = FormulaMergeMode.Mean;
-					} else if(parser.Token.Id == "sum") {
-						mergeMode = FormulaMergeMode.Sum;
-					}
-					parser.Advance(null);
-				}
-				parser.Advance(")");
-				Formula f = new Formula();
-				f.formulaType = FormulaType.Lookup;
-				f.lookupType = LookupType.ReactedEffectType;
-				f.searchReactedStatNames = stats.ToArray();
-				f.searchReactedStatChanges = changes.ToArray();
-				f.searchReactedEffectCategories = categories.ToArray();
-				f.mergeMode = mergeMode;
-				return f;
-			}
+			Formula f = new Formula();
+			f.formulaType = FormulaType.Lookup;
+			f.lookupType = LookupType.ReactedEffectType;
+			FillSkillEffectTypeFormula(parser, f);
+			return f;
 		};
 		var equipLookup = Symbol("equip", 10);
 		equipLookup.Nud = (parser) => {
@@ -291,7 +219,15 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 				}
 				// Debug.Log("right is "+ident.Name);
 				if(ident.Name == "effect") {
-					throw new SemanticException("Scoped skill effect lookups unsupported");
+					//prev = skill, reacted-skill
+					if(f.formulaType == FormulaType.Lookup) {
+						if(f.lookupType == LookupType.SkillParam) {
+							f.lookupType = LookupType.SkillEffectType;
+						} else if(f.lookupType == LookupType.ReactedSkillParam) {
+							f.lookupType = LookupType.ReactedEffectType;
+						}
+						FillSkillEffectTypeFormula(parser, f);
+					}
 				} else if(ident.Name == "reacted-skill") {
 					throw new SemanticException("Scoped reacted-skill param lookups unsupported");
 				} else if(ident.Name == "equip") {
@@ -359,6 +295,92 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 		return elt;
 	}
 
+	protected void FillSkillEffectTypeFormula(PrattParser<IFormulaElement> parser, Formula f) {
+		if(parser.Token.Id != "(") {
+			if(f.formulaType == FormulaType.Lookup) {
+				if(f.lookupType == LookupType.ReactedEffectType) {
+					f.formulaType = FormulaType.ReactedEffectValue;
+				} else if(f.lookupType == LookupType.SkillEffectType) {
+					f.formulaType = FormulaType.SkillEffectValue;
+				}
+			} else {
+				f.formulaType = FormulaType.ReactedEffectValue;
+			}
+		} else {
+			parser.Advance("(");
+			//a, b, c in x, y, z as w
+			List<StatChangeType> changes = new List<StatChangeType>{StatChangeType.Change};
+			List<string> stats = new List<string>();
+			List<string> categories = new List<string>();
+			FormulaMergeMode mergeMode = FormulaMergeMode.First;
+			while(true) {
+				if(parser.Token.Id == "any") {
+        	changes.Add(StatChangeType.Any);
+				} else if(parser.Token.Id == "change") {
+        	changes.Add(StatChangeType.Change);
+				} else if(parser.Token.Id == "increase") {
+        	changes.Add(StatChangeType.Increase);
+				} else if(parser.Token.Id == "decrease") {
+        	changes.Add(StatChangeType.Decrease);
+				} else if(parser.Token.Id == "no-change") {
+        	changes.Add(StatChangeType.NoChange);
+				} else {
+					break;
+				}
+				parser.Advance(null);
+				if(parser.Token.Id != ",") {
+					break;
+				}
+				parser.Advance(",");
+			}
+			if(parser.Token.Id == "in") {
+				parser.Advance("in");
+				while(true) {
+					Identifier ident = parser.Parse(0) as Identifier;
+					stats.Add(ident.Name);
+					if(parser.Token.Id != ",") {
+						break;
+					}
+					parser.Advance(",");
+				}
+			}
+			if(parser.Token.Id == "by") {
+				parser.Advance("by");
+				while(true) {
+					Identifier ident = parser.Parse(0) as Identifier;
+					categories.Add(ident.Name);
+					if(parser.Token.Id != ",") {
+						break;
+					}
+					parser.Advance(",");
+				}
+			}
+			if(parser.Token.Id == "get") {
+				parser.Advance("get");
+				if(parser.Token.Id == "first") {
+					mergeMode = FormulaMergeMode.First;
+				} else if(parser.Token.Id == "last") {
+					mergeMode = FormulaMergeMode.Last;
+				} else if(parser.Token.Id == "min") {
+					mergeMode = FormulaMergeMode.Min;
+				} else if(parser.Token.Id == "max") {
+					mergeMode = FormulaMergeMode.Max;
+				} else if(parser.Token.Id == "mean") {
+					mergeMode = FormulaMergeMode.Mean;
+				} else if(parser.Token.Id == "sum") {
+					mergeMode = FormulaMergeMode.Sum;
+				}
+				//TODO: (number)
+				parser.Advance(null);
+			}
+			parser.Advance(")");
+			f.searchReactedStatNames = stats.ToArray();
+			f.searchReactedStatChanges = changes.ToArray();
+			f.searchReactedEffectCategories = categories.ToArray();
+			f.mergeMode = mergeMode;
+		}
+	}
+
 	protected void FillEquipFormula(PrattParser<IFormulaElement> parser, Formula f) {
 		if(parser.Token.Id != "(") {
 			f.equipmentSlots = null;
@@ -402,6 +424,7 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 				} else if(parser.Token.Id == "sum") {
 					mergeMode = FormulaMergeMode.Sum;
 				}
+				//TODO: (number)
 				parser.Advance(null);
 			}
 			parser.Advance(")");
