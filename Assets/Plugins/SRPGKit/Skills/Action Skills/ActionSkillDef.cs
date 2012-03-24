@@ -225,7 +225,7 @@ public class ActionSkillDef : SkillDef {
 	} }
 
 	public Vector3 TargetPosition { get {
-		if(multiTargetMode == MultiTargetMode.Chain) {
+		if(ChainedTarget) {
 			for(int i = targets.Count-2; i >= 0; i--) {
 				Target t = targets[i];
 				if(targetSettings[i].doNotMoveChain) { continue; }
@@ -964,10 +964,13 @@ public class ActionSkillDef : SkillDef {
 			angle = Mathf.Atan2(ep.y-tp.y, ep.x-tp.x)*Mathf.Rad2Deg;
 		}
 		currentTarget.Facing(angle);
-		Debug.Log("show path from "+tp+" angle "+angle);
+		Debug.Log("show path from "+((ChainedTarget && currentSettings.doNotMoveChain) ? tp : ep)+" angle "+angle);
 		_GridOverlay.SetSelectedPoints(
 			map.CoalesceTiles(
-				currentSettings.effectRegion.GetValidTiles(tp, TargetFacing)
+				currentSettings.effectRegion.GetValidTiles(
+					(ChainedTarget && currentSettings.doNotMoveChain) ? tp : ep, 
+					Quaternion.Euler(0, angle, 0)
+				)
 			)
 		);
 	}
@@ -983,10 +986,13 @@ public class ActionSkillDef : SkillDef {
 			angle = Mathf.Atan2(ep.y-tp.y, ep.x-tp.x)*Mathf.Rad2Deg;
 		}
 		currentTarget.Facing(angle);
-		Debug.Log("show path from node "+tp+" angle "+angle);
+		Debug.Log("show path from node "+((ChainedTarget && currentSettings.doNotMoveChain) ? tp : ep)+" angle "+angle);
 		_GridOverlay.SetSelectedPoints(
 			map.CoalesceTiles(
-				currentSettings.effectRegion.GetValidTiles(tp, Quaternion.Euler(0,angle,0))
+				currentSettings.effectRegion.GetValidTiles(
+					(ChainedTarget && currentSettings.doNotMoveChain) ? tp : ep, 
+					Quaternion.Euler(0, angle, 0)
+				)
 			)
 		);
 	}
@@ -1259,7 +1265,7 @@ public class ActionSkillDef : SkillDef {
 			targets.Add((new Target()).
 				Path(
 					new PathNode(
-						currentSettings.doNotMoveChain ?
+						(ChainedTarget && currentSettings.doNotMoveChain) ?
 							TargetPosition : EffectPosition,
 						null,
 						radiusSoFar
