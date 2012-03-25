@@ -152,7 +152,7 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 		effectLookup.Nud = (parser) => {
 			Formula f = new Formula();
 			f.formulaType = FormulaType.Lookup;
-			f.lookupType = LookupType.ReactedEffectType;
+			f.lookupType = LookupType.SkillEffectType;
 			FillSkillEffectTypeFormula(parser, f);
 			return f;
 		};
@@ -211,36 +211,42 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 			// Debug.Log("dot left of "+parser.Token);
 			Formula f = CheckFormulaArg(left);
 			do {
-				// Debug.Log("dot after "+f+" with right "+parser.Token);
 				//definitely want just the next token
-				Identifier ident = parser.Parse(int.MaxValue) as Identifier;
-				if(ident == null) {
-					throw new SemanticException("Expected identifier after dot");
+				// var oldRight = parser.Token;
+				IFormulaElement next = parser.Parse(int.MaxValue);
+				// Debug.Log("dot after "+f+" with right "+oldRight+" parse as "+next);
+				if(next == null) {
+					throw new SemanticException("Expected something after dot");
 				}
-				// Debug.Log("right is "+ident.Name);
-				if(ident.Name == "effect") {
-					//prev = skill, reacted-skill
-					if(f.formulaType == FormulaType.Lookup) {
-						if(f.lookupType == LookupType.SkillParam) {
-							f.lookupType = LookupType.SkillEffectType;
-						} else if(f.lookupType == LookupType.ReactedSkillParam) {
-							f.lookupType = LookupType.ReactedEffectType;
-						}
-						FillSkillEffectTypeFormula(parser, f);
+				Identifier ident = next as Identifier;
+				if(next is Formula) {
+					Formula nextF = next as Formula;
+					if(nextF.formulaType == FormulaType.Lookup) {
+						if(nextF.lookupType == LookupType.SkillEffectType ||
+							 nextF.lookupType == LookupType.ReactedEffectType) {
+						  if(f.formulaType == FormulaType.Lookup) {
+	 							if(f.lookupType == LookupType.SkillParam) {
+	 								nextF.lookupType = LookupType.SkillEffectType;
+	 							} else if(f.lookupType == LookupType.ReactedSkillParam) {
+	 								nextF.lookupType = LookupType.ReactedEffectType;
+	 							}
+	 							f = nextF;
+							}
+						} else if(nextF.lookupType == LookupType.ActorEquipmentParam ||
+							        nextF.lookupType == LookupType.ReactedSkillParam) {
+							if(f.formulaType == FormulaType.Lookup) {
+								if(f.lookupType == LookupType.ActorStat) {
+									nextF.lookupType = LookupType.ActorEquipmentParam;
+								} else if(f.lookupType == LookupType.TargetStat) {
+									nextF.lookupType = LookupType.TargetEquipmentParam;
+								}
+								f = nextF;
+							}
+		        }
 					}
-				} else if(ident.Name == "reacted-skill") {
+				} else if(ident != null && ident.Name == "reacted-skill") {
 					throw new SemanticException("Scoped reacted-skill param lookups unsupported");
-				} else if(ident.Name == "equip") {
-					//prev = c, t
-					if(f.formulaType == FormulaType.Lookup) {
-						if(f.lookupType == LookupType.ActorStat) {
-							f.lookupType = LookupType.ActorEquipmentParam;
-						} else if(f.lookupType == LookupType.TargetStat) {
-							f.lookupType = LookupType.TargetEquipmentParam;
-						}
-						FillEquipFormula(parser, f);
-					}
-				} else if(ident.Name == "skill") {
+				} else if(ident != null && ident.Name == "skill") {
 					//prev = c, t
 					if(f.formulaType == FormulaType.Lookup) {
 						if(f.lookupType == LookupType.ActorStat) {
@@ -249,7 +255,7 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 							f.lookupType = LookupType.TargetSkillParam;
 						}
 					}
-				} else if(ident.Name == "status") {
+				} else if(ident != null && ident.Name == "status") {
 					if(f.formulaType == FormulaType.Lookup) {
 						if(f.lookupType == LookupType.ActorStat) {
 							f.lookupType = LookupType.ActorStatusEffect;
@@ -257,7 +263,7 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 							f.lookupType = LookupType.TargetStatusEffect;
 						}
 					}
-				} else {
+				} else if(ident != null) {
 					//is lookupRef null or ""?
 					//set lookupref
 					//else, append to lookupref
@@ -268,6 +274,8 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 							f.lookupReference += "."+ident.Name;
 						}
 					}
+				} else {
+					throw new SemanticException("no identifier or other usable thing after dot");
 				}
 				if(parser.Token == null || parser.Token.Id != ".") {
 					break;
@@ -312,7 +320,8 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 			List<StatChangeType> changes = new List<StatChangeType>{StatChangeType.Change};
 			List<string> stats = new List<string>();
 			List<string> categories = new List<string>();
-			FormulaMergeMode mergeMode = FormulaMergeMode.First;
+			FormulaMergeMode mergeMode = FormulaMergeMode.Nth;
+			int mergeNth = 0;
 			while(true) {
 				if(parser.Token.Id == "any") {
         	changes.Add(StatChangeType.Any);
@@ -358,7 +367,8 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 			if(parser.Token.Id == "get") {
 				parser.Advance("get");
 				if(parser.Token.Id == "first") {
-					mergeMode = FormulaMergeMode.First;
+					mergeMode = FormulaMergeMode.Nth;
+					mergeNth = 0;
 				} else if(parser.Token.Id == "last") {
 					mergeMode = FormulaMergeMode.Last;
 				} else if(parser.Token.Id == "min") {
@@ -369,8 +379,10 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 					mergeMode = FormulaMergeMode.Mean;
 				} else if(parser.Token.Id == "sum") {
 					mergeMode = FormulaMergeMode.Sum;
+				} else if(int.TryParse(parser.Token.Id, out mergeNth)) {
+					mergeMode = FormulaMergeMode.Nth;
+					mergeNth = mergeNth - 1;
 				}
-				//TODO: (number)
 				parser.Advance(null);
 			}
 			parser.Advance(")");
@@ -378,6 +390,7 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 			f.searchReactedStatChanges = changes.ToArray();
 			f.searchReactedEffectCategories = categories.ToArray();
 			f.mergeMode = mergeMode;
+			f.mergeNth = mergeNth;
 		}
 	}
 
@@ -389,7 +402,8 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 			parser.Advance("(");
 			List<string> categories = new List<string>();
 			List<string> slots = new List<string>();
-			FormulaMergeMode mergeMode = FormulaMergeMode.First;
+			FormulaMergeMode mergeMode = FormulaMergeMode.Nth;
+			int mergeNth = 0;
 			while(true) {
 				Identifier ident = parser.Parse(0) as Identifier;
 				categories.Add(ident.Name);
@@ -412,7 +426,8 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 			if(parser.Token.Id == "get") {
 				parser.Advance("get");
 				if(parser.Token.Id == "first") {
-					mergeMode = FormulaMergeMode.First;
+					mergeMode = FormulaMergeMode.Nth;
+					mergeNth = 0;
 				} else if(parser.Token.Id == "last") {
 					mergeMode = FormulaMergeMode.Last;
 				} else if(parser.Token.Id == "min") {
@@ -423,14 +438,17 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 					mergeMode = FormulaMergeMode.Mean;
 				} else if(parser.Token.Id == "sum") {
 					mergeMode = FormulaMergeMode.Sum;
+				} else if(int.TryParse(parser.Token.Id, out mergeNth)) {
+					mergeMode = FormulaMergeMode.Nth;
+					mergeNth = mergeNth - 1;
 				}
-				//TODO: (number)
 				parser.Advance(null);
 			}
 			parser.Advance(")");
 			f.equipmentCategories = categories.ToArray();
 			f.equipmentSlots = slots.ToArray();
 			f.mergeMode = mergeMode;
+			f.mergeNth = mergeNth;
 		}
 	}
 
@@ -760,9 +778,8 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 	}
 	IFormulaElement Neg(IFormulaElement arg) {
 		Formula outer = new Formula();
-		outer.formulaType = FormulaType.Multiply;
+		outer.formulaType = FormulaType.Negate;
 		outer.arguments = new List<Formula>(){
-			Formula.Constant(-1),
 			CheckFormulaArg(arg)
 		};
 		return outer;

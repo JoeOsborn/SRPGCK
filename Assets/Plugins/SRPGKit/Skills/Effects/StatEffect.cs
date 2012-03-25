@@ -101,12 +101,14 @@ public class StatEffect {
 				float modValue = 0;
 				float oldStat = actualTarget.GetBaseStat(statName);
 				float newStat = ModifyStat(oldStat, skill, null, null, ref modValue);
+				// Debug.Log("base modvalue is "+modValue+", newstat is "+newStat);
 				newStat = actualTarget.SetBaseStat(statName, newStat, respectLimits);
 				if(constrainValueToLimits) {
 					modValue = effectType == StatEffectType.Replace ? newStat : newStat - oldStat;
 				}
 				effect = new StatEffectRecord(this, oldStat, newStat, modValue);
-				Debug.Log("hit "+actualTarget+", new "+statName+" "+actualTarget.GetStat(statName));
+				Debug.Log("hit "+actualTarget+"("+target+") for "+modValue+", new "+statName+" "+newStat);
+				// Debug.Log("vtype "+value.formulaType+" ltype "+value.lookupType);
 				break;
 			case StatEffectType.ChangeFacing:
 				float oldAngle = actualTarget.Facing;

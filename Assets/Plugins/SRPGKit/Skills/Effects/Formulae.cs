@@ -262,6 +262,8 @@ public class Formulae : ScriptableObject {
 							return results.First();
 						case FormulaMergeMode.Last:
 							return results.Last();
+						case FormulaMergeMode.Nth:
+							return results.ElementAt(f.mergeNth);
 					}
 				} else {
 					Debug.LogError("Skill effect lookups require a skill context.");
@@ -271,8 +273,8 @@ public class Formulae : ScriptableObject {
 				return -1;
 			case LookupType.SkillEffectType:
 				if(scontext != null) {
-					//ignore lookupRef
 					string[] fnames = f.searchReactedStatNames;
+					//ignore lookupRef
 					var results = scontext.lastEffects.
 						Where(fx => fx.Matches(fnames, f.searchReactedStatChanges, f.searchReactedEffectCategories)).
 						Select(fx => fx.value);
@@ -289,6 +291,9 @@ public class Formulae : ScriptableObject {
 							return results.First();
 						case FormulaMergeMode.Last:
 							return results.Last();
+						case FormulaMergeMode.Nth:
+							Debug.Log("nth "+f.mergeNth+" is "+results.ElementAt(f.mergeNth));
+							return results.ElementAt(f.mergeNth);
 					}
 				} else {
 					Debug.LogError("Skill effect lookups require a skill context.");

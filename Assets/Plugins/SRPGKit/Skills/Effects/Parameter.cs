@@ -21,12 +21,12 @@ public class Parameter {
 	public float ConstrainCharacterValue(Formulae fdb, Character c, float amt, float prevAmt) {
 		if(limitMinimum && amt <= prevAmt) {
 			float limit = minF.GetCharacterValue(fdb, c);
-			// if(Name != "ct" && Name != "facing") { Debug.Log("minlimit: "+amt+" from "+prevAmt+" to > "+limit); }
+			// if(Name != "ct" && Name != "facing") { Debug.Log("minlimit: "+amt+" from "+prevAmt+" to > "+limit+":"+minF.lookupReference+" from "+minF.lookupType); }
 			if(amt < limit) { amt = Mathf.Min(prevAmt,limit); }
 		}
 		if(limitMaximum && amt >= prevAmt) {
 			float limit = maxF.GetCharacterValue(fdb, c);
-			// if(Name != "ct" && Name != "facing") { Debug.Log("maxlimit: "+amt+" from "+prevAmt+" to < "+limit); }
+			// if(Name != "ct" && Name != "facing") { Debug.Log("maxlimit: "+amt+" from "+prevAmt+" to < "+limit+":"+maxF.lookupReference+" from "+maxF.lookupType); }
 			if(amt > limit) { amt = Mathf.Max(prevAmt,limit); }
 		}
 		return amt;
@@ -38,7 +38,8 @@ public class Parameter {
 	public float SetCharacterValue(Formulae fdb, Character c, float amt, bool constrain=true) {
 		Formula f = this.Formula;
 		if(f.formulaType == FormulaType.Constant) {
-			float givenAmt = amt, nowAmt = f.constantValue;
+//			float givenAmt = amt;
+			float nowAmt = f.constantValue;
 			amt = constrain ? ConstrainCharacterValue(fdb, c, amt, nowAmt) : amt;
 			f.constantValue = amt;
 			// if(Name != "ct" && Name != "facing") { Debug.Log("set "+Name+" to "+amt+" given "+givenAmt+" prev "+nowAmt); }

@@ -80,7 +80,8 @@ public enum FormulaMergeMode {
 	Min,
 	Max,
 	Mean,
-	Sum
+	Sum,
+	Nth
 }
 
 public interface IFormulaElement {
@@ -105,6 +106,8 @@ public class Formula : IFormulaElement {
 	public LookupType lookupType;
 	 //if a lookup returns multiple results
 	public FormulaMergeMode mergeMode;
+	//for Nth merge mode
+	public int mergeNth=0;
 	//eq
 	public string[] equipmentSlots, equipmentCategories;
 	//effect lookup (e.g. "this reaction skill recovers MP equal to the amount used by the attacker")
@@ -130,6 +133,7 @@ public class Formula : IFormulaElement {
 		lookupReference = f.lookupReference;
 		lookupType = f.lookupType;
 		mergeMode = f.mergeMode;
+		mergeNth = f.mergeNth;
 		equipmentSlots = f.equipmentSlots;
 		equipmentCategories = f.equipmentCategories;
 		searchReactedStatNames = f.searchReactedStatNames;
@@ -253,12 +257,14 @@ public class Formula : IFormulaElement {
 			  for(int i = 1; i < arguments.Count; i++) {
 			  	result *= arguments[i].GetValue(fdb, scontext, ccontext, econtext);
 			  }
+				// Debug.Log("multiplied to "+result);
 				break;
 			case FormulaType.Divide:
 			  result = arguments[0].GetValue(fdb, scontext, ccontext, econtext);
 			  for(int i = 1; i < arguments.Count; i++) {
 			  	result /= arguments[i].GetValue(fdb, scontext, ccontext, econtext);
 			  }
+				// Debug.Log("divided to "+result);
 				break;
 			case FormulaType.Remainder:
 			  result = arguments[0].GetValue(fdb, scontext, ccontext, econtext);
@@ -332,6 +338,7 @@ public class Formula : IFormulaElement {
 				break;
 			case FormulaType.Negate:
 				result = -1 * arguments[0].GetValue(fdb, scontext, ccontext, econtext);
+				// Debug.Log("negated to "+result);
 				break;
 			case FormulaType.Equal:
 				result = arguments[0].GetValue(fdb, scontext, ccontext, econtext) == arguments[1].GetValue(fdb, scontext, ccontext, econtext) ? 1 : 0;
