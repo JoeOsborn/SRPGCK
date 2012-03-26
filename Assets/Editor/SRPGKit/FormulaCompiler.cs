@@ -93,8 +93,12 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 		Infix("*", 20, Mul); Infix("/", 20, Div);
 		Infix("%", 20, Rem);
 
+		Infix("or", 20, Or);
+		Infix("and", 20, And);
+
 		InfixR("^", 30, Pow);
 		Prefix("-", 200, Neg);
+		Prefix("not", 200, Not);
 		Infix("==", 5, Eq); Infix("!=", 5, Neq);
 		Infix("<", 5, LT); Infix("<=", 5, LTE);
 		Infix(">", 5, GT); Infix(">=", 5, GTE);
@@ -115,6 +119,16 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 		Builtin("any", 1, int.MaxValue, PickAny);
 
 		Builtin("exists", 1, 1, LookupSuccessful);
+
+		LookupOn("true", (parser) => {
+			Formula f = Formula.Constant(1);
+			return f;
+		});
+
+		LookupOn("false", (parser) => {
+			Formula f = Formula.Constant(0);
+			return f;
+		});
 
 		string[] sides = new string[]{
 			"front",
@@ -165,12 +179,12 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 			return f;
 		};
 
-		LookupOn("f", (parser) => {
-			Formula f = new Formula();
-			f.formulaType = FormulaType.Lookup;
-			f.lookupType = LookupType.NamedFormula;
-			return f;
-		});
+		// LookupOn("f", (parser) => {
+		// 	Formula f = new Formula();
+		// 	f.formulaType = FormulaType.Lookup;
+		// 	f.lookupType = LookupType.NamedFormula;
+		// 	return f;
+		// });
 		LookupOn("c", (parser) => {
 			Formula f = new Formula();
 			f.formulaType = FormulaType.Lookup;
@@ -764,6 +778,19 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 		f.arguments = new List<Formula>(){CheckFormulaArg(lhs), CheckFormulaArg(rhs)};
 		return f;
 	}
+	IFormulaElement Or(IFormulaElement lhs, IFormulaElement rhs) {
+		Formula f = new Formula();
+		f.formulaType = FormulaType.Or;
+		f.arguments = new List<Formula>(){CheckFormulaArg(lhs), CheckFormulaArg(rhs)};
+		return f;
+	}
+	IFormulaElement And(IFormulaElement lhs, IFormulaElement rhs) {
+		Formula f = new Formula();
+		f.formulaType = FormulaType.And;
+		f.arguments = new List<Formula>(){CheckFormulaArg(lhs), CheckFormulaArg(rhs)};
+		return f;
+	}
+
 	IFormulaElement Rem(IFormulaElement lhs, IFormulaElement rhs) {
 		Formula f = new Formula();
 		f.formulaType = FormulaType.Remainder;
@@ -779,6 +806,14 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 	IFormulaElement Neg(IFormulaElement arg) {
 		Formula outer = new Formula();
 		outer.formulaType = FormulaType.Negate;
+		outer.arguments = new List<Formula>(){
+			CheckFormulaArg(arg)
+		};
+		return outer;
+	}
+	IFormulaElement Not(IFormulaElement arg) {
+		Formula outer = new Formula();
+		outer.formulaType = FormulaType.Not;
 		outer.arguments = new List<Formula>(){
 			CheckFormulaArg(arg)
 		};

@@ -47,7 +47,10 @@ public enum FormulaType {
 	BranchPDF,
 	Undefined,
 		//...
-	SkillEffectValue
+	SkillEffectValue,
+	Or,
+	And,
+	Not
 }
 
 public enum LookupType {
@@ -265,6 +268,21 @@ public class Formula : IFormulaElement {
 			  	result /= arguments[i].GetValue(fdb, scontext, ccontext, tcontext, econtext);
 			  }
 				// Debug.Log("divided to "+result);
+				break;
+			case FormulaType.And:
+				result = arguments[0].GetValue(fdb, scontext, ccontext, tcontext, econtext);
+				for(int i = 1; i < arguments.Count; i++) {
+					result = ((result != 0) && (arguments[i].GetValue(fdb, scontext, ccontext, tcontext, econtext) != 0)) ? 1 : 0;
+				}
+				break;
+			case FormulaType.Or:
+				result = arguments[0].GetValue(fdb, scontext, ccontext, tcontext, econtext);
+				for(int i = 1; i < arguments.Count; i++) {
+					result = ((result != 0) || (arguments[i].GetValue(fdb, scontext, ccontext, tcontext, econtext) != 0)) ? 1 : 0;
+				}
+				break;
+			case FormulaType.Not:
+				result = arguments[0].GetValue(fdb, scontext, ccontext, tcontext, econtext) != 0 ? 0 : 1;
 				break;
 			case FormulaType.Remainder:
 			  result = arguments[0].GetValue(fdb, scontext, ccontext, tcontext, econtext);
