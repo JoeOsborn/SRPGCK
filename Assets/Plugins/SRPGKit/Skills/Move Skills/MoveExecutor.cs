@@ -95,16 +95,19 @@ public class MoveExecutor {
 		moveCallback = callback;
 		temporaryPosition = temporaryDestination;
 		transformPosition = temporaryPosition;
-		if(callback != null) {
+		specialMoving = false;
+		ClearPath();
+		TriggerCallback(temporaryDestNode);
+	}
+	
+	void TriggerCallback(PathNode pn) {
+		if(moveCallback != null) {
 			moveCallback(
 				map.InverseTransformPointWorld(moveOrigin),
-				temporaryDestNode,
+				pn,
 				true
 			);
 		}
-		specialMoving = false;
-		moveCallback = null;
-		ClearPath();
 	}
 
 	virtual public void TemporaryMoveTo(
@@ -273,17 +276,10 @@ public class MoveExecutor {
 //						Debug.Log("temporary move");
 					}
 				  temporaryPosition = temporaryDestination;
-			  	if(moveCallback != null) {
-						Debug.Log("call callback in update");
-			  		moveCallback(
-							map.InverseTransformPointWorld(moveOrigin),
-							temporaryDestNode,
-							true
-						);
-						specialMoving = false;
-			  		moveCallback = null;
-			  	}
+					specialMoving = false;
 					ClearPath();
+					Debug.Log("call callback in update");
+					TriggerCallback(temporaryDestNode);
 				}
 			} else {
 				Vector3 newPos = tp;
@@ -358,16 +354,9 @@ public class MoveExecutor {
 			position = destination;
 			temporaryPosition = temporaryDestination;
 			transformPosition = position;
-			if(moveCallback != null) {
-				moveCallback(
-					map.InverseTransformPointWorld(moveOrigin),
-					temporaryDestNode,
-					false
-				);
-				specialMoving = false;
-				moveCallback = null;
-			}
+			specialMoving = false;
 			ClearPath();
+			TriggerCallback(temporaryDestNode);
 		}
 	}
 }

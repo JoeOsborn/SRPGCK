@@ -968,7 +968,7 @@ public class ActionSkillDef : SkillDef {
 		_GridOverlay.SetSelectedPoints(
 			map.CoalesceTiles(
 				currentSettings.effectRegion.GetValidTiles(
-					(ChainedTarget && currentSettings.doNotMoveChain) ? tp : ep, 
+					(ChainedTarget && currentSettings.doNotMoveChain) ? tp : ep,
 					Quaternion.Euler(0, angle, 0)
 				)
 			)
@@ -990,7 +990,7 @@ public class ActionSkillDef : SkillDef {
 		_GridOverlay.SetSelectedPoints(
 			map.CoalesceTiles(
 				currentSettings.effectRegion.GetValidTiles(
-					(ChainedTarget && currentSettings.doNotMoveChain) ? tp : ep, 
+					(ChainedTarget && currentSettings.doNotMoveChain) ? tp : ep,
 					Quaternion.Euler(0, angle, 0)
 				)
 			)
@@ -1434,6 +1434,7 @@ public class ActionSkillDef : SkillDef {
 			return;
 		}
 		if(lockToGrid) {
+			targetRegionTiles = GetPresentedActionTiles();
 			_GridOverlay.UpdateDestinations(targetRegionTiles);
 		} else {
 			Vector3 charPos = currentTarget.Position;

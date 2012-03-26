@@ -191,6 +191,31 @@ public class Character : MonoBehaviour {
 						SendMessageOptions.DontRequireReceiver
 					);
 					specialMoveExecutor.Deactivate();
+					var chars = map.CharactersAt(endNode.pos).Where(c => c != this).ToArray();
+					if(chars.Length > 0) {
+					//if any collisions left over between me and somebody else...
+						Debug.Log("fix collisions");
+						bool success = false;
+						if(!success) {
+							Debug.Log("try straight");
+							success = TrySpecialMoveResponse(direction, endNode, chars, lineMove, cause);
+						}
+						if(!success) {
+							Debug.Log("try left");
+							success = TrySpecialMoveResponse(SRPGUtil.WrapAngle(direction+90), endNode, chars, lineMove, cause);
+						}
+						if(!success) {
+							Debug.Log("try right");
+							success = TrySpecialMoveResponse(SRPGUtil.WrapAngle(direction-90), endNode, chars, lineMove, cause);
+						}
+						if(!success) {
+							Debug.Log("try back");
+							success = TrySpecialMoveResponse(SRPGUtil.WrapAngle(direction+180), endNode, chars, lineMove, cause);
+						}
+						if(!success) {
+							Debug.LogError("Can't shove "+chars.Length+" chars out of the way!");
+						}
+					}
 				}
 			);
 		};
@@ -200,18 +225,67 @@ public class Character : MonoBehaviour {
 				specialMoveExecutor.SpecialMoveTo(
 					new PathNode(start, null, 0),
 					movedToStart,
-					1.0f
+					3.0f
 				);
 			} else {
 				specialMoveExecutor.ImmediatelyMoveTo(
 					new PathNode(start, null, 0),
 					movedToStart,
-					1.0f
+					3.0f
 				);
 			}
 		} else {
 			movedToStart(start, new PathNode(start, null, 0), true);
 		}
+	}
+
+	protected bool TrySpecialMoveResponse(float direction, PathNode endNode, Character[] chars, Region lineMove, SkillDef cause) {
+		bool success=false;
+		PathNode pn = endNode;
+		var shoveChars = new List<Character>();
+		shoveChars.AddRange(chars);
+		int tries = 0;
+		const int tryLimit = 20;
+		do {
+			pn = lineMove.GetNextLineMovePosition(this, pn, direction, 1, 1, 0);
+			if(pn != null) {
+				var nextChars = map.CharactersAt(pn.pos).ToArray();
+				if(nextChars.Length == 0) {
+					success = true;
+				} else {
+					shoveChars.AddRange(nextChars);
+				}
+				// Debug.Log("ncs "+nextChars.Length);
+			}
+			// Debug.Log("pn "+pn);
+			tries++;
+		} while(pn != null && !success && tries < tryLimit);
+		if(tries >= tryLimit) { Debug.LogError("too many tries"); return false; }
+		if(success) {
+			Region responseMove = new Region();
+			responseMove.type = RegionType.LineMove;
+			responseMove.interveningSpaceType = InterveningSpaceType.LineMove;
+			responseMove.radiusMaxF = Formula.Constant(1);
+			responseMove.xyDirectionF = Formula.Constant(direction);
+			responseMove.canCrossWalls = false;
+			responseMove.canCrossEnemies = false;
+			responseMove.canHaltAtEnemies = false;
+			responseMove.Owner = cause;
+			responseMove.facingLock = FacingLock.Cardinal;
+			for(int i = shoveChars.Count-1; i >= 0; i--) {
+				Character sc = shoveChars[i];
+				sc.SpecialMove(
+					sc.TilePosition,
+					false,
+					"collision_response",
+					responseMove,
+					25,
+					25,
+					cause
+				);
+			}
+		}
+		return success;
 	}
 
 	public virtual float Facing {

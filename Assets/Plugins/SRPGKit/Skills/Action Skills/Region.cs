@@ -176,7 +176,7 @@ public class Region {
 
 	//these apply to cylinder/predicate, sphere, cone, and line
 	public Formula radiusMinF, radiusMaxF;
-	//these apply to cylinder/predicate (define), sphere (clip), line (define up/down displacements from line)
+	//these apply to cylinder/predicate (define), sphere (clip), line (define up/down displacements from line), line move (max only)
 	public Formula zUpMinF, zUpMaxF, zDownMinF, zDownMaxF;
 	//these apply to cone and line, xy applies to lineMove & nways
 	public Formula xyDirectionF, zDirectionF;
@@ -404,6 +404,39 @@ public class Region {
 		);
 	}
 
+	public virtual PathNode GetNextLineMovePosition(
+		Character chara,
+		PathNode pn,
+		float direction
+	) {
+		return GetNextLineMovePosition(chara, pn, direction, 1, zDownMax, zUpMax);
+	}
+
+	public virtual PathNode GetNextLineMovePosition(
+		Character chara,
+		PathNode pn,
+		float direction,
+		float amount,
+		float zrdmx,
+		float zrumx
+	) {
+		float dir_ignore=0;
+		float amt_ignore=0;
+		float rem_ignore=0;
+		float dd_ignore=0;
+		PathNode ret = GetLineMove(
+			out dir_ignore, out amt_ignore, out rem_ignore, out dd_ignore,
+			null,
+			null,
+			chara,
+			pn.pos, direction,
+			amount,
+			zrdmx, zrumx
+		);
+		if(ret.pos == pn.pos) { return null; }
+		return ret;
+	}
+
 	public virtual PathNode GetLineMove(
 		out float dir,
 		out float amt,
@@ -506,6 +539,7 @@ public class Region {
 				}
 				Character hereChar = map.CharacterAt(here);
 				if(hereChar != null && hereChar != chara &&
+				   collidedCharacters != null &&
 				   !collidedCharacters.Contains(hereChar)) {
 					collidedCharacters.Add(hereChar);
 				}
@@ -525,7 +559,11 @@ public class Region {
 						here = lastHere;
 						break;
 					}
-				} else if(!canCrossEnemies && collidedCharacters.Count > 0) {
+				} else if(
+					!canCrossEnemies &&
+					collidedCharacters != null &&
+					collidedCharacters.Count > 0
+				) {
 					//break
 					//FIXME: it's the client's responsibility to ensure that character-crossers
 					//don't end up stuck in a character
@@ -606,7 +644,7 @@ public class Region {
 				nodes[here] = cur;
 			}
 			Character c = map.CharacterAt(here);
-			if(c != null && c != chara) {
+			if(c != null && collidedCharacters != null && c != chara) {
 				collidedCharacters.Add(c);
 			}
 			Debug.Log("fall down to "+here+"!");

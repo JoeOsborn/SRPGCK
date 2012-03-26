@@ -1081,16 +1081,16 @@ void Awake() {
 	}
 
 	public Character CharacterAt(Vector3 tc) {
-		foreach(Character c in GetComponentsInChildren<Character>()) {
+		return CharactersAt(tc).FirstOrDefault();
+	}
+	public IEnumerable<Character> CharactersAt(Vector3 tc) {
+		return GetComponentsInChildren<Character>().Where(c => {
 			Vector3 ctc = c.TilePosition;
 //			Debug.Log("TC:"+tc+", CTC:"+ctc);
-			if(Mathf.Floor(tc.x) == Mathf.Floor(ctc.x) &&
+			return (Mathf.Floor(tc.x) == Mathf.Floor(ctc.x) &&
 			   Mathf.Floor(tc.y) == Mathf.Floor(ctc.y) &&
-			   Mathf.Floor(tc.z) == Mathf.Floor(ctc.z)) {
-				return c;
-			}
-		}
-		return null;
+			   Mathf.Floor(tc.z) == Mathf.Floor(ctc.z));
+		});
 	}
 #endregion
 }
