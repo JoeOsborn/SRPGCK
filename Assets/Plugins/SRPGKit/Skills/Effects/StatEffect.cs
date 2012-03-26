@@ -63,9 +63,9 @@ public class StatEffect {
 	public Formula specialMoveGivenStartX, specialMoveGivenStartY, specialMoveGivenStartZ;
 	public Region specialMoveLine;
 
-	public float ModifyStat(float stat, SkillDef scontext, Character ccontext, Equipment econtext, ref float modValue) {
+	public float ModifyStat(float stat, SkillDef scontext, Character ccontext, Character tcontext, Equipment econtext, ref float modValue) {
 		Formulae fdb = scontext != null ? scontext.fdb : (ccontext != null ? ccontext.fdb : (econtext != null ? econtext.fdb : Formulae.DefaultFormulae));
-		modValue=value.GetValue(fdb, scontext, ccontext, econtext);
+		modValue=value.GetValue(fdb, scontext, ccontext, tcontext, econtext);
 		float modifiedValue = stat;
 		switch(effectType) {
 			case StatEffectType.Augment: modifiedValue = stat+modValue; break;
@@ -77,9 +77,9 @@ public class StatEffect {
 		}
 		return modifiedValue;
 	}
-	public float ModifyStat(float stat, SkillDef scontext, Character ccontext, Equipment econtext) {
+	public float ModifyStat(float stat, SkillDef scontext, Character ccontext, Character tcontext, Equipment econtext) {
 		float ignore=0;
-		return ModifyStat(stat, scontext, ccontext, econtext, ref ignore);
+		return ModifyStat(stat, scontext, ccontext, tcontext, econtext, ref ignore);
 	}
 
 	public StatEffectRecord Apply(SkillDef skill, Character character, Character targ) {
@@ -100,7 +100,7 @@ public class StatEffect {
 			case StatEffectType.Replace:
 				float modValue = 0;
 				float oldStat = actualTarget.GetBaseStat(statName);
-				float newStat = ModifyStat(oldStat, skill, null, null, ref modValue);
+				float newStat = ModifyStat(oldStat, skill, null, null, null, ref modValue);
 				// Debug.Log("base modvalue is "+modValue+", newstat is "+newStat);
 				newStat = actualTarget.SetBaseStat(statName, newStat, respectLimits);
 				if(constrainValueToLimits) {
@@ -112,7 +112,7 @@ public class StatEffect {
 				break;
 			case StatEffectType.ChangeFacing:
 				float oldAngle = actualTarget.Facing;
-				float angle = value.GetValue(fdb, skill, targ, null);
+				float angle = value.GetValue(fdb, skill, actualTarget);
 				actualTarget.Facing = angle;
 				Debug.Log("set facing to "+angle);
 				effect = new StatEffectRecord(this, oldAngle, angle, angle);
@@ -128,9 +128,9 @@ public class StatEffect {
 				}
 				specialMoveLine.Owner = skill;
 				Vector3 start = new Vector3(
-					specialMoveGivenStartX.GetValue(fdb, skill, targ, null),
-					specialMoveGivenStartY.GetValue(fdb, skill, targ, null),
-					specialMoveGivenStartZ.GetValue(fdb, skill, targ, null)
+					specialMoveGivenStartX.GetValue(fdb, skill, targ),
+					specialMoveGivenStartY.GetValue(fdb, skill, targ),
+					specialMoveGivenStartZ.GetValue(fdb, skill, targ)
 				);
 				effect = new StatEffectRecord(this, start);
 				actualTarget.SpecialMove(

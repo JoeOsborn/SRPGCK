@@ -29,6 +29,44 @@ public class Character : MonoBehaviour {
 		return _specialMoveExecutor;
 	} }
 
+	//can't use transform hierarchy here because
+	//that's already loaded with semantics
+	//for skills, equipment, etc.
+	public Formula isMountableF, canMountF;
+	public Character mountingCharacter, mountedCharacter;
+	public bool IsMounted { get {
+		return mountingCharacter != null;
+	} }
+	public bool IsMounting { get {
+		return mountedCharacter != null;
+	} }
+	public bool IsMountableBy(Character c) {
+		return !IsMounted && isMountableF != null ?
+			(isMountableF.GetValue(fdb, null, this, c, null) != 0) :
+			false;
+	}
+	public bool CanMount(Character c) {
+		return !IsMounting && canMountF != null ?
+			(canMountF.GetValue(fdb, null, this, c, null) != 0) :
+			false;
+	}
+
+	public void Mount(Character mount) {
+		mountedCharacter = mount;
+		mountedCharacter.Mounted(this);
+	}
+	protected void Mounted(Character c) {
+		mountingCharacter = c;
+	}
+
+	public void Dismount() {
+		mountedCharacter.Dismounted();
+		mountedCharacter = null;
+	}
+	protected void Dismounted() {
+		mountingCharacter = null;
+	}
+
 	public string specialMoveType=null;
 
 	//I believe this is a stored property here in character,
@@ -61,11 +99,18 @@ public class Character : MonoBehaviour {
 	public string currentAnimation;
 
 	public MoveSkillDef moveSkill { get {
-		return skills.FirstOrDefault(s => s is MoveSkillDef) as MoveSkillDef;
+		return skills.
+			Where(s => s is MoveSkillDef).
+			OrderBy(s => s.isActive ? 0 : 1).
+			ThenBy(s => (s as MoveSkillDef).Executor.IsMoving ? 0 : 1).
+			FirstOrDefault() as MoveSkillDef;
 	} }
 
 	public WaitSkillDef waitSkill { get {
-		return skills.FirstOrDefault(s => s is WaitSkillDef) as WaitSkillDef;
+		return skills.
+			Where(s => s is WaitSkillDef).
+			OrderBy(s => s.isActive ? 0 : 1).
+			FirstOrDefault() as WaitSkillDef;
 	} }
 
 	public override string ToString() {
@@ -94,6 +139,22 @@ public class Character : MonoBehaviour {
 			Vector3.zero :
 			map.InverseTransformPointWorld(transform.position-transformOffset);
 	} }
+	public Vector3 WorldPosition {
+		get {
+			return transform.position;
+		}
+		set {
+			transform.position = value;
+			//FIXME: position mods won't propagate past one level
+			//of mounting, but more than one level is kind of nuts anyway
+			if(IsMounted) {
+				mountingCharacter.transform.position = value;
+			}
+			if(IsMounting) {
+				mountedCharacter.transform.position = value;
+			}
+		}
+	}
 
 	public void Activate() {
 		isActive = true;
@@ -191,7 +252,9 @@ public class Character : MonoBehaviour {
 						SendMessageOptions.DontRequireReceiver
 					);
 					specialMoveExecutor.Deactivate();
-					var chars = map.CharactersAt(endNode.pos).Where(c => c != this).ToArray();
+					var chars = map.CharactersAt(endNode.pos).
+						Where(c => c != this && !c.IsMounting).
+						ToArray();
 					if(chars.Length > 0) {
 					//if any collisions left over between me and somebody else...
 						Debug.Log("fix collisions");
@@ -249,7 +312,7 @@ public class Character : MonoBehaviour {
 		do {
 			pn = lineMove.GetNextLineMovePosition(this, pn, direction, 1, 1, 0);
 			if(pn != null) {
-				var nextChars = map.CharactersAt(pn.pos).ToArray();
+				var nextChars = map.CharactersAt(pn.pos).Where(c => !c.IsMounting).ToArray();
 				if(nextChars.Length == 0) {
 					success = true;
 				} else {
@@ -475,7 +538,7 @@ public class Character : MonoBehaviour {
 			foreach(StatEffect se in e.passiveEffects) {
 				if(se.statName == statName) {
 					float lastStat = stat;
-					stat = se.ModifyStat(stat, null, null, e);
+					stat = se.ModifyStat(stat, null, null, null, e);
 					if(p != null && se.respectLimits) {
 						stat = p.ConstrainCharacterValue(fdb, this, stat, lastStat);
 					}
@@ -487,7 +550,7 @@ public class Character : MonoBehaviour {
 			foreach(StatEffect se in s.passiveEffects) {
 				if(se.statName == statName) {
 					float lastStat = stat;
-					stat = se.ModifyStat(stat, s, null, null);
+					stat = se.ModifyStat(stat, s, null, null, null);
 					if(p != null && se.respectLimits) {
 						stat = p.ConstrainCharacterValue(fdb, this, stat, lastStat);
 					}
@@ -500,7 +563,7 @@ public class Character : MonoBehaviour {
 				if(se.statName == statName) {
 					float lastStat = stat;
 					//todo: pass status effect as context
-					stat = se.ModifyStat(stat, null, this, null);
+					stat = se.ModifyStat(stat, null, this, null, null);
 					if(p != null && se.respectLimits) {
 						stat = p.ConstrainCharacterValue(fdb, this, stat, lastStat);
 					}

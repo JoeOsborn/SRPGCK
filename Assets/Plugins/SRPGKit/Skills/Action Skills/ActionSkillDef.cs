@@ -70,7 +70,7 @@ public class ActionSkillDef : SkillDef {
 
 	public Formula maxWaypointDistanceF;
 	public float maxWaypointDistance { get {
-		return maxWaypointDistanceF.GetValue(fdb, this, null, null);
+		return maxWaypointDistanceF.GetValue(fdb, this);
 	} }
 
 	//internals

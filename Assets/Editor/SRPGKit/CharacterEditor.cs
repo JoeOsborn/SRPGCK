@@ -52,6 +52,26 @@ public class CharacterEditor : SRPGCKEditor {
 
 		EditorGUILayout.Space();
 
+		c.canMountF =
+			EditorGUIExt.FormulaField(
+				"Can Mount (t.)",
+				c.canMountF ?? Formula.Constant(0),
+				"character.canMount.param",
+				formulaOptions,
+				lastFocusedControl,
+				0
+			);
+
+		c.isMountableF =
+			EditorGUIExt.FormulaField(
+				"Mountable By (t.)",
+				c.isMountableF ?? Formula.Constant(0),
+				"character.isMountable.param",
+				formulaOptions,
+				lastFocusedControl,
+				0
+			);
+
 		c.stats = EditorGUIExt.ParameterFoldout(
 			"Statistic",
 			c.stats,

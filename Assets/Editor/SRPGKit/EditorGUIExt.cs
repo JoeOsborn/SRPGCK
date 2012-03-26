@@ -702,6 +702,8 @@ public class EditorGUIExt
 			} else {
 				newReg.canHaltAtEnemies = true;
 			}
+			newReg.canMountEnemies = EditorGUILayout.Toggle("Can mount enemies?", newReg.canMountEnemies);
+			newReg.canMountFriends = EditorGUILayout.Toggle("Can mount friends?", newReg.canMountFriends);
 			//abs dz yes/no
 			if(newReg.interveningSpaceType != InterveningSpaceType.Pick &&
 				 newReg.type != RegionType.LineMove &&

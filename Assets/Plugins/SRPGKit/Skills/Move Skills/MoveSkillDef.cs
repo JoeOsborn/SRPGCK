@@ -11,6 +11,8 @@ public class MoveSkillDef : ActionSkillDef {
 	public float ZSpeedUp = 15;
 	public float ZSpeedDown = 20;
 
+	public bool remainMounted = true;
+
 	//internals
 	public MoveExecutor moveExecutor;
 
@@ -105,7 +107,21 @@ public class MoveSkillDef : ActionSkillDef {
 		// 	me.ImmediatelyMoveTo(new PathNode(initialTarget.Position, null, 0));
 		// }
 		//FIXME: really? what about chained moves?
+		if(character.IsMounting && !remainMounted) {
+			me.ImmediatelyMoveTo(initialTarget.path);
+			character.Dismount();
+		}
 		me.MoveTo(pn, delegate(Vector3 src, PathNode endNode, bool finishedNicely) {
+			Character c = map.OtherCharacterAt(character, endNode.pos);
+			if(c != null &&
+			   !character.IsMounting && !character.IsMounted &&
+			   !c.IsMounted && !c.IsMounting) {
+				if(character.CanMount(c) && c.IsMountableBy(character)) {
+					character.Mount(c);
+				} else {
+					Debug.LogError("Can't mount character we're standing on!");
+				}
+			}
 			scheduler.CharacterMoved(
 				character,
 				map.InverseTransformPointWorld(src),

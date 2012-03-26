@@ -201,11 +201,11 @@ public class Formula : IFormulaElement {
 	}
 
 	public float GetCharacterValue(Formulae fdb, Character ccontext) {
-		return GetValue(fdb, null, ccontext, null);
+		return GetValue(fdb, null, ccontext);
 	}
 
 	bool firstTime = true;
-	public float GetValue(Formulae fdb, SkillDef scontext=null, Character ccontext=null, Equipment econtext=null) {
+	public float GetValue(Formulae fdb, SkillDef scontext=null, Character ccontext=null, Character tcontext=null, Equipment econtext=null) {
 		if(firstTime) {
 			lookupReference = lookupReference == null ? "" : lookupReference.NormalizeName();
 			firstTime = false;
@@ -216,7 +216,7 @@ public class Formula : IFormulaElement {
 				result = constantValue;
 				break;
 			case FormulaType.Lookup:
-				result = fdb.Lookup(lookupReference, lookupType, scontext, ccontext, econtext, this);
+				result = fdb.Lookup(lookupReference, lookupType, scontext, ccontext, tcontext, econtext, this);
 				break;
 			case FormulaType.ReactedEffectValue:
 				if(scontext == null) {
@@ -241,139 +241,139 @@ public class Formula : IFormulaElement {
 				result = scontext.lastEffects[scontext.lastEffects.Count-1].value;
 				break;
 			case FormulaType.Add:
-				result = arguments[0].GetValue(fdb, scontext, ccontext, econtext);
+				result = arguments[0].GetValue(fdb, scontext, ccontext, tcontext, econtext);
 				for(int i = 1; i < arguments.Count; i++) {
-					result += arguments[i].GetValue(fdb, scontext, ccontext, econtext);
+					result += arguments[i].GetValue(fdb, scontext, ccontext, tcontext, econtext);
 				}
 				break;
 			case FormulaType.Subtract:
-				result = arguments[0].GetValue(fdb, scontext, ccontext, econtext);
+				result = arguments[0].GetValue(fdb, scontext, ccontext, tcontext, econtext);
 				for(int i = 1; i < arguments.Count; i++) {
-					result -= arguments[i].GetValue(fdb, scontext, ccontext, econtext);
+					result -= arguments[i].GetValue(fdb, scontext, ccontext, tcontext, econtext);
 				}
 				break;
 			case FormulaType.Multiply:
-			  result = arguments[0].GetValue(fdb, scontext, ccontext, econtext);
+			  result = arguments[0].GetValue(fdb, scontext, ccontext, tcontext, econtext);
 			  for(int i = 1; i < arguments.Count; i++) {
-			  	result *= arguments[i].GetValue(fdb, scontext, ccontext, econtext);
+			  	result *= arguments[i].GetValue(fdb, scontext, ccontext, tcontext, econtext);
 			  }
 				// Debug.Log("multiplied to "+result);
 				break;
 			case FormulaType.Divide:
-			  result = arguments[0].GetValue(fdb, scontext, ccontext, econtext);
+			  result = arguments[0].GetValue(fdb, scontext, ccontext, tcontext, econtext);
 			  for(int i = 1; i < arguments.Count; i++) {
-			  	result /= arguments[i].GetValue(fdb, scontext, ccontext, econtext);
+			  	result /= arguments[i].GetValue(fdb, scontext, ccontext, tcontext, econtext);
 			  }
 				// Debug.Log("divided to "+result);
 				break;
 			case FormulaType.Remainder:
-			  result = arguments[0].GetValue(fdb, scontext, ccontext, econtext);
+			  result = arguments[0].GetValue(fdb, scontext, ccontext, tcontext, econtext);
 			  for(int i = 1; i < arguments.Count; i++) {
-			  	result = result % arguments[i].GetValue(fdb, scontext, ccontext, econtext);
+			  	result = result % arguments[i].GetValue(fdb, scontext, ccontext, tcontext, econtext);
 			  }
 				break;
 			case FormulaType.Exponent:
-			  result = arguments[0].GetValue(fdb, scontext, ccontext, econtext);
+			  result = arguments[0].GetValue(fdb, scontext, ccontext, tcontext, econtext);
 				if(arguments.Count == 1) {
 					result = result * result;
 				} else {
 			  	for(int i = 1; i < arguments.Count; i++) {
-			  		result = Mathf.Pow(result, arguments[i].GetValue(fdb, scontext, ccontext, econtext));
+			  		result = Mathf.Pow(result, arguments[i].GetValue(fdb, scontext, ccontext, tcontext, econtext));
 			  	}
 				}
 				break;
 			case FormulaType.Root:
-			  result = arguments[0].GetValue(fdb, scontext, ccontext, econtext);
+			  result = arguments[0].GetValue(fdb, scontext, ccontext, tcontext, econtext);
 				if(arguments.Count == 1) {
 					result = Mathf.Sqrt(result);
 				} else {
 			  	for(int i = 1; i < arguments.Count; i++) {
-			  		result = Mathf.Pow(result, 1.0f/arguments[i].GetValue(fdb, scontext, ccontext, econtext));
+			  		result = Mathf.Pow(result, 1.0f/arguments[i].GetValue(fdb, scontext, ccontext, tcontext, econtext));
 			  	}
 				}
 				break;
 			case FormulaType.Mean:
-				result = arguments.Sum(a => a.GetValue(fdb, scontext, ccontext, econtext)) / arguments.Count();
+				result = arguments.Sum(a => a.GetValue(fdb, scontext, ccontext, tcontext, econtext)) / arguments.Count();
 				break;
 			case FormulaType.Min:
-				result = arguments.Min(a => a.GetValue(fdb, scontext, ccontext, econtext));
+				result = arguments.Min(a => a.GetValue(fdb, scontext, ccontext, tcontext, econtext));
 				break;
 			case FormulaType.Max:
-				result = arguments.Max(a => a.GetValue(fdb, scontext, ccontext, econtext));
+				result = arguments.Max(a => a.GetValue(fdb, scontext, ccontext, tcontext, econtext));
 				break;
 			case FormulaType.RandomRange: {
 				float low=0, high=1;
 				if(arguments.Count >= 2) {
-					low = arguments[0].GetValue(fdb, scontext, ccontext, econtext);
-					high = arguments[1].GetValue(fdb, scontext, ccontext, econtext);
+					low = arguments[0].GetValue(fdb, scontext, ccontext, tcontext, econtext);
+					high = arguments[1].GetValue(fdb, scontext, ccontext, tcontext, econtext);
 				} else if(arguments.Count == 1) {
-					high = arguments[0].GetValue(fdb, scontext, ccontext, econtext);
+					high = arguments[0].GetValue(fdb, scontext, ccontext, tcontext, econtext);
 				}
 				result = Random.Range(low, high);
 				break;
 			}
 			case FormulaType.ClampRange: {
-				float r = arguments[0].GetValue(fdb, scontext, ccontext, econtext);
+				float r = arguments[0].GetValue(fdb, scontext, ccontext, tcontext, econtext);
 				float low=0, high=1;
 				if(arguments.Count >= 2) {
-					low = arguments[1].GetValue(fdb, scontext, ccontext, econtext);
+					low = arguments[1].GetValue(fdb, scontext, ccontext, tcontext, econtext);
 				}
 				if(arguments.Count >= 3) {
-					high = arguments[2].GetValue(fdb, scontext, ccontext, econtext);
+					high = arguments[2].GetValue(fdb, scontext, ccontext, tcontext, econtext);
 				}
 				result = Mathf.Clamp(r, low, high);
 				break;
 			}
 			case FormulaType.RoundDown:
-				result = Mathf.Floor(arguments[0].GetValue(fdb, scontext, ccontext, econtext));
+				result = Mathf.Floor(arguments[0].GetValue(fdb, scontext, ccontext, tcontext, econtext));
 				break;
 			case FormulaType.RoundUp:
-				result = Mathf.Ceil(arguments[0].GetValue(fdb, scontext, ccontext, econtext));
+				result = Mathf.Ceil(arguments[0].GetValue(fdb, scontext, ccontext, tcontext, econtext));
 				break;
 			case FormulaType.Round:
-				result = Mathf.Round(arguments[0].GetValue(fdb, scontext, ccontext, econtext));
+				result = Mathf.Round(arguments[0].GetValue(fdb, scontext, ccontext, tcontext, econtext));
 				break;
 			case FormulaType.AbsoluteValue:
-				result = Mathf.Abs(arguments[0].GetValue(fdb, scontext, ccontext, econtext));
+				result = Mathf.Abs(arguments[0].GetValue(fdb, scontext, ccontext, tcontext, econtext));
 				break;
 			case FormulaType.Negate:
-				result = -1 * arguments[0].GetValue(fdb, scontext, ccontext, econtext);
+				result = -1 * arguments[0].GetValue(fdb, scontext, ccontext, tcontext, econtext);
 				// Debug.Log("negated to "+result);
 				break;
 			case FormulaType.Equal:
-				result = arguments[0].GetValue(fdb, scontext, ccontext, econtext) == arguments[1].GetValue(fdb, scontext, ccontext, econtext) ? 1 : 0;
+				result = arguments[0].GetValue(fdb, scontext, ccontext, tcontext, econtext) == arguments[1].GetValue(fdb, scontext, ccontext, tcontext, econtext) ? 1 : 0;
 				break;
 			case FormulaType.NotEqual:
-				result = arguments[0].GetValue(fdb, scontext, ccontext, econtext) != arguments[1].GetValue(fdb, scontext, ccontext, econtext) ? 1 : 0;
+				result = arguments[0].GetValue(fdb, scontext, ccontext, tcontext, econtext) != arguments[1].GetValue(fdb, scontext, ccontext, tcontext, econtext) ? 1 : 0;
 				break;
 		  case FormulaType.GreaterThan:
-				result = arguments[0].GetValue(fdb, scontext, ccontext, econtext) > arguments[1].GetValue(fdb, scontext, ccontext, econtext) ? 1 : 0;
+				result = arguments[0].GetValue(fdb, scontext, ccontext, tcontext, econtext) > arguments[1].GetValue(fdb, scontext, ccontext, tcontext, econtext) ? 1 : 0;
 		  	break;
 		  case FormulaType.GreaterThanOrEqual:
-				result = arguments[0].GetValue(fdb, scontext, ccontext, econtext) >= arguments[1].GetValue(fdb, scontext, ccontext, econtext) ? 1 : 0;
+				result = arguments[0].GetValue(fdb, scontext, ccontext, tcontext, econtext) >= arguments[1].GetValue(fdb, scontext, ccontext, tcontext, econtext) ? 1 : 0;
 		  	break;
 			case FormulaType.LessThan:
-				result = arguments[0].GetValue(fdb, scontext, ccontext, econtext) < arguments[1].GetValue(fdb, scontext, ccontext, econtext) ? 1 : 0;
+				result = arguments[0].GetValue(fdb, scontext, ccontext, tcontext, econtext) < arguments[1].GetValue(fdb, scontext, ccontext, tcontext, econtext) ? 1 : 0;
 				break;
 			case FormulaType.LessThanOrEqual:
-				result = arguments[0].GetValue(fdb, scontext, ccontext, econtext) <= arguments[1].GetValue(fdb, scontext, ccontext, econtext) ? 1 : 0;
+				result = arguments[0].GetValue(fdb, scontext, ccontext, tcontext, econtext) <= arguments[1].GetValue(fdb, scontext, ccontext, tcontext, econtext) ? 1 : 0;
 				break;
 			case FormulaType.Any:
-				result = arguments[Random.Range(0, arguments.Count)].GetValue(fdb, scontext, ccontext, econtext);
+				result = arguments[Random.Range(0, arguments.Count)].GetValue(fdb, scontext, ccontext, tcontext, econtext);
 				break;
 			case FormulaType.LookupSuccessful:
-				result = fdb.CanLookup(lookupReference, lookupType, scontext, ccontext, econtext, this) ? 1 : 0;
+				result = fdb.CanLookup(lookupReference, lookupType, scontext, ccontext, null, econtext, this) ? 1 : 0;
 				break;
 			case FormulaType.BranchIfNotZero:
-				result = arguments[0].GetValue(fdb, scontext, ccontext, econtext) != 0 ?
-				 	arguments[1].GetValue(fdb, scontext, ccontext, econtext) :
-					arguments[2].GetValue(fdb, scontext, ccontext, econtext);
+				result = arguments[0].GetValue(fdb, scontext, ccontext, tcontext, econtext) != 0 ?
+				 	arguments[1].GetValue(fdb, scontext, ccontext, tcontext, econtext) :
+					arguments[2].GetValue(fdb, scontext, ccontext, tcontext, econtext);
 				break;
 			case FormulaType.BranchApplierSide:
-				result = FacingSwitch(fdb, StatEffectTarget.Applied, scontext, ccontext, econtext);
+				result = FacingSwitch(fdb, StatEffectTarget.Applied, scontext, ccontext, tcontext, econtext);
 				break;
 			case FormulaType.BranchAppliedSide:
-				result = FacingSwitch(fdb, StatEffectTarget.Applier, scontext, ccontext, econtext);
+				result = FacingSwitch(fdb, StatEffectTarget.Applier, scontext, ccontext, tcontext, econtext);
 				break;
 			case FormulaType.BranchPDF:
 				result = -1;
@@ -381,9 +381,9 @@ public class Formula : IFormulaElement {
 				float val = 0;
 				int halfLen = arguments.Count/2;
 				for(int i = 0; i < halfLen; i++) {
-					val += arguments[i].GetValue(fdb, scontext, ccontext, econtext);
+					val += arguments[i].GetValue(fdb, scontext, ccontext, tcontext, econtext);
 					if(val >= rval) {
-						result = arguments[i+halfLen].GetValue(fdb, scontext, ccontext, econtext);
+						result = arguments[i+halfLen].GetValue(fdb, scontext, ccontext, tcontext, econtext);
 						break;
 					}
 				}
@@ -409,14 +409,15 @@ public class Formula : IFormulaElement {
 		StatEffectTarget target,
 		SkillDef scontext,
 		Character ccontext,
+		Character tcontext,
 		Equipment econtext
 	) {
 		if(scontext == null) {
 			Debug.LogError("Relative facing not available for non-attack/reaction skill effects.");
 			return -1;
 		}
-		Character applier = scontext.character;
-		Character applied = scontext.currentTargetCharacter;
+		Character applier = scontext != null ? scontext.character : ccontext;
+		Character applied = scontext != null ? scontext.currentTargetCharacter : tcontext;
 		CharacterPointing pointing = CharacterPointing.Front;
 		Character x = null, y = null;
 		if(target == StatEffectTarget.Applier) {
@@ -455,34 +456,34 @@ public class Formula : IFormulaElement {
 		//front, left, right, back, away, sides, towards, default
 		//must have null entries
 		if(arguments.Count != 8) {
-			Debug.Log("Bad facing switch in skill "+scontext.skillName);
+			Debug.Log("Bad facing switch in skill "+(scontext != null ? scontext.skillName : "none"));
 		}
 		if(pointing == CharacterPointing.Front && arguments[0] != null) {
 			//front
-			return arguments[0].GetValue(fdb, scontext, ccontext, econtext);
+			return arguments[0].GetValue(fdb, scontext, ccontext, tcontext, econtext);
 		} else if(pointing == CharacterPointing.Left && arguments[1] != null) {
 			//left
-			return arguments[1].GetValue(fdb, scontext, ccontext, econtext);
+			return arguments[1].GetValue(fdb, scontext, ccontext, tcontext, econtext);
 		} else if(pointing == CharacterPointing.Right && arguments[2] != null) {
 			//right
-			return arguments[2].GetValue(fdb, scontext, ccontext, econtext);
+			return arguments[2].GetValue(fdb, scontext, ccontext, tcontext, econtext);
 		} else if(pointing == CharacterPointing.Back && arguments[3] != null) {
 			//back
-			return arguments[3].GetValue(fdb, scontext, ccontext, econtext);
+			return arguments[3].GetValue(fdb, scontext, ccontext, tcontext, econtext);
 		} else if(pointing == CharacterPointing.Away && arguments[4] != null) {
 			//away
-			return arguments[4].GetValue(fdb, scontext, ccontext, econtext);
+			return arguments[4].GetValue(fdb, scontext, ccontext, tcontext, econtext);
 		} else if((pointing == CharacterPointing.Left || pointing == CharacterPointing.Right) && arguments[5] != null) {
 			//sides
-			return arguments[5].GetValue(fdb, scontext, ccontext, econtext);
+			return arguments[5].GetValue(fdb, scontext, ccontext, tcontext, econtext);
 		} else if((pointing != CharacterPointing.Away) && arguments[6] != null) {
 			//towards
-			return arguments[6].GetValue(fdb, scontext, ccontext, econtext);
+			return arguments[6].GetValue(fdb, scontext, ccontext, tcontext, econtext);
 		} else if(arguments[7] != null) {
 			//default
-			return arguments[7].GetValue(fdb, scontext, ccontext, econtext);
+			return arguments[7].GetValue(fdb, scontext, ccontext, tcontext, econtext);
 		} else {
-			Debug.LogError("No valid branch for pointing "+pointing+" in skill "+scontext.skillName);
+			Debug.LogError("No valid branch for pointing "+pointing+" in skill "+(scontext != null ? scontext.skillName : "none"));
 			return -1;
 		}
 	}

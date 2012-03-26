@@ -98,14 +98,18 @@ public class Formulae : ScriptableObject {
 
 	public bool CanLookup(
 		string fname, LookupType type,
-		SkillDef scontext=null, Character ccontext=null, Equipment econtext=null,
+		SkillDef scontext=null,
+		Character ccontext=null,
+		Character tcontext=null,
+		Equipment econtext=null,
 		Formula f=null
 	) {
 		switch(type) {
 			case LookupType.Auto:
 				return (econtext != null && econtext.HasParam(fname)) ||
 							 (scontext != null && scontext.HasParam(fname)) ||
-							 (ccontext != null && ccontext.HasStat(fname));
+							 (ccontext != null && ccontext.HasStat(fname)) ||
+ 							 (tcontext != null && tcontext.HasStat(fname));
 			case LookupType.SkillParam:
 				return scontext.HasParam(fname);
 			case LookupType.ActorStat:
@@ -134,13 +138,17 @@ public class Formulae : ScriptableObject {
 				return false;
 			case LookupType.TargetStat:
 				if(scontext != null) { return scontext.currentTargetCharacter.HasStat(fname); }
+				if(tcontext != null) { return tcontext.HasStat(fname); }
 				return false;
 			case LookupType.TargetStatusEffect:
 				if(scontext != null) { return scontext.currentTargetCharacter.HasStatusEffect(fname); }
+				if(tcontext != null) { return tcontext.HasStatusEffect(fname); }
 				return false;
 			case LookupType.TargetEquipmentParam:
 				if(scontext != null) {
 					ccontext = scontext.currentTargetCharacter;
+				} else if(tcontext != null) {
+					ccontext = tcontext;
 				} else {
 					ccontext = null;
 				}
@@ -175,14 +183,18 @@ public class Formulae : ScriptableObject {
 	}
 	public float Lookup(
 		string fname, LookupType type,
-		SkillDef scontext=null, Character ccontext=null, Equipment econtext=null,
+		SkillDef scontext=null,
+		Character ccontext=null,
+		Character tcontext=null,
+		Equipment econtext=null,
 		Formula f=null
 	) {
 		switch(type) {
 			case LookupType.Auto:
 				return (econtext != null ? econtext.GetParam(fname) :
 						 	 (scontext != null ? scontext.GetParam(fname) :
-						   (ccontext != null ? ccontext.GetStat(fname) : -1)));
+						   (ccontext != null ? ccontext.GetStat(fname) :
+							 (tcontext != null ? tcontext.GetStat(fname) : -1))));
 			case LookupType.SkillParam:
 				return scontext.GetParam(fname);
 			case LookupType.ActorStat:
@@ -212,13 +224,14 @@ public class Formulae : ScriptableObject {
 				return -1;
 			case LookupType.TargetStat:
 				if(scontext != null) { return scontext.currentTargetCharacter.GetStat(fname); }
-/*				if(econtext != null) { return econtext.wielder.GetStat(fname); }*/
-/*				if(ccontext != null) { return ccontext.GetStat(fname); }*/
+				if(tcontext != null) { return tcontext.GetStat(fname); }
 				Debug.LogError("Cannot find target stat "+fname);
 				return -1;
 			case LookupType.TargetEquipmentParam:
 				if(scontext != null) {
 					ccontext = scontext.currentTargetCharacter;
+				} else if(tcontext != null) {
+					ccontext = tcontext;
 				} else {
 					ccontext = null;
 				}
@@ -235,7 +248,7 @@ public class Formulae : ScriptableObject {
 					Debug.LogError("Missing formula "+fname);
 					return -1;
 				}
-				return LookupFormula(fname).GetValue(this, scontext, ccontext, econtext);
+				return LookupFormula(fname).GetValue(this, scontext, ccontext, tcontext, econtext);
 			case LookupType.ReactedSkillParam:
 				if(scontext != null) {
 					return scontext.currentReactedSkill.GetParam(fname);

@@ -202,7 +202,7 @@ public class SkillDef : ScriptableObject {
 /*			Debug.Log("using fallback "+fallback+" for "+pname);*/
 			return fallback;
 		}
-		return runtimeParameters[pname].GetValue(fdb, this, null);
+		return runtimeParameters[pname].GetValue(fdb, this);
 	}
 
 	public void SetParam(string pname, float value) {

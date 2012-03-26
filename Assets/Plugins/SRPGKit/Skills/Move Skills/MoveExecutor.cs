@@ -99,7 +99,7 @@ public class MoveExecutor {
 		ClearPath();
 		TriggerCallback(temporaryDestNode);
 	}
-	
+
 	void TriggerCallback(PathNode pn) {
 		if(moveCallback != null) {
 			moveCallback(
@@ -181,8 +181,8 @@ public class MoveExecutor {
 	}
 
 	public Vector3 transformPosition {
-		get { return character.transform.position-transformOffset; }
-		set { character.transform.position = value+transformOffset; }
+		get { return character.WorldPosition-transformOffset; }
+		set { character.WorldPosition = value+transformOffset; }
 	}
 
 	public enum MoveType {

@@ -167,6 +167,37 @@ public class Region {
 		}
 	}
 
+	public bool _canMountEnemies=false;
+	public bool canMountEnemies {
+		get { return _canMountEnemies; }
+		set {
+			_canMountEnemies = value;
+			if(regions == null) { return; }
+			for(int i = 0; i < regions.Length; i++) {
+				if(regions[i] == null) {
+					regions[i] = new Region();
+				}
+				regions[i].canMountEnemies = canMountEnemies;
+			}
+		}
+	}
+
+	public bool _canMountFriends=false;
+	public bool canMountFriends {
+		get { return _canMountFriends; }
+		set {
+			_canMountFriends = value;
+			if(regions == null) { return; }
+			for(int i = 0; i < regions.Length; i++) {
+				if(regions[i] == null) {
+					regions[i] = new Region();
+				}
+				regions[i].canMountFriends = canMountFriends;
+			}
+		}
+	}
+
+
 	public StuckPrevention preventStuckInAir  =StuckPrevention.StopBefore;
 	public StuckPrevention preventStuckInWalls=StuckPrevention.StopBefore;
 
@@ -202,25 +233,25 @@ public class Region {
 	//only used for nways region
 	public Formula nWaysF;
 
-	public float radiusMin { get { return radiusMinF.GetValue(fdb, owner, null, null); } }
-	public float radiusMax { get { return radiusMaxF.GetValue(fdb, owner, null, null); } }
-	public float zUpMin { get { return zUpMinF.GetValue(fdb, owner, null, null); } }
-	public float zUpMax { get { return zUpMaxF.GetValue(fdb, owner, null, null); } }
-	public float zDownMin { get { return zDownMinF.GetValue(fdb, owner, null, null); } }
-	public float zDownMax { get { return zDownMaxF.GetValue(fdb, owner, null, null); } }
-	public float lineWidthMin { get { return lineWidthMinF.GetValue(fdb, owner, null, null); } }
-	public float lineWidthMax { get { return lineWidthMaxF.GetValue(fdb, owner, null, null); } }
+	public float radiusMin { get { return radiusMinF.GetValue(fdb, owner); } }
+	public float radiusMax { get { return radiusMaxF.GetValue(fdb, owner); } }
+	public float zUpMin { get { return zUpMinF.GetValue(fdb, owner); } }
+	public float zUpMax { get { return zUpMaxF.GetValue(fdb, owner); } }
+	public float zDownMin { get { return zDownMinF.GetValue(fdb, owner); } }
+	public float zDownMax { get { return zDownMaxF.GetValue(fdb, owner); } }
+	public float lineWidthMin { get { return lineWidthMinF.GetValue(fdb, owner); } }
+	public float lineWidthMax { get { return lineWidthMaxF.GetValue(fdb, owner); } }
 
-	public float xyDirection { get { return xyDirectionF.GetValue(fdb, owner, null, null); } }
-	public float zDirection { get { return zDirectionF.GetValue(fdb, owner, null, null); } }
-	public float xyArcMin { get { return xyArcMinF.GetValue(fdb, owner, null, null); } }
-	public float zArcMin { get { return zArcMinF.GetValue(fdb, owner, null, null); } }
-	public float xyArcMax { get { return xyArcMaxF.GetValue(fdb, owner, null, null); } }
-	public float zArcMax { get { return zArcMaxF.GetValue(fdb, owner, null, null); } }
+	public float xyDirection { get { return xyDirectionF.GetValue(fdb, owner); } }
+	public float zDirection { get { return zDirectionF.GetValue(fdb, owner); } }
+	public float xyArcMin { get { return xyArcMinF.GetValue(fdb, owner); } }
+	public float zArcMin { get { return zArcMinF.GetValue(fdb, owner); } }
+	public float xyArcMax { get { return xyArcMaxF.GetValue(fdb, owner); } }
+	public float zArcMax { get { return zArcMaxF.GetValue(fdb, owner); } }
 
-	public float rFwdClipMax { get { return rFwdClipMaxF.GetValue(fdb, owner, null, null); } }
+	public float rFwdClipMax { get { return rFwdClipMaxF.GetValue(fdb, owner); } }
 
-	public float nWays { get { return nWaysF.GetValue(fdb, owner, null, null); } }
+	public float nWays { get { return nWaysF.GetValue(fdb, owner); } }
 
 	protected Map map { get { return owner.map; } }
 
@@ -332,12 +363,12 @@ public class Region {
 		if(c != null && c != owner.character) {
 			if(c.EffectiveTeamID != owner.character.EffectiveTeamID) {
 				if(canCrossEnemies) {
-					return (IsEffectRegion||canHaltAtEnemies||canTargetEnemies) ? PathDecision.Normal : PathDecision.PassOnly;
+					return (IsEffectRegion||canHaltAtEnemies||canTargetEnemies||(canMountEnemies && c.IsMountableBy(owner.character) && owner.character.CanMount(c))) ? PathDecision.Normal : PathDecision.PassOnly;
 				} else {
-					return canHaltAtEnemies||canTargetEnemies ? PathDecision.Normal : PathDecision.Invalid;
+					return canHaltAtEnemies||canTargetEnemies||(canMountEnemies && c.IsMountableBy(owner.character) && owner.character.CanMount(c)) ? PathDecision.Normal : PathDecision.Invalid;
 				}
 			} else {
-				if(!(IsEffectRegion||canHaltAtEnemies||canTargetEnemies)) {
+				if(!(IsEffectRegion||canHaltAtEnemies||canTargetEnemies||(canMountEnemies && c.IsMountableBy(owner.character) && owner.character.CanMount(c)))) {
 					return PathDecision.PassOnly;
 				}
 			}
@@ -816,9 +847,9 @@ public class Region {
 				if(c == owner.character) {
 					return canTargetSelf;
 				} else if(c.EffectiveTeamID == owner.character.EffectiveTeamID) {
-					return canTargetFriends;
+					return canTargetFriends || (canMountFriends && c.IsMountableBy(owner.character) && owner.character.CanMount(c));
 				} else {
-					return canTargetEnemies;
+					return canTargetEnemies || (canMountEnemies && c.IsMountableBy(owner.character) && owner.character.CanMount(c));
 				}
 			}
 			return true;
@@ -884,11 +915,18 @@ public class Region {
 		List<Character> targets = new List<Character>();
 		foreach(PathNode pn in tiles) {
 			Character c = map.CharacterAt(pn.pos);
-			if(c != null &&
-			  !((!canTargetEnemies && c.EffectiveTeamID != owner.character.EffectiveTeamID) ||
-			    (!canTargetFriends && c.EffectiveTeamID == owner.character.EffectiveTeamID) ||
-			    (!canTargetSelf && c == owner.character))) {
-				targets.Add(c);
+			if(c != null) {
+				if((canTargetEnemies || (canMountEnemies && c.IsMountableBy(owner.character) && owner.character.CanMount(c))) &&
+				   c.EffectiveTeamID != owner.character.EffectiveTeamID) {
+					targets.Add(c);
+				}
+				if((canTargetFriends || (canMountFriends && c.IsMountableBy(owner.character) && owner.character.CanMount(c))) &&
+				   c.EffectiveTeamID == owner.character.EffectiveTeamID) {
+					targets.Add(c);
+				}
+				if(canTargetSelf && c == owner.character) {
+					targets.Add(c);
+				}
 			}
 		}
 		return targets;
@@ -898,11 +936,11 @@ public class Region {
 		PathNode cur = p;
 		PathNode lastEnd = p;
 		int tries = 0;
-		Color c = Color.red;
+		Color red = Color.red;
 		while(cur != null) {
 			// Debug.Log("cur:"+cur);
 			if(cur.prev != null) {
-				Debug.DrawLine(map.TransformPointWorld(cur.pos), map.TransformPointWorld(cur.prev.pos), c, 1.0f, false);
+				Debug.DrawLine(map.TransformPointWorld(cur.pos), map.TransformPointWorld(cur.prev.pos), red, 1.0f, false);
 			}
 			if(cur.isWall && !canCrossWalls) {
 				lastEnd = cur.prev;
@@ -910,7 +948,8 @@ public class Region {
 			}
 			//FIXME: what about friendlies?
 			if(cur.isEnemy && !canCrossEnemies) {
-				if(canHaltAtEnemies) {
+				Character c = map.CharacterAt(cur.pos);
+				if(canHaltAtEnemies || (canMountEnemies && Owner.character.CanMount(c) && c.IsMountableBy(Owner.character))) {
 					lastEnd = cur;
 					// Debug.Log("block on top of enemy "+cur.pos);
 				} else {
@@ -988,7 +1027,9 @@ public class Region {
   						canJumpNoFurther = true;
   						break;
   					}
-						if(!canHaltAtEnemies) {
+						Character c = map.CharacterAt(jumpPn.pos);
+						if(!(canHaltAtEnemies ||
+						    (canMountEnemies && Owner.character.CanMount(c) && c.IsMountableBy(Owner.character)))) {
 	  					continue;
 						}
   				}
@@ -1113,14 +1154,15 @@ public class Region {
 					}
 					float addedCost = Mathf.Abs(n2.x)+Mathf.Abs(n2.y)-0.01f*(Mathf.Max(zUpMax, zDownMax)-Mathf.Abs(pn.pos.z-adjZ)); //-0.3f because we are not a leap
 					next.isWall = map.TileAt(pos+new Vector3(0,0,1)) != null;
-					next.isEnemy = map.CharacterAt(pos) != null && map.CharacterAt(pos).EffectiveTeamID != owner.character.EffectiveTeamID;
+					Character c = map.CharacterAt(pos);
+					next.isEnemy = c != null && c.EffectiveTeamID != owner.character.EffectiveTeamID;
 					next.distance = pn.distance+addedCost;
 					next.prev = pn;
 					if(!provideAllTiles && next.isWall && !canCrossWalls) {
 						continue;
 					}
 					//FIXME: what about friendlies?
-					if(!provideAllTiles && next.isEnemy && !canCrossEnemies && !canHaltAtEnemies) {
+					if(!provideAllTiles && next.isEnemy && !canCrossEnemies && !canHaltAtEnemies && !(canMountEnemies && c.IsMountableBy(owner.character) && owner.character.CanMount(c))) {
 						continue;
 					}
 					queue.Enqueue(next.distance+Mathf.Abs(pos.x-dest.x)+Mathf.Abs(pos.y-dest.y)+Mathf.Abs(pos.z-dest.z), next);
@@ -1463,7 +1505,8 @@ public class Region {
 					break;
 				}
 				//FIXME: what about friendlies?
-				if(herePn.isEnemy && !canCrossEnemies && !canHaltAtEnemies && !provideAllTiles) {
+				Character c = map.CharacterAt(herePn.pos);
+				if(herePn.isEnemy && !canCrossEnemies && !canHaltAtEnemies && !provideAllTiles && !(canMountEnemies && c.IsMountableBy(owner.character) && owner.character.CanMount(c))) {
 					//don't add this node and break now
 					break;
 				}
@@ -1528,12 +1571,13 @@ public class Region {
 				break;
 			}
 			//FIXME: what about friendlies?
-			if(pn.isEnemy && !canCrossEnemies && !canHaltAtEnemies && !provideAllTiles) {
+			Character c = map.CharacterAt(pn.pos);
+			if(pn.isEnemy && !canCrossEnemies && !canHaltAtEnemies && !provideAllTiles && !(canMountEnemies && c.IsMountableBy(owner.character) && owner.character.CanMount(c))) {
 				//no good!
 //				if(pos.x==1&&pos.y==0&&pos.z==0) Debug.Log("enemy, can't cross, can't halt at testpos "+testPos);
 				break;
 			}
-			if(pn.prev != null && pn.prev.isEnemy && !canCrossEnemies && !provideAllTiles) {
+			if(pn.prev != null && pn.prev.isEnemy && !canCrossEnemies && !provideAllTiles && !(canMountEnemies && c.IsMountableBy(owner.character) && owner.character.CanMount(c))) {
 				//no good!
 //				if(pos.x==1&&pos.y==0&&pos.z==0) Debug.Log("halted already at testpos "+testPos);
 				break;

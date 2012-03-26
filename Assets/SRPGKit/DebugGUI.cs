@@ -247,7 +247,7 @@ public class DebugGUI : MonoBehaviour {
 		if(ac != null) {
 			if(map == null) { map = transform.parent.GetComponent<Map>(); }
 			MoveSkillDef ms = ac.moveSkill;
-			if(ms.isActive && ms != null) {
+			if(ms != null && ms.isActive) {
 				if(a.IsLocalTeam(ac.EffectiveTeamID)) {
 					MoveExecutor me = ms.Executor;
 					if(!me.IsMoving) {

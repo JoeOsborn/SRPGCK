@@ -39,7 +39,7 @@ public class TargetSettings {
 	public bool immediatelyExecuteDrawnPath=false;
 	public Formula rotationSpeedXYF;
 	public float rotationSpeedXY { get {
-		return rotationSpeedXYF.GetValue(fdb, owner, null, null);
+		return rotationSpeedXYF.GetValue(fdb, owner);
 	} }
 
 	public bool IsPickOrPath { get {

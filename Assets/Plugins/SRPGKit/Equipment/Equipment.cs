@@ -59,7 +59,7 @@ public class Equipment : MonoBehaviour {
 	public float GetParam(string pname) {
 		MakeParametersIfNecessary();
 		FindWielder();
-		return runtimeParameters[pname].GetValue(fdb, null, null, this);
+		return runtimeParameters[pname].GetValue(fdb, null, null, null, this);
 	}
 	
 	public void EquipOn(Character c, int[] slots) {

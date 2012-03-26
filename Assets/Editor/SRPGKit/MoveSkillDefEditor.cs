@@ -29,6 +29,7 @@ public class MoveSkillDefEditor : ActionSkillDefEditor {
 	protected void MoveSkillGUI() {
 		if((showAnimation = EditorGUILayout.Foldout(showAnimation, "Animation"))) {
 			EditorGUI.indentLevel++;
+			ms.remainMounted = EditorGUILayout.Toggle("Remain Mounted On Move", ms.remainMounted);
 			ms.XYSpeed = EditorGUILayout.FloatField("XY Speed", ms.XYSpeed);
 			ms.ZSpeedUp = EditorGUILayout.FloatField("Z Speed Up", ms.ZSpeedUp);
 			ms.ZSpeedDown = EditorGUILayout.FloatField("Z Speed Down", ms.ZSpeedDown);
