@@ -475,6 +475,10 @@ public class Character : MonoBehaviour {
 			return TilePosition.y;
 		} else if(statName == "position.z") {
 			return TilePosition.z;
+		} else if(statName == "isMounted") {
+			return IsMounted ? 1 : 0;
+		} else if(statName == "isMounting") {
+			return IsMounting ? 1 : 0;
 		}
 		if(!HasStat(statName)) {
 			if(fallback == -1) {
@@ -516,6 +520,12 @@ public class Character : MonoBehaviour {
 		} else if(statName == "position.z") {
 			Debug.LogError("Setting position.z from stat effect not currently supported");
 			return TilePosition.z;
+		} else if(statName == "isMounted") {
+			Debug.LogError("Setting isMounted from stat effect not currently supported");
+			return IsMounted ? 1 : 0;
+		} else if(statName == "isMounting") {
+			Debug.LogError("Setting isMounting from stat effect not currently supported");
+			return IsMounting ? 1 : 0;
 		}
 		if(!HasStat(statName)) {
 			runtimeStats[statName] = new Parameter(statName, Formula.Constant(amt));

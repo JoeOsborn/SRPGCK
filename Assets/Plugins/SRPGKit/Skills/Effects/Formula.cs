@@ -152,6 +152,21 @@ public class Formula : IFormulaElement {
 		f.text = ""+c;
 		return f;
 	}
+	public static Formula True() {
+		Formula f = new Formula();
+		f.formulaType = FormulaType.Constant;
+		f.constantValue = 1;
+		f.text = "true";
+		return f;
+	}
+	public static Formula False() {
+		Formula f = new Formula();
+		f.formulaType = FormulaType.Constant;
+		f.constantValue = 0;
+		f.text = "false";
+		return f;
+	}
+	
 	public static Formula Lookup(string n, LookupType type=LookupType.Auto) {
 		Formula f = new Formula();
 		f.formulaType = FormulaType.Lookup;

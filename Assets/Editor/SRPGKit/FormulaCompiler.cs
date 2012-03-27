@@ -121,12 +121,12 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 		Builtin("exists", 1, 1, LookupSuccessful);
 
 		LookupOn("true", (parser) => {
-			Formula f = Formula.Constant(1);
+			Formula f = Formula.True();
 			return f;
 		});
 
 		LookupOn("false", (parser) => {
-			Formula f = Formula.Constant(0);
+			Formula f = Formula.False();
 			return f;
 		});
 

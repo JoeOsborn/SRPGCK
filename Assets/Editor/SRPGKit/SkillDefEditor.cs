@@ -39,6 +39,13 @@ public class SkillDefEditor : SRPGCKEditor {
 
 	protected void BasicSkillGUI() {
 		CoreSkillGUI();
+		s.isEnabledF = EditorGUIExt.FormulaField(
+			"Is Enabled",
+			s.isEnabledF,
+			s.skillName+".isEnabledF",
+			formulaOptions,
+			lastFocusedControl
+		);
 		s.replacesSkill = EditorGUILayout.
 			Toggle("Replaces Skill", s.replacesSkill);
 		if(s.replacesSkill) {

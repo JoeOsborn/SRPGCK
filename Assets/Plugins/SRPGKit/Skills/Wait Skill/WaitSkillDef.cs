@@ -44,6 +44,8 @@ public class WaitSkillDef : ActionSkillDef {
 	protected override void ResetSkill() {
 		skillName = "Wait";
 		skillSorting = 100000;
+		isEnabledF = Formula.True();
+		reallyDefined = true;
 	}
 
 	public override void ActivateSkill() {

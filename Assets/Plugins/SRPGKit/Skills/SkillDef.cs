@@ -17,6 +17,11 @@ public class SkillDef : ScriptableObject {
 
 	public List<Parameter> parameters;
 
+	public Formula isEnabledF;
+	public bool IsEnabled { get {
+		return Owner != null && (isEnabledF != null ? isEnabledF.GetValue(fdb, this) != 0 : true);
+	} }
+
 	//reaction
 	public bool reactionSkill=false;
 	public string[] reactionTypesApplied, reactionTypesApplier;
@@ -90,10 +95,11 @@ public class SkillDef : ScriptableObject {
 		DeactivateSkill();
 	}
 	protected virtual void ResetSkill() {
-
+		isEnabledF = Formula.True();
 	}
 	public virtual void Reset() {
 		ResetSkill();
+		reallyDefined = true;
 	}
 	public virtual void ApplySkill() {
 		map.BroadcastMessage("SkillApplied", this, SendMessageOptions.DontRequireReceiver);

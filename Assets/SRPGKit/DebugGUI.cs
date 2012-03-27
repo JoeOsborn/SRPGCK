@@ -113,7 +113,7 @@ public class DebugGUI : MonoBehaviour {
 	}
 
 	bool IsSkillEnabled(SkillDef s) {
-		return (!(s is MoveSkillDef) || (permitMultipleMoves || !activeCharacterHasMoved)) &&
+		return s.IsEnabled && (!(s is MoveSkillDef) || (permitMultipleMoves || !activeCharacterHasMoved)) &&
 	  (((s is MoveSkillDef) || (s is WaitSkillDef)) || (permitMultipleActions || !activeCharacterHasActed));
 	}
 
