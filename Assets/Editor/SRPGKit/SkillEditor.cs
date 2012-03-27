@@ -45,6 +45,7 @@ public class SkillEditor : SRPGCKEditor {
 		);
 		CopyFieldsTo<Skill, SkillDef>(s, def);
 		s.def = def;
+		s.def.isEnabledF = Formula.True();
 	}
 }
 
