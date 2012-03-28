@@ -138,9 +138,11 @@ public class GridOverlay : Overlay {
 	protected void OnDestroy() {
 		if(overlayTex != null) {
 			Destroy(overlayTex);
+			overlayTex = null;
 		}
 		if(indicatorTex != null) {
 			Destroy(indicatorTex);
+			indicatorTex = null;
 		}
 	}
 }
