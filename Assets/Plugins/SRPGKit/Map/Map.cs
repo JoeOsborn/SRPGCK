@@ -1083,6 +1083,9 @@ void Awake() {
 	public Character CharacterAt(Vector3 tc) {
 		return CharactersAt(tc).FirstOrDefault();
 	}
+	public Character TargetableCharacterAt(Vector3 tc) {
+		return CharactersAt(tc).Where(c => c.IsTargetable).FirstOrDefault();
+	}
 	public Character OtherCharacterAt(Character c, Vector3 tc) {
 		return CharactersAt(tc).Where(c2 => c2 != c).FirstOrDefault();
 	}

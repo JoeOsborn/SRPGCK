@@ -770,7 +770,7 @@ public class ActionSkillDef : SkillDef {
 			case TargetingMode.Pick:
 			case TargetingMode.Path:
 				Vector3 pos = currentTarget.Position;
-				Character c = map.CharacterAt(pos);
+				Character c = map.TargetableCharacterAt(pos);
 				if(c != null) {
 					targetCharacters = new List<Character>(){c};
 				} else {
@@ -954,7 +954,7 @@ public class ActionSkillDef : SkillDef {
 	protected virtual void ResetToInitialPositionCustom() {}
 
 	public void TentativePick(Vector3 p) {
-		Character c = map.CharacterAt(p);
+		Character c = map.TargetableCharacterAt(p);
 		currentTarget.Path(p).Character(c);
 		float angle = TargetFacing.eulerAngles.y;
 		Vector3 ep = EffectPosition;
@@ -976,7 +976,7 @@ public class ActionSkillDef : SkillDef {
 	}
 
 	public void TentativePick(PathNode pn) {
-		Character c = map.CharacterAt(pn.pos);
+		Character c = map.TargetableCharacterAt(pn.pos);
 		currentTarget.Path(pn).Character(c);
 		float angle = TargetFacing.eulerAngles.y;
 		Vector3 ep = EffectPosition;
@@ -1002,13 +1002,13 @@ public class ActionSkillDef : SkillDef {
 	}
 
 	public virtual void Pick(Vector3 p) {
-		Character c = map.CharacterAt(p);
+		Character c = map.TargetableCharacterAt(p);
 		currentTarget.Path(p).Character(c);
 		PushTarget();
 	}
 
 	public virtual void Pick(PathNode pn) {
-		Character c = map.CharacterAt(pn.pos);
+		Character c = map.TargetableCharacterAt(pn.pos);
 		currentTarget.Path(pn).Character(c);
 		PushTarget();
 	}

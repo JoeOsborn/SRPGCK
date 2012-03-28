@@ -255,7 +255,7 @@ public class SkillDef : ScriptableObject {
 		SetParam("arg.pos.x", ctp.x);
 		SetParam("arg.pos.y", ctp.y);
 		SetParam("arg.pos.z", ctp.z);
-		Character t = map.CharacterAt(ttp);
+		Character t = map.TargetableCharacterAt(ttp);
 		SetParam("arg.sameTeam", t != null && t.TeamID == character.TeamID ? 1 : 0);
 		SetParam("arg.otherTeam", t != null && t.TeamID != character.TeamID ? 1 : 0);
 		SetParam("arg.isAlly", t != null && t.EffectiveTeamID == character.EffectiveTeamID ? 1 : 0);

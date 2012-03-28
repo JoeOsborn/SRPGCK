@@ -13,7 +13,7 @@ public class CharacterEditor : SRPGCKEditor {
 	string[] skipStats;
   public override void OnEnable() {
 		c = target as Character;
-		skipStats = new string[]{"team", "facing"};
+		skipStats = new string[]{"team", "facing", "isTargetable"};
 		fdb = c.fdb;
 		base.OnEnable();
 		name = "Character";
@@ -55,7 +55,7 @@ public class CharacterEditor : SRPGCKEditor {
 		c.canMountF =
 			EditorGUIExt.FormulaField(
 				"Can Mount (t.)",
-				c.canMountF ?? Formula.Constant(0),
+				c.canMountF ?? Formula.True(),
 				"character.canMount.param",
 				formulaOptions,
 				lastFocusedControl,
@@ -65,12 +65,23 @@ public class CharacterEditor : SRPGCKEditor {
 		c.isMountableF =
 			EditorGUIExt.FormulaField(
 				"Mountable By (t.)",
-				c.isMountableF ?? Formula.Constant(0),
+				c.isMountableF ?? Formula.False(),
 				"character.isMountable.param",
 				formulaOptions,
 				lastFocusedControl,
 				0
 			);
+
+		c.EditorSetBaseStat("isTargetable",
+			EditorGUIExt.FormulaField(
+				"Is Targetable",
+				c.EditorGetBaseStat("isTargetable") ?? Formula.True(),
+				"character.isTargetable.param",
+				formulaOptions,
+				lastFocusedControl,
+				0
+			)
+		);
 
 		c.stats = EditorGUIExt.ParameterFoldout(
 			"Statistic",

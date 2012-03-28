@@ -51,6 +51,13 @@ public class Character : MonoBehaviour {
 			false;
 	}
 
+	public bool IsTargetable { get {
+		return (GetStat("isTargetable", 1) != 0) ||
+			(mountedCharacter != null && mountedCharacter.GetStat("isTargetable", 1) != 0) ||
+			(mountingCharacter != null && mountingCharacter.GetStat("isTargetable", 1) != 0);
+	} }
+
+
 	public void Mount(Character mount) {
 		mountedCharacter = mount;
 		mountedCharacter.Mounted(this);
@@ -255,10 +262,14 @@ public class Character : MonoBehaviour {
 						SendMessageOptions.DontRequireReceiver
 					);
 					specialMoveExecutor.Deactivate();
-					var chars = map.CharactersAt(endNode.pos).
-						Where(c => c != this && !c.IsMounting).
-						ToArray();
-					if(chars.Length > 0) {
+					var allChars = map.CharactersAt(endNode.pos);
+					var otherChars = allChars.Where(c => c != this && c != mountedCharacter).ToArray();
+					Character[] chars = null;
+					if(otherChars.Length > 0) {
+						//try to fix myself
+						chars = new Character[]{IsMounting ? mountedCharacter : this};
+					}
+					if(chars != null && chars.Length > 0) {
 					//if any collisions left over between me and somebody else...
 						Debug.Log("fix collisions");
 						bool success = false;
@@ -314,9 +325,12 @@ public class Character : MonoBehaviour {
 		const int tryLimit = 20;
 		do {
 			pn = lineMove.GetNextLineMovePosition(this, pn, direction, 1, 1, 0);
+			//hack: slide on through untargetable characters
 			if(pn != null) {
-				var nextChars = map.CharactersAt(pn.pos).Where(c => !c.IsMounting).ToArray();
-				if(nextChars.Length == 0) {
+				var hereChars = map.CharactersAt(pn.pos);
+				var nextChars = hereChars.Where(c => !c.IsMounting && c.IsTargetable).ToArray();
+				//don't push people onto a tile with untargetable characters
+				if(nextChars.Length == 0 && hereChars.Where(c => !c.IsTargetable).Count() == 0) {
 					success = true;
 				} else {
 					shoveChars.AddRange(nextChars);
@@ -546,7 +560,6 @@ public class Character : MonoBehaviour {
 	public float GetStat(string statName, float fallback=-1) {
 		float stat = GetBaseStat(statName, fallback);
 		Parameter p = GetStatParam(statName);
-/*		Debug.Log("base "+statName+":"+stat);*/
 		foreach(Equipment e in Equipment) {
 			foreach(StatEffect se in e.passiveEffects) {
 				if(se.statName == statName) {
