@@ -4,24 +4,6 @@ using System.Linq;
 
 [AddComponentMenu("SRPGCK/Character/Skill")]
 public class Skill : MonoBehaviour {
-	//def properties, remove after upgrading
-	public string skillName;
-	public string skillGroup = "";
-	public int skillSorting = 0;
-	public bool replacesSkill = false;
-	public string replacedSkill = "";
-	public int replacementPriority=0;
-	public bool deactivatesOnApplication=true;
-	public StatEffect[] passiveEffects;
-	public List<Parameter> parameters;
-	public bool reactionSkill=false;
-	public string[] reactionTypesApplied, reactionTypesApplier;
-	public StatChange[] reactionStatChangesApplied, reactionStatChangesApplier;
-	public Region reactionTargetRegion, reactionEffectRegion;
-	public StatEffectGroup[] reactionEffects;
-	public StatEffectGroup reactionApplicationEffects;
-	//end def properties
-
 	public SkillDef def;
 	protected ActionSkillDef actionDef { get { return def as ActionSkillDef; } }
 	protected MoveSkillDef moveDef { get { return def as MoveSkillDef; } }

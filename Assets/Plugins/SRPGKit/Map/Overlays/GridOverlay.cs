@@ -6,15 +6,15 @@ public class GridOverlay : Overlay {
 	public Vector4[] positions;
 	public PathNode[] destinations;
 	public Color selectedColor;
-	
+
 	protected Material selectedHighlightMaterial;
-	
+
 	public Vector4[] selectedPoints;
-	
+
 	Texture2D indicatorTex, overlayTex;
-	
+
 	Color32[] blank;
-	
+
 	// Update is called once per frame
 	override public void Update() {
 		base.Update();
@@ -31,15 +31,15 @@ public class GridOverlay : Overlay {
 		destinations = dests;
 		positions = map.CoalesceTiles(destinations);
 		overlayTex = BoundsTextureFor(overlayTex, positions);
-		shadeMaterial.SetTexture("_Boxes", overlayTex);	
+		shadeMaterial.SetTexture("_Boxes", overlayTex);
 		//SetSelectedPoints(selectedPoints);
 	}
 	protected Texture2D BoundsTextureFor(Texture2D inTex, Vector4[] points) {
 		if(points == null) { points = new Vector4[0]; }
 		int mw = Mathf.NextPowerOfTwo((int)map.size.x);
 		int mh = Mathf.NextPowerOfTwo((int)map.size.y);
-		Texture2D boxTex = (inTex != null && inTex.width == mw && inTex.height == mh) ? 
-			inTex : 
+		Texture2D boxTex = (inTex != null && inTex.width == mw && inTex.height == mh) ?
+			inTex :
 			new Texture2D(
 				mw, mh,
 				TextureFormat.ARGB32, false
@@ -108,12 +108,12 @@ public class GridOverlay : Overlay {
 			selectedHighlightMaterial.SetTexture("_Boxes", indicatorTex);
 /*		}*/
 	}
-	
+
 	override protected void AddShadeMaterial() {
 		MeshRenderer mr = this.gameObject.AddComponent<MeshRenderer>();
 		mr.materials = new Material[]{ shadeMaterial, selectedHighlightMaterial };
 	}
-	
+
 	override public PathNode PositionAt(Vector3 hitSpot) {
 		const float ZEpsilon = 0.0015f;
 		if(positions == null) { return null; }
@@ -132,6 +132,15 @@ public class GridOverlay : Overlay {
 				}
 			}
 		}
-		return null;	
+		return null;
+	}
+
+	protected void OnDestroy() {
+		if(overlayTex != null) {
+			Destroy(overlayTex);
+		}
+		if(indicatorTex != null) {
+			Destroy(indicatorTex);
+		}
 	}
 }

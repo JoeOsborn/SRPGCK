@@ -224,6 +224,9 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 			//we have left, now start chewing up the things to the right
 			// Debug.Log("dot left of "+parser.Token);
 			Formula f = CheckFormulaArg(left);
+			if(f.formulaType != FormulaType.Lookup) {
+				throw new SemanticException("`.` only valid in lookup");
+			}
 			do {
 				//definitely want just the next token
 				// var oldRight = parser.Token;
@@ -235,54 +238,55 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 				Identifier ident = next as Identifier;
 				if(next is Formula) {
 					Formula nextF = next as Formula;
-					if(nextF.formulaType == FormulaType.Lookup) {
-						if(nextF.lookupType == LookupType.SkillEffectType ||
-							 nextF.lookupType == LookupType.ReactedEffectType) {
-						  if(f.formulaType == FormulaType.Lookup) {
-	 							if(f.lookupType == LookupType.SkillParam) {
-	 								nextF.lookupType = LookupType.SkillEffectType;
-	 							} else if(f.lookupType == LookupType.ReactedSkillParam) {
-	 								nextF.lookupType = LookupType.ReactedEffectType;
-	 							}
-	 							f = nextF;
+					if(nextF.lookupType == LookupType.SkillEffectType ||
+						 nextF.lookupType == LookupType.ReactedEffectType) {
+					  if(f.formulaType == FormulaType.Lookup) {
+ 							if(f.lookupType == LookupType.SkillParam) {
+ 								nextF.lookupType = LookupType.SkillEffectType;
+ 							} else if(f.lookupType == LookupType.ReactedSkillParam) {
+ 								nextF.lookupType = LookupType.ReactedEffectType;
+ 							}
+ 							f = nextF;
+						}
+					} else if(nextF.lookupType == LookupType.ActorEquipmentParam ||
+						        nextF.lookupType == LookupType.ReactedSkillParam) {
+						if(f.formulaType == FormulaType.Lookup) {
+							if(f.lookupType == LookupType.ActorStat) {
+								nextF.lookupType = LookupType.ActorEquipmentParam;
+							} else if(f.lookupType == LookupType.TargetStat) {
+								nextF.lookupType = LookupType.TargetEquipmentParam;
 							}
-						} else if(nextF.lookupType == LookupType.ActorEquipmentParam ||
-							        nextF.lookupType == LookupType.ReactedSkillParam) {
-							if(f.formulaType == FormulaType.Lookup) {
-								if(f.lookupType == LookupType.ActorStat) {
-									nextF.lookupType = LookupType.ActorEquipmentParam;
-								} else if(f.lookupType == LookupType.TargetStat) {
-									nextF.lookupType = LookupType.TargetEquipmentParam;
-								}
-								f = nextF;
-							}
-		        }
-					}
+							f = nextF;
+						}
+	        }
 				} else if(ident != null && ident.Name == "reacted-skill") {
 					throw new SemanticException("Scoped reacted-skill param lookups unsupported");
 				} else if(ident != null && ident.Name == "skill") {
 					//prev = c, t
-					if(f.formulaType == FormulaType.Lookup) {
-						if(f.lookupType == LookupType.ActorStat) {
-							f.lookupType = LookupType.ActorSkillParam;
-						} else if(f.lookupType == LookupType.TargetStat) {
-							f.lookupType = LookupType.TargetSkillParam;
-						}
+					if(f.lookupType == LookupType.ActorStat) {
+						f.lookupType = LookupType.ActorSkillParam;
+					} else if(f.lookupType == LookupType.TargetStat) {
+						f.lookupType = LookupType.TargetSkillParam;
 					}
 				} else if(ident != null && ident.Name == "status") {
-					if(f.formulaType == FormulaType.Lookup) {
-						if(f.lookupType == LookupType.ActorStat) {
-							f.lookupType = LookupType.ActorStatusEffect;
-						} else if(f.lookupType == LookupType.TargetStat) {
-							f.lookupType = LookupType.TargetStatusEffect;
-						}
+					if(f.lookupType == LookupType.ActorStat) {
+						f.lookupType = LookupType.ActorStatusEffect;
+					} else if(f.lookupType == LookupType.TargetStat) {
+						f.lookupType = LookupType.TargetStatusEffect;
 					}
 				} else if(ident != null) {
-					//is lookupRef null or ""?
-					//set lookupref
 					//else, append to lookupref
-					if(f.formulaType == FormulaType.Lookup) {
+					if(ident.Name == "isNull" || ident.Name == "isNotNull") {
+						if((f.lookupReference == null || f.lookupReference == "") && 
+						    f.lookupType == LookupType.TargetStat) {
+							f.formulaType = ident.Name == "isNull" ? FormulaType.TargetIsNull : FormulaType.TargetIsNotNull;
+						} else {
+							throw new SemanticException("nullity checks only supported for `t.`");
+						}
+					} else {
+						//is lookupRef null or ""?
 						if(f.lookupReference == null || f.lookupReference == "") {
+							//set lookupref
 							f.lookupReference = ident.Name;
 						} else {
 							f.lookupReference += "."+ident.Name;

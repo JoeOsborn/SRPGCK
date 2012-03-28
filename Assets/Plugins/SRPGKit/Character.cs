@@ -133,6 +133,9 @@ public class Character : MonoBehaviour {
 	public int EffectiveTeamID { get {
 		return (int)GetStat("team", teamID);
 	} }
+	public int TeamID { get {
+		return (int)GetBaseStat("team", teamID);
+	} }
 
 	public Vector3 TilePosition { get {
 		return map == null ?

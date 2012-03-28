@@ -11,7 +11,7 @@ public class WaitSkillEditor : SkillEditor {
 	protected override void ConvertSkill() {
 		EnsurePath("Assets/SRPGCK Data/Skills/Wait");
 		WaitSkillDef def = ScriptableObjectUtility.CreateAsset<WaitSkillDef>(
-			s.skillName,
+			null,//s.skillName,
 			"Assets/SRPGCK Data/Skills/Wait",
 			false
 		);

@@ -11,7 +11,7 @@ public class ActionSkillEditor : SkillEditor {
 	protected override void ConvertSkill() {
 		EnsurePath("Assets/SRPGCK Data/Skills/Action");
 		ActionSkillDef def = ScriptableObjectUtility.CreateAsset<ActionSkillDef>(
-			s.skillName,
+			null,//s.skillName,
 			"Assets/SRPGCK Data/Skills/Action",
 			false
 		);

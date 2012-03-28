@@ -725,12 +725,25 @@ public class EditorGUIExt
 			newReg.useArcRangeBonus = false;
 		}
 		string prefix = type+".region.";
+		//predicateF
+		if(newReg.predicateF == null ||
+			 (newReg.predicateF.formulaType == FormulaType.Constant &&
+			  newReg.predicateF.constantValue == 0)) {
+			newReg.predicateF = Formula.True();
+		}
+	 	newReg.predicateF = EditorGUIExt.FormulaField(
+			"Predicate",
+			newReg.predicateF,
+			prefix+"predicateF",
+			formulaOptions,
+			lastFocusedControl
+		);
+		//TODO: info box with available bindings?
 		if(newReg.type == RegionType.Cylinder ||
 			 newReg.type == RegionType.Sphere   ||
 			 newReg.type == RegionType.Cone     ||
 			 newReg.type == RegionType.Line     ||
-			 newReg.type == RegionType.LineMove ||
-			 newReg.type == RegionType.Predicate) {
+			 newReg.type == RegionType.LineMove) {
 			//radius min, radius max
 			if(newReg.type != RegionType.LineMove) {
 			 	newReg.radiusMinF = EditorGUIExt.FormulaField(
@@ -870,21 +883,15 @@ public class EditorGUIExt
 				lastFocusedControl
 			);
 		}
-		if(newReg.type == RegionType.Predicate) {
-			//predicateF
-		 	newReg.predicateF = EditorGUIExt.FormulaField(
-				"Predicate",
-				newReg.predicateF,
-				prefix+"predicateF",
-				formulaOptions,
-				lastFocusedControl
-			);
-			//TODO: info box with available bindings?
-		}
 		if(newReg.type == RegionType.Compound || newReg.type == RegionType.NWay) {
 			//regions, but without UI for intervening space, cross/halt walls/enemies
 			//size
 			if(newReg.type == RegionType.NWay) {
+				if(newReg.nWaysF == null ||
+					 (newReg.nWaysF.formulaType == FormulaType.Constant &&
+					  newReg.nWaysF.constantValue == 0)) {
+					newReg.nWaysF = Formula.Constant(1);
+				}
 			 	newReg.nWaysF = EditorGUIExt.FormulaField(
 					"Number of Ways",
 					newReg.nWaysF,
@@ -957,9 +964,8 @@ public class EditorGUIExt
 				new GUIContent("Line Move", EditorGUIUtility.LoadRequired("rgn-linemove.png") as Texture),
 				new GUIContent("Cone", EditorGUIUtility.LoadRequired("rgn-cone.png") as Texture),
 				new GUIContent("Self", EditorGUIUtility.LoadRequired("rgn-self.png") as Texture),
-				new GUIContent("Predicate", EditorGUIUtility.LoadRequired("rgn-predicate.png") as Texture),
-				new GUIContent("Compound", EditorGUIUtility.LoadRequired("rgn-compound.png") as Texture),
 				new GUIContent("N-Way", EditorGUIUtility.LoadRequired("rgn-nway.png") as Texture),
+				new GUIContent("Compound", EditorGUIUtility.LoadRequired("rgn-compound.png") as Texture),
 			};
 		}
 		if(spaceTypes == null) {

@@ -50,7 +50,9 @@ public enum FormulaType {
 	SkillEffectValue,
 	Or,
 	And,
-	Not
+	Not,
+	TargetIsNull,
+	TargetIsNotNull
 }
 
 public enum LookupType {
@@ -166,7 +168,7 @@ public class Formula : IFormulaElement {
 		f.text = "false";
 		return f;
 	}
-	
+
 	public static Formula Lookup(string n, LookupType type=LookupType.Auto) {
 		Formula f = new Formula();
 		f.formulaType = FormulaType.Lookup;
@@ -423,6 +425,12 @@ public class Formula : IFormulaElement {
 				if(result == -1) {
 					Debug.LogError("PDF adds up to less than 1");
 				}
+				break;
+			case FormulaType.TargetIsNull:
+				result = (scontext != null ? scontext.currentTargetCharacter == null : tcontext == null) ? 1 : 0;
+				break;
+			case FormulaType.TargetIsNotNull:
+				result = (scontext != null ? scontext.currentTargetCharacter != null : tcontext != null) ? 1 : 0;
 				break;
 		}
 		return result;

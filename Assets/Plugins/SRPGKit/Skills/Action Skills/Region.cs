@@ -13,9 +13,8 @@ public enum RegionType {
 	//intervening space type is always LineMove, but LineMove is not allowed for other region types.
 	Cone,
 	Self,
-	Predicate, //actually "CylinderPredicate"--applies predicate to tiles within standard cylindrical region
+	NWay, //retries subregions N times around circle, evenly spaced, with a given angle offset from start.
 	Compound, //merges subregions based on their types, ignoring their intervening space types.
-	NWay //retries subregions N times around circle, evenly spaced, with a given angle offset from start.
 };
 
 public enum InterveningSpaceType {
@@ -265,22 +264,6 @@ public class Region {
 	};
 
 	public Region() {
-		radiusMinF = radiusMinF ?? Formula.Constant(0);
-		radiusMaxF = radiusMaxF ?? Formula.Constant(0);
-		zUpMinF = zUpMinF ?? Formula.Constant(0);
-		zUpMaxF = zUpMaxF ?? Formula.Constant(0);
-		zDownMinF = zDownMinF ?? Formula.Constant(0);
-		zDownMaxF = zDownMaxF ?? Formula.Constant(0);
-		xyDirectionF = xyDirectionF ?? Formula.Constant(0);
-		zDirectionF = zDirectionF ?? Formula.Constant(0);
-		xyArcMinF = xyArcMinF ?? Formula.Constant(0);
-		xyArcMaxF = xyArcMaxF ?? Formula.Constant(0);
-		zArcMinF = zArcMinF ?? Formula.Constant(0);
-		zArcMaxF = zArcMaxF ?? Formula.Constant(0);
-		lineWidthMinF = lineWidthMinF ?? Formula.Constant(0);
-		lineWidthMaxF = lineWidthMaxF ?? Formula.Constant(0);
-		predicateF = predicateF ?? Formula.Constant(0);
-		nWaysF = nWaysF ?? Formula.Constant(1);
 	}
 
 	protected bool isEffectRegion=false;
@@ -323,36 +306,21 @@ public class Region {
 	// 	}
 	// 	return PathDecision.Normal;
 	// }
-	public virtual PathDecision PathNodeIsValidPredicate(
+	public virtual bool PathNodeMeetsPredicate(
 		Vector3 start,
 		PathNode pn,
-		Character c
+		Character t
 	) {
-		Vector3 pos = pn.pos;
-		float distance = Vector3.Distance(pos, start);
-		float xyDistance = (new Vector2(pos.x-start.x, pos.y-start.y)).magnitude;
+		//short circuit for true/false
+		if(predicateF.formulaType == FormulaType.Constant) {
+			return predicateF.GetValue(fdb, owner, null, null) != 0;
+		}
 		Character oldTarget = owner.currentTargetCharacter;
-		owner.currentTargetCharacter = c;
-		owner.SetParam("arg.region.distance", distance);
-		owner.SetParam("arg.region.distance.xy", xyDistance);
-		owner.SetParam("arg.region.mdistance", Mathf.Abs(pos.x-start.x)+Mathf.Abs(pos.y-start.y)+Mathf.Abs(pos.z-start.z));
-		owner.SetParam("arg.region.mdistance.xy", Mathf.Abs(pos.x-start.x)+Mathf.Abs(pos.y-start.y));
-		owner.SetParam("arg.region.dx", Mathf.Abs(pos.x-start.x));
-		owner.SetParam("arg.region.dy", Mathf.Abs(pos.y-start.y));
-		owner.SetParam("arg.region.dz", Mathf.Abs(pos.z-start.z));
-		owner.SetParam("arg.region.x", start.x);
-		owner.SetParam("arg.region.y", start.y);
-		owner.SetParam("arg.region.z", start.z);
-		owner.SetParam("arg.region.target.x", pos.x);
-		owner.SetParam("arg.region.target.y", pos.y);
-		owner.SetParam("arg.region.target.z", pos.z);
-		owner.SetParam("arg.region.angle.between.absolute.xy", Mathf.Atan2(pos.y-start.y, pos.x-start.x)*Mathf.Rad2Deg);
-		owner.SetParam("arg.region.angle.between.absolute.z", Mathf.Atan2(pos.z-start.z, xyDistance)*Mathf.Rad2Deg);
-		owner.SetParam("arg.region.angle.between.xy", Mathf.Atan2(pos.y-start.y, pos.x-start.x)*Mathf.Rad2Deg - owner.GetParam("arg.region.angle.xy"));
-		owner.SetParam("arg.region.angle.between.z", Mathf.Atan2(pos.z-start.z, xyDistance)*Mathf.Rad2Deg - owner.GetParam("arg.region.angle.z"));
+		owner.currentTargetCharacter = t;
+		owner.SetArgsFrom(pn.pos, t != null ? (Quaternion?)Quaternion.Euler(0,t.Facing,0) : (Quaternion?)null, "", start);
 		float ret = predicateF.GetValue(fdb, owner, null, null);
 		owner.currentTargetCharacter = oldTarget;
-		return (ret != 0) ? PathDecision.Normal : PathDecision.Invalid;
+		return (ret != 0);
 	}
 
 	//FIXME: wrong because of reliance on z{Up|Down}{Max|Min}
@@ -747,9 +715,6 @@ public class Region {
 					{here, new PathNode(here, null, 0)}
 				};
 				break;
-			case RegionType.Predicate:
-				pickables =	PredicateSatisfyingTilesAround(here, q, xyrmx, zrdmx, zrumx);
-				break;
 			case RegionType.Compound:
 				pickables =	new Dictionary<Vector3, PathNode>();
 				for(int i = 0; i < regions.Length; i++) {
@@ -843,6 +808,7 @@ public class Region {
 		// Debug.Log("b pickables "+picked.Count());
 		picked = picked.Where((n) => {
 			Character c = map.CharacterAt(n.pos);
+			if(!PathNodeMeetsPredicate(here, n, c)) { return false; }
 			if(c != null) {
 				if(c == owner.character) {
 					return canTargetSelf;
@@ -856,7 +822,6 @@ public class Region {
 		}).ToList().AsEnumerable();
 		// Debug.Log("c pickables "+picked.Count());
 		switch(type) {
-			case RegionType.Predicate:
 			case RegionType.Cylinder:
 				return picked.Where(delegate(PathNode n) {
 					float xyd = n.XYDistanceFrom(here);
@@ -1198,20 +1163,6 @@ public class Region {
 			AddPathTo(pn, truncStart, pickables, ret, xyrmx, zrdmx, zrumx, provideAllTiles);
 		}
 		return ret;
-	}
-	public Dictionary<Vector3, PathNode> PredicateSatisfyingTilesAround(
-		Vector3 start,
-		Quaternion q,
-		float maxRadius,
-		float zDownMax,
-		float zUpMax
-	) {
-		owner.SetParam("arg.region.x", start.x);
-		owner.SetParam("arg.region.y", start.y);
-		owner.SetParam("arg.region.z", start.z);
-		owner.SetParam("arg.region.angle.xy", q.eulerAngles.y);
-		owner.SetParam("arg.region.angle.z", q.eulerAngles.z);
-		return CylinderTilesAround(start, maxRadius, zDownMax, zUpMax, PathNodeIsValidPredicate);
 	}
 	public Dictionary<Vector3, PathNode> CylinderTilesAround(
 		Vector3 start,

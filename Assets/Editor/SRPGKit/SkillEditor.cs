@@ -39,7 +39,7 @@ public class SkillEditor : SRPGCKEditor {
 	protected virtual void ConvertSkill() {
 		EnsurePath("Assets/SRPGCK Data/Skills/Generic");
 		SkillDef def = ScriptableObjectUtility.CreateAsset<SkillDef>(
-			s.skillName,
+			null,//s.skillName,
 			"Assets/SRPGCK Data/Skills/Generic",
 			false
 		);

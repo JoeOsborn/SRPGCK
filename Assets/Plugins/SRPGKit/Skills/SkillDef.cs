@@ -230,9 +230,10 @@ public class SkillDef : ScriptableObject {
 		runtimeParameters[pname] = f;
 		parameters = parameters.Concat(new Parameter[]{new Parameter(pname, f)}).ToList();
 	}
-	protected virtual void SetArgsFrom(Vector3 ttp, Quaternion? facing=null, string prefix="") {
-		Vector3 ctp = character.TilePosition;
+	public virtual void SetArgsFrom(Vector3 ttp, Quaternion? facing=null, string prefix="", Vector3? start=null) {
+		Vector3 ctp = start.HasValue ? start.Value : character.TilePosition;
 		float distance = Vector3.Distance(ttp, ctp);
+		float distanceXY = Vector2.Distance(new Vector2(ttp.x, ttp.y), new Vector2(ctp.x, ctp.y));
 		float angle = facing != null ? facing.Value.eulerAngles.y : character.Facing;
 		if(facing == null &&
 		   (!Mathf.Approximately(ttp.y,ctp.y) ||
@@ -242,6 +243,7 @@ public class SkillDef : ScriptableObject {
 		Debug.Log("ttp "+ttp+", ctp "+ttp+", f "+facing);
 		string infix = (prefix??"")+".";
 		SetParam("arg"+infix+"distance", distance);
+		SetParam("arg"+infix+"distance.xy", distanceXY);
 		SetParam("arg"+infix+"mdistance", Mathf.Abs(ttp.x-ctp.x)+Mathf.Abs(ttp.y-ctp.y)+Mathf.Abs(ttp.z-ctp.z));
 		SetParam("arg"+infix+"mdistance.xy", Mathf.Abs(ttp.x-ctp.x)+Mathf.Abs(ttp.y-ctp.y));
 		SetParam("arg"+infix+"dx", Mathf.Abs(ttp.x-ctp.x));
@@ -250,6 +252,14 @@ public class SkillDef : ScriptableObject {
 		SetParam("arg"+infix+"x", ttp.x);
 		SetParam("arg"+infix+"y", ttp.y);
 		SetParam("arg"+infix+"z", ttp.z);
+		SetParam("arg.pos.x", ctp.x);
+		SetParam("arg.pos.y", ctp.y);
+		SetParam("arg.pos.z", ctp.z);
+		Character t = map.CharacterAt(ttp);
+		SetParam("arg.sameTeam", t != null && t.TeamID == character.TeamID ? 1 : 0);
+		SetParam("arg.otherTeam", t != null && t.TeamID != character.TeamID ? 1 : 0);
+		SetParam("arg.isAlly", t != null && t.EffectiveTeamID == character.EffectiveTeamID ? 1 : 0);
+		SetParam("arg.isEnemy", t != null && t.EffectiveTeamID != character.EffectiveTeamID ? 1 : 0);
 		SetParam("arg"+infix+"angle.xy", angle);
 		// Debug.Log("set "+"arg"+infix+"angle.xy"+"="+angle);
 	}

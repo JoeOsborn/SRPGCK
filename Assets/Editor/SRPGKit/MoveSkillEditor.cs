@@ -11,7 +11,7 @@ public class MoveSkillEditor : ActionSkillEditor {
 	protected override void ConvertSkill() {
 		EnsurePath("Assets/SRPGCK Data/Skills/Move");
 		MoveSkillDef def = ScriptableObjectUtility.CreateAsset<MoveSkillDef>(
-			s.skillName,
+			null,//s.skillName,
 			"Assets/SRPGCK Data/Skills/Move",
 			false
 		);
