@@ -13,6 +13,7 @@ public class MoveSkillDefEditor : ActionSkillDefEditor {
 			"Assets/SRPGCK Data/Skills/Move",
 			true
 		);
+		sd.isEnabledF = Formula.True();
 		sd.io = SRPGCKSettings.Settings.defaultMoveIO;
 		sd.reallyDefined = true;
 		return sd;

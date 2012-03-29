@@ -30,7 +30,12 @@ public class Equipment : MonoBehaviour {
 	
 	void FindWielder() {
 		if(wielder == null && transform.parent != null) {
-			wielder = transform.parent.GetComponent<Character>();
+			Transform t = transform.parent;
+			while(t != null && wielder == null) {
+				wielder = t.GetComponent<Character>();
+				if(wielder == null) { t = t.parent; }
+			}
+			if(wielder == null) { Debug.LogError("No wielder"); }
 			if(equippedSlots == null || equippedSlots.Length == 0) {
 				wielder.Equip(this);
 			}

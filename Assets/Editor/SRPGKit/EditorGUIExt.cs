@@ -273,6 +273,14 @@ public class EditorGUIExt
 				break;
 			case StatEffectType.EndTurn:
 				break;
+			case StatEffectType.ApplyStatusEffect:
+				newFx.statusEffectPrefab = EditorGUILayout.ObjectField(
+		    	"Status Effect",
+					newFx.statusEffectPrefab as UnityEngine.Object,
+			    typeof(StatusEffect),
+			    false
+			  ) as StatusEffect;
+				break;
 			case StatEffectType.SpecialMove:
 				if(newFx.specialMoveLine == null ||
 				   newFx.specialMoveLine.type != RegionType.LineMove) {

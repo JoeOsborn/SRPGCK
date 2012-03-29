@@ -13,6 +13,7 @@ public class WaitSkillDefEditor : SkillDefEditor {
 			"Assets/SRPGCK Data/Skills/Wait",
 			true
 		);
+		sd.isEnabledF = Formula.True();
 		sd.reallyDefined = true;
 		return sd;
 	}

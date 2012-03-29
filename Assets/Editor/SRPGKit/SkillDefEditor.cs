@@ -12,6 +12,7 @@ public class SkillDefEditor : SRPGCKEditor {
 			"Assets/SRPGCK Data/Skills/Generic",
 			true
 		);
+		sd.isEnabledF = Formula.True();
 		sd.reallyDefined = true;
 		return sd;
 	}

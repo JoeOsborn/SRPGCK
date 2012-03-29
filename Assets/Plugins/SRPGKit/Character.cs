@@ -412,10 +412,7 @@ public class Character : MonoBehaviour {
 	IEnumerable<SkillDef> skills;
 	IEnumerable<Equipment> equipment;
 	IEnumerable<StatusEffect> statusEffects;
-	public void ApplyStatusEffect(StatusEffect se) {
-		se.transform.parent = transform; //??
-		InvalidateStatusEffects();
-	}
+	public List<StatusEffect> allStatusEffects;
 	public void InvalidateSkills() {
 		skills = null;
 	}
@@ -454,15 +451,14 @@ public class Character : MonoBehaviour {
 	} }
 	public IEnumerable<StatusEffect> StatusEffects { get {
 		if(statusEffects == null) {
-			StatusEffect[] allEffects = GetComponentsInChildren<StatusEffect>();
-			statusEffects = allEffects.Where(delegate(StatusEffect x) {
+			statusEffects = allStatusEffects.Where(delegate(StatusEffect x) {
 				string replPath = x.effectType;
-				int replPri = x.priority;
-				return !allEffects.Any(y =>
+				int replPri = x.overridePriority;
+				return !allStatusEffects.Any(y =>
 					y != x &&
 					y.effectType == replPath &&
-					y.replaces &&
-					y.priority > replPri);
+					y.overrides &&
+					y.overridePriority > replPri);
 			}).ToArray().AsEnumerable();
 		}
 		return statusEffects;
@@ -475,6 +471,58 @@ public class Character : MonoBehaviour {
 
 	public bool HasStatusEffect(string statName) {
 		return StatusEffects.Any(se => se.effectType == statName);
+	}
+	public bool HasStatusEffect(StatusEffect sfx) {
+		return StatusEffects.Contains(sfx);
+	}
+
+	public void RemoveStatusEffect(StatusEffect sfx) {
+		if(sfx.GetComponentsInChildren<Skill>().Length != 0) {
+			InvalidateSkills();
+		}
+		if(allStatusEffects.Contains(sfx)) {
+			allStatusEffects.Remove(sfx);
+			sfx.RemovedFrom(this);
+			Destroy(sfx.gameObject);
+			InvalidateStatusEffects();
+			map.BroadcastMessage("StatusEffectRemoved", sfx, SendMessageOptions.DontRequireReceiver);
+		}
+	}
+
+	public bool ApplyStatusEffect(StatusEffect sfx) {
+		if(allStatusEffects.Contains(sfx)) { return true; }
+		sfx.transform.parent = transform;
+		sfx.transform.localPosition = Vector3.zero;
+		sfx.transform.localRotation = Quaternion.identity;
+		var existing = statusEffects.Where(sfx2 =>
+			sfx2 != sfx && sfx2.effectType == sfx.effectType
+		).ToArray().AsEnumerable();
+		if(existing.Count() != 0) {
+			var clobberingFX = existing.FirstOrDefault(sfx2 =>
+				sfx2.replaces && sfx2.replacementPriority > sfx.replacementPriority
+			);
+			if(clobberingFX != null) {
+				RemoveStatusEffect(sfx);
+				map.BroadcastMessage("StatusEffectNotApplied", sfx, SendMessageOptions.DontRequireReceiver);
+				return false;
+			}
+			//overriding is fine
+			if(sfx.replaces) {
+				var clobberedFX = existing.Where(sfx2 =>
+					 sfx2.replacementPriority <= sfx.replacementPriority
+				).ToArray();
+				foreach(var cfx in clobberedFX) {
+					RemoveStatusEffect(cfx);
+				}
+			}
+		}
+		map.BroadcastMessage("StatusEffectApplied", sfx, SendMessageOptions.DontRequireReceiver);
+		allStatusEffects.Add(sfx);
+		InvalidateStatusEffects();
+		if(sfx.GetComponentsInChildren<Skill>().Length != 0) {
+			InvalidateSkills();
+		}
+		return true;
 	}
 
 	protected Parameter GetStatParam(string statName) {

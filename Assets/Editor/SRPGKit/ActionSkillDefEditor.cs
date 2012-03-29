@@ -14,6 +14,7 @@ public class ActionSkillDefEditor : SkillDefEditor {
 			"Assets/SRPGCK Data/Skills/Action",
 			true
 		);
+		sd.isEnabledF = Formula.True();
 		sd.io = SRPGCKSettings.Settings.defaultActionIO;
 		sd.reallyDefined = true;
 		return sd;

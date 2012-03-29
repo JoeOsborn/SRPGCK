@@ -21,7 +21,8 @@ public enum StatEffectType {
 	//active only
 	ChangeFacing,
 	EndTurn,
-	SpecialMove
+	SpecialMove,
+	ApplyStatusEffect
 };
 
 public enum StatChangeType {
@@ -62,8 +63,17 @@ public class StatEffect {
 	public bool specialMoveAnimateToStart=true;
 	public Formula specialMoveGivenStartX, specialMoveGivenStartY, specialMoveGivenStartZ;
 	public Region specialMoveLine;
+	//only for status effect
+	public StatusEffect statusEffectPrefab;
 
-	public float ModifyStat(float stat, SkillDef scontext, Character ccontext, Character tcontext, Equipment econtext, ref float modValue) {
+	public float ModifyStat(
+	  float stat,
+	  SkillDef scontext,
+	  Character ccontext,
+	  Character tcontext,
+	  Equipment econtext,
+	  ref float modValue
+	) {
 		Formulae fdb = scontext != null ? scontext.fdb : (ccontext != null ? ccontext.fdb : (econtext != null ? econtext.fdb : Formulae.DefaultFormulae));
 		modValue=value.GetValue(fdb, scontext, ccontext, tcontext, econtext);
 		float modifiedValue = stat;
@@ -77,13 +87,25 @@ public class StatEffect {
 		}
 		return modifiedValue;
 	}
-	public float ModifyStat(float stat, SkillDef scontext, Character ccontext, Character tcontext, Equipment econtext) {
+	public float ModifyStat(
+	  float stat,
+	  SkillDef scontext,
+	  Character ccontext,
+	  Character tcontext,
+	  Equipment econtext
+	) {
 		float ignore=0;
 		return ModifyStat(stat, scontext, ccontext, tcontext, econtext, ref ignore);
 	}
 
-	public StatEffectRecord Apply(SkillDef skill, Character character, Character targ) {
-		Formulae fdb = skill != null ? skill.fdb : (character != null ? character.fdb : (targ != null ? targ.fdb : Formulae.DefaultFormulae));
+	public StatEffectRecord Apply(
+	  SkillDef skill,
+	  Character character,
+	  Character targ
+	) {
+		Formulae fdb = skill != null ? skill.fdb :
+		  (character != null ? character.fdb :
+			  (targ != null ? targ.fdb : Formulae.DefaultFormulae));
 		StatEffectRecord effect=null;
 		Character actualTarget=null;
 		switch(target) {
@@ -100,11 +122,20 @@ public class StatEffect {
 			case StatEffectType.Replace:
 				float modValue = 0;
 				float oldStat = actualTarget.GetBaseStat(statName);
-				float newStat = ModifyStat(oldStat, skill, null, null, null, ref modValue);
+				float newStat = ModifyStat(
+					oldStat,
+					skill,
+					actualTarget,
+					null,
+					null,
+					ref modValue
+				);
 				// Debug.Log("base modvalue is "+modValue+", newstat is "+newStat);
 				newStat = actualTarget.SetBaseStat(statName, newStat, respectLimits);
 				if(constrainValueToLimits) {
-					modValue = effectType == StatEffectType.Replace ? newStat : newStat - oldStat;
+					modValue = effectType == StatEffectType.Replace ?
+						newStat :
+					  newStat - oldStat;
 				}
 				effect = new StatEffectRecord(this, oldStat, newStat, modValue);
 				Debug.Log("hit "+actualTarget+"("+target+") for "+modValue+", new "+statName+" "+newStat);
@@ -144,6 +175,14 @@ public class StatEffect {
 				);
 				break;
 			}
+			case StatEffectType.ApplyStatusEffect: {
+				StatusEffect sfx = (GameObject.Instantiate(statusEffectPrefab, Vector3.zero, Quaternion.identity) as StatusEffect);
+				sfx.applyingSkill = skill;
+				Debug.Log("apply status effect "+sfx);
+				actualTarget.ApplyStatusEffect(sfx);
+				effect = new StatEffectRecord(this, sfx);
+				break;
+			}
 		}
 		return effect;
 	}
@@ -156,6 +195,7 @@ public class StatEffectRecord {
 	public StatEffect effect;
 	public float initialValue, finalValue, value;
 	public Vector3 specialMoveStart;
+	public StatusEffect statusEffect;
 	public StatEffectRecord(StatEffect e, float init=0, float endVal=0, float v=0) {
 		effect = e;
 		initialValue = init;
@@ -165,6 +205,10 @@ public class StatEffectRecord {
 	public StatEffectRecord(StatEffect e, Vector3 start) {
 		effect = e;
 		specialMoveStart = start;
+	}
+	public StatEffectRecord(StatEffect e, StatusEffect sfx) {
+		effect = e;
+		statusEffect = sfx;
 	}
 
 	public bool Matches(string[] statNames, StatChangeType[] changes, string[] reactableTypes) {
