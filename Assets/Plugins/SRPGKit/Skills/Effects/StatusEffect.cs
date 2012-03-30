@@ -86,12 +86,14 @@ public class StatusEffect : MonoBehaviour {
 
 	public void Tick(float delta) {
 		//apply on-tick-interval stuff
-		tickEffectTicksRemaining -= delta;
-		while(tickEffectTicksRemaining < 0) {
-			if(character.HasStatusEffect(this)) {
-				ApplyActionEffects(tickIntervalEffects);
+		if(tickIntervalEffects != null && tickIntervalEffects.Length > 0) {
+			tickEffectTicksRemaining -= delta;
+			while(tickEffectTicksRemaining < 0) {
+				if(character.HasStatusEffect(this)) {
+					ApplyActionEffects(tickIntervalEffects);
+				}
+				tickEffectTicksRemaining += tickEffectInterval;
 			}
-			tickEffectTicksRemaining += tickEffectInterval;
 		}
 		if(!usesDuration || always) { return; }
 		ticksRemaining -= delta;

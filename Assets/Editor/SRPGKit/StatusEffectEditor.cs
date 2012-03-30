@@ -45,7 +45,7 @@ public class StatusEffectEditor : SRPGCKEditor {
 		GUILayout.EndHorizontal();
 		GUILayout.BeginHorizontal();
 		se.replaces = EditorGUILayout.Toggle("Replaces Similar Effects", se.replaces);
-		if(se.overrides) {
+		if(se.replaces) {
 			se.replacementPriority = EditorGUILayout.IntField("Strength", se.replacementPriority);
 		}
 		GUILayout.EndHorizontal();
@@ -53,7 +53,9 @@ public class StatusEffectEditor : SRPGCKEditor {
 		//now, effects!
 		se.passiveEffects = EditorGUIExt.StatEffectFoldout("Passive Effect", se.passiveEffects, StatEffectContext.Normal, ""+se.GetInstanceID(), formulaOptions, lastFocusedControl, ref showPassiveEffects);
 
-		se.tickEffectInterval = EditorGUILayout.IntField((se.ticksInLocalTime ? "CT" : "Global") + " Tick Effect Interval", (int)se.tickEffectInterval);
+		if(se.tickIntervalEffects != null && se.tickIntervalEffects.Length > 0) {
+			se.tickEffectInterval = EditorGUILayout.IntField((se.ticksInLocalTime ? "CT" : "Global") + " Tick Effect Interval", (int)se.tickEffectInterval);
+		}
 		se.tickIntervalEffects = EditorGUIExt.StatEffectFoldout("Tick Interval Effect", se.tickIntervalEffects, StatEffectContext.Normal, ""+se.GetInstanceID(), formulaOptions, lastFocusedControl, ref showTickIntervalEffects);
 
 		se.characterActivatedEffects = EditorGUIExt.StatEffectFoldout("Character-Activation Effect", se.characterActivatedEffects, StatEffectContext.Normal, ""+se.GetInstanceID(), formulaOptions, lastFocusedControl, ref showCharacterActivatedEffects);

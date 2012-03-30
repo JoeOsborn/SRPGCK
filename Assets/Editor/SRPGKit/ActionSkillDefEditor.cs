@@ -77,6 +77,11 @@ public class ActionSkillDefEditor : SkillDefEditor {
 		if(atk.targetEffects != null && atk.targetEffects.Length > 1) {
 			EditorGUILayout.HelpBox("Be sure that the hitType parameter is defined to provide a value from 0 to "+(atk.targetEffects.Length-1), (s.HasParam("hitType") ? MessageType.Info : MessageType.Error));
 		}
+		if(atk.delay != null && 
+		   !(atk.delay.formulaType == FormulaType.Constant && 
+		     atk.delay.constantValue == 0)) {
+	 		atk.scheduledEffects = EditorGUIExt.StatEffectGroupGUI("On-Scheduled Effect", atk.scheduledEffects, StatEffectContext.Action, ""+atk.GetInstanceID(), formulaOptions, lastFocusedControl);
+		}
 		atk.applicationEffects = EditorGUIExt.StatEffectGroupGUI("Per-Application Effect", atk.applicationEffects, StatEffectContext.Action, ""+atk.GetInstanceID(), formulaOptions, lastFocusedControl);
 		atk.targetEffects = EditorGUIExt.StatEffectGroupsGUI("Application Effect Group", atk.targetEffects, StatEffectContext.Action, ""+atk.GetInstanceID(), formulaOptions, lastFocusedControl);
 	}

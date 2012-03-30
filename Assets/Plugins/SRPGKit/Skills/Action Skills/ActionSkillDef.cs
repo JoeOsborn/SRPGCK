@@ -41,6 +41,7 @@ public class ActionSkillDef : SkillDef {
 		set { _io = value; }
 	}
 
+	public StatEffectGroup scheduledEffects;
 	public StatEffectGroup applicationEffects;
 	public StatEffectGroup[] targetEffects;
 	public Formula delay;
@@ -791,6 +792,22 @@ public class ActionSkillDef : SkillDef {
 	public override void ApplySkill() {
 		ClearLastEffects();
 		float delayVal = delay == null ? 0 : delay.GetValue(fdb, this);
+		if(delay != null && 
+		   !(delay.formulaType == FormulaType.Constant && 
+				 delay.constantValue == 0) && 
+		   !AwaitingTargetOption) {
+			for(int i = 0; i < targets.Count; i++) {
+				Target t = targets[i];
+				TargetSettings ts = targetSettings[i];
+				Debug.Log("set args at "+i+" from "+t);
+				//arg0... arg1...
+				SetArgsFromTarget(t, ts, ""+i);
+			}
+			Debug.Log("set default args from "+currentTarget);
+			SetArgsFromTarget(currentTarget, currentSettings, "");
+			FindPerApplicationCharacterTargets();
+			ApplyPerApplicationEffectsTo(scheduledEffects.effects, targetCharacters);
+		}
 		if(delayVal == 0) {
 			Debug.Log("No delay!");
 			ApplySkillToTargets();
@@ -956,7 +973,7 @@ public class ActionSkillDef : SkillDef {
 	public void TentativePick(Vector3 p) {
 		Character c = map.TargetableCharacterAt(p);
 		currentTarget.Path(p).Character(c);
-		float angle = TargetFacing.eulerAngles.y;
+		float angle = EffectFacing.eulerAngles.y;
 		Vector3 ep = EffectPosition;
 		Vector3 tp = TargetPosition;
 		if(!Mathf.Approximately(ep.y,tp.y) ||
@@ -978,7 +995,7 @@ public class ActionSkillDef : SkillDef {
 	public void TentativePick(PathNode pn) {
 		Character c = map.TargetableCharacterAt(pn.pos);
 		currentTarget.Path(pn).Character(c);
-		float angle = TargetFacing.eulerAngles.y;
+		float angle = EffectFacing.eulerAngles.y;
 		Vector3 ep = EffectPosition;
 		Vector3 tp = TargetPosition;
 		if(!Mathf.Approximately(ep.y,tp.y) ||

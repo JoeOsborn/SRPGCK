@@ -489,6 +489,17 @@ public class Character : MonoBehaviour {
 		}
 	}
 
+	public StatusEffect[] RemoveStatusEffect(string sfxName, int strength=0) {
+		StatusEffect[] removed = allStatusEffects.Where(sfx =>
+			sfx.effectType == sfxName &&
+			  (!sfx.replaces || sfx.replacementPriority <= strength)
+		).ToArray();
+		foreach(StatusEffect sfx in removed) {
+			RemoveStatusEffect(sfx);
+		}
+		return removed;
+	}
+
 	public bool ApplyStatusEffect(StatusEffect sfx) {
 		if(allStatusEffects.Contains(sfx)) { return true; }
 		sfx.transform.parent = transform;

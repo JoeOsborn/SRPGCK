@@ -281,6 +281,16 @@ public class EditorGUIExt
 			    false
 			  ) as StatusEffect;
 				break;
+			case StatEffectType.RemoveStatusEffect:
+				newFx.statusEffectRemovalType = EditorGUILayout.TextField(
+		    	"Status Effect",
+					newFx.statusEffectRemovalType
+				);
+				newFx.statusEffectRemovalStrength = EditorGUILayout.IntField(
+		    	"Strength",
+					newFx.statusEffectRemovalStrength
+				);
+				break;
 			case StatEffectType.SpecialMove:
 				if(newFx.specialMoveLine == null ||
 				   newFx.specialMoveLine.type != RegionType.LineMove) {
@@ -296,6 +306,7 @@ public class EditorGUIExt
 					newFx.specialMoveLine.canCrossEnemies = false;
 					newFx.specialMoveLine.canHaltAtEnemies = false;
 					newFx.specialMoveLine.canGlide = false;
+					newFx.specialMoveLine.performFall = true;
 					newFx.specialMoveLine.facingLock = FacingLock.Cardinal;
 				}
 				newFx.specialMoveType = EditorGUILayout.TextField(
@@ -696,6 +707,7 @@ public class EditorGUIExt
 				//can cross walls yes/no
 				GUILayout.Label("Can glide?");
 				newReg.canGlide = GUILayout.SelectionGrid(newReg.canGlide ? 1 : 0, canGlideFlags, 2, imageButtonGridStyle) == 1 ? true : false;
+				newReg.performFall = EditorGUILayout.Toggle("Let mover fall (Recommended)", newReg.performFall);
 				newReg.preventStuckInAir = (StuckPrevention)EditorGUILayout.EnumPopup("Prevent Sticking in Air", newReg.preventStuckInAir);
 				if(newReg.canCrossWalls) {
 					newReg.preventStuckInWalls = (StuckPrevention)EditorGUILayout.EnumPopup("Prevent Sticking in Walls", newReg.preventStuckInWalls);

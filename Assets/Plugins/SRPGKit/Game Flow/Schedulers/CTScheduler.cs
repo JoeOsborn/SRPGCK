@@ -122,6 +122,8 @@ public class CTScheduler : Scheduler {
 				sa.delayRemaining = sa.delayRemaining - sa.skill.GetParam("speed", 1);
 			}
 			foreach(Character c in characters) {
+				//don't mess with jumpers' speed because speed is used in jump timing
+				if(c.HasStatusEffect("jumping")) { continue; }
 				CTCharacter ctc = c.GetComponent<CTCharacter>();
 /*				Debug.Log("Tick up by "+speed);*/
 				ctc.Tick();

@@ -22,7 +22,8 @@ public enum StatEffectType {
 	ChangeFacing,
 	EndTurn,
 	SpecialMove,
-	ApplyStatusEffect
+	ApplyStatusEffect,
+	RemoveStatusEffect
 };
 
 public enum StatChangeType {
@@ -63,8 +64,11 @@ public class StatEffect {
 	public bool specialMoveAnimateToStart=true;
 	public Formula specialMoveGivenStartX, specialMoveGivenStartY, specialMoveGivenStartZ;
 	public Region specialMoveLine;
-	//only for status effect
+	//only for adding status effect
 	public StatusEffect statusEffectPrefab;
+	//only for removing status effect
+	public string statusEffectRemovalType="poison";
+	public int statusEffectRemovalStrength=0;
 
 	public float ModifyStat(
 	  float stat,
@@ -183,6 +187,12 @@ public class StatEffect {
 				effect = new StatEffectRecord(this, sfx);
 				break;
 			}
+			case StatEffectType.RemoveStatusEffect: {
+				Debug.Log("remove status effects "+statusEffectRemovalType+" with str "+statusEffectRemovalStrength);
+				StatusEffect[] removed = actualTarget.RemoveStatusEffect(statusEffectRemovalType, statusEffectRemovalStrength);
+				effect = new StatEffectRecord(this, removed);
+				break;
+			}
 		}
 		return effect;
 	}
@@ -196,6 +206,7 @@ public class StatEffectRecord {
 	public float initialValue, finalValue, value;
 	public Vector3 specialMoveStart;
 	public StatusEffect statusEffect;
+	public StatusEffect[] removedStatusEffects;
 	public StatEffectRecord(StatEffect e, float init=0, float endVal=0, float v=0) {
 		effect = e;
 		initialValue = init;
@@ -209,6 +220,10 @@ public class StatEffectRecord {
 	public StatEffectRecord(StatEffect e, StatusEffect sfx) {
 		effect = e;
 		statusEffect = sfx;
+	}
+	public StatEffectRecord(StatEffect e, StatusEffect[] removedSfx) {
+		effect = e;
+		removedStatusEffects = removedSfx;
 	}
 
 	public bool Matches(string[] statNames, StatChangeType[] changes, string[] reactableTypes) {

@@ -197,11 +197,12 @@ public class Region {
 	}
 
 
+	//linemove only
 	public StuckPrevention preventStuckInAir  =StuckPrevention.StopBefore;
 	public StuckPrevention preventStuckInWalls=StuckPrevention.StopBefore;
 
-	//linemove only
 	public bool canGlide=false;
+	public bool performFall=true;
 	public FacingLock facingLock;
 
 	//these apply to cylinder/predicate, sphere, cone, and line
@@ -492,14 +493,14 @@ public class Region {
 			MapTile hereT = map.TileAt(here);
 			Debug.Log("knock into "+here+"?");
 			if(hereT == null) {
-				//try to fall
+				//try to fall?
 				Debug.Log("no tile!");
 				int lower = map.PrevZLevel((int)here.x, (int)here.y, (int)here.z);
 				if(here.x < 0 || here.y < 0 || here.x >= map.size.x || here.y >= map.size.y) {
 					Debug.Log("Edge of map!");
 					here = lastHere;
 					break;
-				} else if(canGlide && (soFar+1) < amount) {
+				} else if((!performFall || canGlide) && (soFar+1) < amount) {
 					//FIXME: it's the client's responsibility to ensure that gliders
 					//don't end up falling into a bottomless pit or onto a character
 					cur = new PathNode(here, cur, cur.distance+1-0.01f*maxDrop);
@@ -520,16 +521,26 @@ public class Region {
 						here = lastHere;
 						break;
 					}
-				} else {
+				} else if(performFall) {
 					//drop down
-					LineMoveFall(ref here, chara, zrdmx, maxDrop, ref cur, nodes, collidedCharacters, ref dropDistance);
+					LineMoveFall(
+						ref here,
+						chara,
+						zrdmx,
+						maxDrop,
+						ref cur,
+						nodes,
+						collidedCharacters,
+						ref dropDistance
+					);
 				}
 			} else {
 				//is it a wall? if so, break
 				//FIXME: will not work properly with ramps
 				int nextZ = map.NextZLevel((int)here.x, (int)here.y, (int)here.z);
 				MapTile t = map.TileAt((int)here.x, (int)here.y, nextZ);
-				if(t != null && map.TileAt((int)here.x, (int)here.y, (int)here.z+1) == null) {
+				if(t != null &&
+				   map.TileAt((int)here.x, (int)here.y, (int)here.z+1) == null) {
 					//this tile is above us, sure, but it's way above
 					nextZ = (int)here.z;
 					t = map.TileAt(here);
@@ -582,7 +593,7 @@ public class Region {
 			Debug.Log("tick forward once");
 			soFar++;
 		}
-		if(canGlide && map.TileAt(here) == null) {
+		if(canGlide && map.TileAt(here) == null && performFall) {
 			//fall
 			Debug.Log("it's all over, end glide!");
 			LineMoveFall(ref here, chara, zrdmx, maxDrop, ref cur, nodes, collidedCharacters, ref dropDistance);
@@ -600,7 +611,7 @@ public class Region {
 			Debug.Log("prev tick");
 			if(cur.prev == null) { break; }
 			//fall
-			if(preventStuckInAir != StuckPrevention.None && cur.prev.pos.x == cur.pos.x && cur.prev.pos.y == cur.pos.y) {
+			if(performFall && preventStuckInAir != StuckPrevention.None && cur.prev.pos.x == cur.pos.x && cur.prev.pos.y == cur.pos.y) {
 				if(cur.prev.pos.z != cur.pos.z) {
 					float dz = Mathf.Abs(cur.pos.z - cur.prev.pos.z);
 					Debug.Log("reverse drop by "+(dz)+" dropDistance "+(dz-zrumx));
@@ -776,7 +787,7 @@ public class Region {
 				picked = ArcReachableTilesAround(
 					here,
 					pickables,
-					xyrmx,
+					Mathf.Max(xyrmx, lwmx),
 					returnAllTiles
 				);
 				break;
@@ -1487,7 +1498,7 @@ public class Region {
 		Dictionary<Vector3, PathNode> pickables,
 		bool provideAllTiles
 	) {
-		//Color c = new Color(Random.value, Random.value, Random.value, 0.6f);
+		// Color color = new Color(Random.value, Random.value, Random.value, 0.6f);
 
 		Vector3 prevPos = startPos;
 		float sTH = Mathf.Sin(theta);
@@ -1503,7 +1514,8 @@ public class Region {
 			float y = v * sTH * t - (g * t * t)/2.0f;
 			Vector3 testPos = SRPGUtil.Round(new Vector3(startPos.x, startPos.y, startPos.z+y) + xr*dir);
 			if(testPos == prevPos && t != 0) { t += dt; continue; }
-			// if(pos.x==1&&pos.y==0&&pos.z==0) { Debug.DrawLine(map.TransformPointWorld(prevPos), map.TransformPointWorld(testPos), c, 1.0f); }
+			// if(pos.x==1&&pos.y==0&&pos.z==0) {  }
+			// Debug.DrawLine(map.TransformPointWorld(prevPos), map.TransformPointWorld(testPos), color, 1.0f);
 			PathNode pn = null;
 			if(pickables.ContainsKey(testPos)) {
 				pn = pickables[testPos];
@@ -1523,30 +1535,30 @@ public class Region {
 			}
 			if(pn.isWall && !canCrossWalls && !provideAllTiles) {
 				//no good!
-//				if(pos.x==1&&pos.y==0&&pos.z==0) Debug.Log("wall, can't cross at testpos "+testPos);
+				// Debug.Log("wall, can't cross at testpos "+testPos);
 				break;
 			}
 			//FIXME: what about friendlies?
 			Character c = map.TargetableCharacterAt(pn.pos);
 			if(pn.isEnemy && !canCrossEnemies && !canHaltAtEnemies && !provideAllTiles && !(canMountEnemies && c.IsMountableBy(owner.character) && owner.character.CanMount(c))) {
 				//no good!
-//				if(pos.x==1&&pos.y==0&&pos.z==0) Debug.Log("enemy, can't cross, can't halt at testpos "+testPos);
+				// Debug.Log("enemy, can't cross, can't halt at testpos "+testPos);
 				break;
 			}
 			if(pn.prev != null && pn.prev.isEnemy && !canCrossEnemies && !provideAllTiles && !(canMountEnemies && c.IsMountableBy(owner.character) && owner.character.CanMount(c))) {
 				//no good!
-//				if(pos.x==1&&pos.y==0&&pos.z==0) Debug.Log("halted already at testpos "+testPos);
+				// Debug.Log("halted already at testpos "+testPos);
 				break;
 			}
-//			if(pos.x==1&&pos.y==0&&pos.z==0) Debug.Log("go through testpos "+testPos);
+ // Debug.Log("go through testpos "+testPos);
 			prevPos = testPos;
 			t += dt;
 		}
-//		if(pos.x==1&&pos.y==0&&pos.z==0) { Debug.DrawLine(map.TransformPointWorld(prevPos), map.TransformPointWorld(pos), c, 1.0f); }
+		// Debug.DrawLine(map.TransformPointWorld(prevPos), map.TransformPointWorld(pos), color, 1.0f);
 		if(prevPos == pos) {
 			return true;
 		} else if(t >= endT) {
-//			if(pos.x==1&&pos.y==0&&pos.z==0) Debug.Log("T passed "+endT+" without reaching "+pos+", got "+prevPos);
+			Debug.Log("T passed "+endT+" without reaching "+pos+", got "+prevPos);
 		}
 		return false;
 	}
@@ -1567,17 +1579,25 @@ public class Region {
 		float v = Mathf.Sqrt(g*maxRadius);
 		foreach(var pair in pickables.ToList()) {
 			Vector3 pos = pair.Key;
-			//Debug.Log("check "+pos);
+			// Debug.Log("check "+pos);
 			Vector3 dir = new Vector3(pos.x-startPos.x, pos.y-startPos.y, 0);
 			PathNode posPn = pair.Value;
-			float d = Mathf.Sqrt((pos.x-startPos.x)*(pos.x-startPos.x)+(pos.y-startPos.y)*(pos.y-startPos.y));
-			if(d == 0) { continue; } //impossible to hit
+			float d = Mathf.Sqrt(dir.x*dir.x+dir.y*dir.y);
+			if(d == 0) { //trivial success, same tile
+				posPn.velocity = 0;
+				posPn.altitude = 180;
+				ret.Add(posPn);
+				continue;
+			}
 			//theta = atan((v^2±sqrt(v^4-g(gx^2+2yv^2))/gx)) for x=distance, y=target y
 			//either root, if it's not imaginary, will work! otherwise, bail because v is too small
 			float thX = d;
 			float thY = pos.z-startPos.z;
 			float thSqrtTerm = Mathf.Pow(v,4)-g*(g*thX*thX+2*thY*v*v);
-			if(thSqrtTerm < 0) { continue; } //impossible to hit with current v
+			if(thSqrtTerm < 0) { //impossible to hit with current v
+				// Debug.Log("nope, thSq is 0 for thX "+thX+" thY "+thY+" v "+v);
+				continue;
+			}
 			float theta1 = Mathf.Atan((v*v+Mathf.Sqrt(thSqrtTerm))/(g*thX));
 			float theta2 = Mathf.Atan((v*v-Mathf.Sqrt(thSqrtTerm))/(g*thX));
 			//try 1, then 2. we also accept aiming downward.
@@ -1590,7 +1610,7 @@ public class Region {
 				posPn.altitude = theta2;
 				ret.Add(posPn);
 			} else {
-//				Debug.Log("nope");
+				// Debug.Log("nope");
 			}
 		}
 		return ret;
