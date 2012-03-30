@@ -727,7 +727,15 @@ public class EditorGUIExt
 			}
 			newReg.canMountEnemies = EditorGUILayout.Toggle("Can mount enemies?", newReg.canMountEnemies);
 			newReg.canMountFriends = EditorGUILayout.Toggle("Can mount friends?", newReg.canMountFriends);
-			//abs dz yes/no
+			if(newReg.interveningSpaceType == InterveningSpaceType.Path) {
+				if(newReg.canMountFriends || newReg.canMountEnemies) {
+					newReg.useMountingStepBonus = EditorGUILayout.Toggle("Use mounts as steps", newReg.useMountingStepBonus);
+				} else {
+					newReg.useMountingStepBonus = false;
+				}
+			} else {
+				newReg.useMountingStepBonus = false;
+			}
 			if(newReg.interveningSpaceType != InterveningSpaceType.Pick &&
 				 newReg.type != RegionType.LineMove &&
 			   newReg.type != RegionType.Line &&

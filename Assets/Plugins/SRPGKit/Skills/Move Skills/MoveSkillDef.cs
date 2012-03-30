@@ -28,13 +28,26 @@ public class MoveSkillDef : ActionSkillDef {
 		skillName = "Move";
 		skillGroup = "";
 		skillSorting=-1;
+		
 		TargetSettings ts = new TargetSettings();
+		ts.targetRegion = new Region();
+		ts.targetRegion.type = RegionType.Cylinder;
+		ts.targetRegion.interveningSpaceType = InterveningSpaceType.Path;
+		ts.targetRegion.radiusMaxF = Formula.Constant(3);
+		ts.targetRegion.zUpMaxF = Formula.Constant(2);
+		ts.targetRegion.zDownMaxF = Formula.Constant(3);
+		ts.targetRegion.useMountingStepBonus = true;
+		ts.targetRegion.canMountFriends = true;
+		
 		ts.effectRegion = new Region();
+		ts.effectRegion.type = RegionType.Cylinder;
+		ts.targetRegion.interveningSpaceType = InterveningSpaceType.Pick;
 		ts.effectRegion.IsEffectRegion = true;
 		ts.effectRegion.radiusMinF = Formula.Constant(0);
 		ts.effectRegion.radiusMaxF = Formula.Constant(0);
 		ts.effectRegion.canTargetEnemies = false;
 		ts.effectRegion.canHaltAtEnemies = false;
+		
 		targetSettings = new TargetSettings[]{ts};
 	}
 

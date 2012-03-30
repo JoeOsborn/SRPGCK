@@ -29,6 +29,19 @@ public class Character : MonoBehaviour {
 		return _specialMoveExecutor;
 	} }
 
+	public bool IsSameTeam(Character o) {
+		return this.TeamID == o.TeamID;
+	}
+	public bool IsOtherTeam(Character o) {
+		return this.TeamID != o.TeamID;
+	}
+	public bool IsAlly(Character o) {
+		return this.EffectiveTeamID == o.EffectiveTeamID;
+	}
+	public bool IsEnemy(Character o) {
+		return this.EffectiveTeamID != o.EffectiveTeamID;
+	}
+
 	//can't use transform hierarchy here because
 	//that's already loaded with semantics
 	//for skills, equipment, etc.

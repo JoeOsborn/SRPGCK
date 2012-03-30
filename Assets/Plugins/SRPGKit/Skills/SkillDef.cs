@@ -259,10 +259,10 @@ public class SkillDef : ScriptableObject {
 		SetParam("arg.pos.y", ctp.y);
 		SetParam("arg.pos.z", ctp.z);
 		Character t = map.TargetableCharacterAt(ttp);
-		SetParam("arg.sameTeam", t != null && t.TeamID == character.TeamID ? 1 : 0);
-		SetParam("arg.otherTeam", t != null && t.TeamID != character.TeamID ? 1 : 0);
-		SetParam("arg.isAlly", t != null && t.EffectiveTeamID == character.EffectiveTeamID ? 1 : 0);
-		SetParam("arg.isEnemy", t != null && t.EffectiveTeamID != character.EffectiveTeamID ? 1 : 0);
+		SetParam("arg.sameTeam", t != null && t.IsSameTeam(character) ? 1 : 0);
+		SetParam("arg.otherTeam", t != null && t.IsOtherTeam(character) ? 1 : 0);
+		SetParam("arg.isAlly", t != null && t.IsAlly(character) ? 1 : 0);
+		SetParam("arg.isEnemy", t != null && t.IsEnemy(character) ? 1 : 0);
 		SetParam("arg"+infix+"angle.xy", angle);
 		// Debug.Log("set "+"arg"+infix+"angle.xy"+"="+angle);
 	}

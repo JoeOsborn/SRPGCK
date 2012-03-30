@@ -166,6 +166,21 @@ public class Region {
 		}
 	}
 
+	public bool _useMountingStepBonus=false;
+	public bool useMountingStepBonus {
+		get { return _useMountingStepBonus; }
+		set {
+			_useMountingStepBonus = value;
+			if(regions == null) { return; }
+			for(int i = 0; i < regions.Length; i++) {
+				if(regions[i] == null) {
+					regions[i] = new Region();
+				}
+				regions[i].useMountingStepBonus = useMountingStepBonus;
+			}
+		}
+	}
+
 	public bool _canMountEnemies=false;
 	public bool canMountEnemies {
 		get { return _canMountEnemies; }
@@ -681,19 +696,19 @@ public class Region {
 		Dictionary<Vector3, PathNode> pickables = null;
 		switch(type) {
 			case RegionType.Cylinder:
-				pickables = CylinderTilesAround(here, xyrmx, zrdmx, zrumx, PathNodeIsValidRange);
+				pickables = CylinderTilesAround(here, xyrmx, zrdmx+(useMountingStepBonus?1:0), zrumx+(useMountingStepBonus?1:0), PathNodeIsValidRange);
 				break;
 			case RegionType.Sphere:
-				pickables = SphereTilesAround(here, xyrmx, zrdmx, zrumx, PathNodeIsValidRange);
+				pickables = SphereTilesAround(here, xyrmx, zrdmx+(useMountingStepBonus?1:0), zrumx+(useMountingStepBonus?1:0), PathNodeIsValidRange);
 				break;
 			case RegionType.Line:
-				pickables = LineTilesAround(here, q, xyrmx, zrdmx, zrumx, xyDirection, zDirection, lwmn, lwmx, PathNodeIsValidRange);
+				pickables = LineTilesAround(here, q, xyrmx, zrdmx+(useMountingStepBonus?1:0), zrumx+(useMountingStepBonus?1:0), xyDirection, zDirection, lwmn, lwmx, PathNodeIsValidRange);
 				break;
 			case RegionType.LineMove:
-				pickables = LineMoveTilesAround(here, q, xyrmx, zrdmx, zrumx, xyDirection);
+				pickables = LineMoveTilesAround(here, q, xyrmx, zrdmx+(useMountingStepBonus?1:0), zrumx+(useMountingStepBonus?1:0), xyDirection);
 				break;
 			case RegionType.Cone:
-				pickables = ConeTilesAround(here, q, xyrmx, zrdmx, zrumx, xyDirection, zDirection, xyArcMin, xyArcMax, zArcMin, zArcMax, rFwdClipMax, PathNodeIsValidRange);
+				pickables = ConeTilesAround(here, q, xyrmx, zrdmx+(useMountingStepBonus?1:0), zrumx+(useMountingStepBonus?1:0), xyDirection, zDirection, xyArcMin, xyArcMax, zArcMin, zArcMax, rFwdClipMax, PathNodeIsValidRange);
 				break;
 			case RegionType.Self:
 				pickables =	new Dictionary<Vector3, PathNode>(){
@@ -798,9 +813,15 @@ public class Region {
 				if(c == owner.character) {
 					return canTargetSelf;
 				} else if(c.EffectiveTeamID == owner.character.EffectiveTeamID) {
-					return canTargetFriends || (canMountFriends && c.IsMountableBy(owner.character) && owner.character.CanMount(c));
+					return canTargetFriends ||
+						(canMountFriends &&
+						 c.IsMountableBy(owner.character) &&
+						 owner.character.CanMount(c));
 				} else {
-					return canTargetEnemies || (canMountEnemies && c.IsMountableBy(owner.character) && owner.character.CanMount(c));
+					return canTargetEnemies ||
+						(canMountEnemies &&
+						 c.IsMountableBy(owner.character) &&
+						 owner.character.CanMount(c));
 				}
 			}
 			return true;
@@ -810,18 +831,22 @@ public class Region {
 			case RegionType.Cylinder:
 				return picked.Where(delegate(PathNode n) {
 					float xyd = n.XYDistanceFrom(here);
-					int signedDZ = useAbsoluteDZ ? (int)map.SignedDZForMove(n.position, here) : n.signedDZ;
+					int signedDZ = useAbsoluteDZ ?
+						(int)map.SignedDZForMove(n.position, here) : n.signedDZ;
 					return xyd >= xyrmn && xyd <= xyrmx+n.bonusRange &&
 				  	(signedDZ <= -zrdmn || signedDZ >= zrumn) &&
-						signedDZ >= -zrdmx && signedDZ <= zrumx;
+						signedDZ >= -zrdmx-(useMountingStepBonus?1:0) &&
+						signedDZ <= zrumx+(useMountingStepBonus?1:0);
 				}).ToArray();
 			case RegionType.Sphere:
 				return picked.Where(delegate(PathNode n) {
 					float xyzd = n.XYZDistanceFrom(here);
-					int signedDZ = useAbsoluteDZ ? (int)map.SignedDZForMove(n.position, here) : n.signedDZ;
+					int signedDZ = useAbsoluteDZ ?
+						(int)map.SignedDZForMove(n.position, here) : n.signedDZ;
 					return xyzd >= xyrmn && xyzd <= xyrmx+n.bonusRange &&
 					  (signedDZ <= -zrdmn || signedDZ >= zrumn) &&
-						signedDZ >= -zrdmx && signedDZ <= zrumx;
+						signedDZ >= -zrdmx-(useMountingStepBonus?1:0) &&
+						signedDZ <= zrumx+(useMountingStepBonus?1:0);
 				}).ToArray();
 			case RegionType.Line:
 				return picked.Where(delegate(PathNode n) {
@@ -831,7 +856,8 @@ public class Region {
 					return xyd >= xyrmn && xyd <= xyrmx+n.bonusRange &&
 						xyOff >= lwmn && xyOff <= lwmx &&
 					  (signedDZ <= -zrdmn || signedDZ >= zrumn) &&
-					  signedDZ >= -zrdmx && signedDZ <= zrumx;
+					  signedDZ >= -zrdmx-(useMountingStepBonus?1:0) &&
+						signedDZ <= zrumx+(useMountingStepBonus?1:0);
 				}).ToArray();
 			case RegionType.LineMove:
 				return picked.ToArray();
@@ -841,7 +867,9 @@ public class Region {
 					float xyd = n.radius;
 					float fwd = n.radius*Mathf.Cos(n.angle);
 					int signedDZ = (int)n.centerOffset.z;
-					return xyd >= xyrmn && (signedDZ <= -zrdmn || signedDZ >= zrumn) && (rFwdClipMax <= 0 || fwd <= (rFwdClipMax+1));
+					return xyd >= xyrmn &&
+						(signedDZ <= -zrdmn || signedDZ >= zrumn) &&
+						(rFwdClipMax <= 0 || fwd <= (rFwdClipMax+1));
 				}).ToArray();
 			default:
 				return picked.ToArray();
@@ -1058,25 +1086,66 @@ public class Region {
 			}
 			closed.Add(pn);
 			//each time around, enqueue XYZ neighbors of cur that are in pickables and within zdownmax/zupmax. this won't enable pathing through walls, but that's kind of an esoteric usage anyway. file a bug. remember the jumping to cross gaps if a neighbor doesn't have a tile there (extend the neighbor search until we're past zDownMax/2)
-			if(pn.XYDistanceFrom(start) == maxRadius) {
+			if(pn.xyDistanceFromStart == maxRadius) {
 				//don't bother trying to add any more points, they'll be too far
 				continue;
 			}
 			if(pn.isEnemy && !canCrossEnemies && !provideAllTiles) { continue; }
+			bool zStepBonusFrom = false;
+			if(useMountingStepBonus && (canMountFriends || canMountEnemies)) {
+				var steppables = map.CharactersAt(pn.pos).
+					Where(ch =>
+						(Owner is MoveSkillDef && !((Owner as MoveSkillDef).remainMounted) && ch == Owner.character.mountedCharacter) || 
+						(ch.IsTargetable &&
+						(ch.IsMountableBy(Owner.character) &&
+						 Owner.character.CanMount(ch)))
+					).ToArray();
+				if(steppables.Length > 0 &&
+				   ((canMountFriends &&
+				     steppables.Any(stp => stp.IsAlly(Owner.character))) ||
+				    (canMountEnemies &&
+				     steppables.Any(stp => stp.IsEnemy(Owner.character))))) {
+					zStepBonusFrom = true;
+				}
+			}
       foreach(Vector2 n2 in XYNeighbors)
       {
-				if(pn.XYDistanceFrom(start)+n2.x+n2.y > maxRadius && !provideAllTiles) {
+				if(pn.xyDistanceFromStart+n2.x+n2.y > maxRadius && !provideAllTiles) {
 					continue;
 				}
 				float px = pn.pos.x+n2.x;
 				float py = pn.pos.y+n2.y;
-					// Debug.Log("search at "+px+", "+py + " (d "+n2.x+","+n2.y+")");
-
+				// Debug.Log("search at "+px+", "+py + " (d "+n2.x+","+n2.y+")"+" (xyd "+(pn.xyDistanceFromStart+n2.x+n2.y)+")");
 				foreach(int adjZ in map.ZLevelsWithin((int)px, (int)py, (int)pn.pos.z, -1)) {
 					Vector3 pos = SRPGUtil.Trunc(new Vector3(px, py, adjZ));
-					float dz = useAbsoluteDZ ? map.SignedDZForMove(pos, start) : map.SignedDZForMove(pos, pn.pos);
-					if(dz > 0 && dz > zUpMax) { continue; }
-					if(dz < 0 && Mathf.Abs(dz) > zDownMax) { continue; }
+					bool zStepBonusTo = false;
+					if(useMountingStepBonus && (canMountFriends || canMountEnemies)) {
+						var steppables = map.CharactersAt(pos).
+							Where(ch =>
+								(Owner is MoveSkillDef && !((Owner as MoveSkillDef).remainMounted) && ch == Owner.character.mountedCharacter) || 
+								(ch.IsTargetable &&
+								(ch.IsMountableBy(Owner.character) &&
+								 Owner.character.CanMount(ch)))
+							).ToArray();
+						if(steppables.Length > 0 &&
+						   ((canMountFriends &&
+						     steppables.Any(stp => stp.IsAlly(Owner.character))) ||
+						    (canMountEnemies &&
+						     steppables.Any(stp => stp.IsEnemy(Owner.character))))) {
+							zStepBonusTo = true;
+						}
+					}
+
+					float dz = useAbsoluteDZ ?
+						map.SignedDZForMove(pos, start) :
+						map.SignedDZForMove(pos, pn.pos);
+
+					if(dz > 0 && dz > (zStepBonusFrom ? zUpMax+1 : zUpMax)) {
+						continue;
+					}
+					if(dz < 0 && Mathf.Abs(dz) > (zStepBonusTo ? zDownMax+1 : zDownMax)) {
+						continue;
+					}
 					if(!provideAllTiles && dz > 0 && !canCrossWalls && map.ZLevelsWithinLimits((int)pn.pos.x, (int)pn.pos.y, (int)pn.pos.z, adjZ+headroom).Length != 0) {
 						continue;
 					}
@@ -1104,7 +1173,7 @@ public class Region {
 						//try to jump across me
 						TryAddingJumpPaths(queue, closed, pickables, ret, pn, (int)n2.x, (int)n2.y, maxRadius, zUpMax, zDownMax, jumpDistance, start, dest, provideAllTiles);
 					}
-					float addedCost = Mathf.Abs(n2.x)+Mathf.Abs(n2.y)-0.01f*(Mathf.Max(zUpMax, zDownMax)-Mathf.Abs(pn.pos.z-adjZ)); //-0.3f because we are not a leap
+					float addedCost = Mathf.Abs(n2.x)+Mathf.Abs(n2.y)-0.01f*(Mathf.Max(zUpMax+1, zDownMax+1)-Mathf.Abs(pn.pos.z-adjZ)); //-0.3f because we are not a leap
 					next.isWall = map.TileAt(pos+new Vector3(0,0,1)) != null;
 					Character c = map.TargetableCharacterAt(pos);
 					next.isEnemy = c != null && c.EffectiveTeamID != owner.character.EffectiveTeamID;
@@ -1138,7 +1207,6 @@ public class Region {
 		bool provideAllTiles
 	) {
 		var ret = new List<PathNode>();
-		//we bump start up by 1 in z so that the line can come from the head rather than the feet
 		Vector3 truncStart = SRPGUtil.Trunc(here);
 		var sortedPickables = pickables.Values.
 			OrderBy(p => p.XYDistanceFrom(here)).
