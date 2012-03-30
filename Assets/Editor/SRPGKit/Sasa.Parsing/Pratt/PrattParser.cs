@@ -576,7 +576,7 @@ public sealed class PrattParser<T>
   /// <returns>The next parsed value.</returns>
   public T Parse(int rbp)
   {
-      //FIXME: to make parser fully incremental with backtracking, the implicit
+      //to make parser fully incremental with backtracking, the implicit
       //stack used when calling Nud and Led must be made explicit, and must
       //track precisely which state created the activation frame (NUD/LED).
       //The IEnumerator must also become a purely functional stream type.
@@ -584,7 +584,7 @@ public sealed class PrattParser<T>
       //Then Save()/Restore() primitives can be added to capture a parser
       //continuation, consisting of: (stack, line, pos, Token, stream).
 
-      //FIXME: use breadth-first parsing, ala parallel parsing processes, and
+      //use breadth-first parsing, ala parallel parsing processes, and
       //schedule them ordered by the number of errors they've generated so far.
       //This requires explicit parse error nodes, ie. Result<T> = Value<T> | Error<T>
       //http://lambda-the-ultimate.org/node/4109#comment-62411
@@ -660,7 +660,7 @@ public sealed class PrattParser<T>
   // scan the input and generate a stream of matching tokens
   IEnumerator<Token<T>> Tokenize(string input)
   {
-      //FIXME: parser is not thread-safe
+      //parser is not thread-safe
       pos = 0; line = 1;
       while (pos < input.Length)
       {

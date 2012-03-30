@@ -102,7 +102,6 @@ public class MoveSkillDef : ActionSkillDef {
 		// Debug.Log("perform move to "+currentTarget);
 		MoveExecutor me = Executor;
 		// if(!(currentSettings.targetingMode == TargetingMode.Path && currentSettings.immediatelyExecuteDrawnPath)) {
-		// 	//FIXME: really? what about chained moves?
 		// 	Debug.Log("first, pop back to "+initialTarget.Position);
 		// 	me.ImmediatelyMoveTo(new PathNode(initialTarget.Position, null, 0));
 		// }

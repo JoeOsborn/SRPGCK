@@ -81,7 +81,7 @@ public class TeamRoundsPointsScheduler : Scheduler {
 		float downscaleFactor = ppc.TurnDiminishScale;
 		ppc.Limiter *= Mathf.Pow(downscaleFactor, uses);
 		if(limitMode == TurnLimitMode.AP) {
-			//FIXME: Is it okay for the scheduler to determine the move region's max range?
+			//FIXME: It is NOT OKAY for the scheduler to determine the move region's max range?
 			//???: What about characters' intrinsic stats and so on?
 			//???: may be better to pass this through a param instead...
 			// Region ms = c.moveSkill.targetSettings[0].targetRegion;

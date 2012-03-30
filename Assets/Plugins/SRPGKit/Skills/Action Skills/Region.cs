@@ -279,34 +279,6 @@ public class Region {
 		}
 	}
 
-	// //FIXME: wrong because of reliance on z{Up|Down}{Max|Min}
-	// public virtual PathDecision PathNodeIsValidHack(Vector3 start, PathNode pn, Character c) {
-	// 	float dz = useAbsoluteDZ ? map.SignedDZForMove(pn.position, start) : pn.signedDZ;
-	// 	float absDZ = Mathf.Abs(dz);
-	// 	if(c != null && c != owner.character) {
-	// 		if(c.EffectiveTeamID != owner.character.EffectiveTeamID) {
-	// 			return (IsEffectRegion ? PathDecision.Normal : PathDecision.PassOnly);
-	// 		} else {
-	// 			if(!IsEffectRegion) {
-	// 				return PathDecision.PassOnly;
-	// 			}
-	// 		}
-	// 	}
-	// 	if(IsEffectRegion) {
-	// 		if(dz < 0 ? (absDZ > zUpMax) :
-	// 				(dz > 0 ? absDZ > zDownMax : false)) {
-	// 			return PathDecision.PassOnly;
-	// 		}
-	// 	} else {
-	// 		if((dz == 0 ?
-	// 			(zDownMin != 0 && zUpMin != 0) :
-	// 				(dz < 0 ? (dz > -zDownMin || dz <= -zDownMax) :
-	// 				(dz < zUpMin || dz >= zUpMax)))) {
-	// 			return PathDecision.PassOnly;
-	// 		}
-	// 	}
-	// 	return PathDecision.Normal;
-	// }
 	public virtual bool PathNodeMeetsPredicate(
 		Vector3 start,
 		PathNode pn,

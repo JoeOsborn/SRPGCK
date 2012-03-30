@@ -105,6 +105,7 @@ public class CTScheduler : Scheduler {
 				if(sa.delayRemaining <= 0) {
 					sa.Apply();
 					pendingSkillActivations.RemoveAt(i);
+					//FIXME: need to prevent scheduler from fixedupdate-ing while skills are animating
 					return;
 				}
 			}

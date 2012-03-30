@@ -836,7 +836,6 @@ public class ActionSkillDef : SkillDef {
 	}
 	public virtual void ApplySkillToTargets() {
 		//set up all args
-		//FIXME: NEXT: see email
 		Debug.Log("ready the args");
 		for(int i = 0; i < targets.Count; i++) {
 			Target t = targets[i];
