@@ -560,6 +560,7 @@ public class Character : MonoBehaviour {
 		} else if(statName == "isMounted") {
 			return IsMounted ? 1 : 0;
 		} else if(statName == "isMounting") {
+			// Debug.Log("mounting? "+IsMounting);
 			return IsMounting ? 1 : 0;
 		}
 		if(!HasStat(statName)) {

@@ -117,6 +117,23 @@ public class Formulae : ScriptableObject {
 				if(econtext != null) { return econtext.wielder.HasStat(fname); }
 				if(ccontext != null) { return ccontext.HasStat(fname); }
 				return false;
+			case LookupType.ActorMountStat: {
+				Character m = null;
+				if(scontext != null) { m = scontext.currentTargetCharacter.mountedCharacter; }
+				if(econtext != null) { m = econtext.wielder.mountedCharacter; }
+				if(tcontext != null) { m = tcontext.mountedCharacter; }
+				if(m != null) { return m.HasStat(fname); }
+				// Debug.Log("can lookup "+fname+" on mount "+m+" ? "+(m != null && m.HasStat(fname)));
+				return false;
+			}
+			case LookupType.ActorMounterStat: {
+				Character m = null;
+				if(scontext != null) { m = scontext.currentTargetCharacter.mountingCharacter; }
+				if(econtext != null) { m = econtext.wielder.mountingCharacter; }
+				if(tcontext != null) { m = tcontext.mountingCharacter; }
+				if(m != null) { return m.HasStat(fname); }
+				return false;
+			}
 			case LookupType.ActorEquipmentParam:
 				if(scontext != null) {
 					ccontext = scontext.character;
@@ -128,6 +145,28 @@ public class Formulae : ScriptableObject {
 					}
 				}
 				return CanLookupEquipmentParamOn(fname, type, ccontext, f);
+			case LookupType.ActorMountEquipmentParam:
+				if(scontext != null) {
+					ccontext = scontext.character.mountedCharacter;
+				} else if(ccontext == null && econtext != null) {
+					if(econtext.Matches(f.equipmentSlots, f.equipmentCategories)) {
+						return econtext.HasParam(fname);
+					} else {
+						ccontext = econtext.wielder.mountedCharacter;
+					}
+				}
+				return CanLookupEquipmentParamOn(fname, type, ccontext, f);
+			case LookupType.ActorMounterEquipmentParam:
+				if(scontext != null) {
+					ccontext = scontext.character.mountingCharacter;
+				} else if(ccontext == null && econtext != null) {
+					if(econtext.Matches(f.equipmentSlots, f.equipmentCategories)) {
+						return econtext.HasParam(fname);
+					} else {
+						ccontext = econtext.wielder.mountingCharacter;
+					}
+				}
+				return CanLookupEquipmentParamOn(fname, type, ccontext, f);
 			case LookupType.ActorSkillParam:
 				if(scontext != null) { return scontext.HasParam(fname); }
 				return false;
@@ -136,14 +175,54 @@ public class Formulae : ScriptableObject {
 				if(econtext != null) { return econtext.wielder.HasStatusEffect(fname); }
 				if(ccontext != null) { return ccontext.HasStatusEffect(fname); }
 				return false;
+			case LookupType.ActorMountStatusEffect: {
+				Character m = null;
+				if(scontext != null) { m = scontext.character.mountedCharacter; }
+				if(econtext != null) { m = econtext.wielder.mountedCharacter; }
+				if(ccontext != null) { m = ccontext.mountedCharacter; }
+				return m != null && m.HasStatusEffect(fname);
+			}
+			case LookupType.ActorMounterStatusEffect: {
+				Character m = null;
+				if(scontext != null) { m = scontext.character.mountingCharacter; }
+				if(econtext != null) { m = econtext.wielder.mountingCharacter; }
+				if(ccontext != null) { m = ccontext.mountingCharacter; }
+				return m != null && m.HasStatusEffect(fname);
+			}
 			case LookupType.TargetStat:
 				if(scontext != null) { return scontext.currentTargetCharacter.HasStat(fname); }
 				if(tcontext != null) { return tcontext.HasStat(fname); }
 				return false;
+			case LookupType.TargetMountStat: {
+				Character m = null;
+				if(scontext != null) { m = scontext.currentTargetCharacter.mountedCharacter; }
+				if(tcontext != null) { m = tcontext.mountedCharacter; }
+				if(m != null) { return m.HasStat(fname); }
+				return false;
+			}
+			case LookupType.TargetMounterStat: {
+				Character m = null;
+				if(scontext != null) { m = scontext.currentTargetCharacter.mountingCharacter; }
+				if(tcontext != null) { m = tcontext.mountingCharacter; }
+				if(m != null) { return m.HasStat(fname); }
+				return false;
+			}
 			case LookupType.TargetStatusEffect:
 				if(scontext != null) { return scontext.currentTargetCharacter.HasStatusEffect(fname); }
 				if(tcontext != null) { return tcontext.HasStatusEffect(fname); }
 				return false;
+			case LookupType.TargetMountStatusEffect: {
+				Character m = null;
+				if(scontext != null) { m = scontext.currentTargetCharacter.mountedCharacter; }
+				if(tcontext != null) { m = tcontext.mountedCharacter; }
+				return m != null && m.HasStatusEffect(fname);
+			}
+			case LookupType.TargetMounterStatusEffect: {
+				Character m = null;
+				if(scontext != null) { m = scontext.currentTargetCharacter.mountingCharacter; }
+				if(tcontext != null) { m = tcontext.mountingCharacter; }
+				return m != null && m.HasStatusEffect(fname);
+			}
 			case LookupType.TargetEquipmentParam:
 				if(scontext != null) {
 					ccontext = scontext.currentTargetCharacter;
@@ -153,7 +232,29 @@ public class Formulae : ScriptableObject {
 					ccontext = null;
 				}
 				return CanLookupEquipmentParamOn(fname, type, ccontext, f);
+			case LookupType.TargetMountEquipmentParam:
+				if(scontext != null) {
+					ccontext = scontext.currentTargetCharacter.mountedCharacter;
+				} else if(tcontext != null) {
+					ccontext = tcontext.mountedCharacter;
+				} else {
+					ccontext = null;
+				}
+				return CanLookupEquipmentParamOn(fname, type, ccontext, f);
+			case LookupType.TargetMounterEquipmentParam:
+				if(scontext != null) {
+					ccontext = scontext.currentTargetCharacter.mountingCharacter;
+				} else if(tcontext != null) {
+					ccontext = tcontext.mountingCharacter;
+				} else {
+					ccontext = null;
+				}
+				return CanLookupEquipmentParamOn(fname, type, ccontext, f);
 			case LookupType.TargetSkillParam:
+			case LookupType.ActorMountSkillParam:
+			case LookupType.ActorMounterSkillParam:
+			case LookupType.TargetMountSkillParam:
+			case LookupType.TargetMounterSkillParam:
 				return false;
 			case LookupType.NamedFormula:
 				return HasFormula(fname);
@@ -203,6 +304,29 @@ public class Formulae : ScriptableObject {
 				if(ccontext != null) { return ccontext.GetStat(fname); }
 				Debug.LogError("Cannot find actor stat "+fname);
 				return -1;
+			case LookupType.ActorMountStat: {
+				Character m = null;
+				if(scontext != null) { m = scontext.character.mountedCharacter; }
+				if(econtext != null) { m = econtext.wielder.mountedCharacter; }
+				if(ccontext != null) { m = ccontext.mountedCharacter; }
+				// Debug.Log("lookup "+fname+" on mount "+m+" ? "+(m != null ? m.GetStat(fname) : 0));
+				if(m != null) {
+					return m.GetStat(fname);
+				}
+				Debug.LogError("Cannot find actor mount stat "+fname);
+				return -1;
+			}
+			case LookupType.ActorMounterStat: {
+				Character m = null;
+				if(scontext != null) { m = scontext.character.mountingCharacter; }
+				if(econtext != null) { m = econtext.wielder.mountingCharacter; }
+				if(ccontext != null) { m = ccontext.mountingCharacter; }
+				if(m != null) {
+					return m.GetStat(fname);
+				}
+				Debug.LogError("Cannot find actor mounter stat "+fname);
+				return -1;
+			}
 			case LookupType.ActorEquipmentParam:
 				if(scontext != null) {
 					ccontext = scontext.character;
@@ -214,7 +338,31 @@ public class Formulae : ScriptableObject {
 					}
 				}
 				return LookupEquipmentParamOn(fname, type, ccontext, f);
+			case LookupType.ActorMountEquipmentParam:
+				if(scontext != null) {
+					ccontext = scontext.character.mountedCharacter;
+				} else if(ccontext == null && econtext != null) {
+					if(econtext.Matches(f.equipmentSlots, f.equipmentCategories)) {
+						return econtext.GetParam(fname);
+					} else {
+						ccontext = econtext.wielder.mountedCharacter;
+					}
+				}
+				return LookupEquipmentParamOn(fname, type, ccontext, f);
+			case LookupType.ActorMounterEquipmentParam:
+				if(scontext != null) {
+					ccontext = scontext.character.mountingCharacter;
+				} else if(ccontext == null && econtext != null) {
+					if(econtext.Matches(f.equipmentSlots, f.equipmentCategories)) {
+						return econtext.GetParam(fname);
+					} else {
+						ccontext = econtext.wielder.mountingCharacter;
+					}
+				}
+				return LookupEquipmentParamOn(fname, type, ccontext, f);
 			case LookupType.ActorStatusEffect:
+			case LookupType.ActorMountStatusEffect:
+			case LookupType.ActorMounterStatusEffect:
 				Debug.LogError("lookup semantics not defined for own status effect "+fname);
 				return -1;
 			case LookupType.ActorSkillParam:
@@ -227,6 +375,22 @@ public class Formulae : ScriptableObject {
 				if(tcontext != null) { return tcontext.GetStat(fname); }
 				Debug.LogError("Cannot find target stat "+fname);
 				return -1;
+			case LookupType.TargetMountStat: {
+				Character m = null;
+				if(scontext != null) { m = scontext.currentTargetCharacter.mountedCharacter; }
+				if(tcontext != null) { m = tcontext.mountedCharacter; }
+				if(m != null) { return m.GetStat(fname); }
+				Debug.LogError("Cannot find target stat "+fname);
+				return -1;
+			}
+			case LookupType.TargetMounterStat: {
+				Character m = null;
+				if(scontext != null) { m = scontext.currentTargetCharacter.mountingCharacter; }
+				if(tcontext != null) { m = tcontext.mountingCharacter; }
+				if(m != null) { return m.GetStat(fname); }
+				Debug.LogError("Cannot find target stat "+fname);
+				return -1;
+			}
 			case LookupType.TargetEquipmentParam:
 				if(scontext != null) {
 					ccontext = scontext.currentTargetCharacter;
@@ -236,12 +400,36 @@ public class Formulae : ScriptableObject {
 					ccontext = null;
 				}
 				return LookupEquipmentParamOn(fname, type, ccontext, f);
+			case LookupType.TargetMountEquipmentParam:
+				if(scontext != null) {
+					ccontext = scontext.currentTargetCharacter.mountedCharacter;
+				} else if(tcontext != null) {
+					ccontext = tcontext.mountedCharacter;
+				} else {
+					ccontext = null;
+				}
+				return LookupEquipmentParamOn(fname, type, ccontext, f);
+			case LookupType.TargetMounterEquipmentParam:
+				if(scontext != null) {
+					ccontext = scontext.currentTargetCharacter.mountingCharacter;
+				} else if(tcontext != null) {
+					ccontext = tcontext.mountingCharacter;
+				} else {
+					ccontext = null;
+				}
+				return LookupEquipmentParamOn(fname, type, ccontext, f);
 			case LookupType.TargetStatusEffect:
+			case LookupType.TargetMountStatusEffect:
+			case LookupType.TargetMounterStatusEffect:
 				Debug.LogError("lookup semantics not defined for target status effect "+fname);
 				return -1;
 			case LookupType.TargetSkillParam:
+			case LookupType.ActorMountSkillParam:
+			case LookupType.ActorMounterSkillParam:
+			case LookupType.TargetMountSkillParam:
+			case LookupType.TargetMounterSkillParam:
 			//TODO: look up skill by slot, name, type?
-				Debug.LogError("Cannot find target skill param "+fname);
+				Debug.LogError("Cannot find "+type+" "+fname);
 				return -1;
 			case LookupType.NamedFormula:
 				if(!HasFormula(fname)) {

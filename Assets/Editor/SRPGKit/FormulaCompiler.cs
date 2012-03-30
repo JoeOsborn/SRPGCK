@@ -197,6 +197,18 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 			f.lookupType = LookupType.TargetStat;
 			return f;
 		});
+		LookupOn("mount", (parser) => {
+			Formula f = new Formula();
+			f.formulaType = FormulaType.Lookup;
+			f.lookupType = LookupType.ActorMountStat;
+			return f;
+		});
+		LookupOn("mounter", (parser) => {
+			Formula f = new Formula();
+			f.formulaType = FormulaType.Lookup;
+			f.lookupType = LookupType.ActorMounterStat;
+			return f;
+		});
 		LookupOn("skill", (parser) => { //TODO: let this search on the name/path to the skill
 			Formula f = new Formula();
 			f.formulaType = FormulaType.Lookup;
@@ -238,6 +250,7 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 				Identifier ident = next as Identifier;
 				if(next is Formula) {
 					Formula nextF = next as Formula;
+					// Debug.Log("next is formula "+nextF.formulaType+"->"+nextF.lookupType+":"+nextF.lookupReference);
 					if(nextF.lookupType == LookupType.SkillEffectType ||
 						 nextF.lookupType == LookupType.ReactedEffectType) {
 					  if(f.formulaType == FormulaType.Lookup) {
@@ -255,29 +268,112 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 								nextF.lookupType = LookupType.ActorEquipmentParam;
 							} else if(f.lookupType == LookupType.TargetStat) {
 								nextF.lookupType = LookupType.TargetEquipmentParam;
+							} else if(f.lookupType == LookupType.ActorMountStat) {
+								nextF.lookupType = LookupType.ActorMountEquipmentParam;
+							} else if(f.lookupType == LookupType.ActorMounterStat) {
+								nextF.lookupType = LookupType.ActorMounterEquipmentParam;
+							} else if(f.lookupType == LookupType.TargetMountStat) {
+								nextF.lookupType = LookupType.TargetMountEquipmentParam;
+							} else if(f.lookupType == LookupType.TargetMounterStat) {
+								nextF.lookupType = LookupType.TargetMounterEquipmentParam;
 							}
 							f = nextF;
 						}
-	        }
+					} else {
+						if(f.formulaType == FormulaType.Lookup) {
+							if(f.lookupType == LookupType.ActorStat) {
+								if(f.lookupType == LookupType.TargetStat) {
+									nextF.lookupType = LookupType.ActorStat;
+								} else if(f.lookupType == LookupType.TargetMountStat) {
+									nextF.lookupType = LookupType.ActorMountStat;
+								} else if(f.lookupType == LookupType.TargetMounterStat) {
+									nextF.lookupType = LookupType.ActorMounterStat;
+								} else if(f.lookupType == LookupType.TargetMountSkillParam) {
+									nextF.lookupType = LookupType.ActorMountSkillParam;
+								} else if(f.lookupType == LookupType.TargetMounterSkillParam) {
+									nextF.lookupType = LookupType.ActorMounterSkillParam;
+								} else if(f.lookupType == LookupType.TargetMountEquipmentParam) {
+									nextF.lookupType = LookupType.ActorMountEquipmentParam;
+								} else if(f.lookupType == LookupType.TargetMounterEquipmentParam) {
+									nextF.lookupType = LookupType.ActorMounterEquipmentParam;
+								}
+							 	f = nextF;
+							} else if(f.lookupType == LookupType.TargetStat) {
+								if(f.lookupType == LookupType.ActorStat) {
+									nextF.lookupType = LookupType.TargetStat;
+								} else if(f.lookupType == LookupType.ActorMountStat) {
+									nextF.lookupType = LookupType.TargetMountStat;
+								} else if(f.lookupType == LookupType.ActorMounterStat) {
+									nextF.lookupType = LookupType.TargetMounterStat;
+								} else if(f.lookupType == LookupType.ActorMountSkillParam) {
+									nextF.lookupType = LookupType.TargetMountSkillParam;
+								} else if(f.lookupType == LookupType.ActorMounterSkillParam) {
+									nextF.lookupType = LookupType.TargetMounterSkillParam;
+								} else if(f.lookupType == LookupType.ActorMountEquipmentParam) {
+									nextF.lookupType = LookupType.TargetMountEquipmentParam;
+								} else if(f.lookupType == LookupType.ActorMounterEquipmentParam) {
+									nextF.lookupType = LookupType.TargetMounterEquipmentParam;
+								}
+								f = nextF;
+							}
+						}
+					}
 				} else if(ident != null && ident.Name == "reacted-skill") {
 					throw new SemanticException("Scoped reacted-skill param lookups unsupported");
+				} else if(ident != null && ident.Name == "mount") {
+					//prev = c, t
+					if(f.lookupType == LookupType.ActorStat) {
+						// Debug.Log("c mount stat");
+						f.lookupType = LookupType.ActorMountStat;
+					} else if(f.lookupType == LookupType.TargetStat) {
+						// Debug.Log("t mount stat");
+						f.lookupType = LookupType.TargetMountStat;
+					} else {
+						throw new SemanticException("bad parent scope for mount check");
+					}
+				} else if(ident != null && ident.Name == "mounter") {
+					//prev = c, t
+					if(f.lookupType == LookupType.ActorStat) {
+						f.lookupType = LookupType.ActorMounterStat;
+					} else if(f.lookupType == LookupType.TargetStat) {
+						f.lookupType = LookupType.TargetMounterStat;
+					} else {
+						throw new SemanticException("bad parent scope for mounter check");
+					}
 				} else if(ident != null && ident.Name == "skill") {
 					//prev = c, t
 					if(f.lookupType == LookupType.ActorStat) {
 						f.lookupType = LookupType.ActorSkillParam;
 					} else if(f.lookupType == LookupType.TargetStat) {
 						f.lookupType = LookupType.TargetSkillParam;
+					} else if(f.lookupType == LookupType.ActorMountStat) {
+						f.lookupType = LookupType.ActorMountSkillParam;
+					} else if(f.lookupType == LookupType.ActorMounterStat) {
+						f.lookupType = LookupType.ActorMounterSkillParam;
+					} else if(f.lookupType == LookupType.TargetMountStat) {
+						f.lookupType = LookupType.TargetMountSkillParam;
+					} else if(f.lookupType == LookupType.TargetMounterStat) {
+						f.lookupType = LookupType.TargetMounterSkillParam;
 					}
 				} else if(ident != null && ident.Name == "status") {
 					if(f.lookupType == LookupType.ActorStat) {
 						f.lookupType = LookupType.ActorStatusEffect;
 					} else if(f.lookupType == LookupType.TargetStat) {
 						f.lookupType = LookupType.TargetStatusEffect;
+					} else if(f.lookupType == LookupType.ActorMountStat) {
+						f.lookupType = LookupType.ActorMountStatusEffect;
+					} else if(f.lookupType == LookupType.ActorMounterStat) {
+						f.lookupType = LookupType.ActorMounterStatusEffect;
+					} else if(f.lookupType == LookupType.TargetMountStat) {
+						f.lookupType = LookupType.TargetMountStatusEffect;
+					} else if(f.lookupType == LookupType.TargetMounterStat) {
+						f.lookupType = LookupType.TargetMounterStatusEffect;
 					}
 				} else if(ident != null) {
+					// Debug.Log("non-null ident "+ident.Name+" for "+f.formulaType+"->"+f.lookupType);
 					//else, append to lookupref
 					if(ident.Name == "isNull" || ident.Name == "isNotNull") {
-						if((f.lookupReference == null || f.lookupReference == "") && 
+						if((f.lookupReference == null || f.lookupReference == "") &&
 						    f.lookupType == LookupType.TargetStat) {
 							f.formulaType = ident.Name == "isNull" ? FormulaType.TargetIsNull : FormulaType.TargetIsNotNull;
 						} else {
@@ -288,7 +384,9 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 						if(f.lookupReference == null || f.lookupReference == "") {
 							//set lookupref
 							f.lookupReference = ident.Name;
+							// Debug.Log("set lookupref to "+f.lookupReference);
 						} else {
+							// Debug.Log("append "+ident.Name+" to "+f.lookupReference);
 							f.lookupReference += "."+ident.Name;
 						}
 					}

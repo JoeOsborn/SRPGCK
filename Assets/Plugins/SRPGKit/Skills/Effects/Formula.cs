@@ -76,7 +76,27 @@ public enum LookupType {
 	ActorStatusEffect,
 	TargetStatusEffect,
 	//lookupReference is unused
-	SkillEffectType
+	SkillEffectType,
+	//lookupReference is the skill param/character stat
+	ActorMountStat,
+	ActorMounterStat,
+	ActorMountEquipmentParam,
+	ActorMounterEquipmentParam,
+	ActorMountSkillParam,
+	ActorMounterSkillParam,
+	//lookupReference is the status effect type
+	ActorMountStatusEffect,
+	ActorMounterStatusEffect,
+	//lookupReference is the skill param/character stat
+	TargetMountStat,
+	TargetMounterStat,
+	TargetMountEquipmentParam,
+	TargetMounterEquipmentParam,
+	TargetMountSkillParam,
+	TargetMounterSkillParam,
+	//lookupReference is the status effect type
+	TargetMountStatusEffect,
+	TargetMounterStatusEffect
 }
 
 public enum FormulaMergeMode {
@@ -215,6 +235,54 @@ public class Formula : IFormulaElement {
 				break;
 			case LookupType.TargetStatusEffect:
 				f.text = "t.status."+f.text;
+				break;
+			case LookupType.ActorMountStat:
+				f.text = "c.mount."+f.text;
+				break;
+			case LookupType.ActorMountSkillParam:
+				f.text = "c.mount.skill."+f.text;
+				break;
+			case LookupType.ActorMountEquipmentParam:
+				f.text = "c.mount.equip."+f.text;
+				break;
+			case LookupType.ActorMountStatusEffect:
+				f.text = "c.mount.status."+f.text;
+				break;
+			case LookupType.ActorMounterStat:
+				f.text = "c.mounter."+f.text;
+				break;
+			case LookupType.ActorMounterSkillParam:
+				f.text = "c.mounter.skill."+f.text;
+				break;
+			case LookupType.ActorMounterEquipmentParam:
+				f.text = "c.mounter.equip."+f.text;
+				break;
+			case LookupType.ActorMounterStatusEffect:
+				f.text = "c.mounter.status."+f.text;
+				break;
+			case LookupType.TargetMountStat:
+				f.text = "t.mount."+f.text;
+				break;
+			case LookupType.TargetMountSkillParam:
+				f.text = "t.mount.skill."+f.text;
+				break;
+			case LookupType.TargetMountEquipmentParam:
+				f.text = "t.mount.equip."+f.text;
+				break;
+			case LookupType.TargetMountStatusEffect:
+				f.text = "t.mount.status."+f.text;
+				break;
+			case LookupType.TargetMounterStat:
+				f.text = "t.mounter."+f.text;
+				break;
+			case LookupType.TargetMounterSkillParam:
+				f.text = "t.mounter.skill."+f.text;
+				break;
+			case LookupType.TargetMounterEquipmentParam:
+				f.text = "t.mounter.equip."+f.text;
+				break;
+			case LookupType.TargetMounterStatusEffect:
+				f.text = "t.mounter.status."+f.text;
 				break;
 		}
 		return f;
