@@ -62,8 +62,8 @@ public class Skill : MonoBehaviour {
 		actionDef.IncrementalCancel();
 	}
 
-	public void DelayedApply(List<Target> targs) {
-		actionDef.DelayedApply(targs);
+	public void DelayedApply(Vector3? start, List<Target> targs) {
+		actionDef.DelayedApply(start, targs);
 	}
 
 	public void ConfirmDelayedSkillTarget(TargetOption tgo) {

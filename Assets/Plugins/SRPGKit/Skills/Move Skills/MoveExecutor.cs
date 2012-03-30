@@ -120,7 +120,7 @@ public class MoveExecutor {
 		bool special = false,
 		bool alsoMoveMount = true
 	) {
-		Debug.Log("temporary move to "+pn+" move mount "+alsoMoveMount);
+		// Debug.Log("temporary move to "+pn+" move mount "+alsoMoveMount);
 		if(!animateTemporaryMovement) {
 			ImmediatelyMoveTo(pn, callback, timeout, special, alsoMoveMount);
 		} else {
@@ -149,7 +149,7 @@ public class MoveExecutor {
 		bool special=false,
 		bool alsoMoveMount=true
 	) {
-		Debug.Log("incremental move to "+pn);
+		// Debug.Log("incremental move to "+pn);
 		specialMoving = special;
 		moveMount = alsoMoveMount;
 		transformPosition = position;
@@ -175,7 +175,7 @@ public class MoveExecutor {
 		bool special=false,
 		bool alsoMoveMount=true
 	) {
-		Debug.Log("move to "+pn);
+		// Debug.Log("move to "+pn);
 		IncrementalMoveTo(pn, callback, timeout, special, alsoMoveMount);
 	}
 
@@ -185,7 +185,7 @@ public class MoveExecutor {
 		float timeout=10.0f,
 		bool alsoMoveMount=true
 	) {
-		Debug.Log("special move to "+pn);
+		// Debug.Log("special move to "+pn);
 		MoveTo(pn, callback, timeout, true, alsoMoveMount);
 	}
 
@@ -271,7 +271,7 @@ public class MoveExecutor {
 			startPos.z = Mathf.Round(startPos.z);
 		}
 		destNode = new PathNode(startPos, null, 0);
-		Debug.Log("activate");
+		// Debug.Log("activate");
 		position = destination;
 		moveOrigin = position;
 		temporaryDestNode = destNode;
@@ -282,7 +282,7 @@ public class MoveExecutor {
 		isActive = false;
 	}
 
-	virtual public void Update () {
+	virtual public void Update() {
 		if(character == null || map == null) { return; }
 		Vector3 tp = transformPosition;
 		if(moveTimeRemaining > 0 && animNodes != null && animNodes.Count > 0) {
@@ -304,14 +304,14 @@ public class MoveExecutor {
 					transformPosition = tp = temporaryDestination;
 					if(position != destination) {
 					  position = destination;
-						Debug.Log("permanent move");
+						// Debug.Log("permanent move");
 					} else {
-						Debug.Log("temporary move");
+						// Debug.Log("temporary move");
 					}
 				  temporaryPosition = temporaryDestination;
 					specialMoving = false;
 					ClearPath();
-					Debug.Log("call callback in update");
+					// Debug.Log("call callback in update");
 					TriggerCallback(temporaryDestNode);
 				}
 			} else {

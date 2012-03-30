@@ -179,7 +179,7 @@ public class MoveSkillDef : ActionSkillDef {
 	override protected void TemporaryExecutePathTo(PathNode p) {
 		if(Executor.IsMoving) { return; }
 		currentTarget.Path(p);
-		Debug.Log("temp path to "+p);
+		// Debug.Log("temp path to "+p);
 		TemporaryMoveToPathNode(p, (src, endNode, finishedNicely) => {
 			TentativePick(endNode);
 		});

@@ -17,7 +17,7 @@ public class TeamRoundsPickOneSchedulerFeedback : MonoBehaviour {
 	}
 	
 	// Update is called once per frame
-	void Update () {
+	void Update() {
 		if(map == null) {
 			if(this.transform.parent != null) {
 				map = this.transform.parent.GetComponent<Map>();

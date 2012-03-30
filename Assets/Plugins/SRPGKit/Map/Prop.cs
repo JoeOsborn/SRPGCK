@@ -9,7 +9,7 @@ public class Prop : MonoBehaviour {
 		lastPosition = transform.position;
 	}
 
-	void FixedUpdate () {
+	void FixedUpdate() {
 		if(lastPosition == Vector3.zero) {
 			lastPosition = transform.position;
 		}

@@ -10,6 +10,8 @@ public class Scheduler : MonoBehaviour {
 	public Character activeCharacter;
 	public bool begun=false;
 
+	public bool paused=false;
+
 	public SkillDef pendingDeactivationSkill;
 	public Character pendingDeactivationCharacter;
 
@@ -109,24 +111,28 @@ public class Scheduler : MonoBehaviour {
 		);
 	}
 
-	public virtual void ApplySkillAfterDelay(SkillDef s, List<Target> currentTs, float delay) {
+	public virtual void ApplySkillAfterDelay(SkillDef s, Vector3? start, List<Target> currentTs, float delay) {
 		if(pendingSkillActivations == null) {
 			pendingSkillActivations = new List<SkillActivation>();
 		}
-		pendingSkillActivations.Add(new SkillActivation(s, currentTs, delay));
+		pendingSkillActivations.Add(new SkillActivation(s, start, currentTs, delay));
 	}
 
 	protected virtual void Begin() {
 		begun = true;
 	}
 
-	public virtual void Update () {
-
-	}
-
-	public virtual void FixedUpdate () {
+	public virtual void FixedUpdate() {
 		if(!begun) { Begin(); }
+		if(paused) { return; }
 		if(activeCharacter != null && activeCharacter.isActive) { return; }
 		if(activeCharacter != null && !activeCharacter.isActive) { Deactivate(activeCharacter); }
+	}
+
+	public virtual void Pause() {
+		paused = true;
+	}
+	public virtual void Resume() {
+		paused = false;
 	}
 }

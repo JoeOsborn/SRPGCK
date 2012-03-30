@@ -169,7 +169,7 @@ public class SkillDef : ScriptableObject {
 			if(targetCharacters.Contains(currentTargetCharacter)) {
 				ApplyPerApplicationEffectsTo(reactionApplicationEffects.effects, new List<Character>(){currentTargetCharacter});
 				if(reactionEffects.Length > 0) {
-					ApplyEffectsTo(target, null, reactionEffects, targetCharacters, "reaction.hitType");
+					ApplyEffectsTo(target, null, reactionEffects, targetCharacters, "reaction.hitType", character.TilePosition);
 				}
 				map.BroadcastMessage("SkillApplied", this, SendMessageOptions.DontRequireReceiver);
 			}
@@ -234,13 +234,16 @@ public class SkillDef : ScriptableObject {
 		Vector3 ctp = start.HasValue ? start.Value : character.TilePosition;
 		float distance = Vector3.Distance(ttp, ctp);
 		float distanceXY = Vector2.Distance(new Vector2(ttp.x, ttp.y), new Vector2(ctp.x, ctp.y));
-		float angle = facing != null ? facing.Value.eulerAngles.y : character.Facing;
-		if(facing == null &&
-		   (!Mathf.Approximately(ttp.y,ctp.y) ||
-		    !Mathf.Approximately(ttp.x,ctp.x))) {
-			angle = Mathf.Atan2(ttp.y-ctp.y, ttp.x-ctp.x)*Mathf.Rad2Deg;
+		float angle = facing != null ? facing.Value.eulerAngles.y : 0;
+		if(facing == null) {
+		  if(!(Mathf.Approximately(ttp.y,ctp.y) &&
+		       Mathf.Approximately(ttp.x,ctp.x))) {
+				angle = Mathf.Atan2(ttp.y-ctp.y, ttp.x-ctp.x)*Mathf.Rad2Deg;
+			} else {
+				angle = character.Facing;
+			}
 		}
-		Debug.Log("ttp "+ttp+", ctp "+ttp+", f "+facing);
+		Debug.Log("ttp "+ttp+", ctp "+ctp+", f "+(facing.HasValue ? ""+facing.Value.eulerAngles.y : "null")+", ang "+angle);
 		string infix = (prefix??"")+".";
 		SetParam("arg"+infix+"distance", distance);
 		SetParam("arg"+infix+"distance.xy", distanceXY);
@@ -263,7 +266,7 @@ public class SkillDef : ScriptableObject {
 		SetParam("arg"+infix+"angle.xy", angle);
 		// Debug.Log("set "+"arg"+infix+"angle.xy"+"="+angle);
 	}
-	protected virtual void SetArgsFromTarget(Target t, TargetSettings ts, string prefix) {
+	protected virtual void SetArgsFromTarget(Target t, TargetSettings ts, string prefix, Vector3? start = null) {
 		TargetingMode tm = TargetingMode.Custom;
 		if(ts != null) {
 			tm = ts.targetingMode;
@@ -279,7 +282,7 @@ public class SkillDef : ScriptableObject {
 			case TargetingMode.Pick:
 			case TargetingMode.Path:
 				pos = t.Position;
-				SetArgsFrom(pos, t.facing, prefix);
+				SetArgsFrom(pos, t.facing, prefix, start);
 				break;
 			case TargetingMode.Cardinal:
 			case TargetingMode.Radial:
@@ -290,7 +293,7 @@ public class SkillDef : ScriptableObject {
 				} else if(t.path != null) {
 					pos = t.Position;
 				}
-				SetArgsFrom(pos, t.facing, prefix);
+				SetArgsFrom(pos, t.facing, prefix, start);
 				break;
 			default:
 				Debug.LogError("Unrecognized targeting mode");
@@ -316,14 +319,23 @@ public class SkillDef : ScriptableObject {
 			));
 		}
 	}
-	protected virtual void ApplyEffectsTo(Target t, TargetSettings ts, StatEffectGroup[] effectGroups, List<Character> targs, string htp) {
+	protected virtual void ApplyEffectsTo(Target t, TargetSettings ts, StatEffectGroup[] effectGroups, List<Character> targs, string htp, Vector3 start) {
 		foreach(Character c in targs) {
 			currentTargetCharacter = c;
 			int hitType = (int)GetParam(htp, 0);
 			currentHitType = hitType;
 			if(currentHitType < effectGroups.Length) {
 				StatEffect[] effects = effectGroups[hitType].effects;
-				SetArgsFromTarget(t, ts, "");
+				Quaternion? oldFacing = t.facing;
+				//FIXME: feels a little (i.e. a lot) hacky
+			  Vector3 ep = c.TilePosition;
+				Vector3 tp = start;
+		 		if(!(Mathf.Approximately(ep.y,tp.y) &&
+		 		   	 Mathf.Approximately(ep.x,tp.x))) {
+		 			t.facing = Quaternion.Euler(0,Mathf.Atan2(ep.y-tp.y, ep.x-tp.x)*Mathf.Rad2Deg,0);
+				}
+				SetArgsFromTarget(t, ts, "", start);
+				t.facing = oldFacing;
 				foreach(StatEffect se in effects) {
 					lastEffects.Add(se.Apply(this, character, currentTargetCharacter));
 				}

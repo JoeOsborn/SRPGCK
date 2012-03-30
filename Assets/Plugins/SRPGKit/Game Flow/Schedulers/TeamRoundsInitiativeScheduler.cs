@@ -39,8 +39,8 @@ public class TeamRoundsInitiativeScheduler : Scheduler {
 		BeginRound();
 	}
 
-	public override void ApplySkillAfterDelay(SkillDef s, List<Target> ts, float delay) {
-		base.ApplySkillAfterDelay(s, ts, activeInitiative - delay);
+	public override void ApplySkillAfterDelay(SkillDef s, Vector3? start, List<Target> ts, float delay) {
+		base.ApplySkillAfterDelay(s, start, ts, activeInitiative - delay);
 	}
 
 	override public void SkillApplied(SkillDef s) {
@@ -55,9 +55,16 @@ public class TeamRoundsInitiativeScheduler : Scheduler {
 		base.Begin();
 		BeginRound();
 	}
+	public void WillSpecialMoveCharacter(CharacterSpecialMoveReport csmr) {
+		Pause();
+	}
+	public void DidSpecialMoveCharacter(CharacterSpecialMoveReport csmr) {
+		Resume();
+	}
 
-	override public void FixedUpdate () {
+	override public void FixedUpdate() {
 		base.FixedUpdate();
+		if(paused) { return; }
 		if(activeCharacter == null) {
 			float highestInit = -1;
 			SkillActivation nowSA = null;

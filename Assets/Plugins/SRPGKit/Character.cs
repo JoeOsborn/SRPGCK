@@ -374,7 +374,7 @@ public class Character : MonoBehaviour {
 		}
 	}
 
-	void FixedUpdate () {
+	void FixedUpdate() {
 		if(map == null) {
 			Debug.Log("Characters must be children of Map objects!");
 			return;

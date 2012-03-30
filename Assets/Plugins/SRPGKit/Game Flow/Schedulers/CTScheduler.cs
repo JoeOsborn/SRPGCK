@@ -80,6 +80,13 @@ public class CTScheduler : Scheduler {
 			}
 		}
 	}
+	
+	public void WillSpecialMoveCharacter(CharacterSpecialMoveReport csmr) {
+		Pause();
+	}
+	public void DidSpecialMoveCharacter(CharacterSpecialMoveReport csmr) {
+		Resume();
+	}
 
 	override public void CharacterMoved(Character c, Vector3 src, Vector3 dest, PathNode endOfPath) {
 		base.CharacterMoved(c, src, dest, endOfPath);
@@ -95,8 +102,9 @@ public class CTScheduler : Scheduler {
 	}
 	//after c acts, reduce c's CT by per-act cost (40)
 
-	public override void FixedUpdate () {
+	public override void FixedUpdate() {
 		base.FixedUpdate();
+		if(paused) { return; }
 		//if there is no active unit
 		if(activeCharacter == null) {
 			//else, take the first unit or action with CT > 100, if any, and activate it

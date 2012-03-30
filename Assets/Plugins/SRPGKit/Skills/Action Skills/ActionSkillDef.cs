@@ -45,6 +45,7 @@ public class ActionSkillDef : SkillDef {
 	public StatEffectGroup applicationEffects;
 	public StatEffectGroup[] targetEffects;
 	public Formula delay;
+	public bool delayedApplicationUsesOriginalPosition=false;
 
 	public MultiTargetMode multiTargetMode = MultiTargetMode.Single;
 	public bool waypointsAreIncremental=false;
@@ -281,25 +282,49 @@ public class ActionSkillDef : SkillDef {
 		}
 		return initialTarget.facing.Value;
 	} }
-
-	public Vector3 EffectPositionForTarget(Target t) {
-		if(t.path != null) { return t.path.pos; }
-		if(t.character != null) { return t.character.TilePosition; }
-		int idx = targets.IndexOf(t);
-		for(int i = idx; i >= 0; i--) {
-			Target ti = targets[i];
-			if(ti.path != null) { return ti.path.pos; }
-			if(ti.character != null) { return ti.character.TilePosition; }
+	public Vector3 TargetPositionForTarget(Target t) {
+		if(multiTargetMode == MultiTargetMode.Chain) {
+			int idx = targets.IndexOf(t);
+			for(int i = idx-1; i >= 0; i--) {
+				Target ti = targets[i];
+				if(ti.path != null) { return ti.path.pos; }
+				if(ti.character != null) { return ti.character.TilePosition; }
+			}
 		}
 		return initialTarget.Position;
 	}
-	public Quaternion EffectFacingForTarget(Target t) {
-		if(t.facing != null) { return t.facing.Value; }
-		int idx = targets.IndexOf(t);
-		for(int i = idx; i >= 0; i--) {
-			Target ti = targets[i];
-			if(ti.facing != null) { return ti.facing.Value; }
+	public Quaternion TargetFacingForTarget(Target t) {
+		if(multiTargetMode == MultiTargetMode.Chain) {
+			int idx = targets.IndexOf(t);
+			for(int i = idx-1; i >= 0; i--) {
+				Target ti = targets[i];
+				if(ti.facing != null) { return ti.facing.Value; }
+			}
 		}
+		return initialTarget.facing.Value;
+	}
+	public Vector3 EffectPositionForTarget(Target t) {
+		if(multiTargetMode == MultiTargetMode.Chain) {
+			int idx = targets.IndexOf(t);
+			for(int i = idx; i >= 0; i--) {
+				Target ti = targets[i];
+				if(ti.path != null) { return ti.path.pos; }
+				if(ti.character != null) { return ti.character.TilePosition; }
+			}
+		}
+		if(t.path != null) { return t.path.pos; }
+		if(t.character != null) { return t.character.TilePosition; }
+		return initialTarget.Position;
+	}
+	public Quaternion EffectFacingForTarget(Target t) {
+		if(multiTargetMode == MultiTargetMode.Chain) {
+			int idx = targets.IndexOf(t);
+			for(int i = idx; i >= 0; i--) {
+				Target ti = targets[i];
+				if(ti.facing != null) { return ti.facing.Value; }
+			}
+		}
+		if(t.facing != null) { return t.facing.Value; }
 		return initialTarget.facing.Value;
 	}
 
@@ -385,7 +410,7 @@ public class ActionSkillDef : SkillDef {
 			targets = new List<Target>();
 		}
 		targets.Add(initialTarget.Clone());
-		SetArgsFromTarget(initialTarget, currentSettings, "");
+		SetArgsFromTarget(initialTarget, currentSettings, "", TargetPosition);
 		nodeCount = 0;
 		radiusSoFar = 0;
 		if(currentSettings.targetingMode == TargetingMode.Custom) {
@@ -697,7 +722,7 @@ public class ActionSkillDef : SkillDef {
 				break;
 		}
 	}
-	
+
 	public virtual void ConfirmationDenied() {
 		currentTarget.character = null;
 		TemporaryApplyCurrentTarget();
@@ -709,7 +734,15 @@ public class ActionSkillDef : SkillDef {
 		if(AwaitingTargetOption || (RequireConfirmation && awaitingConfirmation)) {
 			awaitingConfirmation = false;
 			ConfirmationDenied();
-			//"popping" is intuitive but wrong, since it hasn't been pushed yet
+			//"popping" is intuitive but wrong in most cases
+			if(currentSettings.targetingMode == TargetingMode.Self) {
+				if(targets.Count == 1) {
+					Cancel();
+					return;
+				} else {
+					PopTarget();
+				}
+			}
 			if(currentSettings.IsPickOrPath) {
 				UpdateGridSelection();
 			}
@@ -730,10 +763,10 @@ public class ActionSkillDef : SkillDef {
 		}
 	}
 
-	public void DelayedApply(List<Target> targs) {
+	public void DelayedApply(Vector3? start, List<Target> targs) {
 		targets = targs;
 		Debug.Log("delayed apply skill "+skillName+" with "+targs.Count+" targets");
-		ApplySkillToTargets();
+		ApplySkillToTargets(start);
 	}
 
 	public void ConfirmDelayedSkillTarget(TargetOption tgo) {
@@ -806,16 +839,16 @@ public class ActionSkillDef : SkillDef {
 				TargetSettings ts = targetSettings[i];
 				Debug.Log("set args at "+i+" from "+t);
 				//arg0... arg1...
-				SetArgsFromTarget(t, ts, ""+i);
+				SetArgsFromTarget(t, ts, ""+i, TargetPositionForTarget(t));
 			}
 			Debug.Log("set default args from "+currentTarget);
-			SetArgsFromTarget(currentTarget, currentSettings, "");
+			SetArgsFromTarget(currentTarget, currentSettings, "", TargetPosition);
 			FindPerApplicationCharacterTargets();
 			ApplyPerApplicationEffectsTo(scheduledEffects.effects, targetCharacters);
 		}
 		if(delayVal == 0) {
-			Debug.Log("No delay!");
-			ApplySkillToTargets();
+			// Debug.Log("No delay!");
+			ApplySkillToTargets(initialTarget.Position);
 			base.ApplySkill();
 		} else {
 			Debug.Log("using target with tile "+currentTarget.path+" and character "+currentTarget.character);
@@ -827,25 +860,25 @@ public class ActionSkillDef : SkillDef {
 				);
 			} else {
 				Debug.Log("apply after delay");
-				scheduler.ApplySkillAfterDelay(this, targets, delayVal);
+				scheduler.ApplySkillAfterDelay(this, delayedApplicationUsesOriginalPosition ? initialTarget.Position : (Vector3?)null, targets, delayVal);
 				base.ApplySkill();
 			}
 			//FIXME: Move this delayed-application concept up into Skill,
 			//let it work with reactions too.
 		}
 	}
-	public virtual void ApplySkillToTargets() {
+	public virtual void ApplySkillToTargets(Vector3? start=null) {
 		//set up all args
-		Debug.Log("ready the args");
+		// Debug.Log("ready the args");
 		for(int i = 0; i < targets.Count; i++) {
 			Target t = targets[i];
 			TargetSettings ts = targetSettings[i];
-			Debug.Log("set args at "+i+" from "+t);
+			Debug.Log("apply set args at "+i+" from "+t);
 			//arg0... arg1...
-			SetArgsFromTarget(t, ts, ""+i);
+			SetArgsFromTarget(t, ts, ""+i, (i == 0 || multiTargetMode != MultiTargetMode.Chain) ? start : TargetPositionForTarget(t));
 		}
-		Debug.Log("set default args from "+currentTarget);
-		SetArgsFromTarget(currentTarget, currentSettings, "");
+		Debug.Log("apply set default args from "+currentTarget);
+		SetArgsFromTarget(currentTarget, currentSettings, "", start ?? TargetPosition);
 		FindPerApplicationCharacterTargets();
 		ApplyPerApplicationEffectsTo(applicationEffects.effects, targetCharacters);
 
@@ -860,7 +893,7 @@ public class ActionSkillDef : SkillDef {
 					TargetSettings ts = targetSettings[i];
 					//set up "current" args
 					Debug.Log("Apply vs target "+t);
-					SetArgsFromTarget(t, ts, "");
+					SetArgsFromTarget(t, ts, "", start);
 					PathNode[] targetTiles = PathNodesForTarget(t, ts.targetRegion, ts.effectRegion, EffectPositionForTarget(t), EffectFacingForTarget(t));
 					Debug.Log("tts:"+targetTiles.Length);
 					foreach(PathNode tt in targetTiles) {
@@ -868,7 +901,7 @@ public class ActionSkillDef : SkillDef {
 					}
 					targetCharacters = ts.effectRegion.CharactersForTargetedTiles(targetTiles);
 					Debug.Log("targetChars:"+targetCharacters.Count);
-					ApplyEffectsTo(t, ts, targetEffects, targetCharacters, "hitType");
+					ApplyEffectsTo(t, ts, targetEffects, targetCharacters, "hitType", start.HasValue ? start.Value : TargetPositionForTarget(t));
 				}
 				break;
 			case MultiTargetMode.Chain:
@@ -893,7 +926,7 @@ public class ActionSkillDef : SkillDef {
 					}
 				}
 				targetCharacters = chars;
-				ApplyEffectsTo(currentTarget, currentSettings, targetEffects, targetCharacters, "hitType");
+				ApplyEffectsTo(currentTarget, currentSettings, targetEffects, targetCharacters, "hitType", TargetPositionForTarget(currentTarget));
 				break;
 		}
 		map.BroadcastMessage("SkillEffectApplied", this, SendMessageOptions.DontRequireReceiver);
@@ -980,12 +1013,12 @@ public class ActionSkillDef : SkillDef {
 		float angle = EffectFacing.eulerAngles.y;
 		Vector3 ep = EffectPosition;
 		Vector3 tp = TargetPosition;
-		if(!Mathf.Approximately(ep.y,tp.y) ||
-		   !Mathf.Approximately(ep.x,tp.x)) {
+		if(!(Mathf.Approximately(ep.y,tp.y) &&
+		   	 Mathf.Approximately(ep.x,tp.x))) {
 			angle = Mathf.Atan2(ep.y-tp.y, ep.x-tp.x)*Mathf.Rad2Deg;
 		}
 		currentTarget.Facing(angle);
-		Debug.Log("show path from "+((ChainedTarget && currentSettings.doNotMoveChain) ? tp : ep)+" angle "+angle);
+		// Debug.Log("show path from "+((ChainedTarget && currentSettings.doNotMoveChain) ? tp : ep)+" angle "+angle);
 		_GridOverlay.SetSelectedPoints(
 			map.CoalesceTiles(
 				currentSettings.effectRegion.GetValidTiles(
@@ -1007,7 +1040,7 @@ public class ActionSkillDef : SkillDef {
 			angle = Mathf.Atan2(ep.y-tp.y, ep.x-tp.x)*Mathf.Rad2Deg;
 		}
 		currentTarget.Facing(angle);
-		Debug.Log("show path from node "+((ChainedTarget && currentSettings.doNotMoveChain) ? tp : ep)+" angle "+angle);
+		// Debug.Log("show path from node "+((ChainedTarget && currentSettings.doNotMoveChain) ? tp : ep)+" angle "+angle);
 		_GridOverlay.SetSelectedPoints(
 			map.CoalesceTiles(
 				currentSettings.effectRegion.GetValidTiles(
@@ -1176,7 +1209,7 @@ public class ActionSkillDef : SkillDef {
 			probe.transform.position = map.TransformPointWorld(tp);
 		}
 		targets.Clear();
-		Debug.Log("reset to ip "+tp+" init "+initialTarget);
+		// Debug.Log("reset to ip "+tp+" init "+initialTarget);
 		targets.Add(initialTarget.Clone());
 		if(ShouldDrawPath) {
 			lines.SetVertexCount(1);
@@ -1194,7 +1227,7 @@ public class ActionSkillDef : SkillDef {
 				break;
 			case TargetingMode.Cardinal://??
 			case TargetingMode.Radial://??
-				Debug.Log("reset; tentative pick facing "+currentTarget.facing);
+				// Debug.Log("reset; tentative pick facing "+currentTarget.facing);
 				TentativePickFacing(currentTarget.facing.Value);
 				break;
 			case TargetingMode.Path:
@@ -1267,9 +1300,9 @@ public class ActionSkillDef : SkillDef {
 				this,
 				SendMessageOptions.DontRequireReceiver
 			);
-			SetArgsFromTarget(currentTarget, currentSettings, ""+(targets.Count-1));
+			SetArgsFromTarget(currentTarget, currentSettings, ""+(targets.Count-1), TargetPosition);
 			if(multiTargetMode == MultiTargetMode.Chain) {
-				SetArgsFromTarget(currentTarget, currentSettings, "");
+				SetArgsFromTarget(currentTarget, currentSettings, "", TargetPosition);
 			}
 			if(currentSettings.targetingMode == TargetingMode.Path &&
 			   currentSettings.immediatelyExecuteDrawnPath) {
@@ -1281,7 +1314,7 @@ public class ActionSkillDef : SkillDef {
 				TemporaryApplyCurrentTarget();
 			}
 			//FIXME: is it ok to set up so much data?
-			Debug.Log("targpos " + TargetPosition);
+			// Debug.Log("targpos " + TargetPosition);
 
 			targets.Add((new Target()).
 				Path(
@@ -1334,7 +1367,7 @@ public class ActionSkillDef : SkillDef {
 					break;
 				case TargetingMode.Cardinal:
 				case TargetingMode.Radial:
-					Debug.Log("temp apply; tentative pick facing "+t.facing.Value);
+					// Debug.Log("temp apply; tentative pick facing "+t.facing.Value);
 					TentativePickFacing(t.facing.Value);
 					break;
 			}
@@ -1363,7 +1396,7 @@ public class ActionSkillDef : SkillDef {
 					break;
 				case TargetingMode.Cardinal:
 				case TargetingMode.Radial:
-					Debug.Log("temp apply; tentative pick facing "+t.facing.Value);
+					// Debug.Log("temp apply; tentative pick facing "+t.facing.Value);
 					ImmediatelyPickFacing(t.facing.Value);
 					break;
 			}
@@ -1384,7 +1417,7 @@ public class ActionSkillDef : SkillDef {
 				break;
 			case TargetingMode.Cardinal:
 			case TargetingMode.Radial:
-				Debug.Log("inc apply; tentative pick facing "+currentTarget.facing.Value);
+				// Debug.Log("inc apply; tentative pick facing "+currentTarget.facing.Value);
 				TentativePickFacing(currentTarget.facing.Value);
 				break;
 		}
@@ -1401,7 +1434,7 @@ public class ActionSkillDef : SkillDef {
 				break;
 			case TargetingMode.Cardinal:
 			case TargetingMode.Radial:
-				Debug.Log("inc apply; tentative pick facing "+currentTarget.facing.Value);
+				// Debug.Log("inc apply; tentative pick facing "+currentTarget.facing.Value);
 				PickFacing(currentTarget.facing.Value);
 				break;
 		}
@@ -1413,7 +1446,7 @@ public class ActionSkillDef : SkillDef {
 		    !(currentSettings.targetingMode == TargetingMode.Path &&
 		      currentSettings.immediatelyExecuteDrawnPath))) {
 			//FIXME: really? what about chained moves?
-			Debug.Log("first, pop back to "+pn);
+			// Debug.Log("first, pop back to "+pn);
 			me.ImmediatelyMoveTo(pn);
 		}
 	}

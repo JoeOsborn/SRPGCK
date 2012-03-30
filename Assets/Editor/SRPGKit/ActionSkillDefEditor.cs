@@ -28,6 +28,11 @@ public class ActionSkillDefEditor : SkillDefEditor {
 	}
 	protected void TargetedSkillGUI() {
 		atk.delay = EditorGUIExt.FormulaField("Scheduled Delay", atk.delay, atk.GetInstanceID()+"."+atk.name+".delay", formulaOptions, lastFocusedControl);
+		if(atk.delay != null && 
+		   !(atk.delay.formulaType == FormulaType.Constant && 
+		     atk.delay.constantValue == 0)) {
+	 		atk.delayedApplicationUsesOriginalPosition = EditorGUILayout.Toggle("Trigger from Original Position", atk.delayedApplicationUsesOriginalPosition);
+		}
 		if(atk.targetSettings == null) {
 			atk.targetSettings = new TargetSettings[]{new TargetSettings()};
 		}

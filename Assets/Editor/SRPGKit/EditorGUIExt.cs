@@ -323,7 +323,8 @@ public class EditorGUIExt
 				);
 				newFx.specialMoveGivenStartX = EditorGUIExt.FormulaField(
 					"Start X:",
-					newFx.specialMoveGivenStartX,
+					newFx.specialMoveGivenStartX ??
+						Formula.Lookup("position.x", LookupType.ActorStat),
 					type+".specialMoveStart.x",
 					formulaOptions,
 					lastFocusedControl,
@@ -331,7 +332,8 @@ public class EditorGUIExt
 				);
 				newFx.specialMoveGivenStartY = EditorGUIExt.FormulaField(
 					"Start Y:",
-					newFx.specialMoveGivenStartY,
+					newFx.specialMoveGivenStartY ??
+						Formula.Lookup("position.y", LookupType.ActorStat),
 					type+".specialMoveStart.y",
 					formulaOptions,
 					lastFocusedControl,
@@ -339,7 +341,8 @@ public class EditorGUIExt
 				);
 				newFx.specialMoveGivenStartZ = EditorGUIExt.FormulaField(
 					"Start Z:",
-					newFx.specialMoveGivenStartZ,
+					newFx.specialMoveGivenStartZ ??
+						Formula.Lookup("position.z", LookupType.ActorStat),
 					type+".specialMoveStart.z",
 					formulaOptions,
 					lastFocusedControl,

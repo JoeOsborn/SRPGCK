@@ -147,9 +147,16 @@ public class TeamRoundsPointsScheduler : Scheduler {
 	override public void SkillApplied(SkillDef s) {
 		base.SkillApplied(s);
 	}
+	public void WillSpecialMoveCharacter(CharacterSpecialMoveReport csmr) {
+		Pause();
+	}
+	public void DidSpecialMoveCharacter(CharacterSpecialMoveReport csmr) {
+		Resume();
+	}
 
-	override public void FixedUpdate () {
+	override public void FixedUpdate() {
 		base.FixedUpdate();
+		if(paused) { return; }
 		if(activeCharacter == null) {
 			if(pointsRemaining == 0) {
 				EndRound();
@@ -168,8 +175,8 @@ public class TeamRoundsPointsScheduler : Scheduler {
 			}
 		}
 	}
-	override public void Update() {
-		base.Update();
+	public void Update() {
+		if(paused) { return; }
 		if(GetComponent<Arbiter>().IsLocalTeam(currentTeam) && activeCharacter == null && Input.GetMouseButtonDown(0)) {
 			//TODO: need another caller for Activate()
 			Ray r = Camera.main.ScreenPointToRay(Input.mousePosition);

@@ -32,7 +32,7 @@ public class MovableCamera : MonoBehaviour {
 	}
 	
 	// Update is called once per frame
-	void Update () {
+	void Update() {
 		Camera c = transform.Find("Main Camera").camera;
 		Camera oc = c.transform.Find("Overlay Camera").camera;
 		if(c == null) { return; }

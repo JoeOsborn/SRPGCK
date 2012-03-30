@@ -46,17 +46,24 @@ public class TeamRoundsPickAnyOnceScheduler : Scheduler {
 		remainingCharacters.Remove(c);
 //		c.moveSkill.ActivateSkill();
 	}
+	public void WillSpecialMoveCharacter(CharacterSpecialMoveReport csmr) {
+		Pause();
+	}
+	public void DidSpecialMoveCharacter(CharacterSpecialMoveReport csmr) {
+		Resume();
+	}
 
-	override public void FixedUpdate () {
+	override public void FixedUpdate() {
 		base.FixedUpdate();
+		if(paused) { return; }
 		if(activeCharacter == null) {
 			if(remainingCharacters.Count == 0) {
 				EndRound();
 			}
 		}
 	}
-	override public void Update() {
-		base.Update();
+	public void Update() {
+		if(paused) { return; }
 		if(activeCharacter != null) { return; }
 		if(GetComponent<Arbiter>().IsLocalTeam(currentTeam) &&
 		   Input.GetMouseButtonDown(0)) {
