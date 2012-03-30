@@ -149,6 +149,12 @@ public class StatEffect {
 				float oldAngle = actualTarget.Facing;
 				float angle = value.GetValue(fdb, skill, actualTarget);
 				actualTarget.Facing = angle;
+				if(actualTarget.mountedCharacter != null) {
+					actualTarget.mountedCharacter.Facing = angle;
+				}
+				if(actualTarget.mountingCharacter != null) {
+					actualTarget.mountingCharacter.Facing = angle;
+				}
 				Debug.Log("set facing to "+angle);
 				effect = new StatEffectRecord(this, oldAngle, angle, angle);
 				break;

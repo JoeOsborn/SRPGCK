@@ -64,6 +64,7 @@ public class Character : MonoBehaviour {
 	}
 	protected void Mounted(Character c) {
 		mountingCharacter = c;
+		mountingCharacter.Facing = this.Facing;
 	}
 
 	public void Dismount() {
@@ -155,14 +156,6 @@ public class Character : MonoBehaviour {
 		}
 		set {
 			transform.position = value;
-			//FIXME: position mods won't propagate past one level
-			//of mounting, but more than one level is kind of nuts anyway
-			if(IsMounted) {
-				mountingCharacter.transform.position = value;
-			}
-			if(IsMounting) {
-				mountedCharacter.transform.position = value;
-			}
 		}
 	}
 

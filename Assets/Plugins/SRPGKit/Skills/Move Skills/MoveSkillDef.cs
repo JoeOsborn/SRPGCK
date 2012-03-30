@@ -77,7 +77,7 @@ public class MoveSkillDef : ActionSkillDef {
 			if(callback != null) {
 				callback(src, endNode, finishedNicely);
 			}
-		});
+		}, 10.0f, false, remainMounted);
 	}
 
 	public virtual void IncrementalMoveToPathNode(PathNode pn, MoveExecutor.MoveFinished callback=null) {
@@ -94,7 +94,7 @@ public class MoveSkillDef : ActionSkillDef {
 			if(callback != null) {
 				callback(src, endNode, finishedNicely);
 			}
-		});
+		}, 10.0f, false, remainMounted);
 	}
 
 	public virtual void PerformMoveToPathNode(PathNode pn, MoveExecutor.MoveFinished callback=null) {
@@ -108,7 +108,6 @@ public class MoveSkillDef : ActionSkillDef {
 		// }
 		//FIXME: really? what about chained moves?
 		if(character.IsMounting && !remainMounted) {
-			me.ImmediatelyMoveTo(initialTarget.path);
 			character.Dismount();
 		}
 		me.MoveTo(pn, delegate(Vector3 src, PathNode endNode, bool finishedNicely) {
@@ -131,7 +130,7 @@ public class MoveSkillDef : ActionSkillDef {
 			if(callback != null) {
 				callback(src, endNode, finishedNicely);
 			}
-		});
+		}, 10.0f, false, remainMounted);
 	}
 
 	protected override PathNode[] GetValidActionTiles() {
@@ -169,6 +168,10 @@ public class MoveSkillDef : ActionSkillDef {
 		base.DeactivateSkill();
 	}
 
+	public override void ConfirmationDenied() {
+		currentTarget.character = null;
+	}
+
 	protected override void ResetActionSkill() {
 		overlayColor = new Color(0.3f, 0.3f, 0.3f, 0.7f);
 		highlightColor = new Color(0.5f, 0.5f, 0.5f, 1.0f);
@@ -177,7 +180,7 @@ public class MoveSkillDef : ActionSkillDef {
 	override protected void TemporaryExecutePathTo(PathNode p) {
 		if(Executor.IsMoving) { return; }
 		currentTarget.Path(p);
-		// Debug.Log("temp path to "+p);
+		Debug.Log("temp path to "+p);
 		TemporaryMoveToPathNode(p, (src, endNode, finishedNicely) => {
 			TentativePick(endNode);
 		});

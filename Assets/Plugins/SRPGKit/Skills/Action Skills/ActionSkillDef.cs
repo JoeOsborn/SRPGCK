@@ -359,6 +359,12 @@ public class ActionSkillDef : SkillDef {
 	public virtual void FaceDirection(float ang) {
 		if(targets.Count == 1) {
 			character.Facing = ang;
+			if(character.mountedCharacter != null) {
+				character.mountedCharacter.Facing = ang;
+			}
+			if(character.mountingCharacter != null) {
+				character.mountingCharacter.Facing = ang;
+			}
 		}
 		currentTarget.Facing(ang);
 	}
@@ -691,30 +697,29 @@ public class ActionSkillDef : SkillDef {
 				break;
 		}
 	}
+	
+	public virtual void ConfirmationDenied() {
+		currentTarget.character = null;
+		TemporaryApplyCurrentTarget();
+	}
 
 	public virtual void IncrementalCancel() {
+		if(Executor != null) { Executor.Cancel(); }
 		map.BroadcastMessage("SkillIncrementalCancel", this, SendMessageOptions.DontRequireReceiver);
 		if(AwaitingTargetOption || (RequireConfirmation && awaitingConfirmation)) {
 			awaitingConfirmation = false;
-			currentTarget.character = null;
-			TemporaryApplyCurrentTarget();
+			ConfirmationDenied();
+			//"popping" is intuitive but wrong, since it hasn't been pushed yet
+			if(currentSettings.IsPickOrPath) {
+				UpdateGridSelection();
+			}
 		} else if(targets.Count > 1 &&
 		          canCancelWaypoints &&
 		          !waypointsAreIncremental &&
 		          !currentSettings.immediatelyExecuteDrawnPath) {
 			UnwindToLastWaypoint();
 		} else {
-			if(awaitingConfirmation && RequireConfirmation) {
-				awaitingConfirmation = false;
-				if(currentSettings.IsPickOrPath) {
-					UpdateGridSelection();
-				} else {
-					TemporaryApplyCurrentTarget();
-				}
-			} else {
-				//Back out of skill!
-				Cancel();
-			}
+			Cancel();
 		}
 	}
 
@@ -792,9 +797,9 @@ public class ActionSkillDef : SkillDef {
 	public override void ApplySkill() {
 		ClearLastEffects();
 		float delayVal = delay == null ? 0 : delay.GetValue(fdb, this);
-		if(delay != null && 
-		   !(delay.formulaType == FormulaType.Constant && 
-				 delay.constantValue == 0) && 
+		if(delay != null &&
+		   !(delay.formulaType == FormulaType.Constant &&
+				 delay.constantValue == 0) &&
 		   !AwaitingTargetOption) {
 			for(int i = 0; i < targets.Count; i++) {
 				Target t = targets[i];

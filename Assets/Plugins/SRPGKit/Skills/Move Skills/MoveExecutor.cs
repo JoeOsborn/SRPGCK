@@ -23,6 +23,7 @@ public class MoveExecutor {
 
 	public bool animateTemporaryMovement=false;
 	public bool specialMoving=false;
+	public bool moveMount=true;
 
 	public delegate void MoveFinished(
 		Vector3 src,
@@ -74,7 +75,7 @@ public class MoveExecutor {
 				animNodes[pathIndex-1].pos,
 				animNodes[pathIndex].pos
 			);
-			character.Facing = FacingForMove(
+			facing = FacingForMove(
 				animNodes[pathIndex-1].pos,
 				animNodes[pathIndex].pos
 			);
@@ -87,9 +88,11 @@ public class MoveExecutor {
 		PathNode pn,
 		MoveFinished callback=null,
 		float timeout=10.0f,
-		bool special = false
+		bool special = false,
+		bool alsoMoveMount = true
 	) {
 		specialMoving = special;
+		moveMount = alsoMoveMount;
 		temporaryDestNode = pn;
 		moveOrigin = temporaryPosition;
 		moveCallback = callback;
@@ -114,13 +117,15 @@ public class MoveExecutor {
 		PathNode pn,
 		MoveFinished callback,
 		float timeout=10.0f,
-		bool special = false
+		bool special = false,
+		bool alsoMoveMount = true
 	) {
-		Debug.Log("temporary move to "+pn);
+		Debug.Log("temporary move to "+pn+" move mount "+alsoMoveMount);
 		if(!animateTemporaryMovement) {
-			ImmediatelyMoveTo(pn, callback, timeout, special);
+			ImmediatelyMoveTo(pn, callback, timeout, special, alsoMoveMount);
 		} else {
 			specialMoving = special;
+			moveMount = alsoMoveMount;
 			temporaryDestNode = pn;
 			moveOrigin = temporaryPosition;
 			moveCallback = callback;
@@ -141,10 +146,12 @@ public class MoveExecutor {
 		PathNode pn,
 		MoveFinished callback,
 		float timeout=10.0f,
-		bool special=false
+		bool special=false,
+		bool alsoMoveMount=true
 	) {
 		Debug.Log("incremental move to "+pn);
 		specialMoving = special;
+		moveMount = alsoMoveMount;
 		transformPosition = position;
 		destNode = pn;
 	  temporaryDestNode = pn;
@@ -165,24 +172,49 @@ public class MoveExecutor {
 		PathNode pn,
 		MoveFinished callback,
 		float timeout=10.0f,
-		bool special=false
+		bool special=false,
+		bool alsoMoveMount=true
 	) {
 		Debug.Log("move to "+pn);
-		IncrementalMoveTo(pn, callback, timeout, special);
+		IncrementalMoveTo(pn, callback, timeout, special, alsoMoveMount);
 	}
 
 	virtual public void SpecialMoveTo(
 		PathNode pn,
 		MoveFinished callback,
-		float timeout=10.0f
+		float timeout=10.0f,
+		bool alsoMoveMount=true
 	) {
 		Debug.Log("special move to "+pn);
-		MoveTo(pn, callback, timeout, true);
+		MoveTo(pn, callback, timeout, true, alsoMoveMount);
 	}
 
 	public Vector3 transformPosition {
 		get { return character.WorldPosition-transformOffset; }
-		set { character.WorldPosition = value+transformOffset; }
+		set {
+			//FIXME: position mods won't propagate past one level
+			//of mounting, but more than one level is kind of nuts anyway
+			character.WorldPosition = value+transformOffset;
+			if(moveMount && character.IsMounted) {
+				character.mountingCharacter.WorldPosition = value+transformOffset;
+			}
+			if(moveMount && character.IsMounting) {
+				character.mountedCharacter.WorldPosition = value+transformOffset;
+			}
+		}
+	}
+
+	public float facing {
+		get { return character.Facing; }
+		set {
+			character.Facing = value;
+			if(moveMount && character.IsMounted) {
+				character.mountingCharacter.Facing = value;
+			}
+			if(moveMount && character.IsMounting) {
+				character.mountedCharacter.Facing = value;
+			}
+		}
 	}
 
 	public enum MoveType {
@@ -239,6 +271,7 @@ public class MoveExecutor {
 			startPos.z = Mathf.Round(startPos.z);
 		}
 		destNode = new PathNode(startPos, null, 0);
+		Debug.Log("activate");
 		position = destination;
 		moveOrigin = position;
 		temporaryDestNode = destNode;
@@ -266,14 +299,14 @@ public class MoveExecutor {
 					pathIndex--;
 					PathNode pn = animNodes[pathIndex];
 					currentMoveType = MoveTypeForMove(pn.pos, animNodes[pathIndex+1].pos);
-					character.Facing = FacingForMove(pn.pos, animNodes[pathIndex+1].pos);
+					facing = FacingForMove(pn.pos, animNodes[pathIndex+1].pos);
 				} else {
 					transformPosition = tp = temporaryDestination;
 					if(position != destination) {
 					  position = destination;
-//						Debug.Log("permanent move");
+						Debug.Log("permanent move");
 					} else {
-//						Debug.Log("temporary move");
+						Debug.Log("temporary move");
 					}
 				  temporaryPosition = temporaryDestination;
 					specialMoving = false;
