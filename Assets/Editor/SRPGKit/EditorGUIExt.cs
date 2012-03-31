@@ -138,7 +138,7 @@ public class EditorGUIExt
 			f.text = EditorGUILayout.TextField(f.text).RemoveControlCharacters();
 			if(EditorGUI.EndChangeCheck() || 
 			   (GUI.GetNameOfFocusedControl() != name && lastFocusedControl == name)) {
-				Debug.Log("compile "+f.text);
+				// Debug.Log("compile "+f.text);
 				FormulaCompiler.CompileInPlace(f);
 			}
 			GUI.SetNextControlName("");

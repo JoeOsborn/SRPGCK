@@ -36,7 +36,7 @@ public class FormulaeEditor : SRPGCKEditor {
 		f.text = EditorGUILayout.TextArea(f.text, GUILayout.Height(32)).RemoveControlCharacters();
 		if(EditorGUI.EndChangeCheck() || 
 		   (GUI.GetNameOfFocusedControl() != name && lastFocusedControl == name)) {
-			Debug.Log("compile "+f.text);
+			// Debug.Log("compile "+f.text);
 			FormulaCompiler.CompileInPlace(f);
 		}
 		GUI.SetNextControlName("");
