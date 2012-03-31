@@ -208,7 +208,14 @@ public class EditorGUIExt
 		return newP;
 	}
 
-	protected static StatEffect StatEffectFieldCore(StatEffect fx, StatEffectContext ctx, string type, string[] formulaOptions, string lastFocusedControl, int i = -1) {
+	protected static StatEffect StatEffectFieldCore(
+		StatEffect fx,
+		StatEffectContext ctx,
+		string type,
+		string[] formulaOptions,
+		string lastFocusedControl,
+		int i = -1
+	) {
 		StatEffect newFx = fx;
 		GUILayout.BeginVertical();
 		newFx.effectType = (StatEffectType)EditorGUILayout.EnumPopup("Effect Type:", fx.effectType);
@@ -266,24 +273,6 @@ public class EditorGUIExt
 				);
 				break;
 			case StatEffectType.EndTurn:
-				break;
-			case StatEffectType.ApplyStatusEffect:
-				newFx.statusEffectPrefab = EditorGUILayout.ObjectField(
-		    	"Status Effect",
-					newFx.statusEffectPrefab as UnityEngine.Object,
-			    typeof(StatusEffect),
-			    false
-			  ) as StatusEffect;
-				break;
-			case StatEffectType.RemoveStatusEffect:
-				newFx.statusEffectRemovalType = EditorGUILayout.TextField(
-		    	"Status Effect",
-					newFx.statusEffectRemovalType
-				);
-				newFx.statusEffectRemovalStrength = EditorGUILayout.IntField(
-		    	"Strength",
-					newFx.statusEffectRemovalStrength
-				);
 				break;
 			case StatEffectType.SpecialMove:
 				if(newFx.specialMoveLine == null ||
@@ -355,6 +344,34 @@ public class EditorGUIExt
 					newFx.specialMoveSpeedZ
 				);
 				break;
+			case StatEffectType.ApplyStatusEffect:
+				newFx.statusEffectPrefab = EditorGUILayout.ObjectField(
+		    	"Status Effect",
+					newFx.statusEffectPrefab as UnityEngine.Object,
+			    typeof(StatusEffect),
+			    false
+			  ) as StatusEffect;
+				break;
+			case StatEffectType.RemoveStatusEffect:
+				newFx.statusEffectRemovalType = EditorGUILayout.TextField(
+		    	"Status Effect",
+					newFx.statusEffectRemovalType
+				);
+				newFx.statusEffectRemovalStrength = EditorGUILayout.IntField(
+		    	"Strength",
+					newFx.statusEffectRemovalStrength
+				);
+				break;
+			case StatEffectType.Dismount:
+				newFx.dismountMounter = EditorGUILayout.Toggle(
+		    	"Dismount Mounting Character",
+					newFx.dismountMounter
+				);
+				newFx.dismountMounted = EditorGUILayout.Toggle(
+		    	"Dismount Mounted Character",
+					newFx.dismountMounted
+				);
+				break;
 		}
 		if(ctx == StatEffectContext.Action || ctx == StatEffectContext.Any) {
 			newFx.target = (StatEffectTarget)EditorGUILayout.EnumPopup("Target:", fx.target);
@@ -415,6 +432,25 @@ public class EditorGUIExt
 				} else {
 					effects[fxi] = newFx;
 				}
+				EditorGUILayout.BeginHorizontal();
+				GUILayout.Space(8);
+				if(fxi == 0) { GUI.enabled = false; }
+				if(GUILayout.Button("Up", GUILayout.Width(48))) {
+					StatEffect tmp = effects[fxi-1];
+					effects[fxi-1] = effects[fxi];
+					effects[fxi] = tmp;
+				}
+				GUI.enabled = true;
+				GUILayout.Space(8);
+				if(fxi == effects.Length-1) { GUI.enabled = false; }
+				if(GUILayout.Button("Down", GUILayout.Width(48))) {
+					StatEffect tmp = effects[fxi+1];
+					effects[fxi+1] = effects[fxi];
+					effects[fxi] = tmp;
+				}
+				GUI.enabled = true;
+				GUILayout.FlexibleSpace();
+				EditorGUILayout.EndHorizontal();
 				EditorGUILayout.Space();
 			}
 			if(toBeRemoved != null) {

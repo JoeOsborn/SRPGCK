@@ -23,7 +23,8 @@ public enum StatEffectType {
 	EndTurn,
 	SpecialMove,
 	ApplyStatusEffect,
-	RemoveStatusEffect
+	RemoveStatusEffect,
+	Dismount
 };
 
 public enum StatChangeType {
@@ -69,6 +70,8 @@ public class StatEffect {
 	//only for removing status effect
 	public string statusEffectRemovalType="poison";
 	public int statusEffectRemovalStrength=0;
+	//only for dismount status effect
+	public bool dismountMounter=true, dismountMounted=true;
 
 	public float ModifyStat(
 	  float stat,
@@ -197,6 +200,16 @@ public class StatEffect {
 				Debug.Log("remove status effects "+statusEffectRemovalType+" with str "+statusEffectRemovalStrength);
 				StatusEffect[] removed = actualTarget.RemoveStatusEffect(statusEffectRemovalType, statusEffectRemovalStrength);
 				effect = new StatEffectRecord(this, removed);
+				break;
+			}
+			case StatEffectType.Dismount: {
+				if(dismountMounter && actualTarget.IsMounting) {
+					actualTarget.Dismount();
+				}
+				if(dismountMounted && actualTarget.IsMounted) {
+					actualTarget.mountingCharacter.Dismount();
+				}
+				effect = new StatEffectRecord(this);
 				break;
 			}
 		}
