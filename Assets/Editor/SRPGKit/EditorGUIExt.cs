@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 public class EditorGUIExt
 {
-	public static void ArrayField (SerializedProperty property)
+	public static void ArrayField(SerializedProperty property)
 	{
 		EditorGUIUtility.LookLikeInspector ();
 		bool wasEnabled = GUI.enabled;
@@ -136,7 +136,7 @@ public class EditorGUIExt
 			EditorStyles.textField.wordWrap = true;
 			EditorGUI.BeginChangeCheck();
 			f.text = EditorGUILayout.TextField(f.text).RemoveControlCharacters();
-			if(EditorGUI.EndChangeCheck() || 
+			if(EditorGUI.EndChangeCheck() ||
 			   (GUI.GetNameOfFocusedControl() != name && lastFocusedControl == name)) {
 				// Debug.Log("compile "+f.text);
 				FormulaCompiler.CompileInPlace(f);
@@ -576,7 +576,11 @@ public class EditorGUIExt
 			GUILayout.Label("Size", GUILayout.Height(18));
 			GUILayout.FlexibleSpace();
 			if(newArray == null) { newArray = new T[0]; }
-			int arraySize = EditorGUILayout.IntField(newArray.Length, EditorStyles.textField, GUILayout.Height(18));
+			int arraySize = EditorGUILayout.IntField(
+				newArray.Length,
+				EditorStyles.textField,
+				GUILayout.Height(18)
+			);
 			EditorGUILayout.EndHorizontal();
 			if(arraySize != newArray.Length) {
 				newArray = new T[arraySize];
@@ -587,7 +591,11 @@ public class EditorGUIExt
 				if(i < array.Length) {
 					entry = array[i];
 				}
-				newArray[i] = EditorGUILayout.ObjectField(entry as UnityEngine.Object, typeof(T), false) as T;
+				newArray[i] = EditorGUILayout.ObjectField(
+					entry as UnityEngine.Object,
+					typeof(T),
+					false
+				) as T;
 			}
 			EditorGUILayout.EndVertical();
 			EditorGUILayout.EndHorizontal();

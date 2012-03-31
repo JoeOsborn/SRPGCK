@@ -432,8 +432,9 @@ public class Character : MonoBehaviour {
 	public IEnumerable<SkillDef> Skills { get {
 		if(skills == null) {
 			//replace any skills that need replacing
-			SkillDef[] allSkills = GetComponentsInChildren<Skill>().
-				Select(s => s.def).
+			SkillDef[] allSkills = 
+				(GetComponentsInChildren<Skill>().Select(s => s.def)).
+				Concat(GetComponentsInChildren<Skillset>().SelectMany(s => s.skills)).
 				ToArray();
 			skills = allSkills.
 				Where(delegate(SkillDef x) {
@@ -483,7 +484,8 @@ public class Character : MonoBehaviour {
 	}
 
 	public void RemoveStatusEffect(StatusEffect sfx) {
-		if(sfx.GetComponentsInChildren<Skill>().Length != 0) {
+		if(sfx.GetComponentsInChildren<Skill>().Length != 0 &&
+		   sfx.GetComponentsInChildren<Skillset>().Length != 0) {
 			InvalidateSkills();
 		}
 		if(allStatusEffects.Contains(sfx)) {
@@ -536,7 +538,8 @@ public class Character : MonoBehaviour {
 		map.BroadcastMessage("StatusEffectApplied", sfx, SendMessageOptions.DontRequireReceiver);
 		allStatusEffects.Add(sfx);
 		InvalidateStatusEffects();
-		if(sfx.GetComponentsInChildren<Skill>().Length != 0) {
+		if(sfx.GetComponentsInChildren<Skill>().Length != 0 &&
+		   sfx.GetComponentsInChildren<Skillset>().Length != 0) {
 			InvalidateSkills();
 		}
 		return true;
