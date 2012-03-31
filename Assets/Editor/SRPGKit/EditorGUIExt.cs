@@ -110,9 +110,6 @@ public class EditorGUIExt
 		return (Enum) values.GetValue(selected_index);
 	}
 
-	public const float compileInterval = 1.0f;
-	static float nextCompileTime = 0;
-
 	public static Formula FormulaField(string label, Formula f, string type, string[] formulaOptions, string lastFocusedControl, int i=0) {
 		int selection= 0;
 		int lastSelection = 0;
@@ -137,18 +134,15 @@ public class EditorGUIExt
 			GUI.SetNextControlName(name);
 			bool priorWrap = EditorStyles.textField.wordWrap;
 			EditorStyles.textField.wordWrap = true;
+			EditorGUI.BeginChangeCheck();
 			f.text = EditorGUILayout.TextField(f.text).RemoveControlCharacters();
+			if(EditorGUI.EndChangeCheck() || 
+			   (GUI.GetNameOfFocusedControl() != name && lastFocusedControl == name)) {
+				Debug.Log("compile "+f.text);
+				FormulaCompiler.CompileInPlace(f);
+			}
 			GUI.SetNextControlName("");
 			EditorStyles.textField.wordWrap = priorWrap;
-			if(GUI.GetNameOfFocusedControl() != name && lastFocusedControl == name) {
-				FormulaCompiler.CompileInPlace(f);
-			} else if(GUI.GetNameOfFocusedControl() == name) {
-				float now = (float)EditorApplication.timeSinceStartup;
-				if(now >= nextCompileTime || lastFocusedControl != name) {
-					nextCompileTime = now + compileInterval;
-					FormulaCompiler.CompileInPlace(f);
-				}
-			}
 			if(f.compilationError != null && f.compilationError != "") {
 				EditorGUILayout.HelpBox(f.compilationError, MessageType.Error);
 			}

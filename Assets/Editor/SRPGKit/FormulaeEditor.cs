@@ -16,8 +16,6 @@ public class FormulaeEditor : SRPGCKEditor {
 		return fdb;
   }
 
-	float nextCompileTime=0;
-
 	public override void OnEnable() {
 		useFormulae = false;
 		fdb = target as Formulae;
@@ -25,7 +23,6 @@ public class FormulaeEditor : SRPGCKEditor {
 		name = "Formulae";
 		newFormula = Formula.Constant(0);
 		newFormula.name = "";
-		nextCompileTime = (float)EditorApplication.timeSinceStartup + EditorGUIExt.compileInterval;
 	}
 
 	Formula newFormula;
@@ -35,18 +32,15 @@ public class FormulaeEditor : SRPGCKEditor {
 		bool priorWrap = EditorStyles.textField.wordWrap;
 		EditorStyles.textField.wordWrap = true;
 		GUI.SetNextControlName(""+fdb.GetInstanceID()+"."+i);
+		EditorGUI.BeginChangeCheck();
 		f.text = EditorGUILayout.TextArea(f.text, GUILayout.Height(32)).RemoveControlCharacters();
+		if(EditorGUI.EndChangeCheck() || 
+		   (GUI.GetNameOfFocusedControl() != name && lastFocusedControl == name)) {
+			Debug.Log("compile "+f.text);
+			FormulaCompiler.CompileInPlace(f);
+		}
 		GUI.SetNextControlName("");
 		EditorStyles.textField.wordWrap = priorWrap;
-		if(GUI.GetNameOfFocusedControl() != name && lastFocusedControl == name) {
-			FormulaCompiler.CompileInPlace(f);
-		} else if(GUI.GetNameOfFocusedControl() == name) {
-			float now = (float)EditorApplication.timeSinceStartup;
-			if(now >= nextCompileTime || lastFocusedControl != name) {
-				nextCompileTime = now + EditorGUIExt.compileInterval;
-				FormulaCompiler.CompileInPlace(f);
-			}
-		}
 		if(f.compilationError != null && f.compilationError.Length > 0) {
 			EditorGUILayout.HelpBox(f.compilationError, MessageType.Error);
 		}

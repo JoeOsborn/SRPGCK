@@ -81,6 +81,7 @@ public abstract class SRPGCKEditor : Editor {
 	}
 
 	protected virtual void OnDisable() {
+		
 		if(guiChanged || guiChangedAtAll) {
 			// Debug.Log("disable "+target.name);
 			SaveAsset();
