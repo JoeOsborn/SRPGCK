@@ -152,12 +152,6 @@ public class SkillDefEditor : SRPGCKEditor {
 				lastFocusedControl,
 				Screen.width-32
 			);
-			if(s.reactionEffects != null && s.reactionEffects.Length > 1) {
-				EditorGUILayout.HelpBox(
-					"Be sure that the reaction.hitType parameter is defined "+
-						"to provide a value from 0 to "+(s.reactionEffects.Length-1),
-					(s.HasParam("reaction.hitType") ? MessageType.Info : MessageType.Error));
-			}
 			s.reactionApplicationEffects = EditorGUIExt.StatEffectGroupGUI(
 				"Per-Reaction Effect",
 				s.reactionApplicationEffects,

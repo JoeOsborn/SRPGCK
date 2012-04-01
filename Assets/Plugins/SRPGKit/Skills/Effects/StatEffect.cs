@@ -54,10 +54,11 @@ public class StatEffect {
 	public bool respectLimits=true;
 	public bool constrainValueToLimits=true;
 
-	//these two are only relevant for stateffects used in action and reaction skills
+	//these three are only relevant for stateffects used in action and reaction skills
 	public string[] reactableTypes;
 	//for characters, equipment, and passive skills, "self", "wielder", or "character" is implicit
 	public StatEffectTarget target = StatEffectTarget.Applied;
+	public Formula triggerF;
 
 	//these ones are only relevant for special moves
 	public string specialMoveType="knockback";
@@ -122,6 +123,11 @@ public class StatEffect {
 			case StatEffectTarget.Applied:
 				actualTarget = targ;
 				break;
+		}
+		if(triggerF != null) {
+			if(triggerF.GetValue(fdb, skill, actualTarget) == 0) {
+				return null;
+			}
 		}
 		switch(effectType) {
 			case StatEffectType.Augment:

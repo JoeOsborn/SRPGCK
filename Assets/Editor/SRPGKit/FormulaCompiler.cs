@@ -79,7 +79,9 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 			if(newF != null) {
 				newF.text = f.text;
 			}
+			string n = f.name;
 			f.CopyFrom(newF);
+			f.name = n;
 			f.compilationError = "";
 			return true;
 		} catch(ParseException pe) {
@@ -91,14 +93,15 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 	public FormulaCompiler() {
 		Infix("+", 10, Add); Infix("-", 10, Sub);
 		Infix("*", 20, Mul); Infix("/", 20, Div);
+		Infix("div", 20, IntDiv);
 		Infix("%", 20, Rem);
 
-		Infix("or", 20, Or);
-		Infix("and", 20, And);
+		Infix("or", 3, Or);
+		Infix("and", 3, And);
 
 		InfixR("^", 30, Pow);
 		Prefix("-", 200, Neg);
-		Prefix("not", 200, Not);
+		Prefix("not", 4, Not);
 		Infix("==", 5, Eq); Infix("!=", 5, Neq);
 		Infix("<", 5, LT); Infix("<=", 5, LTE);
 		Infix(">", 5, GT); Infix(">=", 5, GTE);
@@ -107,6 +110,7 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 		Group("(", ")", 1);
 
 		Builtin("abs", 1, 1, Abs);
+		Builtin("trunc", 1, 1, Trunc);
 		Builtin("root", 1, 2, Root);
 		Builtin("mean", 1, int.MaxValue, Mean);
 		Builtin("min", 1, int.MaxValue, Min);
@@ -143,6 +147,7 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 		Branch("targeted-side", sides, TargetedSide);
 		Branch("targeter-side", sides, TargeterSide);
 		BranchFormulae("random", RandomBranch);
+		BranchFormulae("cond", CondBranch);
 		//more branches could be added later! woo!
 
 		Symbol("no-change");
@@ -575,8 +580,8 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 		Symbol(":");
 		Symbol(";");
 		//ok, proceed
-		Symbol<IFormulaElement> branchType = Symbol(name+"{");
-		int bindingPower = 4;
+		Symbol<IFormulaElement> branchType = Match("("+name+")", Regex(name+"\\s*\\{"), 0, null);
+		int bindingPower = 0;
 		branchType.Nud = (parser) => {
 			List<string> cases = new List<string>();
 			List<Formula> forms = new List<Formula>();
@@ -620,8 +625,8 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 		Symbol(";");
 		Symbol("default");
 		//ok, proceed
-		Symbol<IFormulaElement> branchType = Symbol(name+"{");
-		int bindingPower = 4;
+		Symbol<IFormulaElement> branchType = Match("("+name+")", Regex(name+"\\s*\\{"), 0, null);
+		int bindingPower = 0;
 		branchType.Nud = (parser) => {
 			List<Formula> cases = new List<Formula>();
 			List<Formula> forms = new List<Formula>();
@@ -632,14 +637,20 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 				throw new SemanticException("Switch "+name+" must handle at least one case");
 			} else {
 				while(true) {
-					IFormulaElement ife = parser.Parse(bindingPower);
-					if(ife is Formula) {
-						cases.Add(ife as Formula);
-					} else if(ife is Identifier && ((ife as Identifier).Name) == "default") {
+					if(parser.Token.Id == "default") {
 						if(defaultFormula != null) {
 							throw new SemanticException("Switch may not have more than one default response");
 						}
 						expectingDefaultFormula = true;
+						parser.Advance("default");
+					} else {
+						IFormulaElement ife = parser.Parse(bindingPower);
+						Formula condF = CheckFormulaArg(ife);
+						if(condF != null) {
+							cases.Add(condF);
+						} else {
+							Debug.Log("skip ife "+(ife as Identifier).Name);
+					 	}
 					}
 					if(parser.Token.Id != ":") {
 						throw new SemanticException("Switch "+name+" case "+parser.Token.Id+" must be handled");
@@ -652,6 +663,9 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 						defaultFormula = thisFormula;
 					} else {
 						forms.Add(thisFormula);
+					}
+					if(parser.Token.Id == ":") {
+						throw new SemanticException(": cannot follow branch clause, use ;");
 					}
 					if(parser.Token.Id != ";") {
 						break;
@@ -736,10 +750,27 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 		return f;
 	}
 
+	IFormulaElement CondBranch(IEnumerable<IFormulaElement> cases, IEnumerable<IFormulaElement> forms) {
+		Formula f = new Formula();
+		f.formulaType = FormulaType.BranchCond;
+		if(cases.Count() != forms.Count()) {
+			throw new SemanticException("mismatched number of cases and formulae");
+		}
+		f.arguments = cases.Concat(forms).Select(form => CheckFormulaArg(form)).ToList();
+		return f;
+	}
+
 	//TODO: refactor! higher-order function could generate this with the formula type in a closure.
 	IFormulaElement Abs(IEnumerable<IFormulaElement> forms) {
 		Formula f = new Formula();
 		f.formulaType = FormulaType.AbsoluteValue;
+		f.arguments = forms.Select(cf => CheckFormulaArg(cf)).ToList();
+		return f;
+	}
+
+	IFormulaElement Trunc(IEnumerable<IFormulaElement> forms) {
+		Formula f = new Formula();
+		f.formulaType = FormulaType.Trunc;
 		f.arguments = forms.Select(cf => CheckFormulaArg(cf)).ToList();
 		return f;
 	}
@@ -877,6 +908,12 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 	IFormulaElement Div(IFormulaElement lhs, IFormulaElement rhs) {
 		Formula f = new Formula();
 		f.formulaType = FormulaType.Divide;
+		f.arguments = new List<Formula>(){CheckFormulaArg(lhs), CheckFormulaArg(rhs)};
+		return f;
+	}
+	IFormulaElement IntDiv(IFormulaElement lhs, IFormulaElement rhs) {
+		Formula f = new Formula();
+		f.formulaType = FormulaType.IntDivide;
 		f.arguments = new List<Formula>(){CheckFormulaArg(lhs), CheckFormulaArg(rhs)};
 		return f;
 	}

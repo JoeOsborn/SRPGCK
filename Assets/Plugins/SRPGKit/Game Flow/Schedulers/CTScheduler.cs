@@ -3,41 +3,54 @@ using System.Collections;
 
 [AddComponentMenu("SRPGCK/Arbiter/Scheduler/CT")]
 public class CTScheduler : Scheduler {
+	public string speedStat = "speed";
+	public string ctStat = "ct";
+	public string maxCTStat = "maxCT";
+	public string skillSpeedStat = "speed";
+	public string perActivationCTCostStat = "activationCT";
+	public string perMoveCTCostStat = "moveCT";
+	public string perTileCTCostStat = "perTileCT";
+	public string perActionCTCostStat = "actCT";
+
+	public float defaultSpeed = 1;
+	public float defaultSkillSpeed = 1;
 	public float defaultMaxCT = 100;
-	public float defaultPerTileCTCost = 0;
-	public float defaultPerMoveCTCost = 30;
-	public float defaultPerActionCTCost = 40;
 	public float defaultPerActivationCTCost = 30;
+	public float defaultPerMoveCTCost = 30;
+	public float defaultPerTileCTCost = 0;
+	public float defaultPerActionCTCost = 40;
 
 	public bool coalesceCTDecrements = false;
+	[HideInInspector]
 	[SerializeField]
 	protected float pendingCTDecrement = 0;
+
+	[HideInInspector]
+	public bool activeCharacterHasMoved=false;
+	[HideInInspector]
+	public bool activeCharacterHasActed=false;
 
 	override public void Start () {
 		base.Start();
 	}
 
 	override public void AddCharacter(Character c) {
-		if(!c.HasStat("ct")) {
+		if(!c.HasStat(ctStat)) {
 			Debug.LogError("CT-scheduled character "+c+" must have ct stat.");
 			return;
 		}
-		if(!c.HasStat("speed")) {
+		if(!c.HasStat(speedStat)) {
 			Debug.LogError("CT-scheduled character "+c+" must have speed stat.");
 			return;
 		}
 		base.AddCharacter(c);
-		if(c.gameObject.GetComponent<CTCharacter>() == null) {
-			c.gameObject.AddComponent<CTCharacter>();
-		}
 	}
 
 	override public void Activate(Character c, object ctx=null) {
 		base.Activate(c, ctx);
 		pendingCTDecrement = 0;
-		CTCharacter ctc = c.GetComponent<CTCharacter>();
-		ctc.HasMoved = false;
-		ctc.HasActed = false;
+		activeCharacterHasMoved = false;
+		activeCharacterHasActed = false;
 		//(for now): ON `activate`, MOVE
 //		Debug.Log("activate");
 	}
@@ -45,42 +58,37 @@ public class CTScheduler : Scheduler {
 	override public void Deactivate(Character c, object ctx=null) {
 		base.Deactivate(c, ctx);
 		//reduce c's CT by base turn cost (30)
-		CTCharacter ctc = c.GetComponent<CTCharacter>();
-		float cost = ctc.PerActivationCTCost;
+		float cost = perActivationCTCostStat != null ?
+			c.GetStat(perActivationCTCostStat, defaultPerActivationCTCost) :
+			defaultPerActivationCTCost;
 		if(coalesceCTDecrements) {
 			pendingCTDecrement += cost;
-			ctc.CT = Mathf.Max(ctc.CT-pendingCTDecrement, 0);
+			c.AdjustBaseStat(ctStat, -pendingCTDecrement);
 			pendingCTDecrement = 0;
 		} else {
-			ctc.CT = Mathf.Max(ctc.CT-cost, 0);
+			c.AdjustBaseStat(ctStat, -cost);
 		}
+		activeCharacterHasMoved = false;
+		activeCharacterHasActed = false;
 	}
 
 	override public void SkillApplied(SkillDef s) {
 		base.SkillApplied(s);
 		if(s.character != null && s.character == activeCharacter) {
-			CTCharacter ctc = s.character.GetComponent<CTCharacter>();
-			if(s is MoveSkillDef) {
-				//reduce c's CT by any-movement cost (30)
-				float cost = ctc.PerMoveCTCost;
+			if(!(s is MoveSkillDef)) {
+				activeCharacterHasActed = true;
+				float cost = perActionCTCostStat != null ?
+					s.character.GetStat(perActionCTCostStat, defaultPerActionCTCost) :
+					defaultPerActionCTCost;
 				if(coalesceCTDecrements) {
 					pendingCTDecrement += cost;
 				} else {
-					ctc.CT = Mathf.Max(ctc.CT-cost, 0);
+					s.character.AdjustBaseStat(ctStat, -cost);
 				}
-				ctc.HasMoved = true;
-			} else {
-				float cost = ctc.PerActionCTCost;
-				if(coalesceCTDecrements) {
-					pendingCTDecrement += cost;
-				} else {
-					ctc.CT = Mathf.Max(ctc.CT-cost, 0);
-				}
-				ctc.HasActed = true;
 			}
 		}
 	}
-	
+
 	public void WillSpecialMoveCharacter(CharacterSpecialMoveReport csmr) {
 		Pause();
 	}
@@ -88,19 +96,29 @@ public class CTScheduler : Scheduler {
 		Resume();
 	}
 
-	override public void CharacterMoved(Character c, Vector3 src, Vector3 dest, PathNode endOfPath) {
+	override public void CharacterMoved(
+		Character c,
+		Vector3 src,
+		Vector3 dest,
+		PathNode endOfPath
+	) {
 		base.CharacterMoved(c, src, dest, endOfPath);
 		if(c != activeCharacter) { return; }
 		//reduce c's CT by per-tile movement cost (0)
-		CTCharacter ctc = c.GetComponent<CTCharacter>();
-		float cost = ctc.PerTileCTCost*endOfPath.xyDistanceFromStart;
+		activeCharacterHasMoved = true;
+		float cost =
+			((perTileCTCostStat != null ?
+				c.GetStat(perTileCTCostStat, defaultPerTileCTCost) :
+				defaultPerTileCTCost)*endOfPath.xyDistanceFromStart) +
+			(perMoveCTCostStat != null ?
+				c.GetStat(perMoveCTCostStat, defaultPerMoveCTCost) :
+				defaultPerMoveCTCost);
 		if(coalesceCTDecrements) {
 			pendingCTDecrement += cost;
 		} else {
-			ctc.CT = Mathf.Max(ctc.CT-cost, 0);
+			c.AdjustBaseStat(ctStat, -cost);
 		}
 	}
-	//after c acts, reduce c's CT by per-act cost (40)
 
 	public override void FixedUpdate() {
 		base.FixedUpdate();
@@ -113,29 +131,37 @@ public class CTScheduler : Scheduler {
 				if(sa.delayRemaining <= 0) {
 					sa.Apply();
 					pendingSkillActivations.RemoveAt(i);
-					//FIXME: need to prevent scheduler from fixedupdate-ing while skills are animating
+					//FIXME: need to prevent scheduler from
+					//fixedupdate-ing while skills are animating
 					return;
 				}
 			}
 			foreach(Character c in characters) {
-				CTCharacter ctc = c.GetComponent<CTCharacter>();
-				float maxCT = ctc.MaxCT;
-				if(ctc.CT >= maxCT) {
-					ctc.CT = maxCT;
+				float ct = c.GetStat(ctStat);
+				float maxCT = maxCTStat != null ?
+					c.GetStat(maxCTStat, defaultMaxCT) :
+					defaultMaxCT;
+				if(ct >= maxCT) {
+					c.SetBaseStat(ctStat, maxCT);
 					Activate(c);
 					return;
 				}
 			}
 			//and tick up CT on everything/body by their effective speed
 			foreach(SkillActivation sa in pendingSkillActivations) {
-				sa.delayRemaining = sa.delayRemaining - sa.skill.GetParam("speed", 1);
+				sa.delayRemaining =
+					sa.delayRemaining - sa.skill.GetParam(skillSpeedStat, defaultSkillSpeed);
 			}
 			foreach(Character c in characters) {
 				//don't mess with jumpers' speed because speed is used in jump timing
 				if(c.HasStatusEffect("jumping")) { continue; }
-				CTCharacter ctc = c.GetComponent<CTCharacter>();
-/*				Debug.Log("Tick up by "+speed);*/
-				ctc.Tick();
+				float speed = speedStat != null ?
+					c.GetStat(speedStat, defaultSpeed) :
+					defaultSpeed;
+				c.AdjustBaseStat(ctStat, speed);
+				foreach(StatusEffect se in c.StatusEffects) {
+					se.Tick(se.ticksInLocalTime ? speed : 1);
+				}
 			}
 		}
 		//otherwise, do nothing

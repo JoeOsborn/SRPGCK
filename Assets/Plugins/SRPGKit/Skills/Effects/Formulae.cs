@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using UnityEditor;
 
 public class Formulae : ScriptableObject {
-	public List<string> formulaNames;
 	public List<Formula> formulae;
 
 	Dictionary<string, Formula> runtimeFormulae;
@@ -13,8 +12,9 @@ public class Formulae : ScriptableObject {
 	void MakeFormulaeIfNecessary() {
 		if(runtimeFormulae == null) {
 			runtimeFormulae = new Dictionary<string, Formula>();
-			for(int i = 0; i < formulaNames.Count; i++) {
-				runtimeFormulae.Add(formulaNames[i].NormalizeName(), formulae[i]);
+			for(int i = 0; i < formulae.Count; i++) {
+				formulae[i].name = formulae[i].name.NormalizeName();
+				runtimeFormulae.Add(formulae[i].name, formulae[i]);
 			}
 		}
 	}
@@ -32,29 +32,29 @@ public class Formulae : ScriptableObject {
 
 	public void AddFormula(Formula f, string name) {
 		MakeFormulaeIfNecessary();
-		runtimeFormulae.Add(name, f);
+		runtimeFormulae[name] = f;
 		f.name = name;
-		int idx = formulaNames.IndexOf(name);
-		if(idx != -1) {
-			formulae[idx] = f;
-		} else {
-			formulaNames.Add(name);
-			formulae.Add(f);
-		}
+		if(formulae.Contains(f)) { formulae.Remove(f); }
+		formulae.Add(f);
+	}
+	public void RemoveFormula(int i) {
+		formulae.RemoveAt(i);
 	}
 	public void RemoveFormula(string name) {
 		MakeFormulaeIfNecessary();
-		runtimeFormulae.Remove(name);
-		int idx = formulaNames.IndexOf(name);
-		if(idx != -1) {
-			formulaNames.RemoveAt(idx);
-			formulae.RemoveAt(idx);
+		runtimeFormulae.Remove(name ?? "");
+		for(int i = 0; i < formulae.Count; i++) {
+			if(formulae[i].name == name) {
+				formulae.RemoveAt(i);
+				return;
+			}
 		}
 	}
 
 	protected float LookupEquipmentParamOn(
 		string fname, LookupType type,
-		Character ccontext, Formula f
+		Character ccontext, Formula f,
+		SkillDef scontext
 	) {
 		if(ccontext != null) {
 			var equips = ccontext.Equipment.Where(eq => eq.Matches(f.equipmentSlots, f.equipmentCategories) && eq.HasParam(fname));
@@ -62,7 +62,7 @@ public class Formulae : ScriptableObject {
 				Debug.LogError("No equipment with param "+fname);
 				return -1;
 			}
-			var results = equips.Select(eq => eq.GetParam(fname));
+			var results = equips.Select(eq => eq.GetParam(fname, scontext));
 			switch(f.mergeMode) {
 				case FormulaMergeMode.Sum:
 					return results.Sum();
@@ -337,7 +337,7 @@ public class Formulae : ScriptableObject {
 						ccontext = econtext.wielder;
 					}
 				}
-				return LookupEquipmentParamOn(fname, type, ccontext, f);
+				return LookupEquipmentParamOn(fname, type, ccontext, f, scontext);
 			case LookupType.ActorMountEquipmentParam:
 				if(scontext != null) {
 					ccontext = scontext.character.mountedCharacter;
@@ -348,7 +348,7 @@ public class Formulae : ScriptableObject {
 						ccontext = econtext.wielder.mountedCharacter;
 					}
 				}
-				return LookupEquipmentParamOn(fname, type, ccontext, f);
+				return LookupEquipmentParamOn(fname, type, ccontext, f, scontext);
 			case LookupType.ActorMounterEquipmentParam:
 				if(scontext != null) {
 					ccontext = scontext.character.mountingCharacter;
@@ -359,7 +359,7 @@ public class Formulae : ScriptableObject {
 						ccontext = econtext.wielder.mountingCharacter;
 					}
 				}
-				return LookupEquipmentParamOn(fname, type, ccontext, f);
+				return LookupEquipmentParamOn(fname, type, ccontext, f, scontext);
 			case LookupType.ActorStatusEffect:
 			case LookupType.ActorMountStatusEffect:
 			case LookupType.ActorMounterStatusEffect:
@@ -399,7 +399,7 @@ public class Formulae : ScriptableObject {
 				} else {
 					ccontext = null;
 				}
-				return LookupEquipmentParamOn(fname, type, ccontext, f);
+				return LookupEquipmentParamOn(fname, type, ccontext, f, scontext);
 			case LookupType.TargetMountEquipmentParam:
 				if(scontext != null) {
 					ccontext = scontext.currentTargetCharacter.mountedCharacter;
@@ -408,7 +408,7 @@ public class Formulae : ScriptableObject {
 				} else {
 					ccontext = null;
 				}
-				return LookupEquipmentParamOn(fname, type, ccontext, f);
+				return LookupEquipmentParamOn(fname, type, ccontext, f, scontext);
 			case LookupType.TargetMounterEquipmentParam:
 				if(scontext != null) {
 					ccontext = scontext.currentTargetCharacter.mountingCharacter;
@@ -417,7 +417,7 @@ public class Formulae : ScriptableObject {
 				} else {
 					ccontext = null;
 				}
-				return LookupEquipmentParamOn(fname, type, ccontext, f);
+				return LookupEquipmentParamOn(fname, type, ccontext, f, scontext);
 			case LookupType.TargetStatusEffect:
 			case LookupType.TargetMountStatusEffect:
 			case LookupType.TargetMounterStatusEffect:

@@ -25,8 +25,9 @@ public class GridAI : AI {
 			return;
 		}
 		if(c.moveSkill.Executor.IsMoving) { return; }
-		if(c.GetComponent<CTCharacter>() != null) {
-			if(!c.GetComponent<CTCharacter>().HasMoved) {
+		CTScheduler cts = GetComponent<Scheduler>() as CTScheduler;
+		if(cts != null) {
+			if(!cts.activeCharacterHasMoved) {
 				c.moveSkill.ActivateSkill();
 				MoveSkillDef sptms = c.moveSkill;
 				if(sptms.Overlay != null) {

@@ -20,8 +20,8 @@ public abstract class SRPGCKEditor : Editor {
 
 	protected virtual void UpdateFormulae() {
 		if(!useFormulae) { return; }
-		if(fdb != null && fdb.formulaNames != null) {
-			formulaOptions = (new string[]{"Custom"}).Concat(fdb.formulaNames).ToArray();
+		if(fdb != null && fdb.formulae != null) {
+			formulaOptions = (new string[]{"Custom"}).Concat(fdb.formulae.Select(f => f.name)).ToArray();
 		} else {
 			formulaOptions = new string[]{"Custom"};
 		}
@@ -81,7 +81,7 @@ public abstract class SRPGCKEditor : Editor {
 	}
 
 	protected virtual void OnDisable() {
-		
+
 		if(guiChanged || guiChangedAtAll) {
 			// Debug.Log("disable "+target.name);
 			SaveAsset();

@@ -432,7 +432,7 @@ public class Character : MonoBehaviour {
 	public IEnumerable<SkillDef> Skills { get {
 		if(skills == null) {
 			//replace any skills that need replacing
-			SkillDef[] allSkills = 
+			SkillDef[] allSkills =
 				(GetComponentsInChildren<Skill>().Select(s => s.def)).
 				Concat(GetComponentsInChildren<Skillset>().SelectMany(s => s.skills)).
 				ToArray();
@@ -577,6 +577,7 @@ public class Character : MonoBehaviour {
 
 	public Formula EditorGetBaseStat(string statName) {
 		string nStatName = statName.NormalizeName();
+		if(stats == null) { stats = new List<Parameter>(); }
 		Parameter p = stats.FirstOrDefault(pr => pr.Name == nStatName);
 		if(p == null) {
 			return null;

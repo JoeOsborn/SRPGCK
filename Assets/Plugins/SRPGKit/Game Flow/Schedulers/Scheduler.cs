@@ -6,15 +6,22 @@ using System.Collections.Generic;
 
 [AddComponentMenu("")]
 public class Scheduler : MonoBehaviour {
+	[HideInInspector]
 	public List<Character> characters;
+	[HideInInspector]
 	public Character activeCharacter;
+	[HideInInspector]
 	public bool begun=false;
 
+	[HideInInspector]
 	public bool paused=false;
 
+	[HideInInspector]
 	public SkillDef pendingDeactivationSkill;
+	[HideInInspector]
 	public Character pendingDeactivationCharacter;
 
+	[HideInInspector]
 	public List<SkillActivation> pendingSkillActivations;
 
 	Map _map;

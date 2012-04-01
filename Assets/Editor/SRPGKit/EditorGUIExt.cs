@@ -217,8 +217,9 @@ public class EditorGUIExt
 		int i = -1
 	) {
 		StatEffect newFx = fx;
-		GUILayout.BeginVertical();
-		newFx.effectType = (StatEffectType)EditorGUILayout.EnumPopup("Effect Type:", fx.effectType);
+		if(newFx.triggerF == null || (newFx.triggerF.formulaType == FormulaType.Constant && newFx.triggerF.constantValue == 0)) {
+			newFx.triggerF = Formula.True();
+		}
 		if(newFx.specialMoveGivenStartX == null || fx == null) {
 			newFx.specialMoveGivenStartX = Formula.Lookup(
 				"arg.x",
@@ -237,6 +238,18 @@ public class EditorGUIExt
 				LookupType.SkillParam
 			);
 		}
+		GUILayout.BeginVertical();
+		if(ctx == StatEffectContext.Action || ctx == StatEffectContext.Any) {
+			newFx.triggerF = FormulaField(
+				"Trigger",
+				newFx.triggerF,
+				type+".trigger",
+				formulaOptions,
+				lastFocusedControl,
+				i
+			);
+		}
+		newFx.effectType = (StatEffectType)EditorGUILayout.EnumPopup("Effect Type:", fx.effectType);
 		switch(newFx.effectType) {
 			case StatEffectType.Augment:
 			case StatEffectType.Multiply:
@@ -514,7 +527,10 @@ public class EditorGUIExt
 		EditorGUILayout.BeginVertical();
 		if(parameters == null) { parameters = new List<Parameter>(); }
 		List<Parameter> newParams = parameters;
-		int shownCount = parameters.Count-(skipParams != null ? skipParams.Length : 0);
+		int shownCount = parameters.Count -
+			(skipParams != null ?
+				parameters.Where(p => skipParams.Contains(p.Name)).Count() :
+				0);
 		foldout = EditorGUILayout.Foldout(foldout, ""+shownCount+" "+name+(shownCount == 1 ? "" : "s"));
 		if(foldout) {
 			EditorGUILayout.BeginHorizontal(GUILayout.MaxWidth(Screen.width-16));

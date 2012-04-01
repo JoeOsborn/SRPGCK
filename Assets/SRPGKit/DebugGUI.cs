@@ -15,6 +15,7 @@ public class DebugGUI : MonoBehaviour {
 		}
 		return _areaBGTexture;
 	} }
+	[HideInInspector]
 	[SerializeField]
 	List<string> selectedGroup;
 
@@ -31,6 +32,7 @@ public class DebugGUI : MonoBehaviour {
 		return _bgStyle;
 	} }
 
+	[HideInInspector]
 	public ActionSkillDef pendingTargetedSkill;
 
 	public void Start() {
@@ -321,9 +323,8 @@ public class DebugGUI : MonoBehaviour {
 					128, 240
 				));
 				GUILayout.Label("Character:"+ac.gameObject.name);
-				GUILayout.Label("Health: "+Mathf.Ceil(ac.GetStat("health")));
-				CTCharacter ctc = ac.GetComponent<CTCharacter>();
-				GUILayout.Label("CT: "+Mathf.Floor(ctc.CT));
+				GUILayout.Label("HP: "+Mathf.Ceil(ac.GetStat("health", ac.GetStat("HP"))));
+				GUILayout.Label("CT: "+Mathf.Floor(ac.GetStat((s as CTScheduler).ctStat)));
 
 				//TODO:0: support skills
 				//show list of skills

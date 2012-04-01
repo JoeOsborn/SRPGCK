@@ -61,10 +61,10 @@ public class Equipment : MonoBehaviour {
 		return Formulae.DefaultFormulae;
 	} }
 	
-	public float GetParam(string pname) {
+	public float GetParam(string pname, SkillDef scontext=null) {
 		MakeParametersIfNecessary();
 		FindWielder();
-		return runtimeParameters[pname].GetValue(fdb, null, null, null, this);
+		return runtimeParameters[pname].GetValue(fdb, scontext, null, null, this);
 	}
 	
 	public void EquipOn(Character c, int[] slots) {

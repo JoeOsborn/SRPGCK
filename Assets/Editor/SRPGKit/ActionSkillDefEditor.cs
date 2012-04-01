@@ -79,9 +79,6 @@ public class ActionSkillDefEditor : SkillDefEditor {
 	}
 
 	protected void EffectSkillGUI() {
-		if(atk.targetEffects != null && atk.targetEffects.Length > 1) {
-			EditorGUILayout.HelpBox("Be sure that the hitType parameter is defined to provide a value from 0 to "+(atk.targetEffects.Length-1), (s.HasParam("hitType") ? MessageType.Info : MessageType.Error));
-		}
 		if(atk.delay != null && 
 		   !(atk.delay.formulaType == FormulaType.Constant && 
 		     atk.delay.constantValue == 0)) {

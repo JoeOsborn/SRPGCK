@@ -33,8 +33,8 @@ public class FormulaeEditor : SRPGCKEditor {
 		EditorStyles.textField.wordWrap = true;
 		GUI.SetNextControlName(""+fdb.GetInstanceID()+"."+i);
 		EditorGUI.BeginChangeCheck();
-		f.text = EditorGUILayout.TextArea(f.text, GUILayout.Height(32)).RemoveControlCharacters();
-		if(EditorGUI.EndChangeCheck() || 
+		f.text = EditorGUILayout.TextArea(f.text, GUILayout.Height(32), GUILayout.Width(Screen.width-24)).RemoveControlCharacters();
+		if(EditorGUI.EndChangeCheck() ||
 		   (GUI.GetNameOfFocusedControl() != name && lastFocusedControl == name)) {
 			// Debug.Log("compile "+f.text);
 			FormulaCompiler.CompileInPlace(f);
@@ -47,13 +47,16 @@ public class FormulaeEditor : SRPGCKEditor {
 	}
 
 	public override void OnSRPGCKInspectorGUI () {
+		int toBeRemoved = -1;
 		for(int i = 0; i < fdb.formulae.Count; i++) {
 			Formula f = fdb.formulae[i];
 			EditorGUILayout.BeginHorizontal();
-			EditorGUILayout.PrefixLabel(f.name);
+			GUI.SetNextControlName(fdb.GetInstanceID()+".formulae."+i+".name");
+			f.name = EditorGUILayout.TextField(f.name).NormalizeName();
+			GUI.SetNextControlName("");
 			GUILayout.FlexibleSpace();
 			if(GUILayout.Button("Delete")) {
-				fdb.RemoveFormula(f.name);
+				toBeRemoved = i;
 			}
 			EditorGUILayout.EndHorizontal();
 			EditFormulaField(f, i);
@@ -62,7 +65,7 @@ public class FormulaeEditor : SRPGCKEditor {
 		EditorGUILayout.BeginHorizontal();
 		if(newFormula.name == null) { newFormula.name = ""; }
 		GUI.SetNextControlName(fdb.GetInstanceID()+".formulae.new.name");
-		newFormula.name = EditorGUILayout.TextField(newFormula.name);
+		newFormula.name = EditorGUILayout.TextField(newFormula.name).NormalizeName();
 		GUI.SetNextControlName("");
 		GUI.enabled = newFormula.name.Length > 0;
 		if(GUILayout.Button("New Formula")) {
@@ -73,5 +76,9 @@ public class FormulaeEditor : SRPGCKEditor {
 		GUI.enabled = true;
 		EditorGUILayout.EndHorizontal();
 		EditFormulaField(newFormula, fdb.formulae.Count);
+
+		if(toBeRemoved != -1) {
+			fdb.RemoveFormula(toBeRemoved);
+		}
 	}
 }

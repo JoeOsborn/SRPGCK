@@ -19,7 +19,7 @@ public class SkillDef : ScriptableObject {
 
 	public Formula isEnabledF;
 	public bool IsEnabled { get {
-		return Owner != null && 
+		return Owner != null &&
 			(isEnabledF != null ? isEnabledF.GetValue(fdb, this) != 0 : true);
 	} }
 
@@ -33,17 +33,17 @@ public class SkillDef : ScriptableObject {
 	public StatEffectGroup reactionApplicationEffects;
 
 	//for overriding
-	virtual public bool isPassive { 
-		get { return true; } 
+	virtual public bool isPassive {
+		get { return true; }
 	}
 
 	public bool reallyDefined=false;
 
 	//runtime internals
 	private MonoBehaviour _owner;
-	public MonoBehaviour Owner { 
-		get { return _owner; } 
-		set { _owner = value; } 
+	public MonoBehaviour Owner {
+		get { return _owner; }
+		set { _owner = value; }
 	}
 
 	public bool isActive=false;
@@ -85,8 +85,8 @@ public class SkillDef : ScriptableObject {
 		if(isPassive) { return; }
 		isActive = false;
 		map.BroadcastMessage(
-			"SkillDeactivated", 
-			this, 
+			"SkillDeactivated",
+			this,
 			SendMessageOptions.DontRequireReceiver
 		);
 		targetCharacters = null;
@@ -113,8 +113,8 @@ public class SkillDef : ScriptableObject {
 	}
 	public virtual void ApplySkill() {
 		map.BroadcastMessage(
-			"SkillApplied", 
-			this, 
+			"SkillApplied",
+			this,
 			SendMessageOptions.DontRequireReceiver
 		);
 		if(deactivatesOnApplication && isActive) {
@@ -123,13 +123,13 @@ public class SkillDef : ScriptableObject {
 	}
 
 	protected virtual bool ReactionTypesMatch(StatEffectRecord se) {
-		string[] reactionTypes = 
+		string[] reactionTypes =
 			se.effect.target == StatEffectTarget.Applied ?
-				reactionTypesApplied : 
+				reactionTypesApplied :
 				reactionTypesApplier;
-		StatChange[] reactionStatChanges = 
-			se.effect.target == StatEffectTarget.Applied ? 
-				reactionStatChangesApplied : 
+		StatChange[] reactionStatChanges =
+			se.effect.target == StatEffectTarget.Applied ?
+				reactionStatChangesApplied :
 				reactionStatChangesApplier;
 		return se.Matches(reactionStatChanges, reactionTypes);
 	}
@@ -151,10 +151,10 @@ public class SkillDef : ScriptableObject {
 		}
 	}
 	protected virtual PathNode[] PathNodesForTarget(
-		Target t, 
-		Region tr, 
-		Region efr, 
-		Vector3 pos, 
+		Target t,
+		Region tr,
+		Region efr,
+		Vector3 pos,
 		Quaternion q
 	) {
 		if(t.subregion != -1) {
@@ -189,34 +189,34 @@ public class SkillDef : ScriptableObject {
 			reactionTargetRegion.Owner = this;
 			reactionEffectRegion.Owner = this;
 			PathNode[] reactionTiles = PathNodesForTarget(
-				target, 
-				reactionTargetRegion, 
-				reactionEffectRegion, 
-				character.TilePosition, 
+				target,
+				reactionTargetRegion,
+				reactionEffectRegion,
+				character.TilePosition,
 				Quaternion.Euler(0,character.Facing,0)
 			);
 			targetCharacters = new List<Character>(){s.character};
 			SetArgsFromTarget(target, null, "");
-			targetCharacters = 
+			targetCharacters =
 				reactionEffectRegion.CharactersForTargetedTiles(reactionTiles);
 			if(targetCharacters.Contains(currentTargetCharacter)) {
 				ApplyPerApplicationEffectsTo(
-					reactionApplicationEffects.effects, 
+					reactionApplicationEffects.effects,
 					new List<Character>(){currentTargetCharacter}
 				);
 				if(reactionEffects.Length > 0) {
 					ApplyEffectsTo(
-						target, 
-						null, 
-						reactionEffects, 
-						targetCharacters, 
-						"reaction.hitType", 
+						target,
+						null,
+						reactionEffects,
+						targetCharacters,
+						"reaction.hitType",
 						character.TilePosition
 					);
 				}
 				map.BroadcastMessage(
-					"SkillApplied", 
-					this, 
+					"SkillApplied",
+					this,
 					SendMessageOptions.DontRequireReceiver
 				);
 			}
@@ -279,15 +279,15 @@ public class SkillDef : ScriptableObject {
 			ToList();
 	}
 	public virtual void SetArgsFrom(
-		Vector3 ttp, 
-		Quaternion? facing=null, 
-		string prefix="", 
+		Vector3 ttp,
+		Quaternion? facing=null,
+		string prefix="",
 		Vector3? start=null
 	) {
 		Vector3 ctp = start.HasValue ? start.Value : character.TilePosition;
 		float distance = Vector3.Distance(ttp, ctp);
 		float distanceXY = Vector2.Distance(
-			new Vector2(ttp.x, ttp.y), 
+			new Vector2(ttp.x, ttp.y),
 			new Vector2(ctp.x, ctp.y)
 		);
 		float angle = facing != null ? facing.Value.eulerAngles.y : 0;
@@ -308,7 +308,7 @@ public class SkillDef : ScriptableObject {
 			Mathf.Abs(ttp.x-ctp.x)+Mathf.Abs(ttp.y-ctp.y)+Mathf.Abs(ttp.z-ctp.z)
 		);
 		SetParam(
-			"arg"+infix+"mdistance.xy", 
+			"arg"+infix+"mdistance.xy",
 			Mathf.Abs(ttp.x-ctp.x)+Mathf.Abs(ttp.y-ctp.y)
 		);
 		SetParam("arg"+infix+"dx", Mathf.Abs(ttp.x-ctp.x));
@@ -329,9 +329,9 @@ public class SkillDef : ScriptableObject {
 		// Debug.Log("set "+"arg"+infix+"angle.xy"+"="+angle);
 	}
 	protected virtual void SetArgsFromTarget(
-		Target t, 
-		TargetSettings ts, 
-		string prefix, 
+		Target t,
+		TargetSettings ts,
+		string prefix,
 		Vector3? start = null
 	) {
 		TargetingMode tm = TargetingMode.Custom;
@@ -369,7 +369,7 @@ public class SkillDef : ScriptableObject {
 	}
 
 	protected virtual void ApplyPerApplicationEffectsTo(
-		StatEffect[] effects, 
+		StatEffect[] effects,
 		List<Character> targs
 	) {
 		Character targ = (targs == null || targs.Count == 0) ? null : targs[0];
@@ -382,53 +382,60 @@ public class SkillDef : ScriptableObject {
 			}
 		}
 		foreach(StatEffect se in effects) {
-			lastEffects.Add(se.Apply(
+			var rec = se.Apply(
 				this,
 				character,
 				targ
-			));
+			);
+			if(rec != null) {
+				lastEffects.Add(rec);
+			}
 		}
 	}
 	protected virtual void ApplyEffectsTo(
-		Target t, 
-		TargetSettings ts, 
-		StatEffectGroup[] effectGroups, 
-		List<Character> targs, 
-		string htp, 
+		Target t,
+		TargetSettings ts,
+		StatEffectGroup[] effectGroups,
+		List<Character> targs,
+		string htp,
 		Vector3 start
 	) {
 		foreach(Character c in targs) {
 			currentTargetCharacter = c;
 			int hitType = (int)GetParam(htp, 0);
 			currentHitType = hitType;
-			if(currentHitType < effectGroups.Length) {
-				StatEffect[] effects = effectGroups[hitType].effects;
-				Quaternion? oldFacing = t.facing;
-				//FIXME: feels a little (i.e. a lot) hacky
-			  Vector3 ep = c.TilePosition;
-				Vector3 tp = start;
-		 		if(!(Mathf.Approximately(ep.y,tp.y) &&
-		 		   	 Mathf.Approximately(ep.x,tp.x))) {
-		 			t.facing = Quaternion.Euler(
-						0,
-						Mathf.Atan2(ep.y-tp.y, ep.x-tp.x)*Mathf.Rad2Deg,
-						0
-					);
+			SetParam("arg.currentHitType", currentHitType);
+			StatEffect[] effects = effectGroups[Mathf.Max(hitType, effectGroups.Length-1)].effects;
+			Quaternion? oldFacing = t.facing;
+			//FIXME: feels a little (i.e. a lot) hacky
+		  Vector3 ep = c.TilePosition;
+			Vector3 tp = start;
+	 		if(!(Mathf.Approximately(ep.y,tp.y) &&
+	 		   	 Mathf.Approximately(ep.x,tp.x))) {
+	 			t.facing = Quaternion.Euler(
+					0,
+					Mathf.Atan2(ep.y-tp.y, ep.x-tp.x)*Mathf.Rad2Deg,
+					0
+				);
+			}
+			SetArgsFromTarget(t, ts, "", start);
+			t.facing = oldFacing;
+			foreach(StatEffect se in effects) {
+				var rec = se.Apply(
+					this,
+					character,
+					currentTargetCharacter
+				);
+				if(rec != null) {
+					lastEffects.Add(rec);
 				}
-				SetArgsFromTarget(t, ts, "", start);
-				t.facing = oldFacing;
-				foreach(StatEffect se in effects) {
-					lastEffects.Add(se.Apply(this, character, currentTargetCharacter));
-				}
-			} else {
-				Debug.LogError("Skill "+skillName+" has too few effect groups for hit type "+currentHitType);
 			}
 		}
 	}
 
 	protected static Vector2 TransformKeyboardAxes(
-		float h, 
-		float v, 
+		float h,
+		float v,
 		bool switchXY=true
 	) {
 		//use the camera and the map's own rotation
@@ -465,8 +472,8 @@ public class SkillDef : ScriptableObject {
 	//"public" for use mainly by Region and TargetSettings.
 	Map _map;
 	public Map map { get {
-		if(_map == null) { 
-			_map = character.transform.parent.GetComponent<Map>(); 
+		if(_map == null) {
+			_map = character.transform.parent.GetComponent<Map>();
 		}
 		return _map;
 	} }

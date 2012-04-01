@@ -52,7 +52,10 @@ public enum FormulaType {
 	And,
 	Not,
 	TargetIsNull,
-	TargetIsNotNull
+	TargetIsNotNull,
+	BranchCond,
+	IntDivide,
+	Trunc
 }
 
 public enum LookupType {
@@ -354,6 +357,17 @@ public class Formula : IFormulaElement {
 			  }
 				// Debug.Log("divided to "+result);
 				break;
+			case FormulaType.IntDivide:
+			  result = arguments[0].GetValue(fdb, scontext, ccontext, tcontext, econtext);
+			  for(int i = 1; i < arguments.Count; i++) {
+			  	result = (float)((int)(result/arguments[i].GetValue(fdb, scontext, ccontext, tcontext, econtext)));
+			  }
+				result = (float)((int)result);
+				// Debug.Log("int divided to "+result);
+				break;
+			case FormulaType.Trunc:
+			  result = (float)((int)arguments[0].GetValue(fdb, scontext, ccontext, tcontext, econtext));
+				break;
 			case FormulaType.And:
 				result = arguments[0].GetValue(fdb, scontext, ccontext, tcontext, econtext);
 				for(int i = 1; i < arguments.Count; i++) {
@@ -478,7 +492,7 @@ public class Formula : IFormulaElement {
 			case FormulaType.BranchAppliedSide:
 				result = FacingSwitch(fdb, StatEffectTarget.Applier, scontext, ccontext, tcontext, econtext);
 				break;
-			case FormulaType.BranchPDF:
+			case FormulaType.BranchPDF: {
 				result = -1;
 				float rval = Random.value;
 				float val = 0;
@@ -494,6 +508,21 @@ public class Formula : IFormulaElement {
 					Debug.LogError("PDF adds up to less than 1");
 				}
 				break;
+			}
+			case FormulaType.BranchCond: {
+				result = -1;
+				int halfLen = arguments.Count/2;
+				for(int i = 0; i < halfLen; i++) {
+					if(arguments[i].GetValue(fdb, scontext, ccontext, tcontext, econtext) != 0) {
+						result = arguments[i+halfLen].GetValue(fdb, scontext, ccontext, tcontext, econtext);
+						break;
+					}
+				}
+				if(result == -1) {
+					Debug.LogError("No cond branch applied");
+				}
+				break;
+			}
 			case FormulaType.TargetIsNull:
 				result = (scontext != null ? scontext.currentTargetCharacter == null : tcontext == null) ? 1 : 0;
 				break;
