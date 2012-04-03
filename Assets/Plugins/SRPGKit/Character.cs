@@ -54,12 +54,12 @@ public class Character : MonoBehaviour {
 		return mountedCharacter != null;
 	} }
 	public bool IsMountableBy(Character c) {
-		return !IsMounted && isMountableF != null ?
+		return !IsMounted && Formula.NotNullFormula(isMountableF) ?
 			(isMountableF.GetValue(fdb, null, this, c, null) != 0) :
 			false;
 	}
 	public bool CanMount(Character c) {
-		return !IsMounting && canMountF != null ?
+		return !IsMounting && Formula.NotNullFormula(canMountF) ?
 			(canMountF.GetValue(fdb, null, this, c, null) != 0) :
 			false;
 	}
@@ -429,6 +429,10 @@ public class Character : MonoBehaviour {
 	public void InvalidateStatusEffects() {
 		statusEffects = null;
 	}
+	public SkillDef GetSkill(string name) {
+		return Skills.FirstOrDefault(s => s.skillName == name);
+	}
+	
 	public IEnumerable<SkillDef> Skills { get {
 		if(skills == null) {
 			//replace any skills that need replacing
@@ -442,6 +446,7 @@ public class Character : MonoBehaviour {
 					int replPri = x.replacementPriority;
 					return !allSkills.Any(y =>
 						y != x &&
+							//FIXME: put "can only replace" stuff here
 						y.replacesSkill &&
 						y.replacedSkill == replPath &&
 						y.replacementPriority > replPri);
@@ -643,7 +648,7 @@ public class Character : MonoBehaviour {
 			}
 		}
 		foreach(SkillDef s in Skills) {
-			foreach(StatEffect se in s.passiveEffects) {
+			foreach(StatEffect se in s.PassiveEffects) {
 				if(se.statName == statName) {
 					float lastStat = stat;
 					stat = se.ModifyStat(stat, s, null, null, null);

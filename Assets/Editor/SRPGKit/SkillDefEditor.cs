@@ -16,10 +16,10 @@ public class SkillDefEditor : SRPGCKEditor {
 		sd.reallyDefined = true;
 		return sd;
 	}
-	bool showParameters=true;
-	bool showPassiveEffects=true;
-	bool showReactionTypesApplied=true, showReactionTypesApplier=true;
-	bool showReactionStatChangesApplied=true, showReactionStatChangesApplier=true;
+	protected bool showParameters=true;
+	protected bool showPassiveEffects=true;
+	protected bool showReactionTypesApplied=true, showReactionTypesApplier=true;
+	protected bool showReactionStatChangesApplied=true, showReactionStatChangesApplier=true;
 
 	protected SkillDef s;
   public override void OnEnable() {
@@ -38,7 +38,7 @@ public class SkillDefEditor : SRPGCKEditor {
 			IntField("Sorting", s.skillSorting);
 	}
 
-	protected void BasicSkillGUI() {
+	protected virtual void BasicSkillGUI() {
 		CoreSkillGUI();
 		s.isEnabledF = EditorGUIExt.FormulaField(
 			"Is Enabled",

@@ -114,13 +114,14 @@ public class EditorGUIExt
 		int selection= 0;
 		int lastSelection = 0;
 		EditorGUILayout.BeginVertical();
-		if(f == null || f.text == null || f.text == "") {
+		if(Formula.NullFormula(f) || f.text == "") {
 			f = Formula.Constant(0);
 			f.text = "0";
 		}
 		if(formulaOptions != null) {
 			if(f.formulaType == FormulaType.Lookup &&
-				 f.lookupType == LookupType.NamedFormula) {
+				 f.lookupType == LookupType.NamedFormula &&
+			   f.editorIsNamedFormula) {
 				selection = System.Array.IndexOf(formulaOptions, f.lookupReference);
 				lastSelection = selection;
 			}
@@ -140,6 +141,7 @@ public class EditorGUIExt
 			   (GUI.GetNameOfFocusedControl() != name && lastFocusedControl == name)) {
 				// Debug.Log("compile "+f.text);
 				FormulaCompiler.CompileInPlace(f);
+				f.editorIsNamedFormula = false;
 			}
 			GUI.SetNextControlName("");
 			EditorStyles.textField.wordWrap = priorWrap;
@@ -148,6 +150,7 @@ public class EditorGUIExt
 			}
 		} else if(lastSelection != selection && formulaOptions != null) {
 			f = Formula.Lookup(formulaOptions[selection], LookupType.NamedFormula);
+			f.editorIsNamedFormula = true;
 		}
 		EditorGUILayout.EndVertical();
 		return f;
@@ -217,22 +220,22 @@ public class EditorGUIExt
 		int i = -1
 	) {
 		StatEffect newFx = fx;
-		if(newFx.triggerF == null || (newFx.triggerF.formulaType == FormulaType.Constant && newFx.triggerF.constantValue == 0)) {
+		if(Formula.NullFormula(newFx.triggerF) || (newFx.triggerF.formulaType == FormulaType.Constant && newFx.triggerF.constantValue == 0)) {
 			newFx.triggerF = Formula.True();
 		}
-		if(newFx.specialMoveGivenStartX == null || fx == null) {
+		if(Formula.NullFormula(newFx.specialMoveGivenStartX) || fx == null) {
 			newFx.specialMoveGivenStartX = Formula.Lookup(
 				"arg.x",
 				LookupType.SkillParam
 			);
 		}
-		if(newFx.specialMoveGivenStartY == null || fx == null) {
+		if(Formula.NullFormula(newFx.specialMoveGivenStartY) || fx == null) {
 			newFx.specialMoveGivenStartY = Formula.Lookup(
 				"arg.y",
 				LookupType.SkillParam
 			);
 		}
-		if(newFx.specialMoveGivenStartZ == null || fx == null) {
+		if(Formula.NullFormula(newFx.specialMoveGivenStartZ) || fx == null) {
 			newFx.specialMoveGivenStartZ = Formula.Lookup(
 				"arg.z",
 				LookupType.SkillParam
@@ -811,7 +814,7 @@ public class EditorGUIExt
 		}
 		string prefix = type+".region.";
 		//predicateF
-		if(newReg.predicateF == null ||
+		if(Formula.NullFormula(newReg.predicateF) ||
 			 (newReg.predicateF.formulaType == FormulaType.Constant &&
 			  newReg.predicateF.constantValue == 0)) {
 			newReg.predicateF = Formula.True();
@@ -972,7 +975,7 @@ public class EditorGUIExt
 			//regions, but without UI for intervening space, cross/halt walls/enemies
 			//size
 			if(newReg.type == RegionType.NWay) {
-				if(newReg.nWaysF == null ||
+				if(Formula.NullFormula(newReg.nWaysF) ||
 					 (newReg.nWaysF.formulaType == FormulaType.Constant &&
 					  newReg.nWaysF.constantValue == 0)) {
 					newReg.nWaysF = Formula.Constant(1);

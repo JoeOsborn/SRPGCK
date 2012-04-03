@@ -55,7 +55,8 @@ public enum FormulaType {
 	TargetIsNotNull,
 	BranchCond,
 	IntDivide,
-	Trunc
+	Trunc,
+	NullFormula
 }
 
 public enum LookupType {
@@ -121,6 +122,7 @@ public class Formula : IFormulaElement {
 	//only used in editor:
 	public string text="";
 	public string compilationError="";
+	public bool editorIsNamedFormula=false;
 
 	//normal vars from here on
 	public string name;
@@ -153,7 +155,7 @@ public class Formula : IFormulaElement {
 	}
 	public void CopyFrom(Formula f) {
 /*		Debug.Log("copy from "+f);*/
-		if(f == null) { return; }
+		if(NullFormula(f)) { return; }
 		name = f.name;
 		text = f.text;
 		formulaType = f.formulaType;
@@ -169,7 +171,12 @@ public class Formula : IFormulaElement {
 		searchReactedEffectCategories = f.searchReactedEffectCategories;
 		arguments = f.arguments;
 	}
-
+	public static Formula Null() {
+		Formula f = new Formula();
+		f.formulaType = FormulaType.NullFormula;
+		f.text = "(null)";
+		return f;
+	}
 	public static Formula Constant(float c) {
 		Formula f = new Formula();
 		f.formulaType = FormulaType.Constant;
@@ -301,6 +308,9 @@ public class Formula : IFormulaElement {
 			lookupReference = lookupReference == null ? "" : lookupReference.NormalizeName();
 			firstTime = false;
 		}
+		// if(scontext != null && scontext.currentTargetCharacter != null) {
+			// Debug.Log("get value from "+this);
+		// }
 		float result=-1;
 		switch(formulaType) {
 			case FormulaType.Constant:
@@ -344,6 +354,15 @@ public class Formula : IFormulaElement {
 				}
 				break;
 			case FormulaType.Multiply:
+				if(arguments == null) {
+					Debug.LogError("no args at all! "+name+":"+text);
+				}
+				if(arguments[0] == null) {
+					if(arguments[1] != null) {
+						Debug.Log("a1 was ok, it's "+arguments[1].name+":"+arguments[1].text+" "+arguments[1].formulaType+"."+arguments[1].lookupType+" => "+arguments[1].lookupReference);
+					}
+					Debug.LogError("nm "+name+" txt "+text+" args "+arguments.Count);
+				}
 			  result = arguments[0].GetValue(fdb, scontext, ccontext, tcontext, econtext);
 			  for(int i = 1; i < arguments.Count; i++) {
 			  	result *= arguments[i].GetValue(fdb, scontext, ccontext, tcontext, econtext);
@@ -487,10 +506,10 @@ public class Formula : IFormulaElement {
 					arguments[2].GetValue(fdb, scontext, ccontext, tcontext, econtext);
 				break;
 			case FormulaType.BranchApplierSide:
-				result = FacingSwitch(fdb, StatEffectTarget.Applied, scontext, ccontext, tcontext, econtext);
+				result = FacingSwitch(fdb, StatEffectTarget.Applier, scontext, ccontext, tcontext, econtext);
 				break;
 			case FormulaType.BranchAppliedSide:
-				result = FacingSwitch(fdb, StatEffectTarget.Applier, scontext, ccontext, tcontext, econtext);
+				result = FacingSwitch(fdb, StatEffectTarget.Applied, scontext, ccontext, tcontext, econtext);
 				break;
 			case FormulaType.BranchPDF: {
 				result = -1;
@@ -498,9 +517,23 @@ public class Formula : IFormulaElement {
 				float val = 0;
 				int halfLen = arguments.Count/2;
 				for(int i = 0; i < halfLen; i++) {
-					val += arguments[i].GetValue(fdb, scontext, ccontext, tcontext, econtext);
+					val += arguments[i].GetValue(
+						fdb,
+						scontext,
+						ccontext,
+						tcontext,
+						econtext
+					);
+					// Debug.Log("branch cond check "+val+" against "+rval);
 					if(val >= rval) {
-						result = arguments[i+halfLen].GetValue(fdb, scontext, ccontext, tcontext, econtext);
+						result = arguments[i+halfLen].GetValue(
+							fdb,
+							scontext,
+							ccontext,
+							tcontext,
+							econtext
+						);
+						// Debug.Log("got "+result);
 						break;
 					}
 				}
@@ -554,41 +587,49 @@ public class Formula : IFormulaElement {
 			Debug.LogError("Relative facing not available for non-attack/reaction skill effects.");
 			return -1;
 		}
-		Character applier = scontext != null ? scontext.character : ccontext;
-		Character applied = scontext != null ? scontext.currentTargetCharacter : tcontext;
+		Character applier = scontext != null ?
+			scontext.character : ccontext;
+		Character applied = scontext != null ?
+			scontext.currentTargetCharacter : tcontext;
 		CharacterPointing pointing = CharacterPointing.Front;
 		Character x = null, y = null;
-		if(target == StatEffectTarget.Applier) {
+		if(target == StatEffectTarget.Applied) {
 			x = applier;
 			y = applied;
-		} else if(target == StatEffectTarget.Applied) {
+		} else if(target == StatEffectTarget.Applier) {
 			x = applied;
 			y = applier;
 		}
 		Vector3 xp = x.TilePosition;
 		Vector3 yp = y.TilePosition;
-
 		//see if y is facing towards x at all
-		float yAngle = y.Facing;
+		float xAngle = SRPGUtil.WrapAngle(x.Facing);
+		float yAngle = SRPGUtil.WrapAngle(y.Facing);
+		float interAngle = Mathf.Atan2(yp.y-xp.y, yp.x-xp.x)*Mathf.Rad2Deg;
+		float relativeYAngle = SRPGUtil.WrapAngle(yAngle - xAngle);
+		bool towards = Mathf.Abs(Mathf.DeltaAngle(interAngle, xAngle)) < 45;
 		//is theta(y,x) within 45 of yAngle?
-		if(Mathf.Abs(Vector2.Angle(new Vector2(yp.x, yp.y), new Vector2(xp.x, xp.y))-yAngle) < 45) {
+		Debug.Log("xang "+xAngle);
+		Debug.Log("yang "+yAngle);
+		Debug.Log("interang "+interAngle);
+		Debug.Log("towardsang "+Mathf.Abs(Mathf.DeltaAngle(xAngle, interAngle)));
+		Debug.Log("relY "+relativeYAngle);
+		if(towards) {
 			//next, get the quadrant
 			//quadrant ~~ theta (target -> other)
-			float xyAngle = Mathf.Atan2(yp.x-xp.x, yp.y-xp.y)*Mathf.Rad2Deg + x.Facing;
-			while(xyAngle < 0) { xyAngle += 360; }
-			while(xyAngle >= 360) { xyAngle -= 360; }
-			if(xyAngle >= 45 && xyAngle < 135) {
+			if(relativeYAngle >= 45 && relativeYAngle < 135) {
 				pointing = CharacterPointing.Left;
-			} else if(xyAngle >= 135 && xyAngle < 225) {
-				pointing = CharacterPointing.Back;
-			} else if(xyAngle >= 225 && xyAngle < 315) {
+			} else if(relativeYAngle >= 135 && relativeYAngle < 225) {
+				pointing = CharacterPointing.Front;
+			} else if(relativeYAngle >= 225 && relativeYAngle < 315) {
 				pointing = CharacterPointing.Right;
 			} else {
-				pointing = CharacterPointing.Front;
+				pointing = CharacterPointing.Back;
 			}
 		} else {
 			pointing = CharacterPointing.Away;
 		}
+		Debug.Log("pt "+pointing);
 
 		//order:
 		//front, left, right, back, away, sides, towards, default
@@ -596,33 +637,313 @@ public class Formula : IFormulaElement {
 		if(arguments.Count != 8) {
 			Debug.Log("Bad facing switch in skill "+(scontext != null ? scontext.skillName : "none"));
 		}
-		if(pointing == CharacterPointing.Front && arguments[0] != null) {
+		if(pointing == CharacterPointing.Front && NotNullFormula(arguments[0])) {
 			//front
+			Debug.Log("ft");
 			return arguments[0].GetValue(fdb, scontext, ccontext, tcontext, econtext);
-		} else if(pointing == CharacterPointing.Left && arguments[1] != null) {
+		} else if(pointing == CharacterPointing.Left && NotNullFormula(arguments[1])) {
 			//left
+			Debug.Log("lt");
 			return arguments[1].GetValue(fdb, scontext, ccontext, tcontext, econtext);
-		} else if(pointing == CharacterPointing.Right && arguments[2] != null) {
+		} else if(pointing == CharacterPointing.Right && NotNullFormula(arguments[2])) {
 			//right
+			Debug.Log("rt");
 			return arguments[2].GetValue(fdb, scontext, ccontext, tcontext, econtext);
-		} else if(pointing == CharacterPointing.Back && arguments[3] != null) {
+		} else if(pointing == CharacterPointing.Back && NotNullFormula(arguments[3])) {
 			//back
+			Debug.Log("bk");
 			return arguments[3].GetValue(fdb, scontext, ccontext, tcontext, econtext);
-		} else if(pointing == CharacterPointing.Away && arguments[4] != null) {
+		} else if(pointing == CharacterPointing.Away && NotNullFormula(arguments[4])) {
 			//away
+			Debug.Log("away");
 			return arguments[4].GetValue(fdb, scontext, ccontext, tcontext, econtext);
-		} else if((pointing == CharacterPointing.Left || pointing == CharacterPointing.Right) && arguments[5] != null) {
+		} else if((pointing == CharacterPointing.Left || pointing == CharacterPointing.Right) && NotNullFormula(arguments[5])) {
 			//sides
+			Debug.Log("sides");
 			return arguments[5].GetValue(fdb, scontext, ccontext, tcontext, econtext);
-		} else if((pointing != CharacterPointing.Away) && arguments[6] != null) {
+		} else if((pointing != CharacterPointing.Away) && NotNullFormula(arguments[6])) {
 			//towards
+			Debug.Log("twds");
 			return arguments[6].GetValue(fdb, scontext, ccontext, tcontext, econtext);
-		} else if(arguments[7] != null) {
+		} else if(NotNullFormula(arguments[7])) {
 			//default
+			Debug.Log("default");
 			return arguments[7].GetValue(fdb, scontext, ccontext, tcontext, econtext);
 		} else {
 			Debug.LogError("No valid branch for pointing "+pointing+" in skill "+(scontext != null ? scontext.skillName : "none"));
 			return -1;
 		}
 	}
+
+	public static bool NotNullFormula(Formula f) {
+		return f != null && f.formulaType != FormulaType.NullFormula;
+	}
+
+	public static bool NullFormula(Formula f) {
+		return !NotNullFormula(f);
+	}
+
+	public override string ToString() {
+		if(text != "" && text != null) { return text; }
+		try {
+			return FormulaToString();
+		} catch(System.Exception e) {
+			Debug.Log("broken formula "+e);
+			return "[[broken formula "+formulaType+":"+lookupReference+"("+constantValue+")]]";
+		}
+	}
+	public string FormulaToString() {
+		switch(formulaType) {
+			case FormulaType.Constant:
+				return constantValue.ToString();
+			case FormulaType.Lookup:
+				return LookupToString();
+			case FormulaType.ReactedEffectValue:
+				return "reacted-skill.effect";
+			case FormulaType.SkillEffectValue:
+				return "effect";
+			case FormulaType.Add:
+				if(arguments.Count == 2) {
+					return "("+arguments[0].ToString()+") + ("+arguments[1].ToString()+")";
+				}
+				return "sum("+arguments.Select(a => a.ToString()).JoinStr(", ")+")";
+			case FormulaType.Subtract:
+				if(arguments.Count == 2) {
+					return "("+arguments[0].ToString()+") - ("+arguments[1].ToString()+")";
+				}
+				return "difference("+arguments.Select(a => a.ToString()).JoinStr(", ")+")";
+			case FormulaType.Multiply:
+				if(arguments.Count == 2) {
+					return "("+arguments[0].ToString()+") * ("+arguments[1].ToString()+")";
+				}
+				return "product("+arguments.Select(a => a.ToString()).JoinStr(", ")+")";
+			case FormulaType.Divide:
+				if(arguments.Count == 2) {
+					return "("+arguments[0].ToString()+") / ("+arguments[1].ToString()+")";
+				}
+				return "quotient("+arguments.Select(a => a.ToString()).JoinStr(", ")+")";
+			case FormulaType.IntDivide:
+				if(arguments.Count == 2) {
+					return "("+arguments[0].ToString()+") div ("+arguments[1].ToString()+")";
+				}
+				return "iquotient("+arguments.Select(a => a.ToString()).JoinStr(", ")+")";
+			case FormulaType.Trunc:
+				return "trunc("+arguments.Select(a => a.ToString()).JoinStr(", ")+")";
+			case FormulaType.And:
+				if(arguments.Count == 2) {
+					return "("+arguments[0].ToString()+") and ("+arguments[1].ToString()+")";
+				}
+				return "and("+arguments.Select(a => a.ToString()).JoinStr(", ")+")";
+			case FormulaType.Or:
+				if(arguments.Count == 2) {
+					return "("+arguments[0].ToString()+") or ("+arguments[1].ToString()+")";
+				}
+				return "or("+arguments.Select(a => a.ToString()).JoinStr(", ")+")";
+			case FormulaType.Not:
+				return "not ("+arguments[0].ToString()+")";
+			case FormulaType.Remainder:
+				if(arguments.Count == 2) {
+					return "("+arguments[0].ToString()+") % ("+arguments[1].ToString()+")";
+				}
+				return "rem("+arguments.Select(a => a.ToString()).JoinStr(", ")+")";
+			case FormulaType.Exponent:
+				if(arguments.Count == 2) {
+					return "("+arguments[0].ToString()+") ^ ("+arguments[1].ToString()+")";
+				}
+				return "pow("+arguments.Select(a => a.ToString()).JoinStr(", ")+")";
+			case FormulaType.Root:
+				return "root("+arguments.Select(a => a.ToString()).JoinStr(", ")+")";
+			case FormulaType.Mean:
+				return "mean("+arguments.Select(a => a.ToString()).JoinStr(", ")+")";
+			case FormulaType.Min:
+				return "min("+arguments.Select(a => a.ToString()).JoinStr(", ")+")";
+			case FormulaType.Max:
+				return "max("+arguments.Select(a => a.ToString()).JoinStr(", ")+")";
+			case FormulaType.RandomRange:
+				return "random("+arguments.Select(a => a.ToString()).JoinStr(", ")+")";
+			case FormulaType.ClampRange:
+				return "clamp("+arguments.Select(a => a.ToString()).JoinStr(", ")+")";
+			case FormulaType.RoundDown:
+				return "floor("+arguments[0].ToString()+")";
+			case FormulaType.RoundUp:
+				return "ceil("+arguments[0].ToString()+")";
+			case FormulaType.Round:
+				return "round("+arguments[0].ToString()+")";
+			case FormulaType.AbsoluteValue:
+				return "abs("+arguments[0].ToString()+")";
+			case FormulaType.Negate:
+				return "(-("+arguments[0].ToString()+")"+")";
+			case FormulaType.Equal:
+				return "("+arguments[0].ToString()+" == "+arguments[1].ToString()+")";
+			case FormulaType.NotEqual:
+				return "("+arguments[0].ToString()+" != "+arguments[1].ToString()+")";
+		  case FormulaType.GreaterThan:
+				return "("+arguments[0].ToString()+" > "+arguments[1].ToString()+")";
+		  case FormulaType.GreaterThanOrEqual:
+				return "("+arguments[0].ToString()+" >= "+arguments[1].ToString()+")";
+			case FormulaType.LessThan:
+				return "("+arguments[0].ToString()+" < "+arguments[1].ToString()+")";
+			case FormulaType.LessThanOrEqual:
+				return "("+arguments[0].ToString()+" <= "+arguments[1].ToString()+")";
+			case FormulaType.Any:
+				return "any("+arguments.Select(a => a.ToString()).JoinStr(", ")+")";
+			case FormulaType.LookupSuccessful:
+				return "exists("+LookupToString()+")";
+			case FormulaType.BranchIfNotZero:
+				return "(if ("+arguments[0].ToString()+"): "+arguments[1].ToString()+"; "+arguments[2].ToString()+")";
+			case FormulaType.BranchApplierSide:
+				return SideBranchToString("targeter-side");
+			case FormulaType.BranchAppliedSide:
+				return SideBranchToString("targeted-side");
+			case FormulaType.BranchPDF: {
+				string ret = "random {\n";
+				int halfLen = arguments.Count/2;
+				for(int i = 0; i < halfLen; i++) {
+					ret += arguments[i].ToString()+": "+arguments[i+halfLen].ToString();
+					if(i < halfLen - 1) { ret += ";\n"; }
+				}
+				ret += "\n}\n";
+				return ret;
+			}
+			case FormulaType.BranchCond: {
+				string ret = "cond {\n";
+				int halfLen = arguments.Count/2;
+				for(int i = 0; i < halfLen; i++) {
+					ret += arguments[i].ToString()+": "+arguments[i+halfLen].ToString();
+					if(i < halfLen - 1) { ret += ";\n"; }
+				}
+				ret += "\n}\n";
+				return ret;
+			}
+			case FormulaType.TargetIsNull:
+				return "t.isNull";
+			case FormulaType.TargetIsNotNull:
+				return "t.isNotNull";
+		}
+		return "Unstringable formula of type "+formulaType;
+	}
+	public string SideBranchToString(string label) {
+		string ret = label+" {\n";
+		List<string> parts = new List<string>();
+		if(NotNullFormula(arguments[0])) {
+			//front
+			parts.Add("front: "+arguments[0].ToString());
+		}
+		if(NotNullFormula(arguments[1])) {
+			//left
+			parts.Add("left: "+arguments[1].ToString());
+		}
+		if(NotNullFormula(arguments[2])) {
+			//right
+			parts.Add("right: "+arguments[2].ToString());
+		}
+		if(NotNullFormula(arguments[3])) {
+			//back
+			parts.Add("back: "+arguments[3].ToString());
+		}
+		if(NotNullFormula(arguments[4])) {
+			//away
+			parts.Add("away: "+arguments[4].ToString());
+		}
+		if(NotNullFormula(arguments[5])) {
+			//sides
+			parts.Add("sides: "+arguments[5].ToString());
+		}
+		if(NotNullFormula(arguments[6])) {
+			//towards
+			parts.Add("towards: "+arguments[6].ToString());
+		}
+		if(NotNullFormula(arguments[7])) {
+			//default
+			parts.Add("default: "+arguments[7].ToString());
+		}
+		ret += parts.JoinStr(";\n");
+		ret += "\n}\n";
+		return ret;
+	}
+	public string MergeModeToString() {
+		switch(mergeMode) {
+			case FormulaMergeMode.Nth:
+				return "get "+mergeNth;
+			case FormulaMergeMode.First:
+				return "get first";
+			case FormulaMergeMode.Last:
+				return "get last";
+			case FormulaMergeMode.Min:
+				return "get min";
+			case FormulaMergeMode.Max:
+				return "get max";
+			case FormulaMergeMode.Mean:
+				return "get mean";
+			case FormulaMergeMode.Sum:
+				return "get sum";
+		}
+		return "";
+	}
+	public string LookupToString() {
+		switch(lookupType) {
+			case LookupType.Auto:
+				return lookupReference;
+			case LookupType.SkillParam:
+				return "skill."+lookupReference;
+			case LookupType.ActorStat:
+				return "c."+lookupReference;
+			case LookupType.ActorMountStat:
+				return "c.mount."+lookupReference;
+			case LookupType.ActorMounterStat:
+				return "c.mounter."+lookupReference;
+			case LookupType.ActorEquipmentParam:
+				return "c.equip("+equipmentCategories.JoinStr(", ")+" "+(equipmentSlots.Length > 0 ? "in "+equipmentCategories.JoinStr(", ")+" ":"")+MergeModeToString()+")."+lookupReference;
+			case LookupType.ActorMountEquipmentParam:
+				return "c.mount.equip("+equipmentCategories.JoinStr(", ")+" "+(equipmentSlots.Length > 0 ? "in "+equipmentCategories.JoinStr(", ")+" ":"")+MergeModeToString()+")."+lookupReference;
+			case LookupType.ActorMounterEquipmentParam:
+				return "c.mounter.equip("+equipmentCategories.JoinStr(", ")+" "+(equipmentSlots.Length > 0 ? "in "+equipmentCategories.JoinStr(", ")+" ":"")+MergeModeToString()+")."+lookupReference;
+			case LookupType.ActorStatusEffect:
+				return "c.status."+lookupReference;
+			case LookupType.ActorMountStatusEffect:
+				return "c.mount.status."+lookupReference;
+			case LookupType.ActorMounterStatusEffect:
+				return "c.mounter.status."+lookupReference;
+			case LookupType.ActorSkillParam:
+				return "skill."+lookupReference;
+			case LookupType.TargetStat:
+				return "t."+lookupReference;
+			case LookupType.TargetMountStat:
+				return "t.mount."+lookupReference;
+			case LookupType.TargetMounterStat:
+				return "t.mounter."+lookupReference;
+			case LookupType.TargetEquipmentParam:
+				return "t.equip("+equipmentCategories.JoinStr(", ")+" "+(equipmentSlots.Length > 0 ? "in "+equipmentCategories.JoinStr(", ")+" ":"")+MergeModeToString()+")."+lookupReference;
+			case LookupType.TargetMountEquipmentParam:
+				return "t.mount.equip("+equipmentCategories.JoinStr(", ")+" "+(equipmentSlots.Length > 0 ? "in "+equipmentCategories.JoinStr(", ")+" ":"")+MergeModeToString()+")."+lookupReference;
+			case LookupType.TargetMounterEquipmentParam:
+				return "t.mounter.equip("+equipmentCategories.JoinStr(", ")+" "+(equipmentSlots.Length > 0 ? "in "+equipmentCategories.JoinStr(", ")+" ":"")+MergeModeToString()+")."+lookupReference;
+			case LookupType.TargetStatusEffect:
+				return "t.status."+lookupReference;
+			case LookupType.TargetMountStatusEffect:
+				return "t.mount.status."+lookupReference;
+			case LookupType.TargetMounterStatusEffect:
+				return "t.mounter.status."+lookupReference;
+			case LookupType.TargetSkillParam:
+				return "t.skill."+lookupReference;
+			case LookupType.ActorMountSkillParam:
+				return "c.mount.skill."+lookupReference;
+			case LookupType.ActorMounterSkillParam:
+				return "c.mounter.skill."+lookupReference;
+			case LookupType.TargetMountSkillParam:
+				return "t.mount.skill."+lookupReference;
+			case LookupType.TargetMounterSkillParam:
+				return "t.mounter.skill."+lookupReference;
+			case LookupType.NamedFormula:
+				return ""+lookupReference;
+			case LookupType.ReactedSkillParam:
+				return "reacted-skill."+lookupReference;
+			case LookupType.ReactedEffectType:
+				return "reacted-skill.effect("+searchReactedStatChanges.JoinStr(", ")+(searchReactedStatNames.Length > 0 ? " in "+searchReactedStatNames.JoinStr(", ")+" " : "")+(searchReactedEffectCategories.Length > 0 ? " by "+searchReactedEffectCategories.JoinStr(", ")+" " : "")+MergeModeToString()+")";
+			case LookupType.SkillEffectType:
+			return "effect("+searchReactedStatChanges.JoinStr(", ")+(searchReactedStatNames.Length > 0 ? " in "+searchReactedStatNames.JoinStr(", ")+" " : "")+(searchReactedEffectCategories.Length > 0 ? " by "+searchReactedEffectCategories.JoinStr(", ")+" " : "")+MergeModeToString()+")";
+		}
+		return "Unstringable lookup of type "+lookupType;
+	}
+
 }

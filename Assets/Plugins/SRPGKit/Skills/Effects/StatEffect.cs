@@ -83,6 +83,7 @@ public class StatEffect {
 	  ref float modValue
 	) {
 		Formulae fdb = scontext != null ? scontext.fdb : (ccontext != null ? ccontext.fdb : (econtext != null ? econtext.fdb : Formulae.DefaultFormulae));
+		// Debug.Log("V:"+value);
 		modValue=value.GetValue(fdb, scontext, ccontext, tcontext, econtext);
 		float modifiedValue = stat;
 		switch(effectType) {
@@ -124,7 +125,7 @@ public class StatEffect {
 				actualTarget = targ;
 				break;
 		}
-		if(triggerF != null) {
+		if(Formula.NotNullFormula(triggerF)) {
 			if(triggerF.GetValue(fdb, skill, actualTarget) == 0) {
 				return null;
 			}

@@ -248,25 +248,25 @@ public class Region {
 	//only used for nways region
 	public Formula nWaysF;
 
-	public float radiusMin { get { return radiusMinF == null ? 0 : radiusMinF.GetValue(fdb, owner); } }
-	public float radiusMax { get { return radiusMaxF == null ? 0 : radiusMaxF.GetValue(fdb, owner); } }
-	public float zUpMin { get { return zUpMinF == null ? 0 : zUpMinF.GetValue(fdb, owner); } }
-	public float zUpMax { get { return zUpMaxF == null ? 0 : zUpMaxF.GetValue(fdb, owner); } }
-	public float zDownMin { get { return zDownMinF == null ? 0 : zDownMinF.GetValue(fdb, owner); } }
-	public float zDownMax { get { return zDownMaxF == null ? 0 : zDownMaxF.GetValue(fdb, owner); } }
-	public float lineWidthMin { get { return lineWidthMinF == null ? 0 : lineWidthMinF.GetValue(fdb, owner); } }
-	public float lineWidthMax { get { return lineWidthMaxF == null ? 0 : lineWidthMaxF.GetValue(fdb, owner); } }
+	public float radiusMin { get { return Formula.NullFormula(radiusMinF) ? 0 : radiusMinF.GetValue(fdb, owner); } }
+	public float radiusMax { get { return Formula.NullFormula(radiusMaxF) ? 0 : radiusMaxF.GetValue(fdb, owner); } }
+	public float zUpMin { get { return Formula.NullFormula(zUpMinF) ? 0 : zUpMinF.GetValue(fdb, owner); } }
+	public float zUpMax { get { return Formula.NullFormula(zUpMaxF) ? 0 : zUpMaxF.GetValue(fdb, owner); } }
+	public float zDownMin { get { return Formula.NullFormula(zDownMinF) ? 0 : zDownMinF.GetValue(fdb, owner); } }
+	public float zDownMax { get { return Formula.NullFormula(zDownMaxF) ? 0 : zDownMaxF.GetValue(fdb, owner); } }
+	public float lineWidthMin { get { return Formula.NullFormula(lineWidthMinF) ? 0 : lineWidthMinF.GetValue(fdb, owner); } }
+	public float lineWidthMax { get { return Formula.NullFormula(lineWidthMaxF) ? 0 : lineWidthMaxF.GetValue(fdb, owner); } }
 
-	public float xyDirection { get { return xyDirectionF == null ? 0 : xyDirectionF.GetValue(fdb, owner); } }
-	public float zDirection { get { return zDirectionF == null ? 0 : zDirectionF.GetValue(fdb, owner); } }
-	public float xyArcMin { get { return xyArcMinF == null ? 0 : xyArcMinF.GetValue(fdb, owner); } }
-	public float zArcMin { get { return zArcMinF == null ? 0 : zArcMinF.GetValue(fdb, owner); } }
-	public float xyArcMax { get { return xyArcMaxF == null ? 0 : xyArcMaxF.GetValue(fdb, owner); } }
-	public float zArcMax { get { return zArcMaxF == null ? 0 : zArcMaxF.GetValue(fdb, owner); } }
+	public float xyDirection { get { return Formula.NullFormula(xyDirectionF) ? 0 : xyDirectionF.GetValue(fdb, owner); } }
+	public float zDirection { get { return Formula.NullFormula(zDirectionF) ? 0 : zDirectionF.GetValue(fdb, owner); } }
+	public float xyArcMin { get { return Formula.NullFormula(xyArcMinF) ? 0 : xyArcMinF.GetValue(fdb, owner); } }
+	public float zArcMin { get { return Formula.NullFormula(zArcMinF) ? 0 : zArcMinF.GetValue(fdb, owner); } }
+	public float xyArcMax { get { return Formula.NullFormula(xyArcMaxF) ? 0 : xyArcMaxF.GetValue(fdb, owner); } }
+	public float zArcMax { get { return Formula.NullFormula(zArcMaxF) ? 0 : zArcMaxF.GetValue(fdb, owner); } }
 
-	public float rFwdClipMax { get { return rFwdClipMaxF == null ? 0 : rFwdClipMaxF.GetValue(fdb, owner); } }
+	public float rFwdClipMax { get { return Formula.NullFormula(rFwdClipMaxF) ? 0 : rFwdClipMaxF.GetValue(fdb, owner); } }
 
-	public float nWays { get { return nWaysF == null ? 1 : nWaysF.GetValue(fdb, owner); } }
+	public float nWays { get { return Formula.NullFormula(nWaysF) ? 1 : nWaysF.GetValue(fdb, owner); } }
 
 	protected Map map { get { return owner.map; } }
 

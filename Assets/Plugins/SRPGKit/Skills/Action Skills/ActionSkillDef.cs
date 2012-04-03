@@ -31,7 +31,7 @@ public class ActionSkillDef : SkillDef {
 
 	//def properties
 	public SkillIO _io;
-	public SkillIO io {
+	public virtual SkillIO io {
 		get {
 			if(_io == null) {
 				_io = ScriptableObject.CreateInstance<SkillIO>();
@@ -42,14 +42,43 @@ public class ActionSkillDef : SkillDef {
 	}
 
 	public StatEffectGroup scheduledEffects;
+	public virtual StatEffectGroup ScheduledEffects { get {
+		return scheduledEffects;
+	} }
 	public StatEffectGroup applicationEffects;
+	public virtual StatEffectGroup ApplicationEffects { get {
+		return applicationEffects;
+	} }
 	public StatEffectGroup[] targetEffects;
+	public virtual StatEffectGroup[] TargetEffects { get {
+		return targetEffects;
+	} }
+
 	public Formula delay;
+	public virtual Formula Delay { get {
+		return delay;
+	} }
 	public bool delayedApplicationUsesOriginalPosition=false;
+	public virtual bool DelayedApplicationUsesOriginalPosition { get {
+		return delayedApplicationUsesOriginalPosition;
+	} }
 
 	public MultiTargetMode multiTargetMode = MultiTargetMode.Single;
+	public virtual MultiTargetMode MultiTargetMode { get {
+		return multiTargetMode;
+	} }
 	public bool waypointsAreIncremental=false;
+	public virtual bool WaypointsAreIncremental { get {
+		return waypointsAreIncremental;
+	} }
 	public bool canCancelWaypoints=true;
+	public virtual bool CanCancelWaypoints { get {
+		return canCancelWaypoints;
+	} }
+	public bool turnToFaceTarget=true;
+	public virtual bool TurnToFaceTarget { get {
+		return turnToFaceTarget;
+	} }
 
 	public TargetSettings[] _targetSettings;
 	public TargetSettings[] targetSettings {
@@ -69,13 +98,16 @@ public class ActionSkillDef : SkillDef {
 			}
 		}
 	}
+	public virtual TargetSettings[] TargetSettings { get {
+			return targetSettings;
+	} }
 
 	public Formula maxWaypointDistanceF;
-	public float maxWaypointDistance { get {
+	public virtual float maxWaypointDistance { get {
 		return maxWaypointDistanceF.GetValue(fdb, this);
 	} }
 
-	//internals
+	//runtime internals
 
 	[System.NonSerialized]
 	public bool lastTargetPushed = false;
@@ -185,7 +217,7 @@ public class ActionSkillDef : SkillDef {
 
 	public bool RequireConfirmation { get {
 		return requireConfirmation &&
-			!(multiTargetMode == MultiTargetMode.Chain && targets.Count < targetSettings.Length);
+			!(this.MultiTargetMode == MultiTargetMode.Chain && targets.Count < this.TargetSettings.Length);
 	} }
 
 	public bool AwaitingConfirmation {
@@ -207,11 +239,11 @@ public class ActionSkillDef : SkillDef {
 	protected RadialOverlay _RadialOverlay { get { return overlay as RadialOverlay; } }
 
 	public bool HasTargetingMode(TargetingMode tm) {
-		return targetSettings.Any(t => t.targetingMode == tm);
+		return this.TargetSettings.Any(t => t.targetingMode == tm);
 	}
 
 	public TargetSettings currentSettings { get {
-		return targetSettings[Mathf.Min(targetSettings.Length-1, targets.Count-1)];
+		return this.TargetSettings[Mathf.Min(this.TargetSettings.Length-1, targets.Count-1)];
 	} }
 
 	public Target currentTarget { get {
@@ -219,7 +251,7 @@ public class ActionSkillDef : SkillDef {
 	} }
 	public TargetSettings lastSettings { get {
 		if(targets.Count == 1) { return null; }
-		return targetSettings[targets.Count-2];
+		return this.TargetSettings[targets.Count-2];
 	} }
 	public Target lastTarget { get {
 		if(targets.Count == 1) { return initialTarget; }
@@ -230,7 +262,7 @@ public class ActionSkillDef : SkillDef {
 		if(ChainedTarget) {
 			for(int i = targets.Count-2; i >= 0; i--) {
 				Target t = targets[i];
-				if(targetSettings[i].doNotMoveChain) { continue; }
+				if(this.TargetSettings[i].doNotMoveChain) { continue; }
 				if(t.path != null) { return t.path.pos; }
 				if(t.character != null) { return t.character.TilePosition; }
 			}
@@ -242,7 +274,7 @@ public class ActionSkillDef : SkillDef {
 		return initialTarget.Position;
 	} }
 	public Quaternion TargetFacing { get {
-		if(multiTargetMode == MultiTargetMode.Chain) {
+		if(this.MultiTargetMode == MultiTargetMode.Chain) {
 			for(int i = targets.Count-2; i >= 0; i--) {
 				Target t = targets[i];
 				if(t.facing != null) { return t.facing.Value; }
@@ -256,7 +288,7 @@ public class ActionSkillDef : SkillDef {
 	} }
 
 	public Vector3 EffectPosition { get {
-		if(multiTargetMode == MultiTargetMode.Chain) {
+		if(this.MultiTargetMode == MultiTargetMode.Chain) {
 			for(int i = targets.Count-1; i >= 0; i--) {
 				Target t = targets[i];
 				if(t.path != null) { return t.path.pos; }
@@ -270,7 +302,7 @@ public class ActionSkillDef : SkillDef {
 		return initialTarget.Position;
 	} }
 	public Quaternion EffectFacing { get {
-		if(multiTargetMode == MultiTargetMode.Chain) {
+		if(this.MultiTargetMode == MultiTargetMode.Chain) {
 			for(int i = targets.Count-1; i >= 0; i--) {
 				Target t = targets[i];
 				if(t.facing != null) { return t.facing.Value; }
@@ -283,7 +315,7 @@ public class ActionSkillDef : SkillDef {
 		return initialTarget.facing.Value;
 	} }
 	public Vector3 TargetPositionForTarget(Target t) {
-		if(multiTargetMode == MultiTargetMode.Chain) {
+		if(this.MultiTargetMode == MultiTargetMode.Chain) {
 			int idx = targets.IndexOf(t);
 			for(int i = idx-1; i >= 0; i--) {
 				Target ti = targets[i];
@@ -294,7 +326,7 @@ public class ActionSkillDef : SkillDef {
 		return initialTarget.Position;
 	}
 	public Quaternion TargetFacingForTarget(Target t) {
-		if(multiTargetMode == MultiTargetMode.Chain) {
+		if(this.MultiTargetMode == MultiTargetMode.Chain) {
 			int idx = targets.IndexOf(t);
 			for(int i = idx-1; i >= 0; i--) {
 				Target ti = targets[i];
@@ -304,7 +336,7 @@ public class ActionSkillDef : SkillDef {
 		return initialTarget.facing.Value;
 	}
 	public Vector3 EffectPositionForTarget(Target t) {
-		if(multiTargetMode == MultiTargetMode.Chain) {
+		if(this.MultiTargetMode == MultiTargetMode.Chain) {
 			int idx = targets.IndexOf(t);
 			for(int i = idx; i >= 0; i--) {
 				Target ti = targets[i];
@@ -317,7 +349,7 @@ public class ActionSkillDef : SkillDef {
 		return initialTarget.Position;
 	}
 	public Quaternion EffectFacingForTarget(Target t) {
-		if(multiTargetMode == MultiTargetMode.Chain) {
+		if(this.MultiTargetMode == MultiTargetMode.Chain) {
 			int idx = targets.IndexOf(t);
 			for(int i = idx; i >= 0; i--) {
 				Target ti = targets[i];
@@ -328,17 +360,41 @@ public class ActionSkillDef : SkillDef {
 		return initialTarget.facing.Value;
 	}
 
+	public Quaternion CharacterFacingForTarget(Target t) {
+		if(this.MultiTargetMode == MultiTargetMode.Chain) {
+			int idx = targets.IndexOf(t);
+			for(int i = idx; i >= 0; i--) {
+				Target ti = targets[i];
+				if(ti.facing != null) { return ti.facing.Value; }
+				if(ti.path != null || ti.character != null) {
+					return Quaternion.Euler(0, Mathf.Atan2(
+						ti.Position.y-character.TilePosition.y,
+						ti.Position.x-character.TilePosition.x
+					)*Mathf.Rad2Deg, 0);
+				}
+			}
+		}
+		if(t.facing != null) { return t.facing.Value; }
+		if(t.path != null || t.character != null) {
+			return Quaternion.Euler(0, Mathf.Atan2(
+				t.Position.y-character.TilePosition.y,
+				t.Position.x-character.TilePosition.x
+			)*Mathf.Rad2Deg, 0);
+		}
+		return initialTarget.facing.Value;
+	}
+
 	public bool SingleTarget { get {
-		return multiTargetMode == MultiTargetMode.Single;
+		return this.MultiTargetMode == MultiTargetMode.Single;
 	} }
 	public bool MultiTarget { get {
-		return multiTargetMode != MultiTargetMode.Single;
+		return this.MultiTargetMode != MultiTargetMode.Single;
 	} }
 	public bool ChainedTarget { get {
-		return multiTargetMode == MultiTargetMode.Chain;
+		return this.MultiTargetMode == MultiTargetMode.Chain;
 	} }
 	public bool ListTarget { get {
-		return multiTargetMode == MultiTargetMode.List;
+		return this.MultiTargetMode == MultiTargetMode.List;
 	} }
 
 	public override void Start() {
@@ -353,7 +409,7 @@ public class ActionSkillDef : SkillDef {
 		highlightColor = new Color(0.9f, 0.6f, 0.4f, 0.85f);
 
 		if(!HasParam("hitType")) {
-			AddParam("hitType", Formula.Constant(0));
+			SetParam("hitType", Formula.Constant(0));
 		}
 		targetSettings = new TargetSettings[]{new TargetSettings()};
 		targetSettings[0].Owner = this;
@@ -396,7 +452,7 @@ public class ActionSkillDef : SkillDef {
 
 	public override void ActivateSkill() {
 		if(isActive) { return; }
-		foreach(TargetSettings ts in targetSettings) {
+		foreach(TargetSettings ts in this.TargetSettings) {
 			ts.Owner = this;
 		}
 		lastTargetPushed = false;
@@ -488,7 +544,7 @@ public class ActionSkillDef : SkillDef {
 							firstClickTime = Time.time;
 						} else {
 							firstClickTime = -1;
-							if(!waypointsAreIncremental &&
+							if(!WaypointsAreIncremental &&
 								 !currentSettings.immediatelyExecuteDrawnPath &&
 								 targets.Count > 1 &&
 								 currentTarget.Position == hitSpot) {
@@ -747,8 +803,8 @@ public class ActionSkillDef : SkillDef {
 				UpdateGridSelection();
 			}
 		} else if(targets.Count > 1 &&
-		          canCancelWaypoints &&
-		          !waypointsAreIncremental &&
+		          CanCancelWaypoints &&
+		          !WaypointsAreIncremental &&
 		          !currentSettings.immediatelyExecuteDrawnPath) {
 			UnwindToLastWaypoint();
 		} else {
@@ -773,7 +829,7 @@ public class ActionSkillDef : SkillDef {
 		if(AwaitingTargetOption) {
 			for(int i = 0; i < targets.Count; i++) {
 				Target t = targets[i];
-				TargetSettings ts = targetSettings[i];
+				TargetSettings ts = this.TargetSettings[i];
 				if(!ts.allowsCharacterTargeting) {
 					continue;
 				}
@@ -794,7 +850,7 @@ public class ActionSkillDef : SkillDef {
 	public bool AwaitingTargetOption { get {
 		for(int i = 0; i < targets.Count; i++) {
 			Target t = targets[i];
-			TargetSettings ts = targetSettings[i];
+			TargetSettings ts = this.TargetSettings[i];
 			if(t.character != null && t.path != null && ts.allowsCharacterTargeting) {
 				return true;
 			}
@@ -829,14 +885,14 @@ public class ActionSkillDef : SkillDef {
 	}
 	public override void ApplySkill() {
 		ClearLastEffects();
-		float delayVal = delay == null ? 0 : delay.GetValue(fdb, this);
-		if(delay != null &&
-		   !(delay.formulaType == FormulaType.Constant &&
-				 delay.constantValue == 0) &&
+		float delayVal = Formula.NullFormula(Delay) ? 0 : Delay.GetValue(fdb, this);
+		if(Formula.NotNullFormula(Delay) &&
+		   !(Delay.formulaType == FormulaType.Constant &&
+				 Delay.constantValue == 0) &&
 		   !AwaitingTargetOption) {
 			for(int i = 0; i < targets.Count; i++) {
 				Target t = targets[i];
-				TargetSettings ts = targetSettings[i];
+				TargetSettings ts = this.TargetSettings[i];
 				Debug.Log("set args at "+i+" from "+t);
 				//arg0... arg1...
 				SetArgsFromTarget(t, ts, ""+i, TargetPositionForTarget(t));
@@ -844,7 +900,7 @@ public class ActionSkillDef : SkillDef {
 			Debug.Log("set default args from "+currentTarget);
 			SetArgsFromTarget(currentTarget, currentSettings, "", TargetPosition);
 			FindPerApplicationCharacterTargets();
-			ApplyPerApplicationEffectsTo(scheduledEffects.effects, targetCharacters);
+			ApplyPerApplicationEffectsTo(ScheduledEffects.effects, targetCharacters);
 		}
 		if(delayVal == 0) {
 			// Debug.Log("No delay!");
@@ -860,7 +916,7 @@ public class ActionSkillDef : SkillDef {
 				);
 			} else {
 				Debug.Log("apply after delay");
-				scheduler.ApplySkillAfterDelay(this, delayedApplicationUsesOriginalPosition ? initialTarget.Position : (Vector3?)null, targets, delayVal);
+				scheduler.ApplySkillAfterDelay(this, DelayedApplicationUsesOriginalPosition ? initialTarget.Position : (Vector3?)null, targets, delayVal);
 				base.ApplySkill();
 			}
 			//FIXME: Move this delayed-application concept up into Skill,
@@ -870,38 +926,44 @@ public class ActionSkillDef : SkillDef {
 	public virtual void ApplySkillToTargets(Vector3? start=null) {
 		//set up all args
 		// Debug.Log("ready the args");
+		initialTarget = (new Target()).
+			Path(start.HasValue ? start.Value : character.TilePosition).
+			Facing(character.Facing);
 		for(int i = 0; i < targets.Count; i++) {
 			Target t = targets[i];
-			TargetSettings ts = targetSettings[i];
-			Debug.Log("apply set args at "+i+" from "+t);
+			TargetSettings ts = this.TargetSettings[i];
+			// Debug.Log("apply set args at "+i+" from "+t);
 			//arg0... arg1...
-			SetArgsFromTarget(t, ts, ""+i, (i == 0 || multiTargetMode != MultiTargetMode.Chain) ? start : TargetPositionForTarget(t));
+			SetArgsFromTarget(t, ts, ""+i, (i == 0 || this.MultiTargetMode != MultiTargetMode.Chain) ? start : TargetPositionForTarget(t));
 		}
-		Debug.Log("apply set default args from "+currentTarget);
+		// Debug.Log("apply set default args from "+currentTarget);
 		SetArgsFromTarget(currentTarget, currentSettings, "", start ?? TargetPosition);
 		FindPerApplicationCharacterTargets();
-		ApplyPerApplicationEffectsTo(applicationEffects.effects, targetCharacters);
+		ApplyPerApplicationEffectsTo(ApplicationEffects.effects, targetCharacters);
 
-		switch(multiTargetMode) {
+		switch(this.MultiTargetMode) {
 			case MultiTargetMode.Single:
 			case MultiTargetMode.List:
-				if(targetEffects.Length == 0) {
+				if(TargetEffects.Length == 0) {
 					break;
 				}
 				for(int i = 0; i < targets.Count; i++) {
 					Target t = targets[i];
-					TargetSettings ts = targetSettings[i];
+					TargetSettings ts = this.TargetSettings[i];
 					//set up "current" args
-					Debug.Log("Apply vs target "+t);
+					// Debug.Log("Apply vs target "+t);
 					SetArgsFromTarget(t, ts, "", start);
 					PathNode[] targetTiles = PathNodesForTarget(t, ts.targetRegion, ts.effectRegion, EffectPositionForTarget(t), EffectFacingForTarget(t));
-					Debug.Log("tts:"+targetTiles.Length);
+					// Debug.Log("tts:"+targetTiles.Length);
 					foreach(PathNode tt in targetTiles) {
 						Debug.Log(tt);
 					}
 					targetCharacters = ts.effectRegion.CharactersForTargetedTiles(targetTiles);
 					Debug.Log("targetChars:"+targetCharacters.Count);
-					ApplyEffectsTo(t, ts, targetEffects, targetCharacters, "hitType", start.HasValue ? start.Value : TargetPositionForTarget(t));
+					if(TurnToFaceTarget) {
+						character.Facing = CharacterFacingForTarget(targets[i]).eulerAngles.y;
+					}
+					ApplyEffectsTo(t, ts, TargetEffects, targetCharacters, "hitType", start.HasValue ? start.Value : TargetPositionForTarget(t));
 				}
 				break;
 			case MultiTargetMode.Chain:
@@ -909,11 +971,11 @@ public class ActionSkillDef : SkillDef {
 				//and apply subsequent steps to them.
 				//path and pick and selectregion require individual target characters
 				//set up "current" args -- "current" always means "last" here
-				if(targetEffects.Length == 0) { break; }
+				if(TargetEffects.Length == 0) { break; }
 				List<Character> chars = new List<Character>();
 				for(int i = 0; i < targets.Count-1; i++) {
 					Target t = targets[i];
-					TargetSettings ts = targetSettings[i];
+					TargetSettings ts = this.TargetSettings[i];
 					if(ts.IsPickOrPath && chars.Count > 1) {
 						Debug.LogError("Can't chain pick/path/select region after multitarget effect");
 					}
@@ -926,7 +988,10 @@ public class ActionSkillDef : SkillDef {
 					}
 				}
 				targetCharacters = chars;
-				ApplyEffectsTo(currentTarget, currentSettings, targetEffects, targetCharacters, "hitType", TargetPositionForTarget(currentTarget));
+				if(TurnToFaceTarget) {
+					character.Facing = CharacterFacingForTarget(lastTarget).eulerAngles.y;
+				}
+				ApplyEffectsTo(currentTarget, currentSettings, TargetEffects, targetCharacters, "hitType", TargetPositionForTarget(currentTarget));
 				break;
 		}
 		map.BroadcastMessage("SkillEffectApplied", this, SendMessageOptions.DontRequireReceiver);
@@ -1131,7 +1196,7 @@ public class ActionSkillDef : SkillDef {
 	protected bool CanUnwindPath { get {
 		return !currentSettings.immediatelyExecuteDrawnPath &&
 		((currentTarget.path != null && currentTarget.path.prev != null) ||
-		 (!waypointsAreIncremental && targets.Count > 1));
+		 (!WaypointsAreIncremental && targets.Count > 1));
 	} }
 	public void UnwindPath(int nodes=1) {
 		for(int i = 0; i < nodes && CanUnwindPath; i++) {
@@ -1161,7 +1226,7 @@ public class ActionSkillDef : SkillDef {
 				if((endOfPath == null ||
 				    endOfPath.prev == null) &&
 				   targets.Count > 1 &&
-				   !waypointsAreIncremental) {
+				   !WaypointsAreIncremental) {
 					if(endOfPath == null) {
 						PathNode wp=lastTarget.path, wpp=wp.prev;
 						if(ShouldDrawPath) {
@@ -1241,7 +1306,7 @@ public class ActionSkillDef : SkillDef {
 
 	protected void ResetPosition() {
 		if(targets.Count > 1 &&
-		   !waypointsAreIncremental &&
+		   !WaypointsAreIncremental &&
 		   !currentSettings.immediatelyExecuteDrawnPath) {
 			UnwindToLastWaypoint();
 		} else {
@@ -1252,7 +1317,7 @@ public class ActionSkillDef : SkillDef {
 	protected bool DestIsBacktrack(Vector3 newDest) {
 		return !currentSettings.immediatelyExecuteDrawnPath && ShouldDrawPath && (
 		(currentTarget.path != null && currentTarget.path.prev != null && newDest == currentTarget.path.prev.pos) ||
-		(!waypointsAreIncremental && targets.Count > 1 &&
+		(!WaypointsAreIncremental && targets.Count > 1 &&
 			(((currentTarget.path.prev == null) &&
 			(targets[targets.Count-1].path.pos == newDest)) ||
 
@@ -1263,7 +1328,7 @@ public class ActionSkillDef : SkillDef {
 	}
 
 	public bool PermitsNewWaypoints { get {
-		if(targetSettings.Length == targets.Count) { return false; }
+		if(this.TargetSettings.Length == targets.Count) { return false; }
 		if(currentSettings.immediatelyExecuteDrawnPath) { return false; }
 		if(SingleTarget) { return false; }
 		return
@@ -1276,7 +1341,7 @@ public class ActionSkillDef : SkillDef {
 	}
 
 	protected void PushTarget() {
-		if(lastTargetPushed || targets.Count > targetSettings.Length) {
+		if(lastTargetPushed || targets.Count > this.TargetSettings.Length) {
 			Debug.LogError("Too many targets being pushed");
 			return;
 		}
@@ -1301,14 +1366,14 @@ public class ActionSkillDef : SkillDef {
 				SendMessageOptions.DontRequireReceiver
 			);
 			SetArgsFromTarget(currentTarget, currentSettings, ""+(targets.Count-1), TargetPosition);
-			if(multiTargetMode == MultiTargetMode.Chain) {
+			if(this.MultiTargetMode == MultiTargetMode.Chain) {
 				SetArgsFromTarget(currentTarget, currentSettings, "", TargetPosition);
 			}
 			if(currentSettings.targetingMode == TargetingMode.Path &&
 			   currentSettings.immediatelyExecuteDrawnPath) {
 				currentTarget.path = new PathNode(currentTarget.path.pos, null, 0);
 				IncrementalApplyCurrentTarget();
-			} else if(waypointsAreIncremental) {
+			} else if(WaypointsAreIncremental) {
 				IncrementalApplyCurrentTarget();
 			} else {
 				TemporaryApplyCurrentTarget();

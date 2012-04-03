@@ -32,10 +32,12 @@ public class WaitSkillDef : ActionSkillDef {
 		StatEffect facingEffect = new StatEffect();
 		facingEffect.effectType = StatEffectType.ChangeFacing;
 		facingEffect.target = StatEffectTarget.Applier;
+		facingEffect.triggerF = Formula.True();
 		facingEffect.value = Formula.Lookup("arg.angle.xy", LookupType.SkillParam);
 		StatEffect endTurnEffect = new StatEffect();
 		endTurnEffect.effectType = StatEffectType.EndTurn;
 		endTurnEffect.target = StatEffectTarget.Applier;
+		endTurnEffect.triggerF = Formula.True();
 		applicationEffects = new StatEffectGroup{effects=new StatEffect[]{
 			facingEffect, endTurnEffect
 		}};

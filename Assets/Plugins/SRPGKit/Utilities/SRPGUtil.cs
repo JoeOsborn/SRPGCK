@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 
 public enum FacingLock {
 	FreeAngle=0,
@@ -114,5 +115,21 @@ public static class SRPGUtil {
 		while(c > l.Count) {
 			l.Add(new T());
 		}
+	}
+
+	static public string JoinStr(this IEnumerable<string> strs, string join) {
+		return string.Join(join, strs.ToArray());
+	}
+	static public string JoinStr(this IEnumerable<object> objs, string join) {
+		return string.Join(join, objs.Select(o => o.ToString()).ToArray());
+	}
+	static public string JoinStr(this string[] strs, string join) {
+		return string.Join(join, strs);
+	}
+	static public string JoinStr(this object[] objs, string join) {
+		return string.Join(join, objs.Select(o => o.ToString()).ToArray());
+	}
+	static public string JoinStr(this StatChangeType[] scts, string join) {
+		return string.Join(join, scts.Select(o => o.ToString()).ToArray());
 	}
 }

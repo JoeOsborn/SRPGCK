@@ -14,7 +14,10 @@ public class Formulae : ScriptableObject {
 			runtimeFormulae = new Dictionary<string, Formula>();
 			for(int i = 0; i < formulae.Count; i++) {
 				formulae[i].name = formulae[i].name.NormalizeName();
-				runtimeFormulae.Add(formulae[i].name, formulae[i]);
+				if(runtimeFormulae.ContainsKey(formulae[i].name)) {
+					Debug.Log("Duplicate formula "+formulae[i].name);
+				}
+				runtimeFormulae[formulae[i].name] = formulae[i];
 			}
 		}
 	}
@@ -295,7 +298,8 @@ public class Formulae : ScriptableObject {
 				return (econtext != null ? econtext.GetParam(fname) :
 						 	 (scontext != null ? scontext.GetParam(fname) :
 						   (ccontext != null ? ccontext.GetStat(fname) :
-							 (tcontext != null ? tcontext.GetStat(fname) : -1))));
+							 (tcontext != null ? tcontext.GetStat(fname) :
+							 (HasFormula(fname) ? LookupFormula(fname).GetValue(this, scontext, ccontext, tcontext, econtext) : -1)))));
 			case LookupType.SkillParam:
 				return scontext.GetParam(fname);
 			case LookupType.ActorStat:
@@ -436,6 +440,7 @@ public class Formulae : ScriptableObject {
 					Debug.LogError("Missing formula "+fname);
 					return -1;
 				}
+				// Debug.Log("F:"+LookupFormula(fname));
 				return LookupFormula(fname).GetValue(this, scontext, ccontext, tcontext, econtext);
 			case LookupType.ReactedSkillParam:
 				if(scontext != null) {

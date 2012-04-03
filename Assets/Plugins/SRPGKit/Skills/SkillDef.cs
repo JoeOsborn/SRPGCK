@@ -14,13 +14,17 @@ public class SkillDef : ScriptableObject {
 	public bool deactivatesOnApplication=true;
 
 	public StatEffect[] passiveEffects;
+	public virtual StatEffect[] PassiveEffects {
+		get { return passiveEffects; }
+		set { passiveEffects = value; }
+	}
 
 	public List<Parameter> parameters;
 
 	public Formula isEnabledF;
-	public bool IsEnabled { get {
+	public virtual bool IsEnabled { get {
 		return Owner != null &&
-			(isEnabledF != null ? isEnabledF.GetValue(fdb, this) != 0 : true);
+			(Formula.NotNullFormula(isEnabledF) ? isEnabledF.GetValue(fdb, this) != 0 : true);
 	} }
 
 	//reaction
@@ -33,7 +37,7 @@ public class SkillDef : ScriptableObject {
 	public StatEffectGroup reactionApplicationEffects;
 
 	//for overriding
-	virtual public bool isPassive {
+	public virtual bool isPassive {
 		get { return true; }
 	}
 
@@ -235,17 +239,22 @@ public class SkillDef : ScriptableObject {
 		}
 	}
 
-	public bool HasParam(string pname) {
-		MakeParametersIfNecessary();
-		return runtimeParameters.ContainsKey(pname);
-	}
-
 	public Formulae fdb { get {
 		if(character != null) { return character.fdb; }
 		return Formulae.DefaultFormulae;
 	} }
 
-	public float GetParam(string pname, float fallback=float.NaN) {
+	public virtual bool HasParam(string pname) {
+		MakeParametersIfNecessary();
+		return runtimeParameters.ContainsKey(pname);
+	}
+
+	public virtual float GetParam(
+		string pname,
+		float fallback=float.NaN,
+		SkillDef parentCtx=null
+	) {
+		if(parentCtx == null) { parentCtx = this; }
 		MakeParametersIfNecessary();
 		//TODO: let all other equipment and skills modulate this param?
 		if(!HasParam(pname)) {
@@ -255,13 +264,13 @@ public class SkillDef : ScriptableObject {
 /*			Debug.Log("using fallback "+fallback+" for "+pname);*/
 			return fallback;
 		}
-		return runtimeParameters[pname].GetValue(fdb, this);
+		return runtimeParameters[pname].GetValue(fdb, parentCtx);
 	}
 
-	public void SetParam(string pname, float value) {
+	public virtual void SetParam(string pname, float value) {
 		MakeParametersIfNecessary();
-		if(!HasParam(pname)) {
-			runtimeParameters[pname] = Formula.Constant(value);
+		if(!runtimeParameters.ContainsKey(pname)) {
+			SetParam(pname, Formula.Constant(value));
 		} else {
 			Formula f = runtimeParameters[pname];
 			if(f.formulaType == FormulaType.Constant) {
@@ -271,13 +280,23 @@ public class SkillDef : ScriptableObject {
 			}
 		}
 	}
-
-	public void AddParam(string pname, Formula f) {
+	public virtual void SetParam(string pname, Formula f) {
 		MakeParametersIfNecessary();
 		runtimeParameters[pname] = f;
-		parameters = parameters.Concat(new Parameter[]{new Parameter(pname, f)}).
-			ToList();
+		f.name = pname;
+		bool found = false;
+		foreach(Parameter p in parameters) {
+			if(p.name == pname) {
+				p.formula = f;
+				found = true;
+				break;
+			}
+		}
+		if(found) {
+			parameters.Add(new Parameter(pname, f));
+		}
 	}
+
 	public virtual void SetArgsFrom(
 		Vector3 ttp,
 		Quaternion? facing=null,
@@ -326,7 +345,7 @@ public class SkillDef : ScriptableObject {
 		SetParam("arg.isAlly", t != null && t.IsAlly(character) ? 1 : 0);
 		SetParam("arg.isEnemy", t != null && t.IsEnemy(character) ? 1 : 0);
 		SetParam("arg"+infix+"angle.xy", angle);
-		// Debug.Log("set "+"arg"+infix+"angle.xy"+"="+angle);
+		// Debug.Log("set arg"+infix+"angle.xy"+"="+angle);
 	}
 	protected virtual void SetArgsFromTarget(
 		Target t,
@@ -382,6 +401,7 @@ public class SkillDef : ScriptableObject {
 			}
 		}
 		foreach(StatEffect se in effects) {
+			Debug.Log("apply "+se.effectType);
 			var rec = se.Apply(
 				this,
 				character,
@@ -402,10 +422,12 @@ public class SkillDef : ScriptableObject {
 	) {
 		foreach(Character c in targs) {
 			currentTargetCharacter = c;
+			Debug.Log("current target "+c);
 			int hitType = (int)GetParam(htp, 0);
+			Debug.Log("hitType "+hitType);
 			currentHitType = hitType;
 			SetParam("arg.currentHitType", currentHitType);
-			StatEffect[] effects = effectGroups[Mathf.Max(hitType, effectGroups.Length-1)].effects;
+			StatEffect[] effects = effectGroups[Mathf.Min(hitType, effectGroups.Length-1)].effects;
 			Quaternion? oldFacing = t.facing;
 			//FIXME: feels a little (i.e. a lot) hacky
 		  Vector3 ep = c.TilePosition;
@@ -459,7 +481,7 @@ public class SkillDef : ScriptableObject {
 
 	Character _character;
 	public Character character { get {
-		if(_character == null) {
+		if(_character == null && Owner != null) {
 			Transform t = Owner.transform;
 			while(t != null) {
 				Character c = t.GetComponent<Character>();

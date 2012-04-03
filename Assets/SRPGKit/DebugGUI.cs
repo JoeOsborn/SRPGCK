@@ -156,6 +156,7 @@ public class DebugGUI : MonoBehaviour {
 				string[] groupSegments = delimiter.Split(group.Key);
 				//it's a next group
 				string[] groupKeySegments = new string[segmentCount+1];
+				// Debug.Log("segs "+groupSegments.Length+" key segs "+groupKeySegments.Length+" scp1 "+(segmentCount+1));
 				Array.Copy(groupSegments, groupKeySegments, segmentCount+1);
 				string groupKey = string.Join("//", groupKeySegments);
 				if(!usedEntities.Contains(groupKey)) {

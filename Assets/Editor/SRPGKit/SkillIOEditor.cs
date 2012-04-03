@@ -6,7 +6,7 @@ using System;
 
 [CustomEditor(typeof(SkillIO))]
 public class SkillIOEditor : SRPGCKEditor {
-	[MenuItem("SRPGCK/Create skill io", false, 24)]
+	[MenuItem("SRPGCK/Create skill io", false, 25)]
 	public static SkillIO CreateSkillIO()
 	{
 		SkillIO sio = ScriptableObjectUtility.CreateAsset<SkillIO>(

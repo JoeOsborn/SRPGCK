@@ -74,9 +74,10 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 			IFormulaElement ife = fc.Parse(f.text);
 			Formula newF = ife as Formula;
 			if(ife is Identifier) {
+				Debug.Log("just identifier "+(ife as Identifier).Name+", auto lookup");
 				newF = Formula.Lookup((ife as Identifier).Name);
 			}
-			if(newF != null) {
+			if(Formula.NotNullFormula(newF)) {
 				newF.text = f.text;
 			}
 			string n = f.name;
@@ -184,12 +185,12 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 			return f;
 		};
 
-		// LookupOn("f", (parser) => {
-		// 	Formula f = new Formula();
-		// 	f.formulaType = FormulaType.Lookup;
-		// 	f.lookupType = LookupType.NamedFormula;
-		// 	return f;
-		// });
+		LookupOn("f", (parser) => {
+			Formula f = new Formula();
+			f.formulaType = FormulaType.Lookup;
+			f.lookupType = LookupType.NamedFormula;
+			return f;
+		});
 		LookupOn("c", (parser) => {
 			Formula f = new Formula();
 			f.formulaType = FormulaType.Lookup;
@@ -590,7 +591,19 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 				throw new SemanticException("Switch "+name+" must handle at least one case");
 			} else {
 				while(true) {
-					cases.Add((parser.Parse(bindingPower) as Identifier).Name);
+					if(optKeys.Contains(parser.Token.Id)) {
+						cases.Add(parser.Token.Id);
+						parser.Advance(parser.Token.Id);
+					} else if(parser.Token.Id == "(identifier)") {
+						Identifier ident = (parser.Parse(bindingPower) as Identifier);
+						if(optKeys.Contains(ident.Name)) {
+							cases.Add(ident.Name);
+						} else {
+							throw new SemanticException("Invalid case "+ident.Name);
+						}
+					} else {
+						throw new SemanticException("Invalid case "+parser.Token.Id);
+					}
 					if(parser.Token.Id != ":") {
 						throw new SemanticException("Switch "+name+" case "+parser.Token.Id+" must be handled");
 					}
@@ -609,7 +622,7 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 				if(idx != -1) {
 					sortedForms.Add(forms[idx]);
 				} else {
-					sortedForms.Add(null);
+					sortedForms.Add(Formula.Null());
 				}
 			}
 			return selector(sortedForms);
@@ -723,6 +736,7 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 
 	Formula CheckFormulaArg(IFormulaElement ife) {
 		if(ife != null && !(ife is Formula)) {
+			// Debug.Log("check just identifier "+(ife as Identifier).Name+", auto lookup, could we do better?");
 			return Formula.Lookup((ife as Identifier).Name);
 		}
 		return ife as Formula;
@@ -887,47 +901,45 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 		f.arguments = new List<Formula>(){CheckFormulaArg(lhs), CheckFormulaArg(rhs)};
 		return f;
 	}
-	IFormulaElement Add(IFormulaElement lhs, IFormulaElement rhs) {
+	IFormulaElement LeftAssocFormula(FormulaType ft, IFormulaElement lhs, IFormulaElement rhs) {
 		Formula f = new Formula();
-		f.formulaType = FormulaType.Add;
-		f.arguments = new List<Formula>(){CheckFormulaArg(lhs), CheckFormulaArg(rhs)};
+		f.formulaType = ft;
+		Formula lhsf = CheckFormulaArg(lhs);
+		Formula rhsf = CheckFormulaArg(rhs);
+		var args = new List<Formula>();
+		if(lhsf.formulaType == f.formulaType) {
+			args.AddRange(lhsf.arguments);
+		} else {
+			args.Add(lhsf);
+		}
+		if(rhsf.formulaType == f.formulaType) {
+			args.AddRange(rhsf.arguments);
+		} else {
+			args.Add(rhsf);
+		}
+		f.arguments = args;
 		return f;
+	}
+	IFormulaElement Add(IFormulaElement lhs, IFormulaElement rhs) {
+		return LeftAssocFormula(FormulaType.Add, lhs, rhs);
 	}
 	IFormulaElement Sub(IFormulaElement lhs, IFormulaElement rhs) {
-		Formula f = new Formula();
-		f.formulaType = FormulaType.Subtract;
-		f.arguments = new List<Formula>(){CheckFormulaArg(lhs), CheckFormulaArg(rhs)};
-		return f;
+		return LeftAssocFormula(FormulaType.Subtract, lhs, rhs);
 	}
 	IFormulaElement Mul(IFormulaElement lhs, IFormulaElement rhs) {
-		Formula f = new Formula();
-		f.formulaType = FormulaType.Multiply;
-		f.arguments = new List<Formula>(){CheckFormulaArg(lhs), CheckFormulaArg(rhs)};
-		return f;
+		return LeftAssocFormula(FormulaType.Multiply, lhs, rhs);
 	}
 	IFormulaElement Div(IFormulaElement lhs, IFormulaElement rhs) {
-		Formula f = new Formula();
-		f.formulaType = FormulaType.Divide;
-		f.arguments = new List<Formula>(){CheckFormulaArg(lhs), CheckFormulaArg(rhs)};
-		return f;
+		return LeftAssocFormula(FormulaType.Divide, lhs, rhs);
 	}
 	IFormulaElement IntDiv(IFormulaElement lhs, IFormulaElement rhs) {
-		Formula f = new Formula();
-		f.formulaType = FormulaType.IntDivide;
-		f.arguments = new List<Formula>(){CheckFormulaArg(lhs), CheckFormulaArg(rhs)};
-		return f;
+		return LeftAssocFormula(FormulaType.IntDivide, lhs, rhs);
 	}
 	IFormulaElement Or(IFormulaElement lhs, IFormulaElement rhs) {
-		Formula f = new Formula();
-		f.formulaType = FormulaType.Or;
-		f.arguments = new List<Formula>(){CheckFormulaArg(lhs), CheckFormulaArg(rhs)};
-		return f;
+		return LeftAssocFormula(FormulaType.Or, lhs, rhs);
 	}
 	IFormulaElement And(IFormulaElement lhs, IFormulaElement rhs) {
-		Formula f = new Formula();
-		f.formulaType = FormulaType.And;
-		f.arguments = new List<Formula>(){CheckFormulaArg(lhs), CheckFormulaArg(rhs)};
-		return f;
+		return LeftAssocFormula(FormulaType.And, lhs, rhs);
 	}
 
 	IFormulaElement Rem(IFormulaElement lhs, IFormulaElement rhs) {

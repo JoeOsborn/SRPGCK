@@ -21,7 +21,9 @@ public abstract class SRPGCKEditor : Editor {
 	protected virtual void UpdateFormulae() {
 		if(!useFormulae) { return; }
 		if(fdb != null && fdb.formulae != null) {
-			formulaOptions = (new string[]{"Custom"}).Concat(fdb.formulae.Select(f => f.name)).ToArray();
+			formulaOptions = (new string[]{"Custom"}).
+				Concat(fdb.formulae.Select(f => f.name).OrderBy(n => n)).
+				ToArray();
 		} else {
 			formulaOptions = new string[]{"Custom"};
 		}
@@ -115,48 +117,6 @@ public abstract class SRPGCKEditor : Editor {
 		if(!Directory.Exists(p)) {
 			Directory.CreateDirectory(p);
 			AssetDatabase.Refresh();
-		}
-	}
-	protected static void CopyFieldsTo<TA, TB>(TA s, TB def) {
-		FieldInfo[] fields = typeof(TA).
-			GetFields(BindingFlags.Public |
-								BindingFlags.Instance |
-                BindingFlags.NonPublic).
-			Where(info =>
-			  (info.IsPublic && !info.IsNotSerialized) ||
-			  info.GetCustomAttributes(typeof(SerializeField),true).Length != 0
-			).ToArray();
-		FieldInfo[] defFields = typeof(TB).
-			GetFields(BindingFlags.Public |
-								BindingFlags.Instance |
-                BindingFlags.NonPublic).
-			Where(info =>
-			  (info.IsPublic && !info.IsNotSerialized) ||
-			  info.GetCustomAttributes(typeof(SerializeField),true).Length != 0
-			).ToArray();
-		for(int i = 0; i < defFields.Length; i++) {
-			FieldInfo sdf = defFields[i];
-			string sdfn = sdf.Name;
-			Debug.Log("copy "+sdfn+"?");
-			FieldInfo sf = fields.FirstOrDefault(fi => fi.Name == sdfn);
-			if(sf == null) { Debug.Log("no field!"); continue; }
-			Debug.Log("src "+(sf.GetValue(s) != null ? sf.GetValue(s).ToString() : "(null)"));
-			if(sf.FieldType.IsValueType) {
-				sdf.SetValue(def, sf.GetValue(s));
-				Debug.Log("byval");
-			} else if(sf.FieldType.IsSubclassOf(typeof(ScriptableObject))) {
-				ScriptableObject oldO = sf.GetValue(s) as ScriptableObject;
-				if(oldO == null) { Debug.Log("null SO"); continue; }
-				ScriptableObject newO = Instantiate(oldO) as ScriptableObject;
-				Debug.Log("byscopy");
-				sdf.SetValue(def, newO);
-			} else {
-				object oldO = sf.GetValue(s);
-				if(oldO == null) { Debug.Log("null O"); continue; }
-				object newO = oldO.Copy();
-				sdf.SetValue(def, newO);
-				Debug.Log("bycopy");
-			}
 		}
 	}
 }

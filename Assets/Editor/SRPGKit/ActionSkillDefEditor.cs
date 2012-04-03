@@ -19,17 +19,18 @@ public class ActionSkillDefEditor : SkillDefEditor {
 		sd.reallyDefined = true;
 		return sd;
 	}
-	ActionSkillDef atk;
+	protected ActionSkillDef atk;
 
  	public override void OnEnable() {
 		base.OnEnable();
 		name = "ActionSkillDef";
 		atk = target as ActionSkillDef;
 	}
-	protected void TargetedSkillGUI() {
+	protected virtual void TargetedSkillGUI() {
+		atk.turnToFaceTarget = EditorGUILayout.Toggle("Face Target", atk.turnToFaceTarget);
 		atk.delay = EditorGUIExt.FormulaField("Scheduled Delay", atk.delay, atk.GetInstanceID()+"."+atk.name+".delay", formulaOptions, lastFocusedControl);
-		if(atk.delay != null && 
-		   !(atk.delay.formulaType == FormulaType.Constant && 
+		if(Formula.NotNullFormula(atk.delay) &&
+		   !(atk.delay.formulaType == FormulaType.Constant &&
 		     atk.delay.constantValue == 0)) {
 	 		atk.delayedApplicationUsesOriginalPosition = EditorGUILayout.Toggle("Trigger from Original Position", atk.delayedApplicationUsesOriginalPosition);
 		}
@@ -58,10 +59,8 @@ public class ActionSkillDefEditor : SkillDefEditor {
 			EditorGUILayout.BeginHorizontal();
 			EditorGUILayout.Space();
 			EditorGUILayout.BeginVertical();
-	   	EditorGUIUtility.LookLikeControls();
 			for(int i = 0; i < atk.targetSettings.Length; i++)
 			{
-		   	EditorGUIUtility.LookLikeControls();
 				TargetSettings ts = i < oldSettings.Length ? oldSettings[i] : atk.targetSettings[i];
 				if (ts == null) {
 					atk.targetSettings[i] = new TargetSettings();
@@ -72,15 +71,14 @@ public class ActionSkillDefEditor : SkillDefEditor {
 			EditorGUILayout.EndVertical();
 			EditorGUILayout.EndHorizontal();
 			EditorGUILayout.EndVertical();
-	   	EditorGUIUtility.LookLikeControls();
 		} else {
 			atk.targetSettings[0] = EditorGUIExt.TargetSettingsGUI("Target", atk.targetSettings[0], atk, formulaOptions, lastFocusedControl, -1);
 		}
 	}
 
-	protected void EffectSkillGUI() {
-		if(atk.delay != null && 
-		   !(atk.delay.formulaType == FormulaType.Constant && 
+	protected virtual void EffectSkillGUI() {
+		if(Formula.NotNullFormula(atk.delay) &&
+		   !(atk.delay.formulaType == FormulaType.Constant &&
 		     atk.delay.constantValue == 0)) {
 	 		atk.scheduledEffects = EditorGUIExt.StatEffectGroupGUI("On-Scheduled Effect", atk.scheduledEffects, StatEffectContext.Action, ""+atk.GetInstanceID(), formulaOptions, lastFocusedControl);
 		}
