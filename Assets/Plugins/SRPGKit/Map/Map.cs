@@ -1090,13 +1090,9 @@ void Awake() {
 		return CharactersAt(tc).Where(c2 => c2 != c).FirstOrDefault();
 	}
 	public IEnumerable<Character> CharactersAt(Vector3 tc) {
-		return GetComponentsInChildren<Character>().Where(c => {
-			Vector3 ctc = c.TilePosition;
-//			Debug.Log("TC:"+tc+", CTC:"+ctc);
-			return (Mathf.Floor(tc.x) == Mathf.Floor(ctc.x) &&
-			   Mathf.Floor(tc.y) == Mathf.Floor(ctc.y) &&
-			   Mathf.Floor(tc.z) == Mathf.Floor(ctc.z));
-			}).OrderBy(c => c.IsMounting ? 1 : 0);
+		return GetComponentsInChildren<Character>().
+			Where(c => c.OverlapsPoint(tc)).
+			OrderBy(c => c.IsMounting ? 1 : 0);
 	}
 #endregion
 }

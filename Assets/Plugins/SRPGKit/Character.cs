@@ -70,6 +70,23 @@ public class Character : MonoBehaviour {
 			(mountingCharacter != null && mountingCharacter.GetStat("isTargetable", 1) != 0);
 	} }
 
+	public Vector3 size;
+	public Vector3 Size {
+		get { return size; }
+		set { size = value; }
+	}
+
+	public bool OverlapsPoint(Vector3 tc) {
+		Vector3 ctc = TilePosition;
+		float cos = Mathf.Cos(Facing*Mathf.Deg2Rad);
+		float sin = Mathf.Sin(Facing*Mathf.Deg2Rad);
+		float normX = (Size.x * cos + Size.y * sin)*0.5f;
+		float normY = (Size.x * sin + Size.y * cos)*0.5f;
+		float normZ = Size.z*0.5f;
+		return Mathf.Abs(tc.x - ctc.x) <= normX &&
+	    Mathf.Abs(tc.y - ctc.y) <= normY &&
+	    Mathf.Abs(tc.z - ctc.z) <= normZ;
+	}
 
 	public void Mount(Character mount) {
 		mountedCharacter = mount;
@@ -147,6 +164,7 @@ public class Character : MonoBehaviour {
 
 	public virtual void Reset() {
 		characterName = name;
+		size = new Vector3(1,1,2);
 		equipmentSlots = new string[]{"hand", "hand", "head", "body", "accessory"};
 	}
 
@@ -579,6 +597,12 @@ public class Character : MonoBehaviour {
 			return TilePosition.y;
 		} else if(statName == "position.z") {
 			return TilePosition.z;
+		} else if(statName == "size.x") {
+			return Size.x;
+		} else if(statName == "size.y") {
+			return Size.y;
+		} else if(statName == "size.z") {
+			return Size.z;
 		} else if(statName == "isMounted") {
 			return IsMounted ? 1 : 0;
 		} else if(statName == "isMounting") {
@@ -626,6 +650,15 @@ public class Character : MonoBehaviour {
 		} else if(statName == "position.z") {
 			Debug.LogError("Setting position.z from stat effect not currently supported");
 			return TilePosition.z;
+		} else if(statName == "size.x") {
+			Debug.LogError("Setting size.x from stat effect not currently supported");
+			return Size.x;
+		} else if(statName == "size.y") {
+			Debug.LogError("Setting size.y from stat effect not currently supported");
+			return Size.y;
+		} else if(statName == "size.z") {
+			Debug.LogError("Setting size.z from stat effect not currently supported");
+			return Size.z;
 		} else if(statName == "isMounted") {
 			Debug.LogError("Setting isMounted from stat effect not currently supported");
 			return IsMounted ? 1 : 0;

@@ -35,6 +35,9 @@ public class CharacterEditor : SRPGCKEditor {
 		);
 		EditorGUILayout.Space();
 
+		c.size = EditorGUILayout.Vector3Field("Size (Tiles):", c.size);
+		EditorGUILayout.Space();
+
 		c.transformOffset = EditorGUILayout.Vector3Field(
 			"Visual Offset:",
 			c.transformOffset

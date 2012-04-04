@@ -1495,7 +1495,7 @@ public class Region {
 				if(map.TileAt(truncHere+new Vector3(0,0,1)) != null) {
 					cur.isWall = true;
 				}
-				Character mc = map.TargetableCharacterAt(truncHere) ?? map.TargetableCharacterAt(truncHere-new Vector3(0,0,1));
+				Character mc = map.TargetableCharacterAt(truncHere);
 				cur.isEnemy = mc != null && mc.EffectiveTeamID != Owner.character.EffectiveTeamID;
 			}
 			Vector3 prevTrunc = here;
@@ -1514,7 +1514,7 @@ public class Region {
 					if(map.TileAt(truncHere+new Vector3(0,0,1)) != null) {
 						herePn.isWall = true;
 					}
-					Character mc = map.TargetableCharacterAt(truncHere) ?? map.TargetableCharacterAt(truncHere-new Vector3(0,0,1));
+					Character mc = map.TargetableCharacterAt(truncHere);
 					herePn.isEnemy = mc != null && mc.EffectiveTeamID != Owner.character.EffectiveTeamID;
 					pickables.Add(truncHere, herePn);
 				}
@@ -1581,7 +1581,7 @@ public class Region {
 				pickables[testPos] = pn = new PathNode(testPos, (testPos != prevPos && pickables.ContainsKey(prevPos) ? pickables[prevPos] : null), xDist);
 				pn.canStop = false;
 				pn.isWall = /*map.TileAt(testPos) != null && */map.TileAt(testPos+new Vector3(0,0,1)) != null;
-				Character tc = map.TargetableCharacterAt(testPos) ?? map.TargetableCharacterAt(testPos-new Vector3(0,0,1));
+				Character tc = map.TargetableCharacterAt(testPos);
 				pn.isEnemy = tc != null && tc.EffectiveTeamID != owner.character.EffectiveTeamID;
 			}
 			if(prevPos.z < testPos.z && map.TileAt(testPos) != null) {
@@ -1593,7 +1593,7 @@ public class Region {
 				break;
 			}
 			//FIXME: what about friendlies?
-			Character c = map.TargetableCharacterAt(pn.pos) ?? map.TargetableCharacterAt(pn.pos-new Vector3(0,0,1));
+			Character c = map.TargetableCharacterAt(pn.pos);
 			if(pn.isEnemy && !canCrossEnemies && !canHaltAtEnemies && !provideAllTiles && !(canMountEnemies && c.IsMountableBy(owner.character) && owner.character.CanMount(c))) {
 				//no good!
 				// Debug.Log("enemy, can't cross, can't halt at testpos "+testPos);
