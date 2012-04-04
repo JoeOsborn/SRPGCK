@@ -34,18 +34,75 @@ public class DebugGUI : MonoBehaviour {
 
 	[HideInInspector]
 	public ActionSkillDef pendingTargetedSkill;
+	[HideInInspector]
+	public SkillDef activeSkill;
 
 	public void Start() {
 		selectedGroup = new List<string>();
 	}
 
 	public void Update() {
-		Scheduler s = GetComponent<Scheduler>();
-		if(s.activeCharacter != null) {
-			Camera cam = Camera.main;
-			MovableCamera mc = cam.transform.parent.GetComponent<MovableCamera>();
-			mc.targetPivot = s.activeCharacter.transform.position;
+		//button inputs for camera
+		//rotate-left, rotate-right, tilt-up, tilt-down, zoom-in, zoom-out
+		MovableCamera mc = Camera.main.transform.parent.GetComponent<MovableCamera>();
+		if(Input.GetButton("Rotate Left")) {
+			if(!mc.IsMoving) {
+				mc.targetRotation = (float)SRPGUtil.LockFacing(mc.targetRotation-90, FacingLock.Ordinal);
+			}
 		}
+		if(Input.GetButton("Rotate Right")) {
+			if(!mc.IsMoving) {
+				mc.targetRotation = (float)SRPGUtil.LockFacing(mc.targetRotation+90, FacingLock.Ordinal);
+			}
+		}
+		if(Input.GetButton("Tilt Up")) {
+			if(Mathf.Approximately(mc.targetTilt, 30) && !mc.IsMoving) {
+				mc.targetTilt = 45;
+			}
+		}
+		if(Input.GetButton("Tilt Down")) {
+			if(Mathf.Approximately(mc.targetTilt, 45) && !mc.IsMoving) {
+				mc.targetTilt = 30;
+			}
+		}
+		if(Input.GetButton("Zoom In")) {
+			if(Mathf.Approximately(mc.targetDistance, 45) && !mc.IsMoving) {
+				mc.targetDistance = 30;
+			}
+		}
+		if(Input.GetButton("Zoom Out")) {
+			if(Mathf.Approximately(mc.targetDistance, 30) && !mc.IsMoving) {
+				mc.targetDistance = 45;
+			}
+		}
+		//also, if we're in an active skill, make the selected tile the target pivot
+		if(activeSkill != null) {
+			if(activeSkill is ActionSkillDef) {
+				FocusOnPoint(map.TransformPointWorld(((ActionSkillDef)activeSkill).TargetPosition));
+			}
+		}
+	}
+	public void FocusOnCharacter(Character c) {
+		Camera cam = Camera.main;
+		MovableCamera mc = cam.transform.parent.GetComponent<MovableCamera>();
+		mc.targetPivot = c.transform.position;
+	}
+	public void FocusOnPoint(Vector3 pos) {
+		Camera cam = Camera.main;
+		MovableCamera mc = cam.transform.parent.GetComponent<MovableCamera>();
+		mc.targetPivot = pos;
+	}
+	public void ActivatedCharacter(Character c) {
+		FocusOnCharacter(c);
+	}
+	public void SkillActivated(SkillDef s) {
+		if(s.character == GetComponent<Scheduler>().activeCharacter) {
+			activeSkill = s;
+		}
+	}
+	public void SkillDeactivated(SkillDef s) {
+		if(s == activeSkill) { activeSkill = null; }
+		FocusOnCharacter(GetComponent<Scheduler>().activeCharacter);
 	}
 
 	protected void OnGUIConfirmation(string msg, out bool yesButton, out bool noButton, string yesMsg = "Yes", string noMsg = "No") {
@@ -97,6 +154,7 @@ public class DebugGUI : MonoBehaviour {
 
 
 	void SkillApplied(SkillDef s) {
+		FocusOnCharacter(s.character);
 		selectedGroup = null;
 		Scheduler sch = GetComponent<Scheduler>();
 		Character ac = sch.activeCharacter;

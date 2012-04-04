@@ -17,7 +17,7 @@ public class MovableCamera : MonoBehaviour {
 	public float cameraMoveSpeed=45;
 	public float tiltSpeed=60;
 	public float rotateSpeed=120;
-	
+
 	Vector3 lastPivot;
 	float lastDistance;
 	float lastRotation;
@@ -30,7 +30,14 @@ public class MovableCamera : MonoBehaviour {
 		lastRotation = -1;
 		lastTilt = -1;
 	}
-	
+
+	public bool IsMoving { get {
+		return Vector3.Distance(pivot, targetPivot) > pivotMoveSpeed*0.01f ||
+			Mathf.Abs(distance - targetDistance) > cameraMoveSpeed*0.01f ||
+			Mathf.Abs(tilt - targetTilt) > tiltSpeed*0.01f ||
+			Mathf.Abs(Mathf.DeltaAngle(rotation, targetRotation)) > rotateSpeed*0.01f;
+	} }
+
 	// Update is called once per frame
 	void Update() {
 		Camera c = transform.Find("Main Camera").camera;
@@ -42,7 +49,7 @@ public class MovableCamera : MonoBehaviour {
 			//END DEBUG
 			//consider replacing these with MoveTo tweens
 			float dt = Time.deltaTime;
-			if(iTween.Count(gameObject)==0) { 
+			if(iTween.Count(gameObject)==0) {
 				pivot = Vector3.MoveTowards(pivot, targetPivot, pivotMoveSpeed*dt);
 			}
 			distance = Mathf.MoveTowards(distance, targetDistance, cameraMoveSpeed*dt);
@@ -59,7 +66,8 @@ public class MovableCamera : MonoBehaviour {
 			lastPivot = pivot;
 		}
 		if(distance != lastDistance) {
-			c.transform.position = -c.transform.forward * (distance*3);
+			c.transform.localRotation = Quaternion.Euler(tilt, 0, 0);
+			c.transform.position = transform.position+(-c.transform.forward*distance*3);
 			if(c.orthographic) {
 				c.orthographicSize = distance;
 				oc.orthographic = true;
@@ -73,6 +81,7 @@ public class MovableCamera : MonoBehaviour {
 		}
 		if(tilt != lastTilt) {
 			c.transform.localRotation = Quaternion.Euler(tilt, 0, 0);
+			c.transform.position = transform.position+(-c.transform.forward*distance*3);
 			lastTilt = tilt;
 		}
 	}

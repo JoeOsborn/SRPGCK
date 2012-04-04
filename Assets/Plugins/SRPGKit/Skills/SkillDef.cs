@@ -463,7 +463,6 @@ public class SkillDef : ScriptableObject {
 	) {
 		//use the camera and the map's own rotation
 		Transform cam = Camera.main.transform;
-		//h*right+v*forward
 		Vector3 xp = cam.TransformDirection(new Vector3(1, 0, 0));
 		xp.y = 0;
 		xp = xp.normalized;
