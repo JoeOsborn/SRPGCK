@@ -577,9 +577,7 @@ public class ActionSkillDef : SkillDef {
 			indicatorCycleT = 0;
 			if(lockToGrid) {
 				if((Time.time-lastIndicatorKeyboardMove) > indicatorKeyboardMoveThreshold) {
-					Vector2 d = TransformKeyboardAxes(h, v);
-					if(Mathf.Abs(d.x) > Mathf.Abs(d.y)) { d.x = Mathf.Sign(d.x); d.y = 0; }
-					else { d.x = 0; d.y = Mathf.Sign(d.y); }
+					Vector2 d = TransformKeyboardAxes(h, v, true, true);
 					Vector3 newDest = currentTarget.Position;
 					if(newDest.x+d.x >= 0 && newDest.y+d.y >= 0 &&
 							map.HasTileAt((int)(newDest.x+d.x), (int)(newDest.y+d.y))) {
@@ -688,12 +686,12 @@ public class ActionSkillDef : SkillDef {
 				float targetFacing = oldFacing;
 				if(supportKeyboard && (h != 0 || v != 0) &&
 					(!awaitingConfirmation || !RequireConfirmation)) {
-					Vector2 d = TransformKeyboardAxes(h, v);
+					Vector2 d = TransformKeyboardAxes(
+						h, v, 
+						true, 
+						currentSettings.targetingMode == TargetingMode.Cardinal
+					);
 					if(currentSettings.targetingMode == TargetingMode.Cardinal) {
-						if(d.x != 0 && d.y != 0) {
-							if(Mathf.Abs(d.x) > Mathf.Abs(d.y)) { d.x = Mathf.Sign(d.x); d.y = 0; }
-							else { d.x = 0; d.y = Mathf.Sign(d.y); }
-						}
 						targetFacing = Mathf.Atan2(d.y, d.x)*Mathf.Rad2Deg;
 					} else {
 						//adjust facing by d.x
@@ -717,17 +715,13 @@ public class ActionSkillDef : SkillDef {
 						d.x -= 1;
 						d.y /= Screen.height/2.0f;
 						d.y -= 1;
-						d = TransformKeyboardAxes(d.x, d.y);
-						if(currentSettings.targetingMode == TargetingMode.Cardinal ||
-						   (currentSettings.targetingMode == TargetingMode.Radial && lockToGrid)) {
-							if(d.x != 0 && d.y != 0) {
-								if(Mathf.Abs(d.x) > Mathf.Abs(d.y)) { d.x = Mathf.Sign(d.x); d.y = 0; }
-								else { d.x = 0; d.y = Mathf.Sign(d.y); }
-							}
-							targetFacing = Mathf.Atan2(d.y, d.x)*Mathf.Rad2Deg-90;
-						} else {
-							targetFacing = Mathf.Atan2(d.y, d.x)*Mathf.Rad2Deg-90;
-						}
+						d = TransformKeyboardAxes(
+							d.x, d.y, 
+							true, 
+							currentSettings.targetingMode == TargetingMode.Cardinal ||
+						   (currentSettings.targetingMode == TargetingMode.Radial && lockToGrid)
+						);
+						targetFacing = Mathf.Atan2(d.y, d.x)*Mathf.Rad2Deg-90;
 					}
 				}
 				if(lockToGrid) {

@@ -459,7 +459,8 @@ public class SkillDef : ScriptableObject {
 	protected static Vector2 TransformKeyboardAxes(
 		float h,
 		float v,
-		bool switchXY=true
+		bool switchXY=true,
+		bool cardinalize=true
 	) {
 		//use the camera and the map's own rotation
 		Transform cam = Camera.main.transform;
@@ -469,10 +470,35 @@ public class SkillDef : ScriptableObject {
 		Vector3 yp = new Vector3(-xp.z, 0, xp.x);
 		Vector3 result = h*xp + v*yp;
 		if(switchXY) {
-			return new Vector2(-result.z, result.x);
+			result = new Vector2(-result.z, result.x);
 		} else {
-			return new Vector2(result.x, result.z);
+			result = new Vector2(result.x, result.z);
 		}
+		if(cardinalize) {
+			//if(Mathf.Abs(h) == Mathf.Abs(v)) {
+				/*pure lefty, uppy, righty, or downy; ignore for now*/
+			//}
+			if(Mathf.Abs(v) >= Mathf.Abs(h)) {
+				//if it's an up/down arrow, prefer "Y"+/- or "X"+/- depending on switchXY
+				if(Mathf.Sign(result.x) != Mathf.Sign(result.y)) {
+					if(switchXY) { result.x = 0; result.y = Mathf.Sign(result.y); }
+					else { result.x = Mathf.Sign(result.x); result.y = 0; }
+				} else {
+					if(switchXY) { result.x = Mathf.Sign(result.x); result.y = 0; }
+					else { result.x = 0; result.y = Mathf.Sign(result.y); }
+				}
+			} else {
+				//if it's a right/left arrow, prefer "X"+/- or "Y"+/- depending on switchXY
+				if(Mathf.Sign(result.x) != Mathf.Sign(result.y)) {
+					if(switchXY) { result.x = 0; result.y = Mathf.Sign(result.y); }
+					else { result.x = Mathf.Sign(result.x); result.y = 0; }
+				} else {
+					if(switchXY) { result.x = Mathf.Sign(result.x); result.y = 0; }
+					else { result.x = 0; result.y = Mathf.Sign(result.y); }
+				}
+			}
+		}
+		return result;
 	}
 
 	protected Vector3 transformOffset { get {

@@ -83,6 +83,7 @@ public class DebugGUI : MonoBehaviour {
 		}
 	}
 	public void FocusOnCharacter(Character c) {
+		if(c == null) { return; }
 		Camera cam = Camera.main;
 		MovableCamera mc = cam.transform.parent.GetComponent<MovableCamera>();
 		mc.targetPivot = c.transform.position;
