@@ -17,6 +17,8 @@ public abstract class SRPGCKEditor : Editor {
 	public string lastFocusedControl, newFocusedControl;
 
 	protected bool useFormulae=true;
+	
+	protected bool supportsUndo=true;
 
 	protected virtual void UpdateFormulae() {
 		if(!useFormulae) { return; }
@@ -65,6 +67,7 @@ public abstract class SRPGCKEditor : Editor {
 	}
 
 	protected virtual void SaveAsset() {
+		StoreUndo();
 		EditorUtility.SetDirty(target);
 		guiChanged = false;
 		guiChangedAtAll = false;
@@ -74,50 +77,53 @@ public abstract class SRPGCKEditor : Editor {
 		return lastFocusedControl == name && newFocusedControl != name;
 	}
 
-	protected virtual void RegisterUndo() {
-	  Undo.RegisterUndo(target, "Modify "+name);
-	}
-
 	protected virtual void FinishOnGUI() {
 		if(GUI.changed) {
 			guiChanged = true;
 			guiChangedAtAll = true;
-			RegisterUndo();
 		}
 		lastFocusedControl = newFocusedControl;
 	}
 
 	protected virtual void OnDisable() {
-
 		if(guiChanged || guiChangedAtAll) {
 			// Debug.Log("disable "+target.name);
 			SaveAsset();
 		}
 	}
 
+	protected virtual UnityEngine.Object[] UndoTargets { get {
+		return targets;
+	} }
+
   private void CheckUndo()
   {
+		if(!supportsUndo) { guiChanged = false; return; }
     Event e = Event.current;
 
     if((e.type == EventType.MouseDown) ||
-		   (e.type == EventType.KeyUp && e.keyCode == KeyCode.Tab) ||
-		   (newFocusedControl != lastFocusedControl)) {
-		 listeningForGuiChanges = true;
- 			// Debug.Log("ready to store undo, changed="+guiChanged);
+		   (e.type == EventType.KeyUp && e.keyCode == KeyCode.Tab)) {
+		  listeningForGuiChanges = true;
+      Undo.SetSnapshotTarget(UndoTargets, "Modify "+name);
+      Undo.CreateSnapshot();
+      Undo.ClearSnapshotTarget();
+			guiChanged = false;
     }
 
-    if(listeningForGuiChanges && guiChanged) {
-			// Debug.Log("store undo");
-      // Some GUI value changed after pressing the mouse.
-      // Register the previous snapshot as a valid undo.
-      // Undo.SetSnapshotTarget(target, name+"InspectorUndo");
-      // Undo.CreateSnapshot();
-      // Undo.RegisterSnapshot();
-      // Undo.ClearSnapshotTarget();
-      listeningForGuiChanges = false;
-      guiChanged = false;
-    }
+		StoreUndo();
   }
+	protected virtual void StoreUndo() {
+    if(supportsUndo && listeningForGuiChanges && guiChanged) {
+			// Debug.Log("store undo");
+	    // Some GUI value changed after pressing the mouse.
+	    // Register the previous snapshot as a valid undo.
+	    Undo.SetSnapshotTarget(UndoTargets, "Modify "+name);
+	    Undo.RegisterSnapshot();
+	    Undo.ClearSnapshotTarget();
+	    listeningForGuiChanges = false;
+	    guiChanged = false;
+		}
+	}
 	public static void EnsurePath(string p) {
 		if(!Directory.Exists(p)) {
 			Directory.CreateDirectory(p);

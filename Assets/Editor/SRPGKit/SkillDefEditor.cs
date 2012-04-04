@@ -23,6 +23,7 @@ public class SkillDefEditor : SRPGCKEditor {
 
 	protected SkillDef s;
   public override void OnEnable() {
+		supportsUndo = false;
 		s = target as SkillDef;
 		fdb = Formulae.DefaultFormulae;
 		base.OnEnable();
