@@ -74,10 +74,15 @@ public abstract class SRPGCKEditor : Editor {
 		return lastFocusedControl == name && newFocusedControl != name;
 	}
 
+	protected virtual void RegisterUndo() {
+	  Undo.RegisterUndo(target, "Modify "+name);
+	}
+
 	protected virtual void FinishOnGUI() {
 		if(GUI.changed) {
 			guiChanged = true;
 			guiChangedAtAll = true;
+			RegisterUndo();
 		}
 		lastFocusedControl = newFocusedControl;
 	}
