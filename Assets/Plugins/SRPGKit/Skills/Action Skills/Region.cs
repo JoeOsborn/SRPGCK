@@ -916,8 +916,9 @@ public class Region {
 		PathNode lastEnd = p;
 		int tries = 0;
 		Color red = Color.red;
+		// Debug.Log("last passable before "+p);
 		while(cur != null) {
-			// Debug.Log("cur:"+cur);
+			// Debug.Log("cur:"+cur+"prev:"+cur.prev);
 			if(cur.prev != null) {
 				Debug.DrawLine(map.TransformPointWorld(cur.pos), map.TransformPointWorld(cur.prev.pos), red, 1.0f, false);
 			}
@@ -943,6 +944,7 @@ public class Region {
 				return null;
 			}
 		}
+		// Debug.Log("got "+lastEnd);
 		return lastEnd;
 	}
 
@@ -1095,7 +1097,7 @@ public class Region {
 			if(useMountingStepBonus && (canMountFriends || canMountEnemies)) {
 				var steppables = map.CharactersAt(pn.pos).
 					Where(ch =>
-						(Owner is MoveSkillDef && !((Owner as MoveSkillDef).remainMounted) && ch == Owner.character.mountedCharacter) || 
+						(Owner is MoveSkillDef && !((Owner as MoveSkillDef).remainMounted) && ch == Owner.character.mountedCharacter) ||
 						(ch.IsTargetable &&
 						(ch.IsMountableBy(Owner.character) &&
 						 Owner.character.CanMount(ch)))
@@ -1122,7 +1124,7 @@ public class Region {
 					if(useMountingStepBonus && (canMountFriends || canMountEnemies)) {
 						var steppables = map.CharactersAt(pos).
 							Where(ch =>
-								(Owner is MoveSkillDef && !((Owner as MoveSkillDef).remainMounted) && ch == Owner.character.mountedCharacter) || 
+								(Owner is MoveSkillDef && !((Owner as MoveSkillDef).remainMounted) && ch == Owner.character.mountedCharacter) ||
 								(ch.IsTargetable &&
 								(ch.IsMountableBy(Owner.character) &&
 								 Owner.character.CanMount(ch)))
@@ -1265,6 +1267,7 @@ public class Region {
 					if(c != null &&
 						 c.EffectiveTeamID != owner.character.EffectiveTeamID) {
 						newPn.isEnemy = true;
+					  Debug.Log("enemy pn "+newPn);
 					}
 					MapTile aboveT = map.TileAt((int)pos.x, (int)pos.y, (int)pos.z+1);
 					if(aboveT != null) {
@@ -1486,7 +1489,15 @@ public class Region {
 			d = d.normalized;
 			PathNode cur=null;
 			pickables.TryGetValue(truncHere, out cur);
-			if(cur == null) { cur = new PathNode(truncHere, null, 0); }
+			if(cur == null) {
+				// Debug.Log("new pn at "+truncHere);
+				cur = new PathNode(truncHere, null, 0);
+				if(map.TileAt(truncHere+new Vector3(0,0,1)) != null) {
+					cur.isWall = true;
+				}
+				Character mc = map.TargetableCharacterAt(truncHere) ?? map.TargetableCharacterAt(truncHere-new Vector3(0,0,1));
+				cur.isEnemy = mc != null && mc.EffectiveTeamID != Owner.character.EffectiveTeamID;
+			}
 			Vector3 prevTrunc = here;
 			int tries = 0;
 			while(truncHere != truncEnd) {
@@ -1498,10 +1509,13 @@ public class Region {
 				if(pickables.ContainsKey(truncHere)) {
 					herePn = pickables[truncHere];
 				} else { //must be empty air
+					// Debug.Log("empty air at "+truncHere);
 					herePn = new PathNode(truncHere, null, 0);
 					if(map.TileAt(truncHere+new Vector3(0,0,1)) != null) {
 						herePn.isWall = true;
 					}
+					Character mc = map.TargetableCharacterAt(truncHere) ?? map.TargetableCharacterAt(truncHere-new Vector3(0,0,1));
+					herePn.isEnemy = mc != null && mc.EffectiveTeamID != Owner.character.EffectiveTeamID;
 					pickables.Add(truncHere, herePn);
 				}
 				herePn.prev = cur;
@@ -1567,7 +1581,7 @@ public class Region {
 				pickables[testPos] = pn = new PathNode(testPos, (testPos != prevPos && pickables.ContainsKey(prevPos) ? pickables[prevPos] : null), xDist);
 				pn.canStop = false;
 				pn.isWall = /*map.TileAt(testPos) != null && */map.TileAt(testPos+new Vector3(0,0,1)) != null;
-				Character tc = map.TargetableCharacterAt(testPos);
+				Character tc = map.TargetableCharacterAt(testPos) ?? map.TargetableCharacterAt(testPos-new Vector3(0,0,1));
 				pn.isEnemy = tc != null && tc.EffectiveTeamID != owner.character.EffectiveTeamID;
 			}
 			if(prevPos.z < testPos.z && map.TileAt(testPos) != null) {
@@ -1579,7 +1593,7 @@ public class Region {
 				break;
 			}
 			//FIXME: what about friendlies?
-			Character c = map.TargetableCharacterAt(pn.pos);
+			Character c = map.TargetableCharacterAt(pn.pos) ?? map.TargetableCharacterAt(pn.pos-new Vector3(0,0,1));
 			if(pn.isEnemy && !canCrossEnemies && !canHaltAtEnemies && !provideAllTiles && !(canMountEnemies && c.IsMountableBy(owner.character) && owner.character.CanMount(c))) {
 				//no good!
 				// Debug.Log("enemy, can't cross, can't halt at testpos "+testPos);
