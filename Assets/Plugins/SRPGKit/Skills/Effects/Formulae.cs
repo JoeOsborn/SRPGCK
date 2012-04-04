@@ -79,9 +79,14 @@ public class Formulae : ScriptableObject {
 					return results.First();
 				case FormulaMergeMode.Last:
 					return results.Last();
+				case FormulaMergeMode.Nth:
+					return results.ElementAt(f.mergeNth);
+				default:
+					Debug.LogError("Unrecognized merge mode "+f.mergeMode);
+					return -1;
 			}
 		}
-		Debug.LogError("Cannot find matching equipment to get param "+fname);
+		Debug.LogError("No ccontext "+ccontext+" given scontext "+scontext+"; Cannot find matching equipment to get param "+fname);
 		return -1;
 	}
 

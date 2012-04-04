@@ -27,7 +27,9 @@ public class ActionSkillDefEditor : SkillDefEditor {
 		atk = target as ActionSkillDef;
 	}
 	protected virtual void TargetedSkillGUI() {
-		atk.turnToFaceTarget = EditorGUILayout.Toggle("Face Target", atk.turnToFaceTarget);
+		if(!(target is MoveSkillDef)) {
+			atk.turnToFaceTarget = EditorGUILayout.Toggle("Face Target", atk.turnToFaceTarget);
+		}
 		atk.delay = EditorGUIExt.FormulaField("Scheduled Delay", atk.delay, atk.GetInstanceID()+"."+atk.name+".delay", formulaOptions, lastFocusedControl);
 		if(Formula.NotNullFormula(atk.delay) &&
 		   !(atk.delay.formulaType == FormulaType.Constant &&

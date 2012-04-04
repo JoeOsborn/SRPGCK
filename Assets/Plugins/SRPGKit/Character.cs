@@ -430,9 +430,15 @@ public class Character : MonoBehaviour {
 		statusEffects = null;
 	}
 	public SkillDef GetSkill(string name) {
-		return Skills.FirstOrDefault(s => s.skillName == name);
+		return GetSkill(null, name);
 	}
-	
+	public SkillDef GetSkill(string group, string name) {
+		return Skills.FirstOrDefault(s =>
+			s.skillName == name &&
+			(group == null || group == "" || s.skillGroup == group)
+		);
+	}
+
 	public IEnumerable<SkillDef> Skills { get {
 		if(skills == null) {
 			//replace any skills that need replacing
@@ -444,12 +450,20 @@ public class Character : MonoBehaviour {
 				Where(delegate(SkillDef x) {
 					string replPath = x.skillGroup+"//"+x.skillName;
 					int replPri = x.replacementPriority;
-					return !allSkills.Any(y =>
+					bool requirementsSatisfied = true;
+					if(x.replacesSkill && x.requiresReplacement) {
+						requirementsSatisfied = allSkills.Any(y =>
+							y != x &&
+							x.replacedSkill == (y.skillGroup+"//"+y.skillName) &&
+							y.replacementPriority <= replPri
+						);
+					}
+					return requirementsSatisfied && !allSkills.Any(y =>
 						y != x &&
-							//FIXME: put "can only replace" stuff here
 						y.replacesSkill &&
 						y.replacedSkill == replPath &&
-						y.replacementPriority > replPri);
+						y.replacementPriority > replPri
+					);
 				}).
 				ToArray().AsEnumerable();
 		}

@@ -74,7 +74,7 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 			IFormulaElement ife = fc.Parse(f.text);
 			Formula newF = ife as Formula;
 			if(ife is Identifier) {
-				Debug.Log("just identifier "+(ife as Identifier).Name+", auto lookup");
+				// Debug.Log("just identifier "+(ife as Identifier).Name+", auto lookup");
 				newF = Formula.Lookup((ife as Identifier).Name);
 			}
 			if(Formula.NotNullFormula(newF)) {

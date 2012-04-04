@@ -106,6 +106,7 @@ public class ProxyActionSkillDefEditor : ActionSkillDefEditor {
 	protected override void BasicSkillGUI() {
 		CoreSkillGUI();
 		patk.referredSkillName = EditorGUILayout.TextField("Referred Skill", patk.referredSkillName);
+		patk.referredSkillGroup = EditorGUILayout.TextField("Referred Group", patk.referredSkillGroup);
 
 		if((patk.mergeIsEnabledF = MergeChoiceGUI("IsEnabled", patk.mergeIsEnabledF)) != MergeMode.UseOriginal) {
 			s.isEnabledF = EditorGUIExt.FormulaField(
@@ -123,6 +124,8 @@ public class ProxyActionSkillDefEditor : ActionSkillDefEditor {
 				TextField("Skill", s.replacedSkill).NormalizeName();
 			s.replacementPriority = EditorGUILayout.
 				IntField("Priority", s.replacementPriority);
+			s.requiresReplacement = EditorGUILayout.
+				Toggle("Requires Replacement", s.requiresReplacement);
 		}
 
 		if(!s.isPassive) {

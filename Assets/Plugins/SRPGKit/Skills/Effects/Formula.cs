@@ -609,11 +609,11 @@ public class Formula : IFormulaElement {
 		float relativeYAngle = SRPGUtil.WrapAngle(yAngle - xAngle);
 		bool towards = Mathf.Abs(Mathf.DeltaAngle(interAngle, xAngle)) < 45;
 		//is theta(y,x) within 45 of yAngle?
-		Debug.Log("xang "+xAngle);
-		Debug.Log("yang "+yAngle);
-		Debug.Log("interang "+interAngle);
-		Debug.Log("towardsang "+Mathf.Abs(Mathf.DeltaAngle(xAngle, interAngle)));
-		Debug.Log("relY "+relativeYAngle);
+		// Debug.Log("xang "+xAngle);
+		// 		Debug.Log("yang "+yAngle);
+		// 		Debug.Log("interang "+interAngle);
+		// 		Debug.Log("towardsang "+Mathf.Abs(Mathf.DeltaAngle(xAngle, interAngle)));
+		// 		Debug.Log("relY "+relativeYAngle);
 		if(towards) {
 			//next, get the quadrant
 			//quadrant ~~ theta (target -> other)
@@ -629,7 +629,7 @@ public class Formula : IFormulaElement {
 		} else {
 			pointing = CharacterPointing.Away;
 		}
-		Debug.Log("pt "+pointing);
+		// Debug.Log("pt "+pointing);
 
 		//order:
 		//front, left, right, back, away, sides, towards, default
@@ -667,7 +667,7 @@ public class Formula : IFormulaElement {
 			return arguments[6].GetValue(fdb, scontext, ccontext, tcontext, econtext);
 		} else if(NotNullFormula(arguments[7])) {
 			//default
-			Debug.Log("default");
+			// Debug.Log("default");
 			return arguments[7].GetValue(fdb, scontext, ccontext, tcontext, econtext);
 		} else {
 			Debug.LogError("No valid branch for pointing "+pointing+" in skill "+(scontext != null ? scontext.skillName : "none"));

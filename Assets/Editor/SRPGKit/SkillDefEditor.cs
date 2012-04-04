@@ -54,6 +54,8 @@ public class SkillDefEditor : SRPGCKEditor {
 				TextField("Skill", s.replacedSkill).NormalizeName();
 			s.replacementPriority = EditorGUILayout.
 				IntField("Priority", s.replacementPriority);
+			s.requiresReplacement = EditorGUILayout.
+				Toggle("Requires Replacement", s.requiresReplacement);
 		}
 
 		if(!s.isPassive) {

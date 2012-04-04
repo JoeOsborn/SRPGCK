@@ -15,10 +15,11 @@ public enum MergeMode {
 }
 
 public class ProxyActionSkillDef : ActionSkillDef {
+	public string referredSkillGroup=null;
 	public string referredSkillName="Attack";
 
 	ActionSkillDef ReferredSkill { get {
-		return character.GetSkill(referredSkillName) as ActionSkillDef;
+		return character.GetSkill(referredSkillGroup, referredSkillName) as ActionSkillDef;
 	} }
 
 	public MergeModeList mergePassiveEffects=MergeModeList.Combine;

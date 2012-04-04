@@ -10,6 +10,7 @@ public class SkillDef : ScriptableObject {
 	public bool replacesSkill = false;
 	public string replacedSkill = "";
 	public int replacementPriority=0;
+	public bool requiresReplacement = false;
 
 	public bool deactivatesOnApplication=true;
 
@@ -318,7 +319,7 @@ public class SkillDef : ScriptableObject {
 				angle = character.Facing;
 			}
 		}
-		Debug.Log("ttp "+ttp+", ctp "+ctp+", f "+(facing.HasValue ? ""+facing.Value.eulerAngles.y : "null")+", ang "+angle);
+		// Debug.Log("ttp "+ttp+", ctp "+ctp+", f "+(facing.HasValue ? ""+facing.Value.eulerAngles.y : "null")+", ang "+angle);
 		string infix = (prefix??"")+".";
 		SetParam("arg"+infix+"distance", distance);
 		SetParam("arg"+infix+"distance.xy", distanceXY);
@@ -401,7 +402,7 @@ public class SkillDef : ScriptableObject {
 			}
 		}
 		foreach(StatEffect se in effects) {
-			Debug.Log("apply "+se.effectType);
+			//Debug.Log("apply "+se.effectType);
 			var rec = se.Apply(
 				this,
 				character,

@@ -907,7 +907,7 @@ public class ActionSkillDef : SkillDef {
 			ApplySkillToTargets(initialTarget.Position);
 			base.ApplySkill();
 		} else {
-			Debug.Log("using target with tile "+currentTarget.path+" and character "+currentTarget.character);
+			//Debug.Log("using target with tile "+currentTarget.path+" and character "+currentTarget.character);
 			if(AwaitingTargetOption) {
 				map.BroadcastMessage(
 					"SkillNeedsCharacterTargetingOption",
@@ -1348,7 +1348,7 @@ public class ActionSkillDef : SkillDef {
  		if(!ShouldDrawPath) {
  			radiusSoFar += currentTarget.path.xyDistanceFromStart;
  		}
-		Debug.Log("push target "+currentTarget);
+		// Debug.Log("push target "+currentTarget);
 		// if(RequireConfirmation && performTemporaryStepsOnConfirmation) {
 		// 	Debug.Log("last target "+lastTarget);
 		// 	Debug.Log("cur target "+currentTarget);
