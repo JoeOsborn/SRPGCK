@@ -16,6 +16,9 @@ SRPGCK Editor Scripts:
 Copyright (c) 2012 Joseph Carter Osborn
 All rights reserved.
 
+HOEditorUndoManager.cs:
+Created by Daniele Giardini - 2011 - Holoville
+
 Sasa.Parsing:
 Copyright (c) 2011 Sandro Magi
 All rights reserved.

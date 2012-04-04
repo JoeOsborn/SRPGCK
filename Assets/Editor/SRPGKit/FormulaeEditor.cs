@@ -72,6 +72,7 @@ public class FormulaeEditor : SRPGCKEditor {
 			fdb.AddFormula(newFormula, newFormula.name);
 			newFormula = Formula.Constant(0);
 			newFormula.name = "";
+			um.ForceDirty();
 		}
 		GUI.enabled = true;
 		EditorGUILayout.EndHorizontal();
@@ -79,6 +80,7 @@ public class FormulaeEditor : SRPGCKEditor {
 
 		if(toBeRemoved != -1) {
 			fdb.RemoveFormula(toBeRemoved);
+			um.ForceDirty();
 		}
 	}
 }
