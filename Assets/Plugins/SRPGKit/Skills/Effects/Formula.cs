@@ -148,7 +148,6 @@ public class Formula : IFormulaElement {
 	public string[] searchReactedEffectCategories;
 
 	//everything else
-	public Formula switchValue;
 	public List<Formula> arguments; //x+y+z or x*y*z or x^y (y default 2) or y√x (y default 2)
 
 	//runtime
@@ -177,8 +176,6 @@ public class Formula : IFormulaElement {
 		searchReactedStatChanges = f.searchReactedStatChanges;
 		searchReactedEffectCategories = f.searchReactedEffectCategories;
 		arguments = f.arguments;
-		switchValue = f.switchValue;
-		// Debug.Log("i am "+this.ToString());
 	}
 	public static Formula Null() {
 		Formula f = new Formula();
@@ -567,9 +564,9 @@ public class Formula : IFormulaElement {
 			}
 			case FormulaType.BranchSwitch: {
 				result = float.NaN;
-				float val = switchValue.GetValue(fdb, scontext, ccontext, tcontext, econtext);
-				int halfLen = arguments.Count/2;
-				for(int i = 0; i < halfLen; i++) {
+				float val = arguments[0].GetValue(fdb, scontext, ccontext, tcontext, econtext);
+				int halfLen = (arguments.Count-1)/2;
+				for(int i = 1; (i-1) < halfLen; i++) {
 					if(!NullFormula(arguments[i]) &&
 					   arguments[i].GetValue(fdb, scontext, ccontext, tcontext, econtext) == val) {
 						result = arguments[i+halfLen].GetValue(fdb, scontext, ccontext, tcontext, econtext);
@@ -577,7 +574,7 @@ public class Formula : IFormulaElement {
 					}
 				}
 				if(float.IsNaN(result)) {
-					for(int i = 0; i < halfLen; i++) {
+					for(int i = 1; (i-1) < halfLen; i++) {
 						if(NullFormula(arguments[i]) && !NullFormula(arguments[i+halfLen])) {
 							result = arguments[i+halfLen].GetValue(fdb, scontext, ccontext, tcontext, econtext);
 							break;
@@ -718,7 +715,7 @@ public class Formula : IFormulaElement {
 	}
 
 	public override string ToString() {
-		if(text != "" && text != null) { return text; }
+		// if(text != "" && text != null) { return text; }
 		try {
 			return FormulaToString();
 		} catch(System.Exception e) {
@@ -850,15 +847,15 @@ public class Formula : IFormulaElement {
 				return ret;
 			}
 			case FormulaType.BranchSwitch: {
-				string ret = "switch ("+switchValue.ToString()+") {\n";
-				int halfLen = arguments.Count/2;
-				for(int i = 0; i < halfLen; i++) {
+				string ret = "switch ("+arguments[0].ToString()+") {\n";
+				int halfLen = (arguments.Count-1)/2;
+				for(int i = 1; (i-1) < halfLen; i++) {
 					if(NullFormula(arguments[i])) {
 						ret += "default: "+arguments[i+halfLen].ToString();
 					} else {
 						ret += arguments[i].ToString()+": "+arguments[i+halfLen].ToString();
 					}
-					if(i < halfLen - 1) { ret += ";\n"; }
+					if((i-1) < halfLen - 1) { ret += ";\n"; }
 				}
 				ret += "\n}\n";
 				return ret;

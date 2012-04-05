@@ -858,8 +858,9 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 		if(cases.Count() != forms.Count()) {
 			throw new SemanticException("mismatched number of cases and formulae");
 		}
-		f.switchValue = CheckFormulaArg(valF);
-		f.arguments = cases.Concat(forms).Select(form => CheckFormulaArg(form)).ToList();
+		f.arguments = (new IFormulaElement[]{valF}).
+			Concat(cases).Concat(forms).
+			Select(form => CheckFormulaArg(form)).ToList();
 		return f;
 	}
 
