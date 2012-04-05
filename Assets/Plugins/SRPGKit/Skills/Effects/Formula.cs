@@ -57,7 +57,8 @@ public enum FormulaType {
 	IntDivide,
 	Trunc,
 	NullFormula,
-	BranchSwitch
+	BranchSwitch,
+	LookupOrElse
 }
 
 public enum LookupType {
@@ -506,6 +507,13 @@ public class Formula : IFormulaElement {
 			case FormulaType.LookupSuccessful:
 				result = fdb.CanLookup(lookupReference, lookupType, scontext, ccontext, null, econtext, this) ? 1 : 0;
 				break;
+			case FormulaType.LookupOrElse:
+				if(fdb.CanLookup(lookupReference, lookupType, scontext, ccontext, null, econtext, this)) {
+					result = fdb.Lookup(lookupReference, lookupType, scontext, ccontext, tcontext, econtext, this);
+				} else {
+					result = arguments[0].GetValue(fdb, scontext, ccontext, tcontext, econtext);
+				}
+				break;
 			case FormulaType.BranchIfNotZero:
 				result = arguments[0].GetValue(fdb, scontext, ccontext, tcontext, econtext) != 0 ?
 				 	arguments[1].GetValue(fdb, scontext, ccontext, tcontext, econtext) :
@@ -670,23 +678,23 @@ public class Formula : IFormulaElement {
 		}
 		if(pointing == CharacterPointing.Front && NotNullFormula(arguments[0])) {
 			//front
-			Debug.Log("ft");
+			//Debug.Log("ft");
 			return arguments[0].GetValue(fdb, scontext, ccontext, tcontext, econtext);
 		} else if(pointing == CharacterPointing.Left && NotNullFormula(arguments[1])) {
 			//left
-			Debug.Log("lt");
+			//Debug.Log("lt");
 			return arguments[1].GetValue(fdb, scontext, ccontext, tcontext, econtext);
 		} else if(pointing == CharacterPointing.Right && NotNullFormula(arguments[2])) {
 			//right
-			Debug.Log("rt");
+			//Debug.Log("rt");
 			return arguments[2].GetValue(fdb, scontext, ccontext, tcontext, econtext);
 		} else if(pointing == CharacterPointing.Back && NotNullFormula(arguments[3])) {
 			//back
-			Debug.Log("bk");
+			//Debug.Log("bk");
 			return arguments[3].GetValue(fdb, scontext, ccontext, tcontext, econtext);
 		} else if(pointing == CharacterPointing.Away && NotNullFormula(arguments[4])) {
 			//away
-			Debug.Log("away");
+			//Debug.Log("away");
 			return arguments[4].GetValue(fdb, scontext, ccontext, tcontext, econtext);
 		} else if((pointing == CharacterPointing.Left || pointing == CharacterPointing.Right) && NotNullFormula(arguments[5])) {
 			//sides
@@ -820,6 +828,8 @@ public class Formula : IFormulaElement {
 				return "any("+arguments.Select(a => a.ToString()).JoinStr(", ")+")";
 			case FormulaType.LookupSuccessful:
 				return "exists("+LookupToString()+")";
+			case FormulaType.LookupOrElse:
+				return "lookup("+LookupToString()+", "+arguments[0].ToString()+")";
 			case FormulaType.BranchIfNotZero:
 				return "(if ("+arguments[0].ToString()+"): "+arguments[1].ToString()+"; "+arguments[2].ToString()+")";
 			case FormulaType.BranchApplierSide:

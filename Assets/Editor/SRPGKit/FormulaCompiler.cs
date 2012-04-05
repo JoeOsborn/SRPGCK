@@ -124,6 +124,7 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 		Builtin("any", 1, int.MaxValue, PickAny);
 
 		Builtin("exists", 1, 1, LookupSuccessful);
+		Builtin("lookup", 2, 2, LookupOrElse);
 
 		LookupOn("true", (parser) => {
 			Formula f = Formula.True();
@@ -953,6 +954,15 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 		return f;
 	}
 
+	IFormulaElement LookupOrElse(IEnumerable<IFormulaElement> forms) {
+		Formula f = new Formula();
+		Formula testLookup = CheckFormulaArg(forms.ElementAt(0));
+		f.CopyFrom(testLookup);
+		f.formulaType = FormulaType.LookupOrElse;
+		f.arguments = new List<Formula>(){CheckFormulaArg(forms.ElementAt(1))};
+		// Debug.Log("lookup with check "+testLookup+" fallback "+f.arguments[0]);
+		return f;
+	}
 
 	IFormulaElement Number(string lit) { return Formula.Constant(float.Parse(lit)); }
 	IFormulaElement Eq(IFormulaElement lhs, IFormulaElement rhs) {
