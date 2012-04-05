@@ -32,6 +32,7 @@ public class SkillIOEditor : SRPGCKEditor {
 		io.highlightColor = EditorGUILayout.ColorField("Effect Highlight", io.highlightColor);
 		io.supportKeyboard = EditorGUILayout.Toggle("Support Keyboard", io.supportKeyboard);
 		if(io.supportKeyboard) {
+			io.switchXY = EditorGUILayout.Toggle("Up is Up-Left", io.switchXY);
 			io.keyboardMoveSpeed = EditorGUILayout.FloatField("Keyboard Move Speed", io.keyboardMoveSpeed);
 			io.indicatorCycleLength = EditorGUILayout.FloatField("Z Cycle Time", io.indicatorCycleLength);
 		}

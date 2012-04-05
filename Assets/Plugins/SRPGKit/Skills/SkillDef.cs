@@ -469,11 +469,13 @@ public class SkillDef : ScriptableObject {
 		xp = xp.normalized;
 		Vector3 yp = new Vector3(-xp.z, 0, xp.x);
 		Vector3 result = h*xp + v*yp;
+		// Debug.Log("sw "+switchXY);
 		if(switchXY) {
 			result = new Vector2(-result.z, result.x);
 		} else {
 			result = new Vector2(result.x, result.z);
 		}
+		// Debug.Log("result:"+result);
 		if(cardinalize) {
 			//if(Mathf.Abs(h) == Mathf.Abs(v)) {
 				/*pure lefty, uppy, righty, or downy; ignore for now*/
@@ -481,23 +483,20 @@ public class SkillDef : ScriptableObject {
 			if(Mathf.Abs(v) >= Mathf.Abs(h)) {
 				//if it's an up/down arrow, prefer "Y"+/- or "X"+/- depending on switchXY
 				if(Mathf.Sign(result.x) != Mathf.Sign(result.y)) {
-					if(switchXY) { result.x = 0; result.y = Mathf.Sign(result.y); }
-					else { result.x = Mathf.Sign(result.x); result.y = 0; }
+					result.x = 0; result.y = Mathf.Sign(result.y);
 				} else {
-					if(switchXY) { result.x = Mathf.Sign(result.x); result.y = 0; }
-					else { result.x = 0; result.y = Mathf.Sign(result.y); }
+					result.x = Mathf.Sign(result.x); result.y = 0;
 				}
 			} else {
 				//if it's a right/left arrow, prefer "X"+/- or "Y"+/- depending on switchXY
 				if(Mathf.Sign(result.x) != Mathf.Sign(result.y)) {
-					if(switchXY) { result.x = 0; result.y = Mathf.Sign(result.y); }
-					else { result.x = Mathf.Sign(result.x); result.y = 0; }
+					result.x = 0; result.y = Mathf.Sign(result.y);
 				} else {
-					if(switchXY) { result.x = Mathf.Sign(result.x); result.y = 0; }
-					else { result.x = 0; result.y = Mathf.Sign(result.y); }
+					result.x = Mathf.Sign(result.x); result.y = 0;
 				}
 			}
 		}
+		// Debug.Log("cardresult:"+result);
 		return result;
 	}
 

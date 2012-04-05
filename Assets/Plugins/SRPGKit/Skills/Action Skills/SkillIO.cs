@@ -7,6 +7,7 @@ public class SkillIO : ScriptableObject {
 	public bool supportKeyboard = true;
 	public bool supportMouse = true;
 	public bool requireConfirmation = true;
+	public bool switchXY = true;
 	//if lockToGrid
 	public float keyboardMoveSpeed=10.0f;
 	public float indicatorCycleLength=1.0f;

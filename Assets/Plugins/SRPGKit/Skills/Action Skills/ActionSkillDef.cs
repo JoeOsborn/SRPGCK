@@ -577,7 +577,7 @@ public class ActionSkillDef : SkillDef {
 			indicatorCycleT = 0;
 			if(lockToGrid) {
 				if((Time.time-lastIndicatorKeyboardMove) > indicatorKeyboardMoveThreshold) {
-					Vector2 d = TransformKeyboardAxes(h, v, true, true);
+					Vector2 d = TransformKeyboardAxes(h, v, io.switchXY, lockToGrid);
 					Vector3 newDest = currentTarget.Position;
 					if(newDest.x+d.x >= 0 && newDest.y+d.y >= 0 &&
 							map.HasTileAt((int)(newDest.x+d.x), (int)(newDest.y+d.y))) {
@@ -688,7 +688,7 @@ public class ActionSkillDef : SkillDef {
 					(!awaitingConfirmation || !RequireConfirmation)) {
 					Vector2 d = TransformKeyboardAxes(
 						h, v, 
-						true, 
+						io.switchXY, 
 						currentSettings.targetingMode == TargetingMode.Cardinal
 					);
 					if(currentSettings.targetingMode == TargetingMode.Cardinal) {
@@ -717,7 +717,7 @@ public class ActionSkillDef : SkillDef {
 						d.y -= 1;
 						d = TransformKeyboardAxes(
 							d.x, d.y, 
-							true, 
+							io.switchXY, 
 							currentSettings.targetingMode == TargetingMode.Cardinal ||
 						   (currentSettings.targetingMode == TargetingMode.Radial && lockToGrid)
 						);
