@@ -690,11 +690,11 @@ public class Formula : IFormulaElement {
 			return arguments[4].GetValue(fdb, scontext, ccontext, tcontext, econtext);
 		} else if((pointing == CharacterPointing.Left || pointing == CharacterPointing.Right) && NotNullFormula(arguments[5])) {
 			//sides
-			Debug.Log("sides");
+			// Debug.Log("sides");
 			return arguments[5].GetValue(fdb, scontext, ccontext, tcontext, econtext);
 		} else if((pointing != CharacterPointing.Away) && NotNullFormula(arguments[6])) {
 			//towards
-			Debug.Log("twds");
+			// Debug.Log("twds");
 			return arguments[6].GetValue(fdb, scontext, ccontext, tcontext, econtext);
 		} else if(NotNullFormula(arguments[7])) {
 			//default

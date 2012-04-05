@@ -949,9 +949,9 @@ public class ActionSkillDef : SkillDef {
 					SetArgsFromTarget(t, ts, "", start);
 					PathNode[] targetTiles = PathNodesForTarget(t, ts.targetRegion, ts.effectRegion, EffectPositionForTarget(t), EffectFacingForTarget(t));
 					// Debug.Log("tts:"+targetTiles.Length);
-					foreach(PathNode tt in targetTiles) {
-						Debug.Log(tt);
-					}
+					// foreach(PathNode tt in targetTiles) {
+					// 	Debug.Log(tt);
+					// }
 					targetCharacters = ts.effectRegion.CharactersForTargetedTiles(targetTiles);
 					Debug.Log("targetChars:"+targetCharacters.Count);
 					if(TurnToFaceTarget) {

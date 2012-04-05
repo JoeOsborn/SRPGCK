@@ -1267,7 +1267,7 @@ public class Region {
 					if(c != null &&
 						 c.EffectiveTeamID != owner.character.EffectiveTeamID) {
 						newPn.isEnemy = true;
-					  Debug.Log("enemy pn "+newPn);
+					  // Debug.Log("enemy pn "+newPn);
 					}
 					MapTile aboveT = map.TileAt((int)pos.x, (int)pos.y, (int)pos.z+1);
 					if(aboveT != null) {
@@ -1497,6 +1497,8 @@ public class Region {
 				}
 				Character mc = map.TargetableCharacterAt(truncHere);
 				cur.isEnemy = mc != null && mc.EffectiveTeamID != Owner.character.EffectiveTeamID;
+			} else {
+				// Debug.Log("reusing "+cur);
 			}
 			Vector3 prevTrunc = here;
 			int tries = 0;
@@ -1519,22 +1521,27 @@ public class Region {
 					pickables.Add(truncHere, herePn);
 				}
 				herePn.prev = cur;
+				// Debug.Log("here: "+herePn+" tc "+map.TargetableCharacterAt(herePn.pos));
 				cur = herePn;
 				if(herePn.isWall && !canCrossWalls && !provideAllTiles) {
 					//don't add this node or parents and break now
+					// Debug.Log("break at wall");
 					break;
 				}
 				//FIXME: what about friendlies?
 				Character c = map.TargetableCharacterAt(herePn.pos);
 				if(herePn.isEnemy && !canCrossEnemies && !canHaltAtEnemies && !provideAllTiles && !(canMountEnemies && c.IsMountableBy(owner.character) && owner.character.CanMount(c))) {
 					//don't add this node and break now
+					// Debug.Log("break at enemy a");
 					break;
 				}
 				if(truncHere == truncEnd || tries > 50) {
 					ret.Add(pn);
+					// Debug.Log("break at end");
 					break;
 				}
 				if(cur.isEnemy && !canCrossEnemies && !provideAllTiles) {
+					// Debug.Log("break at enemy b");
 					break;
 				}
 				tries++;

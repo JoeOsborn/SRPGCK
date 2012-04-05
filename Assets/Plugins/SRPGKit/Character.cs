@@ -80,9 +80,12 @@ public class Character : MonoBehaviour {
 		Vector3 ctc = TilePosition;
 		float cos = Mathf.Cos(Facing*Mathf.Deg2Rad);
 		float sin = Mathf.Sin(Facing*Mathf.Deg2Rad);
-		float normX = (Size.x * cos + Size.y * sin)*0.5f;
-		float normY = (Size.x * sin + Size.y * cos)*0.5f;
+		float normX = Mathf.Abs((Size.x * cos + Size.y * sin)*0.5f);
+		float normY = Mathf.Abs((Size.x * sin + Size.y * cos)*0.5f);
 		float normZ = Size.z*0.5f;
+		// if(Mathf.Floor(ctc.x) == Mathf.Floor(tc.x) && Mathf.Floor(ctc.y) == Mathf.Floor(tc.y)) {
+		// 	Debug.Log("dx "+Mathf.Abs(tc.x - ctc.x)+" within "+normX+"?\ndy "+Mathf.Abs(tc.y - ctc.y)+" within "+normY+"?;\ndz "+Mathf.Abs(tc.z - ctc.z)+" within "+normZ+"?");
+		// }
 		return Mathf.Abs(tc.x - ctc.x) <= normX &&
 	    Mathf.Abs(tc.y - ctc.y) <= normY &&
 	    Mathf.Abs(tc.z - ctc.z) <= normZ;

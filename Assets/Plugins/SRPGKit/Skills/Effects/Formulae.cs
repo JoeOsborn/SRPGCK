@@ -299,12 +299,17 @@ public class Formulae : ScriptableObject {
 		Formula f=null
 	) {
 		switch(type) {
-			case LookupType.Auto:
-				return (econtext != null ? econtext.GetParam(fname) :
+			case LookupType.Auto: {
+				float ret = (econtext != null ? econtext.GetParam(fname) :
 						 	 (scontext != null ? scontext.GetParam(fname) :
 						   (ccontext != null ? ccontext.GetStat(fname) :
 							 (tcontext != null ? tcontext.GetStat(fname) :
 							 (HasFormula(fname) ? LookupFormula(fname).GetValue(this, scontext, ccontext, tcontext, econtext) : float.NaN)))));
+				if(float.IsNaN(ret)) {
+					Debug.LogError("auto lookup failed for "+fname);
+				}
+				return ret;
+			}
 			case LookupType.SkillParam:
 				return scontext.GetParam(fname);
 			case LookupType.ActorStat:
