@@ -79,6 +79,6 @@ public class PathNode {
     return pos.GetHashCode();
   }
 	public override string ToString() {
-		return "PN:"+pos+" with cost "+distance+(prev != null ? " via "+prev.pos : "")+"; wall? "+isWall+" enemy? "+isEnemy + " can stop? "+canStop+" leap? "+isLeap;
+		return "PN:"+pos+" with cost "+distance+(prev != null ? " via "+prev.pos : "(no prev)")+"; wall? "+isWall+" enemy? "+isEnemy + " can stop? "+canStop+" leap? "+isLeap;
 	}
 };

@@ -166,6 +166,13 @@ public class EditorGUIExt
 		if(skipParams == null || !skipParams.Contains(newName)) {
 			newP.Name = newName;
 		}
+		if(Application.isPlaying) {
+			if(newP.Formula.formulaType == FormulaType.Constant) {
+				EditorGUILayout.LabelField("Value:", newP.Formula.constantValue.ToString());
+			} else if(!float.IsNaN(newP.Formula.lastValue)) {
+				EditorGUILayout.LabelField("Last Value:", newP.Formula.lastValue.ToString());
+			}
+		}
 		newP.Formula = FormulaField(
 			"Formula:",
 			p.Formula,

@@ -46,7 +46,7 @@ public class Parameter {
 			return f.constantValue;
 		} else {
 			Debug.LogError("Can't set value of non-constant base stat "+Name);
-			return -1;
+			return float.NaN;
 		}
 	}
 }

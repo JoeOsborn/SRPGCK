@@ -56,7 +56,8 @@ public enum FormulaType {
 	BranchCond,
 	IntDivide,
 	Trunc,
-	NullFormula
+	NullFormula,
+	BranchSwitch
 }
 
 public enum LookupType {
@@ -147,7 +148,13 @@ public class Formula : IFormulaElement {
 	public string[] searchReactedEffectCategories;
 
 	//everything else
+	public Formula switchValue;
 	public List<Formula> arguments; //x+y+z or x*y*z or x^y (y default 2) or y√x (y default 2)
+
+	//runtime
+	[System.NonSerialized]
+	public float lastValue=float.NaN;
+
 	public Formula Clone() {
 		Formula f = new Formula();
 		f.CopyFrom(this);
@@ -170,6 +177,8 @@ public class Formula : IFormulaElement {
 		searchReactedStatChanges = f.searchReactedStatChanges;
 		searchReactedEffectCategories = f.searchReactedEffectCategories;
 		arguments = f.arguments;
+		switchValue = f.switchValue;
+		// Debug.Log("i am "+this.ToString());
 	}
 	public static Formula Null() {
 		Formula f = new Formula();
@@ -311,7 +320,7 @@ public class Formula : IFormulaElement {
 		// if(scontext != null && scontext.currentTargetCharacter != null) {
 			// Debug.Log("get value from "+this);
 		// }
-		float result=-1;
+		float result=float.NaN;
 		switch(formulaType) {
 			case FormulaType.Constant:
 				result = constantValue;
@@ -322,22 +331,22 @@ public class Formula : IFormulaElement {
 			case FormulaType.ReactedEffectValue:
 				if(scontext == null) {
 					Debug.LogError("No skill context.");
-					return -1;
+					return float.NaN;
 				}
 				if(scontext.currentReactedEffect == null) {
 					Debug.LogError("Skill context is reacting to no particular effect.");
-					return -1;
+					return float.NaN;
 				}
 				result = scontext.currentReactedEffect.value;
 				break;
 			case FormulaType.SkillEffectValue:
 				if(scontext == null) {
 					Debug.LogError("No skill context.");
-					return -1;
+					return float.NaN;
 				}
 				if(scontext.lastEffects == null || scontext.lastEffects.Count == 0) {
 					Debug.LogError("Skill context has no prior effects.");
-					return -1;
+					return float.NaN;
 				}
 				result = scontext.lastEffects[scontext.lastEffects.Count-1].value;
 				break;
@@ -512,7 +521,7 @@ public class Formula : IFormulaElement {
 				result = FacingSwitch(fdb, StatEffectTarget.Applied, scontext, ccontext, tcontext, econtext);
 				break;
 			case FormulaType.BranchPDF: {
-				result = -1;
+				result = float.NaN;
 				float rval = Random.value;
 				float val = 0;
 				int halfLen = arguments.Count/2;
@@ -537,13 +546,13 @@ public class Formula : IFormulaElement {
 						break;
 					}
 				}
-				if(result == -1) {
+				if(float.IsNaN(result)) {
 					Debug.LogError("PDF adds up to less than 1");
 				}
 				break;
 			}
 			case FormulaType.BranchCond: {
-				result = -1;
+				result = float.NaN;
 				int halfLen = arguments.Count/2;
 				for(int i = 0; i < halfLen; i++) {
 					if(arguments[i].GetValue(fdb, scontext, ccontext, tcontext, econtext) != 0) {
@@ -551,7 +560,31 @@ public class Formula : IFormulaElement {
 						break;
 					}
 				}
-				if(result == -1) {
+				if(float.IsNaN(result)) {
+					Debug.LogError("No cond branch applied");
+				}
+				break;
+			}
+			case FormulaType.BranchSwitch: {
+				result = float.NaN;
+				float val = switchValue.GetValue(fdb, scontext, ccontext, tcontext, econtext);
+				int halfLen = arguments.Count/2;
+				for(int i = 0; i < halfLen; i++) {
+					if(!NullFormula(arguments[i]) &&
+					   arguments[i].GetValue(fdb, scontext, ccontext, tcontext, econtext) == val) {
+						result = arguments[i+halfLen].GetValue(fdb, scontext, ccontext, tcontext, econtext);
+						break;
+					}
+				}
+				if(float.IsNaN(result)) {
+					for(int i = 0; i < halfLen; i++) {
+						if(NullFormula(arguments[i]) && !NullFormula(arguments[i+halfLen])) {
+							result = arguments[i+halfLen].GetValue(fdb, scontext, ccontext, tcontext, econtext);
+							break;
+						}
+					}
+				}
+				if(float.IsNaN(result)) {
 					Debug.LogError("No cond branch applied");
 				}
 				break;
@@ -563,6 +596,7 @@ public class Formula : IFormulaElement {
 				result = (scontext != null ? scontext.currentTargetCharacter != null : tcontext != null) ? 1 : 0;
 				break;
 		}
+		lastValue = result;
 		return result;
 	}
 
@@ -585,7 +619,7 @@ public class Formula : IFormulaElement {
 	) {
 		if(scontext == null) {
 			Debug.LogError("Relative facing not available for non-attack/reaction skill effects.");
-			return -1;
+			return float.NaN;
 		}
 		Character applier = scontext != null ?
 			scontext.character : ccontext;
@@ -671,7 +705,7 @@ public class Formula : IFormulaElement {
 			return arguments[7].GetValue(fdb, scontext, ccontext, tcontext, econtext);
 		} else {
 			Debug.LogError("No valid branch for pointing "+pointing+" in skill "+(scontext != null ? scontext.skillName : "none"));
-			return -1;
+			return float.NaN;
 		}
 	}
 
@@ -810,6 +844,20 @@ public class Formula : IFormulaElement {
 				int halfLen = arguments.Count/2;
 				for(int i = 0; i < halfLen; i++) {
 					ret += arguments[i].ToString()+": "+arguments[i+halfLen].ToString();
+					if(i < halfLen - 1) { ret += ";\n"; }
+				}
+				ret += "\n}\n";
+				return ret;
+			}
+			case FormulaType.BranchSwitch: {
+				string ret = "switch ("+switchValue.ToString()+") {\n";
+				int halfLen = arguments.Count/2;
+				for(int i = 0; i < halfLen; i++) {
+					if(NullFormula(arguments[i])) {
+						ret += "default: "+arguments[i+halfLen].ToString();
+					} else {
+						ret += arguments[i].ToString()+": "+arguments[i+halfLen].ToString();
+					}
 					if(i < halfLen - 1) { ret += ";\n"; }
 				}
 				ret += "\n}\n";

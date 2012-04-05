@@ -63,7 +63,7 @@ public class Formulae : ScriptableObject {
 			var equips = ccontext.Equipment.Where(eq => eq.Matches(f.equipmentSlots, f.equipmentCategories) && eq.HasParam(fname));
 			if(equips.Count() == 0) {
 				Debug.LogError("No equipment with param "+fname);
-				return -1;
+				return float.NaN;
 			}
 			var results = equips.Select(eq => eq.GetParam(fname, scontext));
 			switch(f.mergeMode) {
@@ -83,11 +83,11 @@ public class Formulae : ScriptableObject {
 					return results.ElementAt(f.mergeNth);
 				default:
 					Debug.LogError("Unrecognized merge mode "+f.mergeMode);
-					return -1;
+					return float.NaN;
 			}
 		}
 		Debug.LogError("No ccontext "+ccontext+" given scontext "+scontext+"; Cannot find matching equipment to get param "+fname);
-		return -1;
+		return float.NaN;
 	}
 
 	protected bool CanLookupEquipmentParamOn(
@@ -304,7 +304,7 @@ public class Formulae : ScriptableObject {
 						 	 (scontext != null ? scontext.GetParam(fname) :
 						   (ccontext != null ? ccontext.GetStat(fname) :
 							 (tcontext != null ? tcontext.GetStat(fname) :
-							 (HasFormula(fname) ? LookupFormula(fname).GetValue(this, scontext, ccontext, tcontext, econtext) : -1)))));
+							 (HasFormula(fname) ? LookupFormula(fname).GetValue(this, scontext, ccontext, tcontext, econtext) : float.NaN)))));
 			case LookupType.SkillParam:
 				return scontext.GetParam(fname);
 			case LookupType.ActorStat:
@@ -312,7 +312,7 @@ public class Formulae : ScriptableObject {
 				if(econtext != null) { return econtext.wielder.GetStat(fname); }
 				if(ccontext != null) { return ccontext.GetStat(fname); }
 				Debug.LogError("Cannot find actor stat "+fname);
-				return -1;
+				return float.NaN;
 			case LookupType.ActorMountStat: {
 				Character m = null;
 				if(scontext != null) { m = scontext.character.mountedCharacter; }
@@ -323,7 +323,7 @@ public class Formulae : ScriptableObject {
 					return m.GetStat(fname);
 				}
 				Debug.LogError("Cannot find actor mount stat "+fname);
-				return -1;
+				return float.NaN;
 			}
 			case LookupType.ActorMounterStat: {
 				Character m = null;
@@ -334,7 +334,7 @@ public class Formulae : ScriptableObject {
 					return m.GetStat(fname);
 				}
 				Debug.LogError("Cannot find actor mounter stat "+fname);
-				return -1;
+				return float.NaN;
 			}
 			case LookupType.ActorEquipmentParam:
 				if(scontext != null) {
@@ -373,24 +373,24 @@ public class Formulae : ScriptableObject {
 			case LookupType.ActorMountStatusEffect:
 			case LookupType.ActorMounterStatusEffect:
 				Debug.LogError("lookup semantics not defined for own status effect "+fname);
-				return -1;
+				return float.NaN;
 			case LookupType.ActorSkillParam:
 				//TODO: look up skill by slot, name, type?
 				if(scontext != null) { return scontext.GetParam(fname); }
 				Debug.LogError("Cannot find skill param "+fname);
-				return -1;
+				return float.NaN;
 			case LookupType.TargetStat:
 				if(scontext != null) { return scontext.currentTargetCharacter.GetStat(fname); }
 				if(tcontext != null) { return tcontext.GetStat(fname); }
 				Debug.LogError("Cannot find target stat "+fname);
-				return -1;
+				return float.NaN;
 			case LookupType.TargetMountStat: {
 				Character m = null;
 				if(scontext != null) { m = scontext.currentTargetCharacter.mountedCharacter; }
 				if(tcontext != null) { m = tcontext.mountedCharacter; }
 				if(m != null) { return m.GetStat(fname); }
 				Debug.LogError("Cannot find target stat "+fname);
-				return -1;
+				return float.NaN;
 			}
 			case LookupType.TargetMounterStat: {
 				Character m = null;
@@ -398,7 +398,7 @@ public class Formulae : ScriptableObject {
 				if(tcontext != null) { m = tcontext.mountingCharacter; }
 				if(m != null) { return m.GetStat(fname); }
 				Debug.LogError("Cannot find target stat "+fname);
-				return -1;
+				return float.NaN;
 			}
 			case LookupType.TargetEquipmentParam:
 				if(scontext != null) {
@@ -431,7 +431,7 @@ public class Formulae : ScriptableObject {
 			case LookupType.TargetMountStatusEffect:
 			case LookupType.TargetMounterStatusEffect:
 				Debug.LogError("lookup semantics not defined for target status effect "+fname);
-				return -1;
+				return float.NaN;
 			case LookupType.TargetSkillParam:
 			case LookupType.ActorMountSkillParam:
 			case LookupType.ActorMounterSkillParam:
@@ -439,11 +439,11 @@ public class Formulae : ScriptableObject {
 			case LookupType.TargetMounterSkillParam:
 			//TODO: look up skill by slot, name, type?
 				Debug.LogError("Cannot find "+type+" "+fname);
-				return -1;
+				return float.NaN;
 			case LookupType.NamedFormula:
 				if(!HasFormula(fname)) {
 					Debug.LogError("Missing formula "+fname);
-					return -1;
+					return float.NaN;
 				}
 				// Debug.Log("F:"+LookupFormula(fname));
 				return LookupFormula(fname).GetValue(this, scontext, ccontext, tcontext, econtext);
@@ -452,7 +452,7 @@ public class Formulae : ScriptableObject {
 					return scontext.currentReactedSkill.GetParam(fname);
 				}
 				Debug.LogError("Cannot find reacted skill for "+fname);
-				return -1;
+				return float.NaN;
 			case LookupType.ReactedEffectType:
 				if(scontext != null) {
 					//ignore lookupRef
@@ -478,10 +478,10 @@ public class Formulae : ScriptableObject {
 					}
 				} else {
 					Debug.LogError("Skill effect lookups require a skill context.");
-					return -1;
+					return float.NaN;
 				}
 				Debug.LogError("Cannot find reacted effects for "+f);
-				return -1;
+				return float.NaN;
 			case LookupType.SkillEffectType:
 				if(scontext != null) {
 					string[] fnames = f.searchReactedStatNames;
@@ -508,13 +508,13 @@ public class Formulae : ScriptableObject {
 					}
 				} else {
 					Debug.LogError("Skill effect lookups require a skill context.");
-					return -1;
+					return float.NaN;
 				}
 				Debug.LogError("Cannot find effects for "+f);
-				return -1;
+				return float.NaN;
 		}
 		Debug.LogError("failed to look up "+type+" "+fname+" with context s:"+scontext+", c:"+ccontext+", e:"+econtext+" and formula "+f);
-		return -1;
+		return float.NaN;
 	}
 
 	public bool HasFormula(string fname) {

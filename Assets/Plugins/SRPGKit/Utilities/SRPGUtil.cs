@@ -19,7 +19,7 @@ public enum LockedFacing {
 	XPYN=315,
 	XNYP=135,
 	XNYN=225,
-	Invalid=-1
+	Invalid=int.MinValue
 }
 
 public static class SRPGUtil {

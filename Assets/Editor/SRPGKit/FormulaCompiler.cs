@@ -148,6 +148,7 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 		Branch("targeted-side", sides, TargetedSide);
 		Branch("targeter-side", sides, TargeterSide);
 		BranchFormulae("random", RandomBranch);
+		BranchParameterizedFormulae("switch", SwitchBranch);
 		BranchFormulae("cond", CondBranch);
 		//more branches could be added later! woo!
 
@@ -630,6 +631,83 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 		return branchType;
 	}
 
+	protected Symbol<IFormulaElement> BranchParameterizedFormulae(string name, Func<IFormulaElement, IEnumerable<IFormulaElement>, IEnumerable<IFormulaElement>, IFormulaElement> selector) {
+		//make sure we have our special symbols
+		Symbol("{");
+		Symbol("}");
+		Symbol(":");
+		Symbol(";");
+		Symbol("default");
+		//ok, proceed
+		Symbol<IFormulaElement> branchType = Match("("+name+")", Regex(name+"\\s*\\("), 0, null);
+		int bindingPower = 0;
+		branchType.Nud = (parser) => {
+			List<Formula> cases = new List<Formula>();
+			List<Formula> forms = new List<Formula>();
+			bool expectingDefaultFormula=false;
+			Formula defaultFormula = null;
+			//maybe parser.Advance();
+      if(parser.Token.Id == ")") {
+				throw new SemanticException("Switch "+name+" must be parameterized with a value");
+			}
+			IFormulaElement switchValue = parser.Parse(bindingPower);
+			Formula valF = CheckFormulaArg(switchValue);
+			parser.Advance(")");
+			parser.Advance("{");
+      if(parser.Token.Id == "}") {
+				throw new SemanticException("Switch "+name+" must handle at least one case");
+			} else {
+				while(true) {
+					if(parser.Token.Id == "default") {
+						if(defaultFormula != null) {
+							throw new SemanticException("Switch may not have more than one default response");
+						}
+						expectingDefaultFormula = true;
+						parser.Advance("default");
+					} else {
+						IFormulaElement ife = parser.Parse(bindingPower);
+						Formula condF = CheckFormulaArg(ife);
+						if(condF != null) {
+							cases.Add(condF);
+						} else {
+							Debug.Log("skip ife "+(ife as Identifier).Name);
+					 	}
+					}
+					if(parser.Token.Id != ":") {
+						throw new SemanticException("Switch "+name+" case "+parser.Token.Id+" must be handled");
+					}
+					parser.Advance(":");
+					IFormulaElement fife = parser.Parse(bindingPower);
+					Formula thisFormula = fife as Formula;
+					if(expectingDefaultFormula) {
+						expectingDefaultFormula = false;
+						defaultFormula = thisFormula;
+					} else {
+						forms.Add(thisFormula);
+					}
+					if(parser.Token.Id == ":") {
+						throw new SemanticException(": cannot follow branch clause, use ;");
+					}
+					if(parser.Token.Id != ";") {
+						break;
+					}
+					parser.Advance(";");
+				}
+			}
+			parser.Advance("}");
+			if(defaultFormula != null) {
+				cases.Add(Formula.Null());
+				forms.Add(defaultFormula);
+			}
+			return selector(
+				valF as IFormulaElement,
+				cases.ConvertAll(f => f as IFormulaElement),
+				forms.ConvertAll(f => f as IFormulaElement)
+			);
+		};
+		return branchType;
+	}
+
 	protected Symbol<IFormulaElement> BranchFormulae(string name, Func<IEnumerable<IFormulaElement>, IEnumerable<IFormulaElement>, IFormulaElement> selector) {
 		//make sure we have our special symbols
 		Symbol("{");
@@ -770,6 +848,17 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 		if(cases.Count() != forms.Count()) {
 			throw new SemanticException("mismatched number of cases and formulae");
 		}
+		f.arguments = cases.Concat(forms).Select(form => CheckFormulaArg(form)).ToList();
+		return f;
+	}
+
+	IFormulaElement SwitchBranch(IFormulaElement valF, IEnumerable<IFormulaElement> cases, IEnumerable<IFormulaElement> forms) {
+		Formula f = new Formula();
+		f.formulaType = FormulaType.BranchSwitch;
+		if(cases.Count() != forms.Count()) {
+			throw new SemanticException("mismatched number of cases and formulae");
+		}
+		f.switchValue = CheckFormulaArg(valF);
 		f.arguments = cases.Concat(forms).Select(form => CheckFormulaArg(form)).ToList();
 		return f;
 	}
