@@ -2,11 +2,11 @@ using UnityEngine;
 using UnityEditor;
 using System.Collections;
 using System;
+using System.Linq;
 
 [CustomEditor(typeof(Arbiter))]
 
 public class ArbiterEditor : SRPGCKEditor {
-
 	Arbiter arb;
 	public Vector2 teamScroll;
 
@@ -22,11 +22,27 @@ public class ArbiterEditor : SRPGCKEditor {
 		//fdb
 		arb.formulae = EditorGUILayout.ObjectField("Formulae", arb.formulae, typeof(Formulae), !EditorUtility.IsPersistent(arb)) as Formulae;
 		//teams
-		if(arb.teams == null) { arb.teams = new TeamLocation[2]{TeamLocation.Local, TeamLocation.Local}; }
-		int newTeamCount = EditorGUILayout.IntField("Teams", arb.teams.Length);
+		int newTeamCount = EditorGUILayout.IntField("Teams", arb.EditorGetTeamCount());
 		if(newTeamCount < 1) { newTeamCount = 1; }
-		if(newTeamCount != arb.teams.Length) {
-			Array.Resize<TeamLocation>(ref arb.teams, newTeamCount);
+		while(newTeamCount > arb.EditorGetTeamCount()) {
+			int id = 1;
+			while(arb.EditorGetTeam(id) != null) {
+				id++;
+			}
+			var tgo = new GameObject();
+			tgo.transform.parent = arb.transform;
+			tgo.transform.localPosition = Vector3.zero;
+			tgo.transform.localRotation = Quaternion.identity;
+			tgo.transform.localScale = new Vector3(1,1,1);
+			var t = tgo.AddComponent<Team>();
+			t.id = id;
+			tgo.name = "Team "+id;
+		}
+		var sorted = arb.EditorGetTeams().ToList();
+		while(newTeamCount < arb.EditorGetTeamCount() && sorted.Count > 0) {
+			var t = sorted[sorted.Count-1];
+			DestroyImmediate(t.gameObject);
+			sorted.RemoveAt(sorted.Count-1);
 		}
 		//local/ai/network toggle grid
 		EditorGUILayout.BeginHorizontal();
@@ -39,26 +55,39 @@ public class ArbiterEditor : SRPGCKEditor {
 		EditorGUILayout.EndVertical();
 		teamScroll = EditorGUILayout.BeginScrollView(teamScroll, false, false, GUILayout.Height(90));
 		EditorGUILayout.BeginHorizontal();
-		for(int i = 0; i < arb.teams.Length; i++) {
+		foreach(var t in arb.EditorGetTeams()) {
 			EditorGUILayout.BeginVertical();
-			GUILayout.Label(""+i, GUILayout.Width(20), GUILayout.Height(16));
+			if(GUILayout.Button(""+t.id, GUILayout.Width(32), GUILayout.Height(16))) {
+				EditorGUILayout.EndVertical();
+				EditorGUILayout.EndHorizontal();
+				EditorGUILayout.EndHorizontal();
+				EditorUtility.FocusProjectWindow();
+				Selection.activeObject = t;
+				return;
+			}
+			EditorGUILayout.BeginHorizontal();
+			GUILayout.Space(12);
+			EditorGUILayout.BeginVertical();
 			//radio boxes
-			bool local = arb.teams[i] == TeamLocation.Local;
-			bool ai = arb.teams[i] == TeamLocation.AI;
-			bool network = arb.teams[i] == TeamLocation.Network;
+			bool   local = t.type == TeamLocation.Local;
+			bool      ai = t.type == TeamLocation.AI;
+			bool network = t.type == TeamLocation.Network;
 			if(  local = EditorGUILayout.Toggle(  local, EditorStyles.radioButton, GUILayout.Width(16), GUILayout.Height(16))) {
-				arb.teams[i] = TeamLocation.Local;
+				t.type = TeamLocation.Local;
 				ai = false;
 				network = false;
 			}
 			if(     ai = EditorGUILayout.Toggle(     ai, EditorStyles.radioButton, GUILayout.Width(16), GUILayout.Height(16))) {
-				arb.teams[i] = TeamLocation.AI;
+				t.type = TeamLocation.AI;
 				network = false;
 			}
 			if(network = EditorGUILayout.Toggle(network, EditorStyles.radioButton, GUILayout.Width(16), GUILayout.Height(16))) {
-				arb.teams[i] = TeamLocation.Network;
+				t.type = TeamLocation.Network;
 			}
 			GUILayout.FlexibleSpace();
+			EditorGUILayout.EndVertical();
+//			GUILayout.Space(6);
+			EditorGUILayout.EndHorizontal();
 			EditorGUILayout.EndVertical();
 		}
 		EditorGUILayout.EndHorizontal();

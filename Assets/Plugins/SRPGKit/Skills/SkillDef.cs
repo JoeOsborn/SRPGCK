@@ -293,7 +293,7 @@ public class SkillDef : ScriptableObject {
 				break;
 			}
 		}
-		if(found) {
+		if(!found) {
 			parameters.Add(new Parameter(pname, f));
 		}
 	}
