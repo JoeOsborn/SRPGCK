@@ -2,7 +2,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 
-[AddComponentMenu("SRPGCK/Character/Equipment")]
+[AddComponentMenu("SRPGCK/Item/Equipment")]
 public class Equipment : MonoBehaviour {
 	[System.NonSerialized]
 	public Character wielder;

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 public class Character : MonoBehaviour {
 	//FIXME: deprecated, remove later
 	public int teamID;
+	//end deprecated section
 
 	Map _map;
 	public Map map { get {

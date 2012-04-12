@@ -110,16 +110,20 @@ public class Formulae : ScriptableObject {
 		Character ccontext=null,
 		Character tcontext=null,
 		Equipment econtext=null,
+		Item icontext=null,
 		Formula f=null
 	) {
 		switch(type) {
 			case LookupType.Auto:
-				return (econtext != null && econtext.HasParam(fname)) ||
+				return (icontext != null && icontext.HasParam(fname)) ||
+							 (econtext != null && econtext.HasParam(fname)) ||
 							 (scontext != null && scontext.HasParam(fname)) ||
 							 (ccontext != null && ccontext.HasStat(fname)) ||
  							 (tcontext != null && tcontext.HasStat(fname));
 			case LookupType.SkillParam:
 				return scontext.HasParam(fname);
+			case LookupType.ItemParam:
+				return icontext.HasParam(fname);
 			case LookupType.ActorStat:
 				if(scontext != null) { return scontext.character.HasStat(fname); }
 				if(econtext != null) { return econtext.wielder.HasStat(fname); }
@@ -296,15 +300,18 @@ public class Formulae : ScriptableObject {
 		Character ccontext=null,
 		Character tcontext=null,
 		Equipment econtext=null,
+		Item icontext=null,
 		Formula f=null
 	) {
 		switch(type) {
 			case LookupType.Auto: {
-				float ret = (econtext != null ? econtext.GetParam(fname) :
-						 	 (scontext != null ? scontext.GetParam(fname) :
-						   (ccontext != null ? ccontext.GetStat(fname) :
-							 (tcontext != null ? tcontext.GetStat(fname) :
-							 (HasFormula(fname) ? LookupFormula(fname).GetValue(this, scontext, ccontext, tcontext, econtext) : float.NaN)))));
+				float ret = 
+					(icontext != null ? icontext.GetParam(fname) :
+					(econtext != null ? econtext.GetParam(fname) :
+					(scontext != null ? scontext.GetParam(fname) :
+					(ccontext != null ? ccontext.GetStat(fname) :
+					(tcontext != null ? tcontext.GetStat(fname) :
+					(HasFormula(fname) ? LookupFormula(fname).GetValue(this, scontext, ccontext, tcontext, econtext, icontext) : float.NaN))))));
 				if(float.IsNaN(ret)) {
 					Debug.LogError("auto lookup failed for "+fname);
 				}
@@ -312,6 +319,8 @@ public class Formulae : ScriptableObject {
 			}
 			case LookupType.SkillParam:
 				return scontext.GetParam(fname);
+			case LookupType.ItemParam:
+				return icontext.GetParam(fname, scontext);
 			case LookupType.ActorStat:
 				if(scontext != null) { return scontext.character.GetStat(fname); }
 				if(econtext != null) { return econtext.wielder.GetStat(fname); }
@@ -451,7 +460,7 @@ public class Formulae : ScriptableObject {
 					return float.NaN;
 				}
 				// Debug.Log("F:"+LookupFormula(fname));
-				return LookupFormula(fname).GetValue(this, scontext, ccontext, tcontext, econtext);
+				return LookupFormula(fname).GetValue(this, scontext, ccontext, tcontext, econtext, icontext);
 			case LookupType.ReactedSkillParam:
 				if(scontext != null) {
 					return scontext.currentReactedSkill.GetParam(fname);
@@ -518,7 +527,7 @@ public class Formulae : ScriptableObject {
 				Debug.LogError("Cannot find effects for "+f);
 				return float.NaN;
 		}
-		Debug.LogError("failed to look up "+type+" "+fname+" with context s:"+scontext+", c:"+ccontext+", e:"+econtext+" and formula "+f);
+		Debug.LogError("failed to look up "+type+" "+fname+" with context s:"+scontext+", c:"+ccontext+", e:"+econtext+", i:"+icontext+" and formula "+f);
 		return float.NaN;
 	}
 

@@ -26,15 +26,13 @@ public class TeamEditor : SRPGCKEditor {
 		team.type = (TeamLocation)EditorGUILayout.EnumPopup("Type", team.type);
 
 		team.parameters = EditorGUIExt.ParameterFoldout(
-			"Parameters",
+			"Parameter",
 			team.parameters,
 			"team."+team.id+".params.",
 			formulaOptions,
 			lastFocusedControl,
 			ref team.editorShowParameters
 		);
-
-		// public int[] inventoryCounts;
 
 		if(team.arbiter == null) {
 			EditorGUILayout.HelpBox("Teams must be children of Arbiter objects", MessageType.Error);

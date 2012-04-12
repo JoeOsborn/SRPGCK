@@ -26,8 +26,6 @@ public class Team : MonoBehaviour {
 		return _enemies;
 	} }
 
-	// public int[] inventoryCounts;
-
 	public List<Parameter> _parameters;
 	public List<Parameter> parameters {
 		get {
@@ -41,7 +39,11 @@ public class Team : MonoBehaviour {
 
 	public Arbiter _arbiter;
 	public Arbiter arbiter { get {
-		if(_arbiter == null) { _arbiter = transform.parent.GetComponent<Arbiter>(); }
+		if(_arbiter == null) {
+			_arbiter = transform.parent != null ?
+				transform.parent.GetComponent<Arbiter>() :
+				null;
+		}
 		return _arbiter;
 	} }
 

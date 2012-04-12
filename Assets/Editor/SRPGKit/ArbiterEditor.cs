@@ -19,7 +19,6 @@ public class ArbiterEditor : SRPGCKEditor {
 	}
 
 	public override void OnSRPGCKInspectorGUI () {
-		//fdb
 		arb.formulae = EditorGUILayout.ObjectField("Formulae", arb.formulae, typeof(Formulae), !EditorUtility.IsPersistent(arb)) as Formulae;
 		//teams
 		int newTeamCount = EditorGUILayout.IntField("Teams", arb.EditorGetTeamCount());

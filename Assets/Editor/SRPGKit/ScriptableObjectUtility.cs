@@ -35,7 +35,7 @@ public static class ScriptableObjectUtility
     AssetDatabase.CreateAsset(asset, assetPathAndName);
 
     AssetDatabase.SaveAssets();
-		Undo.RegisterCreatedObjectUndo(asset, "Create "+typeof(T).ToString());
+		//Undo.RegisterCreatedObjectUndo(asset, "Create "+typeof(T).ToString());
 		if(select) {
 	    EditorUtility.FocusProjectWindow();
 	    Selection.activeObject = asset;

@@ -532,7 +532,7 @@ public class EditorGUIExt
    	EditorGUIUtility.LookLikeControls();
 		return newFXGs;
 	}
-
+	
 	public static List<Parameter> ParameterFoldout(string name, List<Parameter> parameters, string id, string[] formulaOptions, string lastFocusedControl, ref bool foldout, string[] skipParams=null) {
 		EditorGUILayout.BeginVertical();
 		if(parameters == null) { parameters = new List<Parameter>(); }

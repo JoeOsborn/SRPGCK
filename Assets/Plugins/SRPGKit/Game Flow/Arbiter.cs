@@ -6,11 +6,10 @@ using System.Linq;
 
 [AddComponentMenu("SRPGCK/Arbiter/Arbiter")]
 public class Arbiter : MonoBehaviour {
-
 	//packages up game rules
 	public Formulae formulae;
 	public Formulae fdb { get { return formulae; } }
-
+	
 	public bool IsLocalTeam(int teamID) {
 		return GetTeam(teamID).type == TeamLocation.Local;
 	}
