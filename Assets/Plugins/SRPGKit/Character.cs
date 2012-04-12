@@ -159,7 +159,7 @@ public class Character : MonoBehaviour {
 		return characterName;
 	}
 
-	void Awake () {
+	void Awake() {
 		for(int i = 0; i < equipmentSlots.Length; i++) {
 			equipmentSlots[i] = equipmentSlots[i].NormalizeName();
 		}

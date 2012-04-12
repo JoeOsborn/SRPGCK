@@ -117,16 +117,14 @@ public class Map : MonoBehaviour {
 #endregion
 #region Monobehaviour stuff
 void Start() {
-	if(this.stacks == null) {
-		ResetStacks(Vector2.zero);
-	}
-}
-void Awake() {
 	MeshRenderer mr = GetComponent<MeshRenderer>();
 	if(mr != null && mr.materials.Length >= 2) {
 		if(Application.isPlaying) {
 			mr.materials[1].color = Color.clear;
 		}
+	}
+	if(this.stacks == null) {
+		ResetStacks(Vector2.zero);
 	}
 }
 #endregion
