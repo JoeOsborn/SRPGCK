@@ -155,13 +155,13 @@ public class ProxyActionSkillDefEditor : ActionSkillDefEditor {
 		if((patk.mergeInvolvedItem = MergeChoiceGUI("Involved Item", patk.mergeInvolvedItem)) != MergeMode.UseOriginal) {
 	 		atk.involvedItem = EditorGUIExt.PickAssetGUI<Item>("Involved Item", atk.involvedItem);
 		}
-		if((patk.mergeScheduledEffects = MergeChoiceGUI("On-Scheduled Effects", patk.mergeScheduledEffects)) != MergeMode.UseOriginal) {
+		if((patk.mergeScheduledEffects = MergeListChoiceGUI("On-Scheduled Effects", patk.mergeScheduledEffects)) != MergeModeList.UseOriginal) {
 	 		atk.scheduledEffects = EditorGUIExt.StatEffectGroupGUI("On-Scheduled Effect", atk.scheduledEffects, StatEffectContext.Action, ""+atk.GetInstanceID(), formulaOptions, lastFocusedControl);
 		}
-		if((patk.mergeApplicationEffects = MergeChoiceGUI("Per-Application Effects", patk.mergeApplicationEffects)) != MergeMode.UseOriginal) {
+		if((patk.mergeApplicationEffects = MergeListChoiceGUI("Per-Application Effects", patk.mergeApplicationEffects)) != MergeModeList.UseOriginal) {
 			atk.applicationEffects = EditorGUIExt.StatEffectGroupGUI("Per-Application Effect", atk.applicationEffects, StatEffectContext.Action, ""+atk.GetInstanceID(), formulaOptions, lastFocusedControl);
 		}
-		if((patk.mergeTargetEffects = MergeChoiceGUI("Per-Target Effects", patk.mergeTargetEffects)) != MergeMode.UseOriginal) {
+		if((patk.mergeTargetEffects = MergeListChoiceGUI("Per-Target Effects", patk.mergeTargetEffects)) != MergeModeList.UseOriginal) {
 			atk.targetEffects = EditorGUIExt.StatEffectGroupsGUI("Application Effect Group", atk.targetEffects, StatEffectContext.Action, ""+atk.GetInstanceID(), formulaOptions, lastFocusedControl);
 		}
 	}

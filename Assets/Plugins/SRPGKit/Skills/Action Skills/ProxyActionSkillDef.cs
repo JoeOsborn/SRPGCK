@@ -198,36 +198,58 @@ public class ProxyActionSkillDef : ActionSkillDef {
 	} }
 
 
-	public MergeMode mergeScheduledEffects=MergeMode.UseOriginal;
+	public MergeModeList mergeScheduledEffects=MergeModeList.UseOriginal;
 	public override StatEffectGroup ScheduledEffects { get {
 		switch(mergeScheduledEffects) {
-			case MergeMode.UseOriginal:
+			case MergeModeList.UseOriginal:
 				return ReferredSkill.ScheduledEffects;
-			case MergeMode.UseProxy:
+			case MergeModeList.UseProxy:
 			default:
 				return base.ScheduledEffects;
+			case MergeModeList.Combine:
+				return ReferredSkill.ScheduledEffects.Concat(base.ScheduledEffects);
 		}
 	} }
 
-	public MergeMode mergeApplicationEffects=MergeMode.UseOriginal;
+	public MergeModeList mergeApplicationEffects=MergeModeList.UseOriginal;
 	public override StatEffectGroup ApplicationEffects { get {
 		switch(mergeApplicationEffects) {
-			case MergeMode.UseOriginal:
+			case MergeModeList.UseOriginal:
 				return ReferredSkill.ApplicationEffects;
-			case MergeMode.UseProxy:
+			case MergeModeList.UseProxy:
 			default:
 				return base.ApplicationEffects;
+			case MergeModeList.Combine:
+				return ReferredSkill.ApplicationEffects.Concat(base.ApplicationEffects);
 		}
 	} }
 
-	public MergeMode mergeTargetEffects=MergeMode.UseOriginal;
+	public MergeModeList mergeTargetEffects=MergeModeList.UseOriginal;
 	public override StatEffectGroup[] TargetEffects { get {
 		switch(mergeTargetEffects) {
-			case MergeMode.UseOriginal:
+			case MergeModeList.UseOriginal:
 				return ReferredSkill.TargetEffects;
-			case MergeMode.UseProxy:
+			case MergeModeList.UseProxy:
 			default:
 				return base.TargetEffects;
+			case MergeModeList.Combine: {
+				var refFX = ReferredSkill.TargetEffects;
+				var baseFX = base.TargetEffects;
+				int maxLen = System.Math.Max(refFX.Length, baseFX.Length);
+				StatEffectGroup[] ret = new StatEffectGroup[maxLen];
+				for(int i = 0; i < maxLen; i++) {
+					if(i < refFX.Length && i < baseFX.Length) {
+						ret[i] = refFX[i].Concat(baseFX[i]);
+					} else if(i < refFX.Length) {
+						ret[i] = refFX[i];
+					} else if(i < baseFX.Length) {
+						ret[i] = baseFX[i];
+					} else {
+						Debug.LogError("Somehow ran out of both stat effect groups");
+					}
+				}
+				return ret;
+			}
 		}
 	} }
 }

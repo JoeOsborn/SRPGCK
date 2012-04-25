@@ -934,11 +934,11 @@ public class ActionSkillDef : SkillDef {
 		SetArgsFromTarget(currentTarget, currentSettings, "", start ?? TargetPosition);
 		FindPerApplicationCharacterTargets();
 		ApplyPerApplicationEffectsTo(ApplicationEffects.effects, targetCharacters);
-
+		var tfx = TargetEffects;
 		switch(this.MultiTargetMode) {
 			case MultiTargetMode.Single:
 			case MultiTargetMode.List:
-				if(TargetEffects.Length == 0) {
+				if(tfx.Length == 0) {
 					break;
 				}
 				for(int i = 0; i < targets.Count; i++) {
@@ -957,7 +957,7 @@ public class ActionSkillDef : SkillDef {
 					if(TurnToFaceTarget) {
 						character.Facing = CharacterFacingForTarget(targets[i]).eulerAngles.y;
 					}
-					ApplyEffectsTo(t, ts, TargetEffects, targetCharacters, "hitType", start.HasValue ? start.Value : TargetPositionForTarget(t));
+					ApplyEffectsTo(t, ts, tfx, targetCharacters, "hitType", start.HasValue ? start.Value : TargetPositionForTarget(t));
 				}
 				break;
 			case MultiTargetMode.Chain:
@@ -965,7 +965,7 @@ public class ActionSkillDef : SkillDef {
 				//and apply subsequent steps to them.
 				//path and pick and selectregion require individual target characters
 				//set up "current" args -- "current" always means "last" here
-				if(TargetEffects.Length == 0) { break; }
+				if(tfx.Length == 0) { break; }
 				List<Character> chars = new List<Character>();
 				for(int i = 0; i < targets.Count-1; i++) {
 					Target t = targets[i];
@@ -985,7 +985,7 @@ public class ActionSkillDef : SkillDef {
 				if(TurnToFaceTarget) {
 					character.Facing = CharacterFacingForTarget(lastTarget).eulerAngles.y;
 				}
-				ApplyEffectsTo(currentTarget, currentSettings, TargetEffects, targetCharacters, "hitType", TargetPositionForTarget(currentTarget));
+				ApplyEffectsTo(currentTarget, currentSettings, tfx, targetCharacters, "hitType", TargetPositionForTarget(currentTarget));
 				break;
 		}
 		map.BroadcastMessage("SkillEffectApplied", this, SendMessageOptions.DontRequireReceiver);
