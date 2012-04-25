@@ -17,9 +17,11 @@ public enum MergeMode {
 public class ProxyActionSkillDef : ActionSkillDef {
 	public string referredSkillGroup=null;
 	public string referredSkillName="Attack";
+	public ActionSkillDef referredSkill=null;
 
 	ActionSkillDef ReferredSkill { get {
-		return character.GetSkill(referredSkillGroup, referredSkillName) as ActionSkillDef;
+		return referredSkill ?? 
+			(character.GetSkill(referredSkillGroup, referredSkillName) as ActionSkillDef);
 	} }
 
 	public MergeModeList mergePassiveEffects=MergeModeList.Combine;
@@ -69,13 +71,24 @@ public class ProxyActionSkillDef : ActionSkillDef {
 	}
 
 	public MergeMode mergeIsEnabledF=MergeMode.UseOriginal;
-	public override bool IsEnabled { get {
+	public override Formula IsEnabledF { get {
 		switch(mergeIsEnabledF) {
 			case MergeMode.UseOriginal:
-				return ReferredSkill.IsEnabled;
+				return ReferredSkill.IsEnabledF;
 			case MergeMode.UseProxy:
 			default:
-				return base.IsEnabled;
+				return base.IsEnabledF;
+		}
+	} }
+
+	public MergeMode mergeInvolvedItem=MergeMode.UseOriginal;
+	public override Item InvolvedItem { get { 
+		switch(mergeInvolvedItem) {
+			case MergeMode.UseOriginal:
+				return ReferredSkill.InvolvedItem;
+			case MergeMode.UseProxy:
+			default:
+				return base.InvolvedItem;
 		}
 	} }
 

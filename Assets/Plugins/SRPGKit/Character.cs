@@ -179,6 +179,19 @@ public class Character : MonoBehaviour {
 	public int TeamID { get {
 		return (int)GetBaseStat("team", teamID);
 	} }
+	public Team EffectiveTeam { get {
+		return map.arbiter.GetTeam(EffectiveTeamID);
+	} }
+	public Team Team { get {
+		return map.arbiter.GetTeam(TeamID);
+	} }
+	
+	public Inventory inventory { get {
+		return GetComponent<Inventory>() ??
+			EffectiveTeam.GetComponent<Inventory>() ??
+			this.Team.GetComponent<Inventory>();
+	} }
+
 
 	public Vector3 TilePosition { get {
 		return map == null ?

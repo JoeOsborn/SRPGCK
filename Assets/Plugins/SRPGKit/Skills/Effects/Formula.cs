@@ -103,7 +103,8 @@ public enum LookupType {
 	//lookupReference is the status effect type
 	TargetMountStatusEffect,
 	TargetMounterStatusEffect,
-	ItemParam
+	ItemParam,
+	ReactedItemParam
 }
 
 public enum FormulaMergeMode {

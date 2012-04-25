@@ -14,17 +14,17 @@ public class Inventory : MonoBehaviour {
 
 	Character _character;
 	Character character { get {
-		return _character = SRPGUtil.FindComponentInThisOrParents<Character>(_character);
+		return _character = this.FindComponentInThisOrParents<Character>(_character);
 	} }
 
 	Team _team;
 	Team team { get {
-		return _team = SRPGUtil.FindComponentInThisOrParents<Team>(_team);
+		return _team = this.FindComponentInThisOrParents<Team>(_team);
 	} }
 
 	Arbiter _arbiter;
 	Arbiter arbiter { get {
-		return _arbiter = SRPGUtil.FindComponentInThisOrParents<Arbiter>(_arbiter);
+		return _arbiter = this.FindComponentInThisOrParents<Arbiter>(_arbiter);
 	} }
 
 	public bool limitedStacks=false;
@@ -89,7 +89,11 @@ public class Inventory : MonoBehaviour {
 		RemoveItem(idx, 1);
 		return iit;
 	}
+	public int RemoveItem(Item item, int ct=1) {
+		return RemoveItem(IndexOfItem(item), ct);
+	}
 	public int RemoveItem(int idx, int ct=1) {
+		if(idx < 0 || idx >= items.Count) { return -1; }
 		int removed = 0;
 		while(counts[idx] > 0 && ct > 0) {
 			totalWeight -= items[idx].weight;
@@ -191,7 +195,7 @@ public class Inventory : MonoBehaviour {
 	
 	public int IndexOfItem(Item it) {
 		for(int i = items.Count; i != 0; i--) {
-			if(items[i] == it && counts[i-1] > 0) { return i; }
+			if(items[i-1] == it && counts[i-1] > 0) { return i-1; }
 		}
 		return -1;
 	}

@@ -79,6 +79,7 @@ public class ActionSkillDefEditor : SkillDefEditor {
 	}
 
 	protected virtual void EffectSkillGUI() {
+		atk.involvedItem = EditorGUIExt.PickAssetGUI<Item>("Involved Item", atk.involvedItem);
 		if(Formula.NotNullFormula(atk.delay) &&
 		   !(atk.delay.formulaType == FormulaType.Constant &&
 		     atk.delay.constantValue == 0)) {

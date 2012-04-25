@@ -229,6 +229,12 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 			f.lookupType = LookupType.ReactedSkillParam;
 			return f;
 		});
+		LookupOn("item", (parser) => {
+			Formula f = new Formula();
+			f.formulaType = FormulaType.Lookup;
+			f.lookupType = LookupType.ItemParam;
+			return f;
+		});
 		LookupOn("status", (parser) => {
 			Formula f = new Formula();
 			f.formulaType = FormulaType.Lookup;
@@ -284,6 +290,18 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 								nextF.lookupType = LookupType.TargetMountEquipmentParam;
 							} else if(f.lookupType == LookupType.TargetMounterStat) {
 								nextF.lookupType = LookupType.TargetMounterEquipmentParam;
+							} // else error?
+							f = nextF;
+						}
+					} else if(nextF.lookupType == LookupType.ItemParam) {
+						Debug.Log("er, item param "+nextF.lookupReference+" after "+f.formulaType+"->"+f.lookupType);
+						if(f.formulaType == FormulaType.Lookup) {
+							if(f.lookupType == LookupType.SkillParam) {
+								nextF.lookupType = LookupType.ItemParam;
+							} else if(f.lookupType == LookupType.ReactedSkillParam) {
+								nextF.lookupType = LookupType.ReactedItemParam;
+							} else {
+								throw new SemanticException("Item lookups must be applied to skills or reacted skills or auto lookups");
 							}
 							f = nextF;
 						}
@@ -362,6 +380,13 @@ public class FormulaCompiler : Grammar<IFormulaElement> {
 						f.lookupType = LookupType.TargetMountSkillParam;
 					} else if(f.lookupType == LookupType.TargetMounterStat) {
 						f.lookupType = LookupType.TargetMounterSkillParam;
+					}
+				} else if(ident != null && ident.Name == "item") {
+					Debug.Log("uh, item blah blah after "+f.formulaType+"->"+f.lookupType);
+					if(f.lookupType == LookupType.SkillParam) {
+						f.lookupType = LookupType.ItemParam;
+					} else if(f.lookupType == LookupType.ReactedSkillParam) {
+						f.lookupType = LookupType.ReactedItemParam;
 					}
 				} else if(ident != null && ident.Name == "status") {
 					if(f.lookupType == LookupType.ActorStat) {

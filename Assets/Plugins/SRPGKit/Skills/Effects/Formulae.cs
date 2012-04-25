@@ -122,8 +122,19 @@ public class Formulae : ScriptableObject {
  							 (tcontext != null && tcontext.HasStat(fname));
 			case LookupType.SkillParam:
 				return scontext.HasParam(fname);
-			case LookupType.ItemParam:
-				return icontext.HasParam(fname);
+			case LookupType.ItemParam: {
+				if(icontext == null && scontext != null) {
+					icontext = scontext.InvolvedItem;
+				}
+				if(icontext == null && econtext != null) {
+					icontext = econtext.baseItem;
+				}
+				return icontext != null && icontext.HasParam(fname);
+			}
+			case LookupType.ReactedItemParam: {
+				icontext = scontext.currentReactedSkill.InvolvedItem;
+				return icontext != null && icontext.HasParam(fname);
+			}
 			case LookupType.ActorStat:
 				if(scontext != null) { return scontext.character.HasStat(fname); }
 				if(econtext != null) { return econtext.wielder.HasStat(fname); }
@@ -319,8 +330,19 @@ public class Formulae : ScriptableObject {
 			}
 			case LookupType.SkillParam:
 				return scontext.GetParam(fname);
-			case LookupType.ItemParam:
+			case LookupType.ItemParam: {
+				if(icontext == null && scontext != null) {
+					icontext = scontext.InvolvedItem;
+				}
+				if(icontext == null && econtext != null) {
+					icontext = econtext.baseItem;
+				}
 				return icontext.GetParam(fname, scontext);
+			}
+			case LookupType.ReactedItemParam: {
+				icontext = scontext.currentReactedSkill.InvolvedItem;
+				return icontext.GetParam(fname, scontext);
+			}
 			case LookupType.ActorStat:
 				if(scontext != null) { return scontext.character.GetStat(fname); }
 				if(econtext != null) { return econtext.wielder.GetStat(fname); }

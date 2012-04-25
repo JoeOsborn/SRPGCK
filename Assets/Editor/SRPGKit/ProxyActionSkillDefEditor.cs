@@ -34,6 +34,66 @@ public class ProxyActionSkillDefEditor : ActionSkillDefEditor {
 		name = "ProxyActionSkillDef";
 		patk = target as ProxyActionSkillDef;
 	}
+
+	protected override void BasicSkillGUI() {
+		CoreSkillGUI();
+		patk.referredSkill = EditorGUIExt.PickAssetGUI<ActionSkillDef>("Referred Skill", patk.referredSkill);
+		if(patk.referredSkill == null) {
+			patk.referredSkillName = EditorGUILayout.TextField("Referred Name", patk.referredSkillName);
+			patk.referredSkillGroup = EditorGUILayout.TextField("Referred Group", patk.referredSkillGroup ?? "");
+		}
+
+		if((patk.mergeIsEnabledF = MergeChoiceGUI("IsEnabled", patk.mergeIsEnabledF)) != MergeMode.UseOriginal) {
+			s.isEnabledF = EditorGUIExt.FormulaField(
+				"Is Enabled",
+				s.isEnabledF,
+				s.skillName+".isEnabledF",
+				formulaOptions,
+				lastFocusedControl
+			);
+		}
+		s.replacesSkill = EditorGUILayout.
+			Toggle("Replaces Skill", s.replacesSkill);
+		if(s.replacesSkill) {
+			s.replacedSkill = EditorGUILayout.
+				TextField("Skill", s.replacedSkill).NormalizeName();
+			s.replacementPriority = EditorGUILayout.
+				IntField("Priority", s.replacementPriority);
+			s.requiresReplacement = EditorGUILayout.
+				Toggle("Requires Replacement", s.requiresReplacement);
+		}
+
+		if(!s.isPassive) {
+			s.deactivatesOnApplication = EditorGUILayout.
+				Toggle("Deactivates After Use", s.deactivatesOnApplication);
+		}
+
+		EditorGUILayout.Space();
+		if((patk.mergeParameters = MergeListChoiceGUI("Parameters", patk.mergeParameters)) != MergeModeList.UseOriginal) {
+			s.parameters = EditorGUIExt.ParameterFoldout(
+				"Parameter",
+				s.parameters,
+				""+s.GetInstanceID(),
+				formulaOptions,
+				lastFocusedControl,
+				ref showParameters
+			);
+		}
+		EditorGUILayout.Space();
+
+		if((patk.mergePassiveEffects = MergeListChoiceGUI("Passive Effects", patk.mergePassiveEffects)) != MergeModeList.UseOriginal) {
+			s.passiveEffects = EditorGUIExt.StatEffectFoldout(
+				"Passive Effect",
+				s.passiveEffects,
+				StatEffectContext.Normal,
+				""+s.GetInstanceID(),
+				formulaOptions,
+				lastFocusedControl,
+				ref showPassiveEffects
+			);
+		}
+	}
+
 	protected override void TargetedSkillGUI() {
 		if((patk.mergeTurnToFaceTarget = MergeChoiceGUI("Face Target", patk.mergeTurnToFaceTarget)) != MergeMode.UseOriginal) {
 			atk.turnToFaceTarget = EditorGUILayout.Toggle("Face Target", atk.turnToFaceTarget);
@@ -92,6 +152,9 @@ public class ProxyActionSkillDefEditor : ActionSkillDefEditor {
 	}
 
 	protected override void EffectSkillGUI() {
+		if((patk.mergeInvolvedItem = MergeChoiceGUI("Involved Item", patk.mergeInvolvedItem)) != MergeMode.UseOriginal) {
+	 		atk.involvedItem = EditorGUIExt.PickAssetGUI<Item>("Involved Item", atk.involvedItem);
+		}
 		if((patk.mergeScheduledEffects = MergeChoiceGUI("On-Scheduled Effects", patk.mergeScheduledEffects)) != MergeMode.UseOriginal) {
 	 		atk.scheduledEffects = EditorGUIExt.StatEffectGroupGUI("On-Scheduled Effect", atk.scheduledEffects, StatEffectContext.Action, ""+atk.GetInstanceID(), formulaOptions, lastFocusedControl);
 		}
@@ -100,62 +163,6 @@ public class ProxyActionSkillDefEditor : ActionSkillDefEditor {
 		}
 		if((patk.mergeTargetEffects = MergeChoiceGUI("Per-Target Effects", patk.mergeTargetEffects)) != MergeMode.UseOriginal) {
 			atk.targetEffects = EditorGUIExt.StatEffectGroupsGUI("Application Effect Group", atk.targetEffects, StatEffectContext.Action, ""+atk.GetInstanceID(), formulaOptions, lastFocusedControl);
-		}
-	}
-
-	protected override void BasicSkillGUI() {
-		CoreSkillGUI();
-		patk.referredSkillName = EditorGUILayout.TextField("Referred Skill", patk.referredSkillName);
-		patk.referredSkillGroup = EditorGUILayout.TextField("Referred Group", patk.referredSkillGroup);
-
-		if((patk.mergeIsEnabledF = MergeChoiceGUI("IsEnabled", patk.mergeIsEnabledF)) != MergeMode.UseOriginal) {
-			s.isEnabledF = EditorGUIExt.FormulaField(
-				"Is Enabled",
-				s.isEnabledF,
-				s.skillName+".isEnabledF",
-				formulaOptions,
-				lastFocusedControl
-			);
-		}
-		s.replacesSkill = EditorGUILayout.
-			Toggle("Replaces Skill", s.replacesSkill);
-		if(s.replacesSkill) {
-			s.replacedSkill = EditorGUILayout.
-				TextField("Skill", s.replacedSkill).NormalizeName();
-			s.replacementPriority = EditorGUILayout.
-				IntField("Priority", s.replacementPriority);
-			s.requiresReplacement = EditorGUILayout.
-				Toggle("Requires Replacement", s.requiresReplacement);
-		}
-
-		if(!s.isPassive) {
-			s.deactivatesOnApplication = EditorGUILayout.
-				Toggle("Deactivates After Use", s.deactivatesOnApplication);
-		}
-
-		EditorGUILayout.Space();
-		if((patk.mergeParameters = MergeListChoiceGUI("Parameters", patk.mergeParameters)) != MergeModeList.UseOriginal) {
-			s.parameters = EditorGUIExt.ParameterFoldout(
-				"Parameter",
-				s.parameters,
-				""+s.GetInstanceID(),
-				formulaOptions,
-				lastFocusedControl,
-				ref showParameters
-			);
-		}
-		EditorGUILayout.Space();
-
-		if((patk.mergePassiveEffects = MergeListChoiceGUI("Passive Effects", patk.mergePassiveEffects)) != MergeModeList.UseOriginal) {
-			s.passiveEffects = EditorGUIExt.StatEffectFoldout(
-				"Passive Effect",
-				s.passiveEffects,
-				StatEffectContext.Normal,
-				""+s.GetInstanceID(),
-				formulaOptions,
-				lastFocusedControl,
-				ref showPassiveEffects
-			);
 		}
 	}
 

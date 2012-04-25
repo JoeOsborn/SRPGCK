@@ -20,7 +20,8 @@ public class Equipment : MonoBehaviour {
 	public StatusEffect[] statusEffectPrefabs;
 
 	Dictionary<string, Formula> runtimeParameters;
-	InstantiatedItem baseItem;
+	[System.NonSerialized]
+	public Item baseItem;
 	
 	public void Start() {
 		for(int i = 0; i < equipmentSlots.Length; i++) {
@@ -36,7 +37,8 @@ public class Equipment : MonoBehaviour {
 				wielder = t.GetComponent<Character>();
 				if(wielder == null) { t = t.parent; }
 			}
-			baseItem = GetComponent<InstantiatedItem>();
+			InstantiatedItem iit = GetComponent<InstantiatedItem>();
+			baseItem = iit != null ? iit.item : null;
 			if(wielder == null) { Debug.LogError("No wielder"); }
 			if(equippedSlots == null || equippedSlots.Length == 0) {
 				wielder.Equip(this);

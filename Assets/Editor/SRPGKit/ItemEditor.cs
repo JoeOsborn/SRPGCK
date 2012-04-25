@@ -35,7 +35,7 @@ public class ItemEditor : SRPGCKEditor {
 		it.parameters = EditorGUIExt.ParameterFoldout(
 			"Parameter",
 			it.parameters,
-			"item."+it.itemName+".params.",
+			"item."+it.name+".params.",
 			formulaOptions,
 			lastFocusedControl,
 			ref it.editorShowParameters

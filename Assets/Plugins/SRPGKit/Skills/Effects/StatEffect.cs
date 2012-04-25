@@ -24,7 +24,11 @@ public enum StatEffectType {
 	SpecialMove,
 	ApplyStatusEffect,
 	RemoveStatusEffect,
-	Dismount
+	Dismount,
+	AddItem,
+	RemoveItem
+	//TODO: remove equipment, and make that equipment
+	//the item in question for future stat effects.
 };
 
 public enum StatChangeType {
@@ -54,9 +58,11 @@ public class StatEffect {
 	public bool respectLimits=true;
 	public bool constrainValueToLimits=true;
 
-	//these three are only relevant for stateffects used in action and reaction skills
+	//these three are only relevant for stateffects used 
+	//in action and reaction skills
 	public string[] reactableTypes;
-	//for characters, equipment, and passive skills, "self", "wielder", or "character" is implicit
+	//for characters, equipment, and passive skills, "self", 
+	//"wielder", or "character" is implicit
 	public StatEffectTarget target = StatEffectTarget.Applied;
 	public Formula triggerF;
 
@@ -64,7 +70,10 @@ public class StatEffect {
 	public string specialMoveType="knockback";
 	public float specialMoveSpeedXY=20, specialMoveSpeedZ=25;
 	public bool specialMoveAnimateToStart=true;
-	public Formula specialMoveGivenStartX, specialMoveGivenStartY, specialMoveGivenStartZ;
+	public Formula 
+		specialMoveGivenStartX, 
+		specialMoveGivenStartY, 
+		specialMoveGivenStartZ;
 	public Region specialMoveLine;
 	//only for adding status effect
 	public StatusEffect statusEffectPrefab;
@@ -73,6 +82,8 @@ public class StatEffect {
 	public int statusEffectRemovalStrength=0;
 	//only for dismount status effect
 	public bool dismountMounter=true, dismountMounted=true;
+	
+	public Item item;
 
 	public float ModifyStat(
 	  float stat,
@@ -82,7 +93,10 @@ public class StatEffect {
 	  Equipment econtext,
 	  ref float modValue
 	) {
-		Formulae fdb = scontext != null ? scontext.fdb : (ccontext != null ? ccontext.fdb : (econtext != null ? econtext.fdb : Formulae.DefaultFormulae));
+		Formulae fdb = scontext != null ? scontext.fdb : 
+			(ccontext != null ? ccontext.fdb : 
+			(econtext != null ? econtext.fdb : 
+			Formulae.DefaultFormulae));
 		// Debug.Log("V:"+value);
 		modValue=value.GetValue(fdb, scontext, ccontext, tcontext, econtext);
 		float modifiedValue = stat;
@@ -104,7 +118,11 @@ public class StatEffect {
 	  Equipment econtext
 	) {
 		float ignore=0;
-		return ModifyStat(stat, scontext, ccontext, tcontext, econtext, ref ignore);
+		return ModifyStat(
+			stat, 
+			scontext, ccontext, tcontext, econtext, 
+			ref ignore
+		);
 	}
 
 	public StatEffectRecord Apply(
@@ -196,7 +214,11 @@ public class StatEffect {
 				break;
 			}
 			case StatEffectType.ApplyStatusEffect: {
-				StatusEffect sfx = (GameObject.Instantiate(statusEffectPrefab, Vector3.zero, Quaternion.identity) as StatusEffect);
+				StatusEffect sfx = (GameObject.Instantiate(
+					statusEffectPrefab, 
+					Vector3.zero, 
+					Quaternion.identity
+				) as StatusEffect);
 				sfx.applyingSkill = skill;
 				Debug.Log("apply status effect "+sfx);
 				actualTarget.ApplyStatusEffect(sfx);
@@ -205,7 +227,10 @@ public class StatEffect {
 			}
 			case StatEffectType.RemoveStatusEffect: {
 				Debug.Log("remove status effects "+statusEffectRemovalType+" with str "+statusEffectRemovalStrength);
-				StatusEffect[] removed = actualTarget.RemoveStatusEffect(statusEffectRemovalType, statusEffectRemovalStrength);
+				StatusEffect[] removed = actualTarget.RemoveStatusEffect(
+					statusEffectRemovalType, 
+					statusEffectRemovalStrength
+				);
 				effect = new StatEffectRecord(this, removed);
 				break;
 			}
@@ -217,6 +242,32 @@ public class StatEffect {
 					actualTarget.mountingCharacter.Dismount();
 				}
 				effect = new StatEffectRecord(this);
+				break;
+			}
+			case StatEffectType.AddItem: {
+				Inventory inv = actualTarget.inventory;
+				if(inv == null) {
+					Debug.LogError("No inventory under effect (add)");
+				}
+				Item involvedItem = item ?? skill.InvolvedItem;
+				if(involvedItem == null) {
+					Debug.LogError("No item in question (add)");
+				}
+				bool success = inv.InsertItem(involvedItem, -1, 1) == 1;
+				effect = new StatEffectRecord(this, inv, involvedItem, success);
+				break;
+			}
+			case StatEffectType.RemoveItem: {
+				Inventory inv = actualTarget.inventory;
+				if(inv == null) {
+					Debug.LogError("No inventory under effect (remove)");
+				}
+				Item involvedItem = item ?? skill.InvolvedItem;
+				if(involvedItem == null) {
+					Debug.LogError("No item in question (remove)");
+				}
+				bool success = inv.RemoveItem(involvedItem, 1) == 1;
+				effect = new StatEffectRecord(this, inv, involvedItem, success);
 				break;
 			}
 		}
@@ -233,7 +284,15 @@ public class StatEffectRecord {
 	public Vector3 specialMoveStart;
 	public StatusEffect statusEffect;
 	public StatusEffect[] removedStatusEffects;
-	public StatEffectRecord(StatEffect e, float init=0, float endVal=0, float v=0) {
+	public Inventory inventory;
+	public Item involvedItem;
+	public bool success;
+	public StatEffectRecord(
+		StatEffect e, 
+		float init=0, 
+		float endVal=0, 
+		float v=0
+	) {
 		effect = e;
 		initialValue = init;
 		finalValue = endVal;
@@ -251,26 +310,53 @@ public class StatEffectRecord {
 		effect = e;
 		removedStatusEffects = removedSfx;
 	}
+	public StatEffectRecord(StatEffect e, Inventory inv, Item it, bool succ) {
+		effect = e;
+		inventory = inv;
+		involvedItem = it;
+		success = succ;
+	}
 
-	public bool Matches(string[] statNames, StatChangeType[] changes, string[] reactableTypes) {
-		bool statNameOK = statNames == null || statNames.Length == 0 || statNames.Contains(effect.statName);
-		bool changeOK = changes == null || changes.Length == 0 || changes.Any(delegate(StatChangeType c) {
-			switch(c) {
-				case StatChangeType.Any: return true;
-				case StatChangeType.NoChange: return value == initialValue;
-				case StatChangeType.Change: return value != initialValue;
-				case StatChangeType.Increase: return value > initialValue;
-				case StatChangeType.Decrease: return value < initialValue;
-			}
-			return false;
-		});
-		bool typesOK = reactableTypes == null || reactableTypes.Length == 0 || reactableTypes.All(t => effect.reactableTypes.Contains(t));
+	public bool Matches(
+		string[] statNames, 
+		StatChangeType[] changes, 
+		string[] reactableTypes
+	) {
+		bool statNameOK = statNames == null || 
+			statNames.Length == 0 || 
+			statNames.Contains(effect.statName);
+		bool changeOK = changes == null || 
+			changes.Length == 0 || 
+			changes.Any(delegate(StatChangeType c) {
+				switch(c) {
+					case StatChangeType.Any: return true;
+					case StatChangeType.NoChange: return value == initialValue;
+					case StatChangeType.Change: return value != initialValue;
+					case StatChangeType.Increase: return value > initialValue;
+					case StatChangeType.Decrease: return value < initialValue;
+				}
+				return false;
+			});
+		bool typesOK = reactableTypes == null || 
+			reactableTypes.Length == 0 || 
+			reactableTypes.All(t => effect.reactableTypes.Contains(t));
 		return statNameOK && changeOK && typesOK;
 	}
-	public bool Matches(string statName, StatChangeType change, string[] reactableTypes) {
-		return Matches(new string[]{statName}, new StatChangeType[]{change}, reactableTypes);
+	public bool Matches(
+		string statName, 
+		StatChangeType change, 
+		string[] reactableTypes
+	) {
+		return Matches(
+			new string[]{statName}, 
+			new StatChangeType[]{change}, 
+			reactableTypes
+		);
 	}
-	public bool Matches(StatChange[] changes, string[] reactableTypes) {
+	public bool Matches(
+		StatChange[] changes, 
+		string[] reactableTypes
+	) {
 		if(changes == null || changes.Length == 0) {
 			return Matches(null, StatChangeType.Any, reactableTypes);
 		}

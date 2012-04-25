@@ -9,7 +9,6 @@ public class Item : ScriptableObject {
 	public bool editorShowParameters=true;
 	
 	//normal fields:
-	public string itemName;
 	public float weight=0;
 	public int stackSize=99;
 	

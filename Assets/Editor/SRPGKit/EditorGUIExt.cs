@@ -395,6 +395,10 @@ public class EditorGUIExt
 					newFx.dismountMounted
 				);
 				break;
+			case StatEffectType.AddItem:
+			case StatEffectType.RemoveItem:
+				newFx.item = PickAssetGUI<Item>("Item", newFx.item);
+				break;
 		}
 		if(ctx == StatEffectContext.Action || ctx == StatEffectContext.Any) {
 			newFx.target = (StatEffectTarget)EditorGUILayout.EnumPopup("Target:", fx.target);

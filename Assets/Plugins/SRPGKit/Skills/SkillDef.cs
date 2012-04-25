@@ -21,11 +21,19 @@ public class SkillDef : ScriptableObject {
 	}
 
 	public List<Parameter> parameters;
+	
+	public Inventory inventory { get {
+		return character.inventory;
+	} }
 
 	public Formula isEnabledF;
+	public virtual Formula IsEnabledF { get {
+		return isEnabledF;
+	} }
 	public virtual bool IsEnabled { get {
 		return Owner != null &&
-			(Formula.NotNullFormula(isEnabledF) ? isEnabledF.GetValue(fdb, this) != 0 : true);
+			(Formula.NotNullFormula(isEnabledF) ? isEnabledF.GetValue(fdb, this) != 0 : true) &&
+			(InvolvedItem == null || inventory.HasItem(InvolvedItem));
 	} }
 
 	//reaction
@@ -65,6 +73,11 @@ public class SkillDef : ScriptableObject {
 	public Character currentTargetCharacter;
 	[System.NonSerialized]
 	public int currentHitType;
+	
+	public Item involvedItem;
+	public virtual Item InvolvedItem { get {
+		return involvedItem;
+	} }
 
 	public List<StatEffectRecord> lastEffects;
 
