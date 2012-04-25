@@ -123,13 +123,36 @@ public static class SRPGUtil {
 	static public string JoinStr(this IEnumerable<object> objs, string join) {
 		return string.Join(join, objs.Select(o => o.ToString()).ToArray());
 	}
+	static public string JoinStr(this IEnumerable<int> ints, string join) {
+		return string.Join(join, ints.Select(i => i.ToString()).ToArray());
+	}
 	static public string JoinStr(this string[] strs, string join) {
 		return string.Join(join, strs);
 	}
 	static public string JoinStr(this object[] objs, string join) {
 		return string.Join(join, objs.Select(o => o.ToString()).ToArray());
 	}
+	static public string JoinStr(this int[] ints, string join) {
+		return string.Join(join, ints.Select(o => o.ToString()).ToArray());
+	}
 	static public string JoinStr(this StatChangeType[] scts, string join) {
 		return string.Join(join, scts.Select(o => o.ToString()).ToArray());
+	}
+	
+	static public T FindComponentInThisOrParents<T>(
+		this MonoBehaviour beh, 
+		T soFar=null
+	) where T : MonoBehaviour {
+		T ret = soFar;
+		if(ret == null) {
+			Transform t = beh.transform;
+			while(t != null) {
+				ret = t.GetComponent<T>();
+				if(ret != null)
+					break;
+				t = t.parent;
+			}
+		}
+		return ret;
 	}
 }

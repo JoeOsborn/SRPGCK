@@ -17,21 +17,6 @@ public class InventoryEditor : SRPGCKEditor {
 			EditorGUILayout.HelpBox("Inventory is used for unequipped items such as commodities and consumables. Inventory items do not provide passive effects, skills, or other adjustments until they are instantiated. Formulae are in character-stat scope.", MessageType.Info);
 		}
 		EditorGUIUtility.LookLikeInspector();
-		inv.limitedCapacity = EditorGUILayout.Toggle(
-			"Limited Total Count",
-			inv.limitedCapacity
-		);
-		if(inv.limitedCapacity) {
-			inv.capacityF = EditorGUIExt.FormulaField(
-				"Capacity:",
-				inv.capacityF ??
-					Formula.Constant(20),
-				inv.name+".inventory.capacity",
-				formulaOptions,
-				lastFocusedControl
-			);
-		}
-
 		inv.limitedStacks = EditorGUILayout.Toggle(
 			"Limited Stacks",
 			inv.limitedStacks
@@ -42,6 +27,21 @@ public class InventoryEditor : SRPGCKEditor {
 				inv.stackLimitF ??
 					Formula.Constant(20),
 				inv.name+".inventory.stackLimit",
+				formulaOptions,
+				lastFocusedControl
+			);
+		}
+		
+		inv.limitedStacks = EditorGUILayout.Toggle(
+			"Override Item Stack Size",
+			inv.limitedStackSize
+		);
+		if(inv.limitedStackSize) {
+			inv.stackSizeF = EditorGUIExt.FormulaField(
+				"Stack Size:",
+				inv.stackSizeF ??
+					Formula.Constant(1),
+				inv.name+".inventory.stackSize",
 				formulaOptions,
 				lastFocusedControl
 			);

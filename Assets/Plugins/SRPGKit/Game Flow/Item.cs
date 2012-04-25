@@ -4,23 +4,19 @@ using System.Collections.Generic;
 using UnityEditor;
 
 [AddComponentMenu("SRPGCK/Item/Item")]
-public class Item : MonoBehaviour {
-	Arbiter _arbiter;
-	protected Arbiter arbiter { get {
-		if(_arbiter == null) {
-			Transform t = transform;
-			while(t != null) {
-				_arbiter = t.GetComponent<Arbiter>();
-				if(_arbiter != null) { break; }
-				t = t.parent;
-			}
-		}
-		return _arbiter;
-	} }
-	public Formulae fdb { get {
-		if(arbiter != null) { return arbiter.fdb; }
-		return Formulae.DefaultFormulae;
-	} }
+public class Item : ScriptableObject {
+	//editor only:
+	public bool editorShowParameters=true;
+	
+	//normal fields:
+	public string itemName;
+	public float weight=0;
+	public int stackSize=99;
+	
+	public Transform prefab;
+	
+	// TODO: tags
+	public Formulae fdb;
 	
 	public List<Parameter> parameters;
 	Dictionary<string, Formula> runtimeParameters;
@@ -39,9 +35,23 @@ public class Item : MonoBehaviour {
 		return runtimeParameters.ContainsKey(pname);
 	}
 
-	public float GetParam(string pname, SkillDef scontext=null) {
+	public float GetParam(string pname, SkillDef scontext=null, float fallback=float.NaN) {
 		MakeParametersIfNecessary();
+		if(!HasParam(pname)) { 
+			if(float.IsNaN(fallback)) {
+				Debug.LogError("No fallback for missing item param "+pname+" on "+this);
+			}
+			return fallback; 
+		}
 		return runtimeParameters[pname].GetValue(fdb, scontext, null, null, null, this);
 	}
-
+	
+	public InstantiatedItem Instantiate(Vector3 where, Quaternion rot) {
+		Transform t = Instantiate(prefab, where, rot) as Transform;
+		InstantiatedItem iit = 
+			t.GetComponent<InstantiatedItem>() ??
+			t.gameObject.AddComponent<InstantiatedItem>();
+		iit.item = this;
+		return iit;
+	}
 }

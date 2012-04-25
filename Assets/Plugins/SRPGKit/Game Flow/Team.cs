@@ -39,12 +39,7 @@ public class Team : MonoBehaviour {
 
 	public Arbiter _arbiter;
 	public Arbiter arbiter { get {
-		if(_arbiter == null) {
-			_arbiter = transform.parent != null ?
-				transform.parent.GetComponent<Arbiter>() :
-				null;
-		}
-		return _arbiter;
+		return _arbiter = SRPGUtil.FindComponentInThisOrParents<Arbiter>(_arbiter);
 	} }
 
 	public Formulae fdb { get {

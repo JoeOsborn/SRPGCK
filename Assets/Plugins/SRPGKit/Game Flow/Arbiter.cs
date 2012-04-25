@@ -47,6 +47,7 @@ public class Arbiter : MonoBehaviour {
 						_teams = null;
 						return null;
 					}
+					_teams[t.id] = t;
 				}
 			}
 			return _teams;
@@ -58,6 +59,9 @@ public class Arbiter : MonoBehaviour {
 
 	public Team GetTeam(int team) {
 		if(!Application.isPlaying) { return EditorGetTeam(team); }
+		if(_teams == null || _teams.Count == 0) {
+			teams = null;
+		}
 		return teams[team];
 	}
 	public void AddTeam(Team t) {

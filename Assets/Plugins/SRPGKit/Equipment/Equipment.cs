@@ -20,6 +20,7 @@ public class Equipment : MonoBehaviour {
 	public StatusEffect[] statusEffectPrefabs;
 
 	Dictionary<string, Formula> runtimeParameters;
+	InstantiatedItem baseItem;
 	
 	public void Start() {
 		for(int i = 0; i < equipmentSlots.Length; i++) {
@@ -35,6 +36,7 @@ public class Equipment : MonoBehaviour {
 				wielder = t.GetComponent<Character>();
 				if(wielder == null) { t = t.parent; }
 			}
+			baseItem = GetComponent<InstantiatedItem>();
 			if(wielder == null) { Debug.LogError("No wielder"); }
 			if(equippedSlots == null || equippedSlots.Length == 0) {
 				wielder.Equip(this);
@@ -50,10 +52,14 @@ public class Equipment : MonoBehaviour {
 			}
 		}
 	}
-	
-	public bool HasParam(string pname) {
+
+	public bool HasOwnParam(string pname) {
 		MakeParametersIfNecessary();
 		return runtimeParameters.ContainsKey(pname);
+	}
+	
+	public bool HasParam(string pname) {
+		return HasOwnParam(pname) || (baseItem != null && baseItem.HasParam(pname));
 	}
 	
 	public Formulae fdb { get {
@@ -61,9 +67,18 @@ public class Equipment : MonoBehaviour {
 		return Formulae.DefaultFormulae;
 	} }
 	
-	public float GetParam(string pname, SkillDef scontext=null) {
+	public float GetParam(string pname, SkillDef scontext=null, float fallback=float.NaN) {
 		MakeParametersIfNecessary();
 		FindWielder();
+		if(!HasOwnParam(pname)) {
+			if(baseItem != null) {
+				return baseItem.GetParam(pname, scontext, fallback);
+			}
+			if(float.IsNaN(fallback)) {
+				Debug.LogError("No fallback for missing equipment param "+pname);
+			}
+			return fallback;
+		}
 		return runtimeParameters[pname].GetValue(fdb, scontext, null, null, this);
 	}
 	
