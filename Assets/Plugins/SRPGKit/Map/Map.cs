@@ -271,7 +271,7 @@ void Start() {
 		stacks[idx].Add(stack);
 	}
 
-	MapColumn TileColumnAt(int x, int y) {
+	public MapColumn TileColumnAt(int x, int y) {
 		if(x < 0 || y < 0 || x >= (int)_size.x || y >= (int)_size.y) {
 			return null;
 		}
